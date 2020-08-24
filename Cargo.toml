@@ -1,11 +1,11 @@
 [package]
-authors = ['Substrate DevHub <https://github.com/substrate-developer-hub>']
-description = 'FRAME pallet template for defining custom runtime logic.'
+authors = ['Cdot Network <https://cdot.network>']
+description = 'An IBC implementation on Substrate.'
 edition = '2018'
-homepage = 'https://substrate.dev'
-license = 'Unlicense'
-name = 'pallet-template'
-repository = 'https://github.com/substrate-developer-hub/substrate-pallet-template/'
+homepage = 'https://cdot.network'
+license = 'Apache-2.0'
+name = 'pallet-ibc'
+repository = 'https://github.com/cdot-network/substrate-ibc/'
 version = '2.0.0-rc6'
 
 [package.metadata.docs.rs]
@@ -16,6 +16,11 @@ default-features = false
 features = ['derive']
 package = 'parity-scale-codec'
 version = '1.3.4'
+
+[dependencies.finality-grandpa]
+default-features = false
+features = ['derive-codec']
+version = '0.12.3'
 
 [dependencies.frame-support]
 default-features = false
@@ -29,7 +34,22 @@ git = 'https://github.com/paritytech/substrate.git'
 tag = 'v2.0.0-rc6'
 version = '2.0.0-rc6'
 
-[dev-dependencies.sp-core]
+[dependencies.hash-db]
+default-features = false
+version = '0.15.2'
+
+[dependencies.serde]
+default-features = false
+optional = true
+version = '1.0.102'
+
+[dependencies.sp-core]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'v2.0.0-rc6'
+version = '2.0.0-rc6'
+
+[dependencies.sp-finality-grandpa]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
 tag = 'v2.0.0-rc6'
@@ -41,7 +61,19 @@ git = 'https://github.com/paritytech/substrate.git'
 tag = 'v2.0.0-rc6'
 version = '2.0.0-rc6'
 
-[dev-dependencies.sp-runtime]
+[dependencies.sp-runtime]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'v2.0.0-rc6'
+version = '2.0.0-rc6'
+
+[dependencies.sp-std]
+default-features = false
+git = 'https://github.com/paritytech/substrate.git'
+tag = 'v2.0.0-rc6'
+version = '2.0.0-rc6'
+
+[dependencies.sp-trie]
 default-features = false
 git = 'https://github.com/paritytech/substrate.git'
 tag = 'v2.0.0-rc6'
@@ -51,6 +83,14 @@ version = '2.0.0-rc6'
 default = ['std']
 std = [
     'codec/std',
+    'finality-grandpa/std',
     'frame-support/std',
     'frame-system/std',
+    'hash-db/std',
+    'serde',
+    'sp-core/std',
+    'sp-finality-grandpa/std',
+    'sp-runtime/std',
+    'sp-std/std',
+    'sp-trie/std',
 ]
