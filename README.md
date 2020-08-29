@@ -1,16 +1,14 @@
-# Substrate Pallet Template
-
-This is a template for a Substrate pallet which lives as its own crate so it can be imported into multiple runtimes. It is based on the ["template" pallet](https://github.com/paritytech/substrate/tree/master/bin/node-template/pallets/template) that is included with the [Substrate node template](https://github.com/paritytech/substrate/tree/master/bin/node-template).
-
-Check out the [HOWTO](HOWTO.md) to learn how to use this for your own runtime module.
-
-This README should act as a general template for distributing your pallet to others.
+# Substrate IBC Pallet
 
 ## Purpose
 
-This pallet acts as a template for building other pallets.
+This pallet implements the standard [IBC protocol](https://github.com/cosmos/ics).
 
-It currently allows a user to put a `u32` value into storage, which triggers a runtime event.
+The goal of this pallet is to allow the blockchains built on Substrate to gain the ability to interact with other chains in a trustless way via IBC protocol, no matter what consensus the counterparty chains use.
+
+This project is currently in an early stage and will eventually be submitted to upstream.
+
+Here is a [demo](https://github.com/cdot-network/ibc-demo) for showing how to utilize this pallet.
 
 ## Dependencies
 
@@ -29,9 +27,10 @@ This pallet does not depend on any other FRAME pallet or externally developed mo
 To add this pallet to your runtime, simply include the following to your runtime's `Cargo.toml` file:
 
 ```TOML
-[dependencies.substrate-pallet-template]
+[dependencies.ibc]
 default_features = false
-git = 'https://github.com/substrate-developer-hub/substrate-pallet-template.git'
+package = 'pallet-ibc'
+git = 'https://github.com/cdot-network/substrate-ibc.git'
 ```
 
 and update your runtime's `std` feature to include this pallet:
@@ -39,7 +38,7 @@ and update your runtime's `std` feature to include this pallet:
 ```TOML
 std = [
     # --snip--
-    'example_pallet/std',
+    'ibc/std',
 ]
 ```
 
@@ -49,7 +48,7 @@ You should implement it's trait like so:
 
 ```rust
 /// Used for test_module
-impl example_pallet::Trait for Runtime {
+impl ibc::Trait for Runtime {
 	type Event = Event;
 }
 ```
@@ -57,12 +56,12 @@ impl example_pallet::Trait for Runtime {
 and include it in your `construct_runtime!` macro:
 
 ```rust
-ExamplePallet: substrate_pallet_template::{Module, Call, Storage, Event<T>},
+Ibc: ibc::{Module, Call, Storage, Event<T>},
 ```
 
 ### Genesis Configuration
 
-This template pallet does not have any genesis configuration.
+This pallet does not have any genesis configuration.
 
 ## Reference Docs
 
