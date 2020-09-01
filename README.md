@@ -1,4 +1,4 @@
-# Substrate IBC Pallet
+# Substrate IBC Pallet (work in progress)
 
 ## Purpose
 

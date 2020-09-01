@@ -228,6 +228,9 @@ decl_storage! {
 		NextSequenceAck: map hasher(blake2_128_concat) (Vec<u8>, H256) => u64; // (port_identifier, channel_identifier) => Sequence
 		Packets: map hasher(blake2_128_concat) (Vec<u8>, H256, u64) => H256; // (port_identifier, channel_identifier, sequence) => Hash
 		Acknowledgements: map hasher(blake2_128_concat) (Vec<u8>, H256, u64) => H256; // (port_identifier, channel_identifier, sequence) => Hash
+
+		// Temporarily share data with other modules, replace it with the dispatch solution later
+		pub PendingPackets: map hasher(blake2_128_concat) u8 => Vec<Vec<u8>>; // module_index, packet
 	}
 }
 
@@ -992,6 +995,11 @@ impl<T: Trait> Module<T> {
                 // all assertions passed (except sequence check), we can alter state
 
                 // for testing
+                let dest_module_index = Ports::get(packet.dest_port.clone());
+                if_std! {
+                    println!("dest_module_index: {}", dest_module_index);
+                }
+                PendingPackets::insert(dest_module_index, vec![packet.data.clone()]);
                 let acknowledgement: Vec<u8> = vec![1, 3, 3, 7];
 
                 if acknowledgement.len() > 0 || channel.ordering == ChannelOrder::Unordered {
