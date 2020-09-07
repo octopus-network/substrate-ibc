@@ -206,10 +206,15 @@ pub struct ChannelEnd {
     pub version: Vec<u8>,
 }
 
+pub trait CallbackDispatcher {
+	fn on_recv_packet(index: usize, packet: Packet);
+}
+
 /// Configure the pallet by specifying the parameters and types on which it depends.
 pub trait Trait: frame_system::Trait {
 	/// Because this pallet emits events, it depends on the runtime's definition of an event.
 	type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+	type CallbackDispatcher: CallbackDispatcher;
 }
 
 // The pallet's runtime storage items.
@@ -228,9 +233,6 @@ decl_storage! {
 		NextSequenceAck: map hasher(blake2_128_concat) (Vec<u8>, H256) => u64; // (port_identifier, channel_identifier) => Sequence
 		Packets: map hasher(blake2_128_concat) (Vec<u8>, H256, u64) => H256; // (port_identifier, channel_identifier, sequence) => Hash
 		Acknowledgements: map hasher(blake2_128_concat) (Vec<u8>, H256, u64) => H256; // (port_identifier, channel_identifier, sequence) => Hash
-
-		// Temporarily share data with other modules, replace it with the dispatch solution later
-		pub PendingPackets: map hasher(blake2_128_concat) u8 => Vec<Vec<u8>>; // module_index, packet
 	}
 }
 
@@ -999,7 +1001,7 @@ impl<T: Trait> Module<T> {
                 if_std! {
                     println!("dest_module_index: {}", dest_module_index);
                 }
-                PendingPackets::insert(dest_module_index, vec![packet.data.clone()]);
+                T::CallbackDispatcher::on_recv_packet(dest_module_index.into(), packet.clone());
                 let acknowledgement: Vec<u8> = vec![1, 3, 3, 7];
 
                 if acknowledgement.len() > 0 || channel.ordering == ChannelOrder::Unordered {
