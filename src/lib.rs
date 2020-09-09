@@ -207,6 +207,9 @@ pub struct ChannelEnd {
 }
 
 pub trait CallbackDispatcher {
+	fn on_chan_open_try(index: usize, order: ChannelOrder, connection_hops: Vec<H256>, port_identifier: Vec<u8>, channel_identifier: H256, counterparty_port_identifier: Vec<u8>, counterparty_channel_identifier: H256, version: Vec<u8>, counterparty_version: Vec<u8>);
+	fn on_chan_open_ack(index: usize, port_identifier: Vec<u8>, channel_identifier: H256, version: Vec<u8>);
+	fn on_chan_open_confirm(index: usize, port_identifier: Vec<u8>, channel_identifier: H256);
 	fn on_recv_packet(index: usize, packet: Packet);
 }
 
@@ -811,6 +814,9 @@ impl<T: Trait> Module<T> {
                 //   counterpartyChannelIdentifier,
                 //   expected
                 // ))
+                let dest_module_index = Ports::get(port_identifier.clone());
+                T::CallbackDispatcher::on_chan_open_try(dest_module_index.into(), order.clone(), connection_hops.clone(), port_identifier.clone(), channel_identifier, counterparty_port_identifier.clone(), counterparty_channel_identifier, version.clone(), counterparty_version);
+
                 let channel_end = ChannelEnd {
                     state: ChannelState::TryOpen,
                     ordering: order,
@@ -880,6 +886,8 @@ impl<T: Trait> Module<T> {
                 //   expected
                 // ))
                 // channel.version = counterpartyVersion
+                let dest_module_index = Ports::get(port_identifier.clone());
+                T::CallbackDispatcher::on_chan_open_ack(dest_module_index.into(), port_identifier.clone(), channel_identifier, version.clone());
                 Channels::mutate((port_identifier, channel_identifier), |channel| {
                     (*channel).state = ChannelState::Open;
                 });
@@ -931,6 +939,8 @@ impl<T: Trait> Module<T> {
                 //   channel.counterpartyChannelIdentifier,
                 //   expected
                 // ))
+                let dest_module_index = Ports::get(port_identifier.clone());
+                T::CallbackDispatcher::on_chan_open_confirm(dest_module_index.into(), port_identifier.clone(), channel_identifier);
                 Channels::mutate((port_identifier, channel_identifier), |channel| {
                     (*channel).state = ChannelState::Open;
                 });
