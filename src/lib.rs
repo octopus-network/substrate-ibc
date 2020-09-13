@@ -20,6 +20,7 @@ use sp_trie::StorageProof;
 use state_machine::read_proof_check;
 
 pub use clients::ClientType;
+pub use routing::ModuleCallbacks;
 
 mod clients;
 mod handler;
@@ -206,18 +207,11 @@ pub struct ChannelEnd {
     pub version: Vec<u8>,
 }
 
-pub trait CallbackDispatcher {
-	fn on_chan_open_try(index: usize, order: ChannelOrder, connection_hops: Vec<H256>, port_identifier: Vec<u8>, channel_identifier: H256, counterparty_port_identifier: Vec<u8>, counterparty_channel_identifier: H256, version: Vec<u8>, counterparty_version: Vec<u8>);
-	fn on_chan_open_ack(index: usize, port_identifier: Vec<u8>, channel_identifier: H256, version: Vec<u8>);
-	fn on_chan_open_confirm(index: usize, port_identifier: Vec<u8>, channel_identifier: H256);
-	fn on_recv_packet(index: usize, packet: Packet);
-}
-
 /// Configure the pallet by specifying the parameters and types on which it depends.
 pub trait Trait: frame_system::Trait {
 	/// Because this pallet emits events, it depends on the runtime's definition of an event.
 	type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
-	type CallbackDispatcher: CallbackDispatcher;
+	type ModuleCallbacks: routing::ModuleCallbacks;
 }
 
 // The pallet's runtime storage items.
@@ -815,7 +809,7 @@ impl<T: Trait> Module<T> {
                 //   expected
                 // ))
                 let dest_module_index = Ports::get(port_identifier.clone());
-                T::CallbackDispatcher::on_chan_open_try(dest_module_index.into(), order.clone(), connection_hops.clone(), port_identifier.clone(), channel_identifier, counterparty_port_identifier.clone(), counterparty_channel_identifier, version.clone(), counterparty_version);
+                T::ModuleCallbacks::on_chan_open_try(dest_module_index.into(), order.clone(), connection_hops.clone(), port_identifier.clone(), channel_identifier, counterparty_port_identifier.clone(), counterparty_channel_identifier, version.clone(), counterparty_version);
 
                 let channel_end = ChannelEnd {
                     state: ChannelState::TryOpen,
@@ -887,7 +881,7 @@ impl<T: Trait> Module<T> {
                 // ))
                 // channel.version = counterpartyVersion
                 let dest_module_index = Ports::get(port_identifier.clone());
-                T::CallbackDispatcher::on_chan_open_ack(dest_module_index.into(), port_identifier.clone(), channel_identifier, version.clone());
+                T::ModuleCallbacks::on_chan_open_ack(dest_module_index.into(), port_identifier.clone(), channel_identifier, version.clone());
                 Channels::mutate((port_identifier, channel_identifier), |channel| {
                     (*channel).state = ChannelState::Open;
                 });
@@ -940,7 +934,7 @@ impl<T: Trait> Module<T> {
                 //   expected
                 // ))
                 let dest_module_index = Ports::get(port_identifier.clone());
-                T::CallbackDispatcher::on_chan_open_confirm(dest_module_index.into(), port_identifier.clone(), channel_identifier);
+                T::ModuleCallbacks::on_chan_open_confirm(dest_module_index.into(), port_identifier.clone(), channel_identifier);
                 Channels::mutate((port_identifier, channel_identifier), |channel| {
                     (*channel).state = ChannelState::Open;
                 });
@@ -1011,7 +1005,7 @@ impl<T: Trait> Module<T> {
                 if_std! {
                     println!("dest_module_index: {}", dest_module_index);
                 }
-                T::CallbackDispatcher::on_recv_packet(dest_module_index.into(), packet.clone());
+                T::ModuleCallbacks::on_recv_packet(dest_module_index.into(), packet.clone());
                 let acknowledgement: Vec<u8> = vec![1, 3, 3, 7];
 
                 if acknowledgement.len() > 0 || channel.ordering == ChannelOrder::Unordered {
