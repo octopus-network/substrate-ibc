@@ -154,6 +154,11 @@ pub struct ClientState {
     pub channels: Vec<(Vec<u8>, H256)>,
 }
 
+
+/// # Parameters
+/// * set_id: This parameter will be encoded into payload with other data byt the function "localized_payload_with_buffer<E: Encode>". Note that according to the comments of method (https://crates.parity.io/sc_finality_grandpa/trait.GrandpaApi.html#method.generate_key_ownership_proof), current implementations ignore this parameter.
+/// * authorities: A list of Grandpa authorities with associated weights.
+/// * commitment_root: State root of a substrate block.
 #[derive(Clone, Default, Encode, Decode, RuntimeDebug)]
 pub struct ConsensusState {
     pub set_id: SetId,
@@ -296,6 +301,10 @@ decl_module! {
 	}
 }
 
+/// Create an IBC client by 2 major steps:
+/// * Insert concensus state into storage "ConsensusStates"
+/// * Insert client state into storage "Clients"
+/// Both storage's keys contains an id
 impl<T: Trait> Module<T> {
     pub fn create_client(
         identifier: H256,
