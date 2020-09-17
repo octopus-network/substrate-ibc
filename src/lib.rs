@@ -156,9 +156,9 @@ pub struct ClientState {
 
 
 /// # Parameters
-/// * set_id: This parameter will be encoded into payload with other data byt the function "localized_payload_with_buffer<E: Encode>". Note that according to the comments of method (https://crates.parity.io/sc_finality_grandpa/trait.GrandpaApi.html#method.generate_key_ownership_proof), current implementations ignore this parameter.
-/// * authorities: A list of Grandpa authorities with associated weights.
-/// * commitment_root: State root of a substrate block.
+/// - `set_id`: This parameter will be encoded into payload with other data byt the function "localized_payload_with_buffer<E: Encode>". Note that according to the comments of method (https://crates.parity.io/sc_finality_grandpa/trait.GrandpaApi.html#method.generate_key_ownership_proof), current implementations ignore this parameter.
+/// - `authorities`: A list of Grandpa authorities with associated weights.
+/// - `commitment_root`: State root of a substrate block.
 #[derive(Clone, Default, Encode, Decode, RuntimeDebug)]
 pub struct ConsensusState {
     pub set_id: SetId,
@@ -306,6 +306,10 @@ decl_module! {
 /// * Insert client state into storage "Clients"
 /// Both storage's keys contains an id
 impl<T: Trait> Module<T> {
+    pub fn getConsensusState(identifier: H256, height: u32) -> ConsensusState {
+        ConsensusStates::get((identifier, height))
+    }
+
     pub fn create_client(
         identifier: H256,
         client_type: clients::ClientType,
