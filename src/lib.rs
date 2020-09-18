@@ -225,7 +225,7 @@ decl_storage! {
 	// A unique name is used to ensure that the pallet's storage items are isolated.
 	// This name may be updated, but each pallet in the runtime must use a unique name.
 	trait Store for Module<T: Trait> as Ibc {
-		Clients: map hasher(blake2_128_concat) H256 => ClientState; // client_identifier => ClientState
+		ClientStates: map hasher(blake2_128_concat) H256 => ClientState; // client_identifier => ClientState
 		ConsensusStates: map hasher(blake2_128_concat) (H256, u32) => ConsensusState; // (client_identifier, height) => ConsensusState
 		Connections: map hasher(blake2_128_concat) H256 => ConnectionEnd; // connection_identifier => ConnectionEnd
 		Ports: map hasher(blake2_128_concat) Vec<u8> => u8; // port_identifier => module_index
@@ -301,15 +301,19 @@ decl_module! {
 	}
 }
 
-/// Create an IBC client by 2 major steps:
-/// * Insert concensus state into storage "ConsensusStates"
-/// * Insert client state into storage "Clients"
-/// Both storage's keys contains an id
 impl<T: Trait> Module<T> {
     pub fn getConsensusState(identifier: H256, height: u32) -> ConsensusState {
         ConsensusStates::get((identifier, height))
     }
 
+    pub fn getClientState(identifier: &H256) -> ClientState {
+        ClientStates::get(identifier)
+    }
+
+/// Create an IBC client by 2 major steps:
+/// * Insert concensus state into storage "ConsensusStates"
+/// * Insert client state into storage "ClientStates"
+/// Both storage's keys contains client id
     pub fn create_client(
         identifier: H256,
         client_type: clients::ClientType,
@@ -317,7 +321,7 @@ impl<T: Trait> Module<T> {
         consensus_state: ConsensusState,
     ) -> dispatch::DispatchResult {
         ensure!(
-            !Clients::contains_key(&identifier),
+            !ClientStates::contains_key(&identifier),
             "Client identifier already exists"
         );
 
@@ -328,7 +332,7 @@ impl<T: Trait> Module<T> {
             connections: vec![],
             channels: vec![],
         };
-        Clients::insert(&identifier, client_state);
+        ClientStates::insert(&identifier, client_state);
 
         Self::deposit_event(RawEvent::ClientCreated);
         Ok(())
@@ -342,7 +346,7 @@ impl<T: Trait> Module<T> {
     ) -> dispatch::DispatchResult {
         // abortTransactionUnless(validateConnectionIdentifier(identifier))
         ensure!(
-            Clients::contains_key(&client_identifier),
+            ClientStates::contains_key(&client_identifier),
             "Client identifier not exists"
         );
         // TODO: ensure!(!client.connections.exists(&identifier)))
@@ -364,7 +368,7 @@ impl<T: Trait> Module<T> {
         }
         Connections::insert(&identifier, connection_end);
         // addConnectionToClient(clientIdentifier, identifier)
-        Clients::mutate(&client_identifier, |client_state| {
+        ClientStates::mutate(&client_identifier, |client_state| {
             (*client_state).connections.push(identifier);
         });
         Self::deposit_event(RawEvent::ConnOpenInitReceived);
@@ -443,7 +447,7 @@ impl<T: Trait> Module<T> {
         NextSequenceRecv::insert((port_identifier.clone(), channel_identifier), 1);
         NextSequenceAck::insert((port_identifier.clone(), channel_identifier), 1);
         // return key
-        Clients::mutate(&connection.client_identifier, |client_state| {
+        ClientStates::mutate(&connection.client_identifier, |client_state| {
             (*client_state)
                 .channels
                 .push((port_identifier.clone(), channel_identifier));
@@ -520,8 +524,8 @@ impl<T: Trait> Module<T> {
     pub fn handle_datagram(datagram: Datagram) -> dispatch::DispatchResult {
         match datagram {
             Datagram::ClientUpdate { identifier, header } => {
-                ensure!(Clients::contains_key(&identifier), "Client not found");
-                let client_state = Clients::get(&identifier);
+                ensure!(ClientStates::contains_key(&identifier), "Client not found");
+                let client_state = ClientStates::get(&identifier);
                 ensure!(
                     client_state.latest_height < header.height,
                     "Client already updated"
@@ -556,7 +560,7 @@ impl<T: Trait> Module<T> {
                             println!("block_hash: {:?}", header.block_hash);
                         }
                         assert_eq!(header.block_hash, justification.commit.target_hash);
-                        Clients::mutate(&identifier, |client_state| {
+                        ClientStates::mutate(&identifier, |client_state| {
                             (*client_state).latest_height = header.height;
                         });
                         let new_consensus_state = ConsensusState {
@@ -619,7 +623,7 @@ impl<T: Trait> Module<T> {
                 consensus_height,
             } => {
                 ensure!(
-                    Clients::contains_key(&client_identifier),
+                    ClientStates::contains_key(&client_identifier),
                     "Client not found"
                 );
                 ensure!(
@@ -672,7 +676,7 @@ impl<T: Trait> Module<T> {
                 let identifier = desired_identifier;
                 Connections::insert(&identifier, connection);
                 // addConnectionToClient(clientIdentifier, identifier)
-                Clients::mutate(&client_identifier, |client_state| {
+                ClientStates::mutate(&client_identifier, |client_state| {
                     (*client_state).connections.push(identifier);
                 });
                 Self::deposit_event(RawEvent::ConnOpenTryReceived);
@@ -838,7 +842,7 @@ impl<T: Trait> Module<T> {
                 NextSequenceSend::insert((port_identifier.clone(), channel_identifier), 1);
                 NextSequenceRecv::insert((port_identifier.clone(), channel_identifier), 1);
                 // return key
-                Clients::mutate(&connection.client_identifier, |client_state| {
+                ClientStates::mutate(&connection.client_identifier, |client_state| {
                     (*client_state)
                         .channels
                         .push((port_identifier.clone(), channel_identifier));

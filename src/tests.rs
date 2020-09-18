@@ -1,4 +1,4 @@
-use crate::{Error, mock::*, ClientType, ConsensusState};
+use crate::{Error, mock::*, ClientType, ConsensusState, ClientState};
 use frame_support::{assert_ok, assert_noop};
 use sp_core::{Blake2Hasher, Hasher};
 
@@ -25,24 +25,32 @@ fn correct_error_for_none_value() {
 
 #[test]
 fn test_create_ibc_client() {
-//constructor is not visible here due to private fields
-/*	let Pair(pair) = AccountKeyring::Bob.pair();
-	println!("{:?}", pair);*/
 	let set_id = 0;
-	let authorities = [].to_vec();
-	let commitment_root = Blake2Hasher::hash("commitment_root".as_bytes());
+	let authorities = vec![];
+	let commitment_root = Blake2Hasher::hash("state_root".as_bytes());
 	let identifier = Blake2Hasher::hash("appia".as_bytes());
 	let height = 0;
+	let frozen_height = None;
+	let connections = vec![];
+	let channels = vec![];
 
 	let consensus_state = ConsensusState {
 		set_id,
-		authorities,
+		authorities: authorities.clone(),
 		commitment_root,
 	};
 
 	new_test_ext().execute_with(|| {
-		let _result = TemplateModule::create_client(identifier, ClientType::GRANDPA, height, consensus_state);
+		let _result = TemplateModule::create_client(identifier, ClientType::GRANDPA, height.clone(), consensus_state);
 		let consensus_state = TemplateModule::getConsensusState(identifier.clone(), height.clone());
 		assert_eq!(consensus_state.set_id, set_id);
+		assert_eq!(consensus_state.commitment_root, commitment_root);
+		assert_eq!(consensus_state.authorities, authorities.clone());
+
+		let client_state = TemplateModule::getClientState(&identifier);
+		assert_eq!(client_state.latest_height, height);
+		assert_eq!(client_state.frozen_height, frozen_height);
+		assert_eq!(client_state.connections, connections);
+		assert_eq!(client_state.channels, channels);
 	});
 }
