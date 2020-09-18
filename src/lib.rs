@@ -154,6 +154,20 @@ pub struct ClientState {
     pub channels: Vec<(Vec<u8>, H256)>,
 }
 
+// TODO
+impl ClientState {
+    fn initialise() {
+        unimplemented!()
+    }
+
+    fn latest_client_height() {
+        unimplemented!()
+    }
+}
+
+
+// TODO: This struct is defined by grandpa client and it should be replaced with a serialized bytes.
+// Also the ConsensusState MUST define a getTimestamp() method which returns the timestamp associated with that consensus state.
 
 /// # Parameters
 /// - `set_id`: This parameter will be encoded into payload with other data byt the function "localized_payload_with_buffer<E: Encode>". Note that according to the comments of method (https://crates.parity.io/sc_finality_grandpa/trait.GrandpaApi.html#method.generate_key_ownership_proof), current implementations ignore this parameter.
@@ -1168,6 +1182,11 @@ impl<T: Trait> Module<T> {
             }
         }
         Ok(())
+    }
+
+    // TODO
+    fn verify_client_consensus_state() {
+        unimplemented!()
     }
 
     fn verify_connection_state(
