@@ -316,18 +316,10 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
-    pub fn getConsensusState(identifier: H256, height: u32) -> ConsensusState {
-        ConsensusStates::get((identifier, height))
-    }
-
-    pub fn getClientState(identifier: &H256) -> ClientState {
-        ClientStates::get(identifier)
-    }
-
-/// Create an IBC client by 2 major steps:
-/// * Insert concensus state into storage "ConsensusStates"
-/// * Insert client state into storage "ClientStates"
-/// Both storage's keys contains client id
+    /// Create an IBC client by 2 major steps:
+    /// * Insert concensus state into storage "ConsensusStates"
+    /// * Insert client state into storage "ClientStates"
+    /// Both storage's keys contains client id
     pub fn create_client(
         identifier: H256,
         client_type: clients::ClientType,

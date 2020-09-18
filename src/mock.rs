@@ -1,4 +1,4 @@
-use crate::{Module, Trait, routing, Packet, ChannelOrder};
+use crate::{ChannelOrder, Module, ModuleCallbacks, Packet, Trait};
 use sp_core::H256;
 use frame_support::{impl_outer_origin, parameter_types, weights::Weight};
 use sp_runtime::{
@@ -49,32 +49,47 @@ impl system::Trait for Test {
 	type SystemWeightInfo = ();
 }
 
-pub struct CBs;
+pub struct ModuleCallbacksImpl;
 
-impl routing::ModuleCallbacks for CBs {
-	fn on_chan_open_try(index: usize, order: ChannelOrder, connection_hops: Vec<H256>, port_identifier: Vec<u8>, channel_identifier: H256, counterparty_port_identifier: Vec<u8>, counterparty_channel_identifier: H256, version: Vec<u8>, counterparty_version: Vec<u8>) {
+impl ModuleCallbacks for ModuleCallbacksImpl {
+    fn on_chan_open_try(
+        index: usize,
+        order: ChannelOrder,
+        connection_hops: Vec<H256>,
+        port_identifier: Vec<u8>,
+        channel_identifier: H256,
+        counterparty_port_identifier: Vec<u8>,
+        counterparty_channel_identifier: H256,
+        version: Vec<u8>,
+        counterparty_version: Vec<u8>,
+    ) {
 		unimplemented!()
-	}
+    }
 
-	fn on_chan_open_ack(index: usize, port_identifier: Vec<u8>, channel_identifier: H256, version: Vec<u8>) {
+    fn on_chan_open_ack(
+        index: usize,
+        port_identifier: Vec<u8>,
+        channel_identifier: H256,
+        version: Vec<u8>,
+    ) {
 		unimplemented!()
-	}
+    }
 
-	fn on_chan_open_confirm(index: usize, port_identifier: Vec<u8>, channel_identifier: H256) {
+    fn on_chan_open_confirm(index: usize, port_identifier: Vec<u8>, channel_identifier: H256) {
 		unimplemented!()
-	}
+    }
 
-	fn on_recv_packet(index: usize, packet: Packet) {
+    fn on_recv_packet(index: usize, packet: Packet) {
 		unimplemented!()
-	}
+    }
 }
 
 impl Trait for Test {
 	type Event = ();
-	type ModuleCallbacks = CBs;
+	type ModuleCallbacks = ModuleCallbacksImpl;
 }
 
-pub type TemplateModule = Module<Test>;
+pub type IbcModule = Module<Test>;
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
