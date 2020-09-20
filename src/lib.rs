@@ -33,6 +33,7 @@ mod mock;
 
 #[cfg(test)]
 mod tests;
+mod globals;
 
 type BlockNumber = u32;
 type Block = generic::Block<generic::Header<BlockNumber, BlakeTwo256>, UncheckedExtrinsic>;
@@ -385,7 +386,7 @@ impl<T: Trait> Module<T> {
         // abortTransactionUnless(validatePortIdentifier(id))
         ensure!(
             !Ports::contains_key(&identifier),
-            "Port identifier already exists"
+            globals::PORT_EXIST // "Port identifier already exists"
         );
         Ports::insert(&identifier, module_index);
         Self::deposit_event(RawEvent::PortBound(module_index));

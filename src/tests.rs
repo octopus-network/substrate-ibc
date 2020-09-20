@@ -1,4 +1,4 @@
-use crate::{Error, mock::*, ClientType, ConsensusState};
+use crate::{Error, mock::*, ClientType, ConsensusState, globals};
 use frame_support::{assert_ok, assert_err, dispatch};
 use sp_core::{Blake2Hasher, Hasher};
 
@@ -26,6 +26,6 @@ fn bind_port_should_work() {
 	let module_index = 45 as u8;
 	new_test_ext().execute_with(|| {
 		assert_ok!(IbcModule::bind_port(identifier.clone(), module_index));
-		assert_err!(IbcModule::bind_port(identifier.clone(), module_index), dispatch::DispatchError::Other("Port identifier already exists"));
+		assert_err!(IbcModule::bind_port(identifier.clone(), module_index), dispatch::DispatchError::Other(globals::PORT_EXIST));
 	});
 }
