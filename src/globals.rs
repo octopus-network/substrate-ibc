@@ -1,1 +1,0 @@
-pub const PORT_EXIST: &'static str = "Port identifier already exists";

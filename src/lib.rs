@@ -33,7 +33,6 @@ mod mock;
 
 #[cfg(test)]
 mod tests;
-mod globals;
 
 type BlockNumber = u32;
 type Block = generic::Block<generic::Header<BlockNumber, BlakeTwo256>, UncheckedExtrinsic>;
@@ -283,10 +282,8 @@ decl_event!(
 // Errors inform users that something went wrong.
 decl_error! {
 	pub enum Error for Module<T: Trait> {
-		/// Error names should be descriptive.
-		NoneValue,
-		/// Errors should have helpful documentation associated with them.
-		StorageOverflow,
+		/// The port identifier is already binded when trying to bind port.
+		PortIdentifierBinded,
 	}
 }
 
@@ -386,7 +383,7 @@ impl<T: Trait> Module<T> {
         // abortTransactionUnless(validatePortIdentifier(id))
         ensure!(
             !Ports::contains_key(&identifier),
-            globals::PORT_EXIST // "Port identifier already exists"
+            Error::<T>::PortIdentifierBinded
         );
         Ports::insert(&identifier, module_index);
         Self::deposit_event(RawEvent::PortBound(module_index));

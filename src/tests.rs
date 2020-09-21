@@ -1,4 +1,4 @@
-use crate::{Error, mock::*, ClientType, ConsensusState, globals};
+use crate::{Error, mock::*, ClientType, ConsensusState};
 use frame_support::{assert_ok, assert_err, dispatch};
 use sp_core::{Blake2Hasher, Hasher};
 
@@ -22,10 +22,10 @@ fn create_client_should_work() {
 
 #[test]
 fn bind_port_should_work() {
-	let identifier = "port_name".as_bytes().to_vec();
+	let identifier = "bank".as_bytes().to_vec();
 	let module_index = 45 as u8;
 	new_test_ext().execute_with(|| {
 		assert_ok!(IbcModule::bind_port(identifier.clone(), module_index));
-		assert_err!(IbcModule::bind_port(identifier.clone(), module_index), dispatch::DispatchError::Other(globals::PORT_EXIST));
+		assert_err!(IbcModule::bind_port(identifier.clone(), module_index), Error::<Test>::PortIdentifierBinded);
 	});
 }
