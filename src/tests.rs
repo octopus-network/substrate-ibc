@@ -28,6 +28,7 @@ fn create_client_should_work() {
 fn bind_port_func() {
 	let identifier = "bank".as_bytes().to_vec();
 	let module_index = 45 as u8;
+
 	assert_ok!(IbcModule::bind_port(identifier.clone(), module_index));
 	assert_err!(IbcModule::bind_port(identifier.clone(), module_index), Error::<Test>::PortIdentifierBinded);
 }
