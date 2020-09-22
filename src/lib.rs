@@ -282,14 +282,14 @@ decl_event!(
 // Errors inform users that something went wrong.
 decl_error! {
 	pub enum Error for Module<T: Trait> {
-	    /// The IBC client identifier already exists.
-	    ClientIdExist,
-	    /// The IBC client identifier doesn't exist.
-	    ClientIdNotExist,
+		/// The IBC client identifier already exists.
+		ClientIdExist,
+		/// The IBC client identifier doesn't exist.
+		ClientIdNotExist,
 		/// The IBC port identifier is already binded.
 		PortIdBinded,
-	    /// The IBC connection identifier already exists.
-	    ConnectionIdExist,
+		/// The IBC connection identifier already exists.
+		ConnectionIdExist,
 	}
 }
 
