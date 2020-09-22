@@ -282,10 +282,14 @@ decl_event!(
 // Errors inform users that something went wrong.
 decl_error! {
 	pub enum Error for Module<T: Trait> {
-		/// Error names should be descriptive.
-		NoneValue,
-		/// Errors should have helpful documentation associated with them.
-		StorageOverflow,
+		/// The IBC client identifier already exists.
+		ClientIdExist,
+		/// The IBC client identifier doesn't exist.
+		ClientIdNotExist,
+		/// The IBC port identifier is already binded.
+		PortIdBinded,
+		/// The IBC connection identifier already exists.
+		ConnectionIdExist,
 	}
 }
 
@@ -328,7 +332,7 @@ impl<T: Trait> Module<T> {
     ) -> dispatch::DispatchResult {
         ensure!(
             !ClientStates::contains_key(&identifier),
-            "Client identifier already exists"
+            Error::<T>::ClientIdExist
         );
 
         ConsensusStates::insert((identifier, height), consensus_state);
@@ -344,6 +348,10 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    /// Pre-establish an IBC connection
+    /// - Create a conneciton whose state is ```ConnectionState::Init```
+    /// - Insert the conneciton to storage ```Connections```
+    /// - Manipulate storage ```ClientStates``` by adding the connection id, e.g. "appia-connection", to the client id's connection list.
     pub fn conn_open_init(
         identifier: H256,
         desired_counterparty_connection_identifier: H256,
@@ -353,12 +361,12 @@ impl<T: Trait> Module<T> {
         // abortTransactionUnless(validateConnectionIdentifier(identifier))
         ensure!(
             ClientStates::contains_key(&client_identifier),
-            "Client identifier not exists"
+            Error::<T>::ClientIdNotExist
         );
         // TODO: ensure!(!client.connections.exists(&identifier)))
         ensure!(
             !Connections::contains_key(&identifier),
-            "Connection identifier already exists"
+            Error::<T>::ConnectionIdExist
         );
         let connection_end = ConnectionEnd {
             state: ConnectionState::Init,
@@ -385,7 +393,7 @@ impl<T: Trait> Module<T> {
         // abortTransactionUnless(validatePortIdentifier(id))
         ensure!(
             !Ports::contains_key(&identifier),
-            "Port identifier already exists"
+            Error::<T>::PortIdBinded
         );
         Ports::insert(&identifier, module_index);
         Self::deposit_event(RawEvent::PortBound(module_index));
