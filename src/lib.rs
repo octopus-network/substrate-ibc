@@ -342,6 +342,10 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    /// Pre-establish an IBC connection
+    /// - Create a conneciton whose state is ```ConnectionState::Init```
+    /// - Insert the conneciton to storage ```Connections```
+    /// - Manipulate storage ```ClientStates``` by adding the connection id, e.g. "appia-connection", to the client id's connection list.
     pub fn conn_open_init(
         identifier: H256,
         desired_counterparty_connection_identifier: H256,
