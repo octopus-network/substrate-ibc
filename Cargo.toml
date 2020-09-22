@@ -8,7 +8,7 @@ name = 'pallet-ibc'
 repository = 'https://github.com/cdot-network/substrate-ibc/'
 version = '2.0.0-rc6'
 
-[dependencies]
+[dev-dependencies]
 hex = '0.4.0'
 
 [package.metadata.docs.rs]
