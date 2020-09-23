@@ -3,7 +3,6 @@
 /// Edit this file to define custom logic or remove it if it is not needed.
 /// Learn more about FRAME and the core library of Substrate FRAME pallets:
 /// https://substrate.dev/docs/en/knowledgebase/runtime/frame
-
 use codec::{Decode, Encode};
 use finality_grandpa::voter_set::VoterSet;
 use frame_support::{
@@ -304,6 +303,10 @@ decl_error! {
         ConnectionClosed,
         /// Only allow 1 hop for v1 of the IBC protocol.
         OnlyOneHopAllowedV1,
+        /// The sequence sending packet not match
+        PackedSequenceNotMatch,
+        /// The destination channel identifier doesn't match
+        DestChannelIdNotMatch
     }
 }
 
@@ -432,10 +435,7 @@ impl<T: Trait> Module<T> {
         version: Vec<u8>,
     ) -> dispatch::DispatchResult {
         // abortTransactionUnless(validateChannelIdentifier(portIdentifier, channelIdentifier))
-        ensure!(
-            connection_hops.len() == 1,
-            Error::<T>::OnlyOneHopAllowedV1
-        );
+        ensure!(connection_hops.len() == 1, Error::<T>::OnlyOneHopAllowedV1);
 
         ensure!(
             !Channels::contains_key((port_identifier.clone(), channel_identifier)),
@@ -492,11 +492,11 @@ impl<T: Trait> Module<T> {
         // abortTransactionUnless(authenticate(privateStore.get(channelCapabilityPath(packet.sourcePort, packet.sourceChannel))))
         ensure!(
             packet.dest_port == channel.counterparty_port_identifier,
-            "port not match"
+            Error::<T>::PortIdNotMatch
         );
         ensure!(
             packet.dest_channel == channel.counterparty_channel_identifier,
-            "channel not match"
+            Error::<T>::DestChannelIdNotMatch
         );
         let connection = Connections::get(&channel.connection_hops[0]);
         ensure!(
@@ -511,7 +511,7 @@ impl<T: Trait> Module<T> {
             NextSequenceSend::get((packet.source_port.clone(), packet.source_channel));
         ensure!(
             packet.sequence == next_sequence_send,
-            "send sequence not match"
+            Error::<T>::PackedSequenceNotMatch
         );
 
         // all assertions passed, we can alter state
