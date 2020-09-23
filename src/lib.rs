@@ -6,7 +6,9 @@
 
 use codec::{Decode, Encode};
 use finality_grandpa::voter_set::VoterSet;
-use frame_support::{decl_module, decl_storage, decl_event, decl_error, dispatch, ensure, traits::Get};
+use frame_support::{
+    decl_error, decl_event, decl_module, decl_storage, dispatch, ensure, traits::Get,
+};
 use frame_system::ensure_signed;
 use sp_core::H256;
 use sp_finality_grandpa::{AuthorityList, SetId, VersionedAuthorityList, GRANDPA_AUTHORITIES_KEY};
@@ -165,7 +167,6 @@ impl ClientState {
     }
 }
 
-
 // TODO: This struct is defined by grandpa client and it should be replaced with a serialized bytes.
 // Also the ConsensusState MUST define a getTimestamp() method which returns the timestamp associated with that consensus state.
 
@@ -228,95 +229,108 @@ pub struct ChannelEnd {
 
 /// Configure the pallet by specifying the parameters and types on which it depends.
 pub trait Trait: frame_system::Trait {
-	/// Because this pallet emits events, it depends on the runtime's definition of an event.
-	type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
-	type ModuleCallbacks: routing::ModuleCallbacks;
+    /// Because this pallet emits events, it depends on the runtime's definition of an event.
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+    type ModuleCallbacks: routing::ModuleCallbacks;
 }
 
 // The pallet's runtime storage items.
 // https://substrate.dev/docs/en/knowledgebase/runtime/storage
 decl_storage! {
-	// A unique name is used to ensure that the pallet's storage items are isolated.
-	// This name may be updated, but each pallet in the runtime must use a unique name.
-	trait Store for Module<T: Trait> as Ibc {
-		ClientStates: map hasher(blake2_128_concat) H256 => ClientState; // client_identifier => ClientState
-		ConsensusStates: map hasher(blake2_128_concat) (H256, u32) => ConsensusState; // (client_identifier, height) => ConsensusState
-		Connections: map hasher(blake2_128_concat) H256 => ConnectionEnd; // connection_identifier => ConnectionEnd
-		Ports: map hasher(blake2_128_concat) Vec<u8> => u8; // port_identifier => module_index
-		Channels: map hasher(blake2_128_concat) (Vec<u8>, H256) => ChannelEnd; // (port_identifier, channel_identifier) => ChannelEnd
-		NextSequenceSend: map hasher(blake2_128_concat) (Vec<u8>, H256) => u64; // (port_identifier, channel_identifier) => Sequence
-		NextSequenceRecv: map hasher(blake2_128_concat) (Vec<u8>, H256) => u64; // (port_identifier, channel_identifier) => Sequence
-		NextSequenceAck: map hasher(blake2_128_concat) (Vec<u8>, H256) => u64; // (port_identifier, channel_identifier) => Sequence
-		Packets: map hasher(blake2_128_concat) (Vec<u8>, H256, u64) => H256; // (port_identifier, channel_identifier, sequence) => Hash
-		Acknowledgements: map hasher(blake2_128_concat) (Vec<u8>, H256, u64) => H256; // (port_identifier, channel_identifier, sequence) => Hash
-	}
+    // A unique name is used to ensure that the pallet's storage items are isolated.
+    // This name may be updated, but each pallet in the runtime must use a unique name.
+    trait Store for Module<T: Trait> as Ibc {
+        ClientStates: map hasher(blake2_128_concat) H256 => ClientState; // client_identifier => ClientState
+        ConsensusStates: map hasher(blake2_128_concat) (H256, u32) => ConsensusState; // (client_identifier, height) => ConsensusState
+        Connections: map hasher(blake2_128_concat) H256 => ConnectionEnd; // connection_identifier => ConnectionEnd
+        Ports: map hasher(blake2_128_concat) Vec<u8> => u8; // port_identifier => module_index
+        Channels: map hasher(blake2_128_concat) (Vec<u8>, H256) => ChannelEnd; // (port_identifier, channel_identifier) => ChannelEnd
+        NextSequenceSend: map hasher(blake2_128_concat) (Vec<u8>, H256) => u64; // (port_identifier, channel_identifier) => Sequence
+        NextSequenceRecv: map hasher(blake2_128_concat) (Vec<u8>, H256) => u64; // (port_identifier, channel_identifier) => Sequence
+        NextSequenceAck: map hasher(blake2_128_concat) (Vec<u8>, H256) => u64; // (port_identifier, channel_identifier) => Sequence
+        Packets: map hasher(blake2_128_concat) (Vec<u8>, H256, u64) => H256; // (port_identifier, channel_identifier, sequence) => Hash
+        Acknowledgements: map hasher(blake2_128_concat) (Vec<u8>, H256, u64) => H256; // (port_identifier, channel_identifier, sequence) => Hash
+    }
 }
 
 // Pallets use events to inform users when important changes are made.
 // https://substrate.dev/docs/en/knowledgebase/runtime/events
 decl_event!(
-	pub enum Event<T> where AccountId = <T as frame_system::Trait>::AccountId {
-		/// Event documentation should end with an array that provides descriptive names for event
-		/// parameters. [something, who]
-		SomethingStored(u32, AccountId),
-		ClientCreated,
-		ClientUpdated,
-		ClientMisbehaviourReceived,
-		ConnOpenInitReceived,
-		ConnOpenTryReceived,
-		ConnOpenAckReceived,
-		ConnOpenConfirmReceived,
-		PortBound(u8),
-		PortReleased,
-		ChanOpenInitReceived,
-		ChanOpenTryReceived,
-		ChanOpenAckReceived,
-		ChanOpenConfirmReceived,
-		SendPacket(u64, Vec<u8>, u32, Vec<u8>, H256, Vec<u8>, H256),
-		RecvPacket(u64, Vec<u8>, u32, Vec<u8>, H256, Vec<u8>, H256, Vec<u8>),
-		PacketRecvReceived,
-		PacketAcknowledgementReceived,
-	}
+    pub enum Event<T>
+    where
+        AccountId = <T as frame_system::Trait>::AccountId,
+    {
+        /// Event documentation should end with an array that provides descriptive names for event
+        /// parameters. [something, who]
+        SomethingStored(u32, AccountId),
+        ClientCreated,
+        ClientUpdated,
+        ClientMisbehaviourReceived,
+        ConnOpenInitReceived,
+        ConnOpenTryReceived,
+        ConnOpenAckReceived,
+        ConnOpenConfirmReceived,
+        PortBound(u8),
+        PortReleased,
+        ChanOpenInitReceived,
+        ChanOpenTryReceived,
+        ChanOpenAckReceived,
+        ChanOpenConfirmReceived,
+        SendPacket(u64, Vec<u8>, u32, Vec<u8>, H256, Vec<u8>, H256),
+        RecvPacket(u64, Vec<u8>, u32, Vec<u8>, H256, Vec<u8>, H256, Vec<u8>),
+        PacketRecvReceived,
+        PacketAcknowledgementReceived,
+    }
 );
 
 // Errors inform users that something went wrong.
 decl_error! {
-	pub enum Error for Module<T: Trait> {
-	    /// The IBC client identifier already exists.
-	    ClientIdExist,
-	    /// The IBC client identifier doesn't exist.
-	    ClientIdNotExist,
-		/// The IBC port identifier is already binded.
-		PortIdBinded,
-	    /// The IBC connection identifier already exists.
-	    ConnectionIdExist,
-	}
+    pub enum Error for Module<T: Trait> {
+        /// The IBC client identifier already exists.
+        ClientIdExist,
+        /// The IBC client identifier doesn't exist.
+        ClientIdNotExist,
+        /// The IBC port identifier is already binded.
+        PortIdBinded,
+        /// The IBC connection identifier already exists.
+        ConnectionIdExist,
+        /// The IBC connection identifier doesn't exist.
+        ConnectionIdNotExist,
+        /// The IBC channel identifier already exists.
+        ChannelIdExist,
+        /// The IBC port identifier doesn't match.
+        PortIdNotMatch,
+        /// The IBC connection is closed.
+        ConnectionClosed,
+        /// Only allow 1 hop for v1 of the IBC protocol.
+        OnlyOneHopAllowedV1,
+    }
 }
 
 // Dispatchable functions allows users to interact with the pallet and invoke state changes.
 // These functions materialize as "extrinsics", which are often compared to transactions.
 // Dispatchable functions must be annotated with a weight and must return a DispatchResult.
 decl_module! {
-	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-		// Errors must be initialized if they are used by the pallet.
-		type Error = Error<T>;
+    pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+        // Errors must be initialized if they are used by the pallet.
+        type Error = Error<T>;
 
-		// Events must be initialized if they are used by the pallet.
-		fn deposit_event() = default;
+        // Events must be initialized if they are used by the pallet.
+        fn deposit_event() = default;
 
-		#[weight = 0]
-		fn submit_datagram(origin, datagram: Datagram) -> dispatch::DispatchResult {
-			let _sender = ensure_signed(origin)?;
-			Self::handle_datagram(datagram)
-		}
+        #[weight = 0]
+        fn submit_datagram(origin, datagram: Datagram) -> dispatch::DispatchResult {
+            let _sender = ensure_signed(origin)?;
+            Self::handle_datagram(datagram)
+        }
 
-		/// An example dispatchable that may throw a custom error.
-		#[weight = 10_000 + T::DbWeight::get().reads_writes(1,1)]
-		pub fn cause_error(origin) -> dispatch::DispatchResult {
-			let _who = ensure_signed(origin)?;
-			Ok(())
-		}
-	}
+        /// An example dispatchable that may throw a custom error.
+        #[weight = 10_000 + T::DbWeight::get().reads_writes(1,1)]
+        pub fn cause_error(origin) -> dispatch::DispatchResult {
+            let _who = ensure_signed(origin)?;
+            Ok(())
+        }
+    }
 }
 
 impl<T: Trait> Module<T> {
@@ -391,10 +405,7 @@ impl<T: Trait> Module<T> {
 
     pub fn bind_port(identifier: Vec<u8>, module_index: u8) -> dispatch::DispatchResult {
         // abortTransactionUnless(validatePortIdentifier(id))
-        ensure!(
-            !Ports::contains_key(&identifier),
-            Error::<T>::PortIdBinded
-        );
+        ensure!(!Ports::contains_key(&identifier), Error::<T>::PortIdBinded);
         Ports::insert(&identifier, module_index);
         Self::deposit_event(RawEvent::PortBound(module_index));
         Ok(())
@@ -423,28 +434,28 @@ impl<T: Trait> Module<T> {
         // abortTransactionUnless(validateChannelIdentifier(portIdentifier, channelIdentifier))
         ensure!(
             connection_hops.len() == 1,
-            "only allow 1 hop for v1 of the IBC protocol"
+            Error::<T>::OnlyOneHopAllowedV1
         );
 
         ensure!(
             !Channels::contains_key((port_identifier.clone(), channel_identifier)),
-            "channel identifier already exists"
+            Error::<T>::ChannelIdExist
         );
         ensure!(
             Connections::contains_key(&connection_hops[0]),
-            "connection identifier not exists"
+            Error::<T>::ConnectionIdNotExist
         );
 
         // optimistic channel handshakes are allowed
         let connection = Connections::get(&connection_hops[0]);
         ensure!(
             connection.state != ConnectionState::Closed,
-            "connection has been closed"
+            Error::<T>::ConnectionClosed
         );
         // abortTransactionUnless(authenticate(privateStore.get(portPath(portIdentifier))))
         ensure!(
             Ports::get(&port_identifier) == module_index,
-            "Port identifier not match"
+            Error::<T>::PortIdNotMatch
         );
         let channel_end = ChannelEnd {
             state: ChannelState::Init,
@@ -840,7 +851,17 @@ impl<T: Trait> Module<T> {
                 //   expected
                 // ))
                 let dest_module_index = Ports::get(port_identifier.clone());
-                T::ModuleCallbacks::on_chan_open_try(dest_module_index.into(), order.clone(), connection_hops.clone(), port_identifier.clone(), channel_identifier, counterparty_port_identifier.clone(), counterparty_channel_identifier, version.clone(), counterparty_version);
+                T::ModuleCallbacks::on_chan_open_try(
+                    dest_module_index.into(),
+                    order.clone(),
+                    connection_hops.clone(),
+                    port_identifier.clone(),
+                    channel_identifier,
+                    counterparty_port_identifier.clone(),
+                    counterparty_channel_identifier,
+                    version.clone(),
+                    counterparty_version,
+                );
 
                 let channel_end = ChannelEnd {
                     state: ChannelState::TryOpen,
@@ -912,7 +933,12 @@ impl<T: Trait> Module<T> {
                 // ))
                 // channel.version = counterpartyVersion
                 let dest_module_index = Ports::get(port_identifier.clone());
-                T::ModuleCallbacks::on_chan_open_ack(dest_module_index.into(), port_identifier.clone(), channel_identifier, version.clone());
+                T::ModuleCallbacks::on_chan_open_ack(
+                    dest_module_index.into(),
+                    port_identifier.clone(),
+                    channel_identifier,
+                    version.clone(),
+                );
                 Channels::mutate((port_identifier, channel_identifier), |channel| {
                     (*channel).state = ChannelState::Open;
                 });
@@ -965,7 +991,11 @@ impl<T: Trait> Module<T> {
                 //   expected
                 // ))
                 let dest_module_index = Ports::get(port_identifier.clone());
-                T::ModuleCallbacks::on_chan_open_confirm(dest_module_index.into(), port_identifier.clone(), channel_identifier);
+                T::ModuleCallbacks::on_chan_open_confirm(
+                    dest_module_index.into(),
+                    port_identifier.clone(),
+                    channel_identifier,
+                );
                 Channels::mutate((port_identifier, channel_identifier), |channel| {
                     (*channel).state = ChannelState::Open;
                 });
