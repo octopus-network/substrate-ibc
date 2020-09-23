@@ -281,16 +281,30 @@ decl_event!(
 
 // Errors inform users that something went wrong.
 decl_error! {
-	pub enum Error for Module<T: Trait> {
-		/// The IBC client identifier already exists.
-		ClientIdExist,
-		/// The IBC client identifier doesn't exist.
-		ClientIdNotExist,
-		/// The IBC port identifier is already binded.
-		PortIdBinded,
-		/// The IBC connection identifier already exists.
-		ConnectionIdExist,
-	}
+    pub enum Error for Module<T: Trait> {
+        /// The IBC client identifier already exists.
+        ClientIdExist,
+        /// The IBC client identifier doesn't exist.
+        ClientIdNotExist,
+        /// The IBC port identifier is already binded.
+        PortIdBinded,
+        /// The IBC connection identifier already exists.
+        ConnectionIdExist,
+        /// The IBC connection identifier doesn't exist.
+        ConnectionIdNotExist,
+        /// The IBC channel identifier already exists.
+        ChannelIdExist,
+        /// The IBC port identifier doesn't match.
+        PortIdNotMatch,
+        /// The IBC connection is closed.
+        ConnectionClosed,
+        /// Only allow 1 hop for v1 of the IBC protocol.
+        OnlyOneHopAllowedV1,
+        /// The sequence sending packet not match
+        PackedSequenceNotMatch,
+        /// The destination channel identifier doesn't match
+        DestChannelIdNotMatch
+    }
 }
 
 // Dispatchable functions allows users to interact with the pallet and invoke state changes.
@@ -423,28 +437,28 @@ impl<T: Trait> Module<T> {
         // abortTransactionUnless(validateChannelIdentifier(portIdentifier, channelIdentifier))
         ensure!(
             connection_hops.len() == 1,
-            "only allow 1 hop for v1 of the IBC protocol"
+            Error::<T>::OnlyOneHopAllowedV1
         );
 
         ensure!(
             !Channels::contains_key((port_identifier.clone(), channel_identifier)),
-            "channel identifier already exists"
+            Error::<T>::ChannelIdExist
         );
         ensure!(
             Connections::contains_key(&connection_hops[0]),
-            "connection identifier not exists"
+            Error::<T>::ConnectionIdNotExist
         );
 
         // optimistic channel handshakes are allowed
         let connection = Connections::get(&connection_hops[0]);
         ensure!(
             connection.state != ConnectionState::Closed,
-            "connection has been closed"
+            Error::<T>::ConnectionClosed
         );
         // abortTransactionUnless(authenticate(privateStore.get(portPath(portIdentifier))))
         ensure!(
             Ports::get(&port_identifier) == module_index,
-            "Port identifier not match"
+            Error::<T>::PortIdNotMatch
         );
         let channel_end = ChannelEnd {
             state: ChannelState::Init,
@@ -481,11 +495,11 @@ impl<T: Trait> Module<T> {
         // abortTransactionUnless(authenticate(privateStore.get(channelCapabilityPath(packet.sourcePort, packet.sourceChannel))))
         ensure!(
             packet.dest_port == channel.counterparty_port_identifier,
-            "port not match"
+            Error::<T>::PortIdNotMatch
         );
         ensure!(
             packet.dest_channel == channel.counterparty_channel_identifier,
-            "channel not match"
+            Error::<T>::DestChannelIdNotMatch
         );
         let connection = Connections::get(&channel.connection_hops[0]);
         ensure!(
@@ -500,7 +514,7 @@ impl<T: Trait> Module<T> {
             NextSequenceSend::get((packet.source_port.clone(), packet.source_channel));
         ensure!(
             packet.sequence == next_sequence_send,
-            "send sequence not match"
+            Error::<T>::PackedSequenceNotMatch
         );
 
         // all assertions passed, we can alter state
