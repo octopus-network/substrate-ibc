@@ -40,6 +40,7 @@ type Block = generic::Block<generic::Header<BlockNumber, BlakeTwo256>, Unchecked
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
 pub struct Packet {
     pub sequence: u64,
+    /// If the latest block height of the destination chain is greater than ```timeout_height```, the packet will not be processed.
     pub timeout_height: u32,
     pub source_port: Vec<u8>,
     pub source_channel: H256,
@@ -140,6 +141,8 @@ impl Default for ConnectionState {
 pub struct ConnectionEnd {
     pub state: ConnectionState,
     pub counterparty_connection_identifier: H256,
+    /// The prefix used for state verification on the counterparty chain associated with this connection.
+    /// If not specified, a default counterpartyPrefix of "ibc" should be used.
     counterparty_prefix: Vec<u8>,
     client_identifier: H256,
     counterparty_client_identifier: H256,
@@ -243,6 +246,7 @@ decl_storage! {
 		ConsensusStates: map hasher(blake2_128_concat) (H256, u32) => ConsensusState; // (client_identifier, height) => ConsensusState
 		Connections: map hasher(blake2_128_concat) H256 => ConnectionEnd; // connection_identifier => ConnectionEnd
 		Ports: map hasher(blake2_128_concat) Vec<u8> => u8; // port_identifier => module_index
+		/// Channel structures are stored under a store path prefix unique to a combination of a port identifier and channel identifier.
 		Channels: map hasher(blake2_128_concat) (Vec<u8>, H256) => ChannelEnd; // (port_identifier, channel_identifier) => ChannelEnd
 		NextSequenceSend: map hasher(blake2_128_concat) (Vec<u8>, H256) => u64; // (port_identifier, channel_identifier) => Sequence
 		NextSequenceRecv: map hasher(blake2_128_concat) (Vec<u8>, H256) => u64; // (port_identifier, channel_identifier) => Sequence
@@ -352,8 +356,11 @@ impl<T: Trait> Module<T> {
         ConsensusStates::insert((identifier, height), consensus_state);
         let client_state = ClientState {
             latest_height: height,
+            /// Block height when the client was frozen due to a misbehaviour by validator, e.g: Grandpa validaor
             frozen_height: None,
+            /// Connections opend by the client
             connections: vec![],
+            /// Channels opend by the client
             channels: vec![],
         };
         ClientStates::insert(&identifier, client_state);
@@ -403,6 +410,8 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    /// As the IBC spec "ics-005-port-allocation": Once a module has bound to a port, no other modules can use that port until the module releases it.
+    /// The restrictiong is implemented by binding a port to a module's index.
     pub fn bind_port(identifier: Vec<u8>, module_index: u8) -> dispatch::DispatchResult {
         // abortTransactionUnless(validatePortIdentifier(id))
         ensure!(
