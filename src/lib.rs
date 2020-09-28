@@ -524,7 +524,7 @@ impl<T: Trait> Module<T> {
 
     pub fn handle_datagram(datagram: Datagram) -> dispatch::DispatchResult {
         match datagram {
-            // Receiving the message containing a block header of other chains from relayers,  IBC module synchronizes the block header
+            // Receiving the message containing a block header of other chains from relayers,  IBC module tryies to synchronize the block header.
             Datagram::ClientUpdate { identifier, header } => {
                 ensure!(ClientStates::contains_key(&identifier), "Client not found");
                 let client_state = ClientStates::get(&identifier);
