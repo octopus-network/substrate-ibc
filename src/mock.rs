@@ -42,7 +42,7 @@ impl system::Trait for Test {
 	type MaximumBlockLength = MaximumBlockLength;
 	type AvailableBlockRatio = AvailableBlockRatio;
 	type Version = ();
-	type ModuleToIndex = ();
+	type PalletInfo = ();
 	type AccountData = ();
 	type OnNewAccount = ();
 	type OnKilledAccount = ();
@@ -52,7 +52,7 @@ impl system::Trait for Test {
 pub struct ModuleCallbacksImpl;
 
 impl ModuleCallbacks for ModuleCallbacksImpl {
-    fn on_chan_open_try(
+	fn on_chan_open_try(
         index: usize,
         order: ChannelOrder,
         connection_hops: Vec<H256>,
@@ -62,26 +62,26 @@ impl ModuleCallbacks for ModuleCallbacksImpl {
         counterparty_channel_identifier: H256,
         version: Vec<u8>,
         counterparty_version: Vec<u8>,
-    ) {
+	) {
 		unimplemented!()
-    }
+	}
 
-    fn on_chan_open_ack(
+	fn on_chan_open_ack(
         index: usize,
         port_identifier: Vec<u8>,
         channel_identifier: H256,
         version: Vec<u8>,
-    ) {
+	) {
 		unimplemented!()
-    }
+	}
 
-    fn on_chan_open_confirm(index: usize, port_identifier: Vec<u8>, channel_identifier: H256) {
+	fn on_chan_open_confirm(index: usize, port_identifier: Vec<u8>, channel_identifier: H256) {
 		unimplemented!()
-    }
+	}
 
-    fn on_recv_packet(index: usize, packet: Packet) {
+	fn on_recv_packet(index: usize, packet: Packet) {
 		unimplemented!()
-    }
+	}
 }
 
 impl Trait for Test {

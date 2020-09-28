@@ -1,4 +1,4 @@
-use crate::{mock::*, ChannelOrder, ClientType, ConsensusState, Error, Packet};
+use crate::{mock::*, ChannelOrder, ClientType, grandpa::consensus_state::ConsensusState, Error, Packet};
 use frame_support::{assert_err, assert_ok, dispatch};
 use sp_core::{Blake2Hasher, Hasher, H256};
 
@@ -7,9 +7,10 @@ fn create_client_func() {
 	let identifier2 = Blake2Hasher::hash("flaminia".as_bytes());
 	let height = 0;
 	let consensus_state = ConsensusState {
+		root: Blake2Hasher::hash("root".as_bytes()),
+                height: 0,
 		set_id: 0,
 		authorities: vec![],
-		commitment_root: Blake2Hasher::hash("root".as_bytes()),
 	};
 
 	assert_ok!(IbcModule::create_client(identifier1, ClientType::GRANDPA, height.clone(), consensus_state.clone()));
@@ -62,9 +63,10 @@ fn conn_open_init_func() {
     let identifier1 = Blake2Hasher::hash("appia".as_bytes());
     let height = 0;
     let consensus_state = ConsensusState {
+        root: Blake2Hasher::hash("root".as_bytes()),
+        height: 0,
         set_id: 0,
         authorities: vec![],
-        commitment_root: Blake2Hasher::hash("root".as_bytes()),
     };
     IbcModule::create_client(identifier1, ClientType::GRANDPA, height, consensus_state);
 
@@ -121,9 +123,10 @@ fn chan_open_init_func() {
     let identifier1 = Blake2Hasher::hash("appia".as_bytes());
     let height = 0;
     let consensus_state = ConsensusState {
+        root: Blake2Hasher::hash("root".as_bytes()),
+        height: 0,
         set_id: 0,
         authorities: vec![],
-        commitment_root: Blake2Hasher::hash("root".as_bytes()),
     };
     IbcModule::create_client(identifier1, ClientType::GRANDPA, height, consensus_state);
 
@@ -238,9 +241,10 @@ fn send_packet_func() {
     let identifier1 = Blake2Hasher::hash("appia".as_bytes());
     let height = 0;
     let consensus_state = ConsensusState {
+        root: Blake2Hasher::hash("root".as_bytes()),
+        height: 0,
         set_id: 0,
         authorities: vec![],
-        commitment_root: Blake2Hasher::hash("root".as_bytes()),
     };
     IbcModule::create_client(identifier1, ClientType::GRANDPA, height, consensus_state);
 

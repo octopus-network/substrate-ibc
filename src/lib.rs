@@ -244,30 +244,30 @@ decl_event!(
 
 // Errors inform users that something went wrong.
 decl_error! {
-    pub enum Error for Module<T: Trait> {
-        /// The IBC client identifier already exists.
-        ClientIdExist,
-        /// The IBC client identifier doesn't exist.
-        ClientIdNotExist,
-        /// The IBC port identifier is already binded.
-        PortIdBinded,
-        /// The IBC connection identifier already exists.
-        ConnectionIdExist,
-        /// The IBC connection identifier doesn't exist.
-        ConnectionIdNotExist,
-        /// The IBC channel identifier already exists.
-        ChannelIdExist,
-        /// The IBC port identifier doesn't match.
-        PortIdNotMatch,
-        /// The IBC connection is closed.
-        ConnectionClosed,
-        /// Only allow 1 hop for v1 of the IBC protocol.
-        OnlyOneHopAllowedV1,
-        /// The sequence sending packet not match
-        PackedSequenceNotMatch,
-        /// The destination channel identifier doesn't match
-        DestChannelIdNotMatch
-    }
+	pub enum Error for Module<T: Trait> {
+		/// The IBC client identifier already exists.
+		ClientIdExist,
+		/// The IBC client identifier doesn't exist.
+		ClientIdNotExist,
+		/// The IBC port identifier is already binded.
+		PortIdBinded,
+		/// The IBC connection identifier already exists.
+		ConnectionIdExist,
+		/// The IBC connection identifier doesn't exist.
+		ConnectionIdNotExist,
+		/// The IBC channel identifier already exists.
+		ChannelIdExist,
+		/// The IBC port identifier doesn't match.
+		PortIdNotMatch,
+		/// The IBC connection is closed.
+		ConnectionClosed,
+		/// Only allow 1 hop for v1 of the IBC protocol.
+		OnlyOneHopAllowedV1,
+		/// The sequence sending packet not match
+		PackedSequenceNotMatch,
+		/// The destination channel identifier doesn't match
+		DestChannelIdNotMatch
+	}
 }
 
 // Dispatchable functions allows users to interact with the pallet and invoke state changes.
