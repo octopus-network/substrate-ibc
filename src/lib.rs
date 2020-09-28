@@ -9,7 +9,7 @@ use finality_grandpa::voter_set::VoterSet;
 use frame_support::{decl_module, decl_storage, decl_event, decl_error, dispatch, ensure, traits::Get};
 use frame_system::ensure_signed;
 use sp_core::H256;
-use sp_finality_grandpa::{AuthorityList, SetId, VersionedAuthorityList, GRANDPA_AUTHORITIES_KEY};
+use sp_finality_grandpa::{AuthorityList, VersionedAuthorityList, GRANDPA_AUTHORITIES_KEY};
 use sp_runtime::{
     generic,
     traits::{BlakeTwo256, Hash},
@@ -17,16 +17,18 @@ use sp_runtime::{
 };
 use sp_std::{if_std, prelude::*};
 use sp_trie::StorageProof;
-use state_machine::read_proof_check;
+use grandpa::state_machine::read_proof_check;
+use grandpa::justification::GrandpaJustification;
 
-pub use clients::ClientType;
+pub use client::ClientType;
 pub use routing::ModuleCallbacks;
 
-mod clients;
+mod client;
+pub mod grandpa;
 mod handler;
-mod justification;
+mod header;
 mod routing;
-mod state_machine;
+mod state;
 
 #[cfg(test)]
 mod mock;
@@ -53,7 +55,7 @@ pub struct Packet {
 pub enum Datagram {
     ClientUpdate {
         identifier: H256,
-        header: Header,
+        header: grandpa::header::Header,
     },
     ClientMisbehaviour {
         identifier: H256,
@@ -149,49 +151,6 @@ pub struct ConnectionEnd {
     version: Vec<u8>,
 }
 
-#[derive(Clone, Default, Encode, Decode, RuntimeDebug)]
-pub struct ClientState {
-    pub latest_height: u32,
-    frozen_height: Option<u32>,
-    pub connections: Vec<H256>, // TODO: fixme! O(n)
-    pub channels: Vec<(Vec<u8>, H256)>,
-}
-
-// TODO
-impl ClientState {
-    fn initialise() {
-        unimplemented!()
-    }
-
-    fn latest_client_height() {
-        unimplemented!()
-    }
-}
-
-
-// TODO: This struct is defined by grandpa client and it should be replaced with a serialized bytes.
-// Also the ConsensusState MUST define a getTimestamp() method which returns the timestamp associated with that consensus state.
-
-/// # Parameters
-/// - `set_id`: This parameter will be encoded into payload with other data byt the function "localized_payload_with_buffer<E: Encode>". Note that according to the comments of method (https://crates.parity.io/sc_finality_grandpa/trait.GrandpaApi.html#method.generate_key_ownership_proof), current implementations ignore this parameter.
-/// - `authorities`: A list of Grandpa authorities with associated weights.
-/// - `commitment_root`: State root of a substrate block.
-#[derive(Clone, Default, Encode, Decode, RuntimeDebug)]
-pub struct ConsensusState {
-    pub set_id: SetId,
-    pub authorities: AuthorityList,
-    pub commitment_root: H256,
-}
-
-#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
-pub struct Header {
-    pub height: u32,
-    pub block_hash: H256,
-    pub commitment_root: H256,
-    pub justification: Vec<u8>,
-    pub authorities_proof: StorageProof,
-}
-
 #[derive(Clone, PartialEq, Encode, Decode, RuntimeDebug)]
 pub enum ChannelState {
     None,
@@ -242,8 +201,8 @@ decl_storage! {
 	// A unique name is used to ensure that the pallet's storage items are isolated.
 	// This name may be updated, but each pallet in the runtime must use a unique name.
 	trait Store for Module<T: Trait> as Ibc {
-		ClientStates: map hasher(blake2_128_concat) H256 => ClientState; // client_identifier => ClientState
-		ConsensusStates: map hasher(blake2_128_concat) (H256, u32) => ConsensusState; // (client_identifier, height) => ConsensusState
+		ClientStates: map hasher(blake2_128_concat) H256 => grandpa::client_state::ClientState; // client_identifier => ClientState
+		ConsensusStates: map hasher(blake2_128_concat) (H256, u32) => grandpa::consensus_state::ConsensusState; // (client_identifier, height) => ConsensusState
 		Connections: map hasher(blake2_128_concat) H256 => ConnectionEnd; // connection_identifier => ConnectionEnd
 		Ports: map hasher(blake2_128_concat) Vec<u8> => u8; // port_identifier => module_index
 		/// Channel structures are stored under a store path prefix unique to a combination of a port identifier and channel identifier.
@@ -344,25 +303,30 @@ impl<T: Trait> Module<T> {
     /// Both storage's keys contains client id
     pub fn create_client(
         identifier: H256,
-        client_type: clients::ClientType,
+        client_type: client::ClientType,
         height: u32,
-        consensus_state: ConsensusState,
+        consensus_state: grandpa::consensus_state::ConsensusState,
     ) -> dispatch::DispatchResult {
         ensure!(
             !ClientStates::contains_key(&identifier),
             Error::<T>::ClientIdExist
         );
 
-        ConsensusStates::insert((identifier, height), consensus_state);
-        let client_state = ClientState {
-            latest_height: height,
-            /// Block height when the client was frozen due to a misbehaviour by validator, e.g: Grandpa validaor
-            frozen_height: None,
-            /// Connections opend by the client
-            connections: vec![],
-            /// Channels opend by the client
-            channels: vec![],
+        let client_state = match client_type {
+            ClientType::GRANDPA => {
+                grandpa::client_state::ClientState::new(
+                    identifier.clone(),
+                    height,
+                )
+            }
+            _ => {
+                grandpa::client_state::ClientState::new(
+                    identifier.clone(),
+                    height,
+                )
+            }
         };
+        ConsensusStates::insert((identifier, height), consensus_state);
         ClientStates::insert(&identifier, client_state);
 
         Self::deposit_event(RawEvent::ClientCreated);
@@ -574,7 +538,7 @@ impl<T: Trait> Module<T> {
                 let consensus_state =
                     ConsensusStates::get((identifier, client_state.latest_height));
                 // TODO: verify header using validity_predicate
-                let justification = justification::GrandpaJustification::<Block>::decode(
+                let justification = GrandpaJustification::<Block>::decode(
                     &mut &*header.justification,
                 );
                 if_std! {
@@ -600,10 +564,12 @@ impl<T: Trait> Module<T> {
                         ClientStates::mutate(&identifier, |client_state| {
                             (*client_state).latest_height = header.height;
                         });
-                        let new_consensus_state = ConsensusState {
+                        // TODO
+                        let new_consensus_state = grandpa::consensus_state::ConsensusState {
+                            root: header.commitment_root,
+                            height: header.height,
                             set_id: consensus_state.set_id,
                             authorities: consensus_state.authorities.clone(),
-                            commitment_root: header.commitment_root,
                         };
                         if_std! {
                             println!(
@@ -1220,7 +1186,7 @@ impl<T: Trait> Module<T> {
     ) -> Option<ConnectionEnd> {
         let consensus_state = ConsensusStates::get((client_identifier, proof_height));
         let key = Connections::hashed_key_for(connection_identifier);
-        let value = read_proof_check::<BlakeTwo256>(consensus_state.commitment_root, proof, &key);
+        let value = read_proof_check::<BlakeTwo256>(consensus_state.root, proof, &key);
         match value {
             Ok(value) => match value {
                 Some(value) => {
@@ -1261,7 +1227,7 @@ impl<T: Trait> Module<T> {
     ) -> Option<ChannelEnd> {
         let consensus_state = ConsensusStates::get((client_identifier, proof_height));
         let key = Channels::hashed_key_for((port_identifier, channel_identifier));
-        let value = read_proof_check::<BlakeTwo256>(consensus_state.commitment_root, proof, &key);
+        let value = read_proof_check::<BlakeTwo256>(consensus_state.root, proof, &key);
         match value {
             Ok(value) => match value {
                 Some(value) => {
@@ -1303,7 +1269,7 @@ impl<T: Trait> Module<T> {
     ) -> Option<H256> {
         let consensus_state = ConsensusStates::get((client_identifier, proof_height));
         let key = Packets::hashed_key_for((port_identifier, channel_identifier, sequence));
-        let value = read_proof_check::<BlakeTwo256>(consensus_state.commitment_root, proof, &key);
+        let value = read_proof_check::<BlakeTwo256>(consensus_state.root, proof, &key);
         match value {
             Ok(value) => match value {
                 Some(value) => {
@@ -1345,7 +1311,7 @@ impl<T: Trait> Module<T> {
     ) -> Option<H256> {
         let consensus_state = ConsensusStates::get((client_identifier, proof_height));
         let key = Acknowledgements::hashed_key_for((port_identifier, channel_identifier, sequence));
-        let value = read_proof_check::<BlakeTwo256>(consensus_state.commitment_root, proof, &key);
+        let value = read_proof_check::<BlakeTwo256>(consensus_state.root, proof, &key);
         match value {
             Ok(value) => match value {
                 Some(value) => {
