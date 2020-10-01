@@ -37,9 +37,8 @@ This pallet does not depend on any other FRAME pallet or externally developed mo
 To add this pallet to your runtime, simply include the following to your runtime's `Cargo.toml` file:
 
 ```TOML
-[dependencies.ibc]
+[dependencies.pallet-ibc]
 default_features = false
-package = 'pallet-ibc'
 git = 'https://github.com/cdot-network/substrate-ibc.git'
 ```
 
@@ -48,25 +47,34 @@ and update your runtime's `std` feature to include this pallet:
 ```TOML
 std = [
     # --snip--
-    'ibc/std',
-]
+        'pallet-ibc/std',
+	]
 ```
 
 ### Runtime `lib.rs`
+A custom structure that implements the pallet_ibc::ModuleCallbacks must be defined to dispatch messages to receiving module.
+```rust
+pub struct ModuleCallbacksImpl;
+
+impl pallet_ibc::ModuleCallbacks for ModuleCallbacksImpl {
+    # --snip--
+}
+```
 
 You should implement it's trait like so:
 
 ```rust
 /// Used for test_module
-impl ibc::Trait for Runtime {
+impl pallet_ibc::Trait for Runtime {
 	type Event = Event;
+	type ModuleCallbacks = ModuleCallbacksImpl;
 }
 ```
 
 and include it in your `construct_runtime!` macro:
 
 ```rust
-Ibc: ibc::{Module, Call, Storage, Event<T>},
+Ibc: pallet_ibc::{Module, Call, Storage, Event<T>},
 ```
 
 ### Genesis Configuration
