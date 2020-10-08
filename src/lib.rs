@@ -4,6 +4,8 @@
 /// Learn more about FRAME and the core library of Substrate FRAME pallets:
 /// https://substrate.dev/docs/en/knowledgebase/runtime/frame
 
+pub mod ics03_connection;
+
 use codec::{Decode, Encode};
 use finality_grandpa::voter_set::VoterSet;
 use frame_support::{decl_module, decl_storage, decl_event, decl_error, dispatch, ensure, traits::Get};
@@ -19,6 +21,9 @@ use sp_std::{if_std, prelude::*};
 use sp_trie::StorageProof;
 use grandpa::state_machine::read_proof_check;
 use grandpa::justification::GrandpaJustification;
+use crate::ics03_connection::msgs::conn_open_init::{MsgConnectionOpenInit,  Counterparty};
+use substrate_subxt::PairSigner;
+use sp_keyring::AccountKeyring;
 
 pub use client::ClientType;
 pub use routing::ModuleCallbacks;
@@ -142,12 +147,13 @@ impl Default for ConnectionState {
 #[derive(Clone, Default, Encode, Decode, RuntimeDebug)]
 pub struct ConnectionEnd {
     pub state: ConnectionState,
-    pub counterparty_connection_identifier: H256,
+    // pub counterparty_connection_identifier: H256,
     /// The prefix used for state verification on the counterparty chain associated with this connection.
     /// If not specified, a default counterpartyPrefix of "ibc" should be used.
-    counterparty_prefix: Vec<u8>,
+    // counterparty_prefix: Vec<u8>,
     client_identifier: H256,
-    counterparty_client_identifier: H256,
+    // counterparty_client_identifier: H256,
+    counterparty: Counterparty,
     version: Vec<u8>,
 }
 
@@ -338,37 +344,39 @@ impl<T: Trait> Module<T> {
     /// - Insert the conneciton to storage ```Connections```
     /// - Manipulate storage ```ClientStates``` by adding the connection id, e.g. "appia-connection", to the client id's connection list.
     pub fn conn_open_init(
-        identifier: H256,
-        desired_counterparty_connection_identifier: H256,
-        client_identifier: H256,
-        counterparty_client_identifier: H256,
+        // identifier: H256,
+        // desired_counterparty_connection_identifier: H256,
+        // client_identifier: H256,
+        // counterparty_client_identifier: H256,
+        msg: MsgConnectionOpenInit
     ) -> dispatch::DispatchResult {
         // abortTransactionUnless(validateConnectionIdentifier(identifier))
         ensure!(
-            ClientStates::contains_key(&client_identifier),
+            ClientStates::contains_key(msg.client_id()),
             Error::<T>::ClientIdNotExist
         );
         // TODO: ensure!(!client.connections.exists(&identifier)))
         ensure!(
-            !Connections::contains_key(&identifier),
+            !Connections::contains_key(msg.connection_id()),
             Error::<T>::ConnectionIdExist
         );
         let connection_end = ConnectionEnd {
             state: ConnectionState::Init,
-            counterparty_connection_identifier: desired_counterparty_connection_identifier,
-            counterparty_prefix: vec![],
-            client_identifier,
-            counterparty_client_identifier,
+            // counterparty_connection_identifier: desired_counterparty_connection_identifier,
+            // counterparty_prefix: vec![],
+            client_identifier: msg.client_id().clone(),
+            // counterparty_client_identifier,
+            counterparty: msg.counterparty().clone(),
             version: vec![], // getCompatibleVersions()
         };
 
         if_std! {
-            println!("connection inserted: {:?}", identifier);
+            println!("connection inserted: {:?}", msg.client_id().clone());
         }
-        Connections::insert(&identifier, connection_end);
+        Connections::insert(msg.client_id(), connection_end);
         // addConnectionToClient(clientIdentifier, identifier)
-        ClientStates::mutate(&client_identifier, |client_state| {
-            (*client_state).connections.push(identifier);
+        ClientStates::mutate(msg.client_id(), |client_state| {
+            (*client_state).connections.push(*msg.connection_id());
         });
         Self::deposit_event(RawEvent::ConnOpenInitReceived);
         Ok(())
