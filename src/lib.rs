@@ -142,12 +142,12 @@ impl Default for ConnectionState {
 #[derive(Clone, Default, Encode, Decode, RuntimeDebug)]
 pub struct ConnectionEnd {
     pub state: ConnectionState,
-    pub counterparty_connection_identifier: H256,
+    pub counterparty_connection_id: H256,
     /// The prefix used for state verification on the counterparty chain associated with this connection.
     /// If not specified, a default counterpartyPrefix of "ibc" should be used.
     counterparty_prefix: Vec<u8>,
-    client_identifier: H256,
-    counterparty_client_identifier: H256,
+    client_id: H256,
+    counterparty_client_id: H256,
     version: Vec<u8>,
 }
 
@@ -338,37 +338,37 @@ impl<T: Trait> Module<T> {
     /// - Insert the conneciton to storage ```Connections```
     /// - Manipulate storage ```ClientStates``` by adding the connection id, e.g. "appia-connection", to the client id's connection list.
     pub fn conn_open_init(
-        identifier: H256,
-        desired_counterparty_connection_identifier: H256,
-        client_identifier: H256,
-        counterparty_client_identifier: H256,
+        connection_id: H256,
+        counterparty_connection_id: H256,
+        client_id: H256,
+        counterparty_client_id: H256,
     ) -> dispatch::DispatchResult {
-        // abortTransactionUnless(validateConnectionIdentifier(identifier))
+        // abortTransactionUnless(validateConnectionIdentifier(connection_id))
         ensure!(
-            ClientStates::contains_key(&client_identifier),
+            ClientStates::contains_key(&client_id),
             Error::<T>::ClientIdNotExist
         );
-        // TODO: ensure!(!client.connections.exists(&identifier)))
+        // TODO: ensure!(!client.connections.exists(&connection_id)))
         ensure!(
-            !Connections::contains_key(&identifier),
+            !Connections::contains_key(&connection_id),
             Error::<T>::ConnectionIdExist
         );
         let connection_end = ConnectionEnd {
             state: ConnectionState::Init,
-            counterparty_connection_identifier: desired_counterparty_connection_identifier,
+            counterparty_connection_id,
             counterparty_prefix: vec![],
-            client_identifier,
-            counterparty_client_identifier,
+            client_id,
+            counterparty_client_id,
             version: vec![], // getCompatibleVersions()
         };
 
         if_std! {
-            println!("connection inserted: {:?}", identifier);
+            println!("connection inserted: {:?}", connection_id);
         }
-        Connections::insert(&identifier, connection_end);
-        // addConnectionToClient(clientIdentifier, identifier)
-        ClientStates::mutate(&client_identifier, |client_state| {
-            (*client_state).connections.push(identifier);
+        Connections::insert(&connection_id, connection_end);
+        // addConnectionToClient(clientIdentifier, connection_id)
+        ClientStates::mutate(&client_id, |client_state| {
+            (*client_state).connections.push(connection_id);
         });
         Self::deposit_event(RawEvent::ConnOpenInitReceived);
         Ok(())
@@ -448,7 +448,7 @@ impl<T: Trait> Module<T> {
         NextSequenceRecv::insert((port_identifier.clone(), channel_identifier), 1);
         NextSequenceAck::insert((port_identifier.clone(), channel_identifier), 1);
         // return key
-        ClientStates::mutate(&connection.client_identifier, |client_state| {
+        ClientStates::mutate(&connection.client_id, |client_state| {
             (*client_state)
                 .channels
                 .push((port_identifier.clone(), channel_identifier));
@@ -642,10 +642,10 @@ impl<T: Trait> Module<T> {
                 // version = pickVersion(counterpartyVersions)
                 let connection = ConnectionEnd {
                     state: ConnectionState::TryOpen,
-                    counterparty_connection_identifier,
+                    counterparty_connection_id: counterparty_connection_identifier,
                     counterparty_prefix: vec![],
-                    client_identifier,
-                    counterparty_client_identifier,
+                    client_id: client_identifier,
+                    counterparty_client_id: counterparty_client_identifier,
                     version: vec![],
                 };
                 if_std! {
@@ -709,13 +709,13 @@ impl<T: Trait> Module<T> {
                 //                          connection.counterpartyClientIdentifier, connection.clientIdentifier,
                 //                          version}
                 ensure!(
-                    ConsensusStates::contains_key((connection.client_identifier, proof_height)),
+                    ConsensusStates::contains_key((connection.client_id, proof_height)),
                     "ConsensusState not found"
                 );
                 let value = Self::verify_connection_state(
-                    connection.client_identifier,
+                    connection.client_id,
                     proof_height,
-                    connection.counterparty_connection_identifier,
+                    connection.counterparty_connection_id,
                     proof_try,
                 );
                 ensure!(value.is_some(), "verify connection state failed");
@@ -746,13 +746,13 @@ impl<T: Trait> Module<T> {
                 );
                 // abortTransactionUnless(connection.state === TRYOPEN)
                 ensure!(
-                    ConsensusStates::contains_key((connection.client_identifier, proof_height)),
+                    ConsensusStates::contains_key((connection.client_id, proof_height)),
                     "ConsensusState not found"
                 );
                 let value = Self::verify_connection_state(
-                    connection.client_identifier,
+                    connection.client_id,
                     proof_height,
-                    connection.counterparty_connection_identifier,
+                    connection.counterparty_connection_id,
                     proof_ack,
                 );
                 ensure!(value.is_some(), "verify connection state failed");
@@ -809,11 +809,11 @@ impl<T: Trait> Module<T> {
                 );
 
                 ensure!(
-                    ConsensusStates::contains_key((connection.client_identifier, proof_height)),
+                    ConsensusStates::contains_key((connection.client_id, proof_height)),
                     "ConsensusState not found"
                 );
                 let value = Self::verify_channel_state(
-                    connection.client_identifier,
+                    connection.client_id,
                     proof_height,
                     counterparty_port_identifier.clone(),
                     counterparty_channel_identifier,
@@ -846,7 +846,7 @@ impl<T: Trait> Module<T> {
                 NextSequenceSend::insert((port_identifier.clone(), channel_identifier), 1);
                 NextSequenceRecv::insert((port_identifier.clone(), channel_identifier), 1);
                 // return key
-                ClientStates::mutate(&connection.client_identifier, |client_state| {
+                ClientStates::mutate(&connection.client_id, |client_state| {
                     (*client_state)
                         .channels
                         .push((port_identifier.clone(), channel_identifier));
@@ -880,11 +880,11 @@ impl<T: Trait> Module<T> {
                     "connection has been closed"
                 );
                 ensure!(
-                    ConsensusStates::contains_key((connection.client_identifier, proof_height)),
+                    ConsensusStates::contains_key((connection.client_id, proof_height)),
                     "ConsensusState not found"
                 );
                 let value = Self::verify_channel_state(
-                    connection.client_identifier,
+                    connection.client_id,
                     proof_height,
                     channel.counterparty_port_identifier,
                     channel.counterparty_channel_identifier,
@@ -934,11 +934,11 @@ impl<T: Trait> Module<T> {
                     "connection has been closed"
                 );
                 ensure!(
-                    ConsensusStates::contains_key((connection.client_identifier, proof_height)),
+                    ConsensusStates::contains_key((connection.client_id, proof_height)),
                     "ConsensusState not found"
                 );
                 let value = Self::verify_channel_state(
-                    connection.client_identifier,
+                    connection.client_id,
                     proof_height,
                     channel.counterparty_port_identifier,
                     channel.counterparty_channel_identifier,
@@ -995,11 +995,11 @@ impl<T: Trait> Module<T> {
                 // abortTransactionUnless(getConsensusHeight() < packet.timeoutHeight)
 
                 ensure!(
-                    ConsensusStates::contains_key((connection.client_identifier, proof_height)),
+                    ConsensusStates::contains_key((connection.client_id, proof_height)),
                     "ConsensusState not found"
                 );
                 let value = Self::verify_packet_data(
-                    connection.client_identifier,
+                    connection.client_id,
                     proof_height,
                     proof,
                     packet.source_port.clone(),
@@ -1129,7 +1129,7 @@ impl<T: Trait> Module<T> {
                 //   hash(acknowledgement)
                 // ))
                 let value = Self::verify_packet_acknowledgement(
-                    connection.client_identifier,
+                    connection.client_id,
                     proof_height,
                     proof,
                     packet.dest_port.clone(),
