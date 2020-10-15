@@ -1,8 +1,53 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-/// Edit this file to define custom logic or remove it if it is not needed.
-/// Learn more about FRAME and the core library of Substrate FRAME pallets:
-/// https://substrate.dev/docs/en/knowledgebase/runtime/frame
+//! # IBC Module
+//!
+//! This module implements the standard [IBC protocol](https://github.com/cosmos/ics).
+//!
+//! ## Overview
+//!
+//! The goal of this pallet is to allow the blockchains built on Substrate to gain the ability to interact with other chains in a trustless way via IBC protocol, no matter what consensus the counterparty chains use.
+//!
+//! This project is currently in an early stage and will eventually be submitted to upstream.
+//!
+//! Some components in [IBC spec](https://github.com/cosmos/ics/tree/master/spec) are implemented to support a working demo (https://github.com/cdot-network/ibc-demo), but not fully implemented as the spec yet:
+//! * ics-002-client-semantics
+//! * ics-003-connection-semantics
+//! * ics-004-channel-and-packet-semantics
+//! * ics-005-port-allocation
+//! * ics-010-grandpa-client
+//! * ics-018-relayer-algorithms
+//! * ics-025-handler-interface
+//! * ics-026-routing-module
+//!
+//! ### Terminology
+//!
+//! Please refer to [IBC Terminology](https://github.com/cosmos/ics/blob/master/ibc/1_IBC_TERMINOLOGY.md#1-ibc-terminology).
+//!
+//! ### Goals
+//!
+//! This IBC module handles authentication, transport, and ordering of structured data packets relayed between modules on separate machines.
+//!
+//! Example applications include cross-chain asset transfer, atomic swaps, multi-chain smart contracts (with or without mutually comprehensible VMs), and data & code sharding of various kinds.
+//!
+//! ## Interface
+//!
+//! ###  Public Functions
+//!
+//! * `handle_datagram` - Receives datagram transmitted from relayers, and implements the following:
+//!     + Synchronizing block headers from other chains.
+//!     + Process connection opening handshakes after its initialization - ICS-003.
+//!     + Process channel opening handshakes after its initialization - ICS-004.
+//!     + Handling packet flow after its initialization - ICS-004.
+//!
+//! ### Dispatchable Functions
+//!
+//! * `conn_open_init` - Connection opening handshake initialization.
+//! * `chan_open_init` - Channel opening handshake initialization.
+//! * `send_packet` - Packet flow initialization.
+//!
+//! ## Usage
+//! Please refer to section "How to Interact with the Pallet" in the repository's README.md
 
 use codec::{Decode, Encode};
 use finality_grandpa::voter_set::VoterSet;
@@ -296,11 +341,29 @@ decl_module! {
 	}
 }
 
+// The main implementation block for the module.
 impl<T: Trait> Module<T> {
-    /// Create an IBC client by 2 major steps:
+    /// Create an IBC client, by the 2 major steps:
     /// * Insert concensus state into storage "ConsensusStates"
     /// * Insert client state into storage "ClientStates"
+    ///
     /// Both storage's keys contains client id
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let identifier1 = Blake2Hasher::hash("appia".as_bytes());
+    /// let identifier2 = Blake2Hasher::hash("flaminia".as_bytes());
+    /// let height = 0;
+    /// let consensus_state = ConsensusState {
+    /// 	root: Blake2Hasher::hash("root".as_bytes()),
+    ///                height: 0,
+    /// 	set_id: 0,
+    /// 	authorities: vec![],
+    /// };
+    ///
+    /// assert_ok!(IbcModule::create_client(identifier1, ClientType::GRANDPA, height.clone(), consensus_state.clone()));
+    /// ```
     pub fn create_client(
         identifier: H256,
         client_type: client::ClientType,
@@ -333,10 +396,30 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    /// Pre-establish an IBC connection
-    /// - Create a conneciton whose state is ```ConnectionState::Init```
-    /// - Insert the conneciton to storage ```Connections```
-    /// - Manipulate storage ```ClientStates``` by adding the connection id, e.g. "appia-connection", to the client id's connection list.
+    /// Initialize an IBC connection opening handshake.
+    /// - Create a conneciton whose state is ```ConnectionState::Init```.
+    /// - Insert the conneciton to storage ```Connections```.
+    /// - Manipulate storage ```ClientStates``` by adding the connection id, e.g. Add "appia-connection", to the client id's connection list.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    ///     let identifier = Blake2Hasher::hash("appia-connection".as_bytes());
+    ///     let desired_counterparty_connection_identifier =
+    ///         Blake2Hasher::hash("flaminia-connection".as_bytes());
+    ///     let client_identifier =
+    ///         hex::decode("53a954d6a7b1c595e025226e5f2a1782fdea30cd8b0d207ed4cdb040af3bfa10").unwrap();
+    ///     let client_identifier = H256::from_slice(&client_identifier);
+    ///     let counterparty_client_identifier =
+    ///         hex::decode("779ca65108d1d515c3e4bc2e9f6d2f90e27b33b147864d1cd422d9f92ce08e03").unwrap();
+    ///     let counterparty_client_identifier = H256::from_slice(&counterparty_client_identifier);
+    ///     conn_open_init(
+    ///         identifier,
+    ///         desired_counterparty_connection_identifier,
+    ///         client_identifier,
+    ///         counterparty_client_identifier
+    ///     );
+    /// ```
     pub fn conn_open_init(
         connection_id: H256,
         counterparty_connection_id: H256,
@@ -374,8 +457,18 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    /// Allocate a port, which modules can bind to uniquely named ports allocated by the IBC handler.
+    ///
     /// As the IBC spec "ics-005-port-allocation": Once a module has bound to a port, no other modules can use that port until the module releases it.
-    /// The restrictiong is implemented by binding a port to a module's index.
+    ///
+    /// The restriction is implemented by binding a port to a module's index.
+    ///
+    /// # Example
+    /// ```ignore
+    /// 	let identifier = "bank".as_bytes().to_vec();
+    /// 	let module_index = 45 as u8;
+    ///     bind_port(identifier.clone(), module_index);
+    /// ```
     pub fn bind_port(identifier: Vec<u8>, module_index: u8) -> dispatch::DispatchResult {
         // abortTransactionUnless(validatePortIdentifier(id))
         ensure!(
@@ -388,6 +481,7 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn release_port(identifier: Vec<u8>, module_index: u8) -> dispatch::DispatchResult {
+        #![warn(missing_docs)]
         ensure!(
             Ports::get(&identifier) == module_index,
             "Port identifier not found"
@@ -397,6 +491,35 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    /// Initialize an IBC channel opening handshake by:
+    /// - Save a channel whose state is `ChannelState::Init` to the storage.
+    /// - Guarantee the order of the packets by setting `NextSequenceSend`, `NextSequenceRecv`, and `NextSequenceAck` in the storage
+    /// - Manipulate storage ```ClientStates``` by adding the (channel id, port id), e.g. Add "(CHANNEL_ID, PORT_ID)" to the client id's channel list.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    ///     let module_index = 45 as u8;
+    ///     let order = ChannelOrder::Unordered;
+    ///     let connection_identifier =
+    ///         hex::decode("d93fc49e1b2087234a1e2fc204b500da5d16874e631e761bdab932b37907bd11").unwrap();
+    ///     let connection_identifier = H256::from_slice(&connection_identifier);
+    ///     let connection_hops = vec![connection_identifier];
+    ///     let port_identifier = "bank".as_bytes().to_vec();
+    ///     let channel_identifier = Blake2Hasher::hash(b"appia-channel");
+    ///     let counterparty_port_identifier = "bank".as_bytes().to_vec();
+    ///     let counterparty_channel_identifier = Blake2Hasher::hash(b"flaminia-channel");
+    ///     chan_open_init(
+    ///              module_index,
+    ///              order.clone(),
+    ///              connection_hops.clone(),
+    ///              port_identifier.clone(),
+    ///              channel_identifier,
+    ///              counterparty_port_identifier.clone(),
+    ///              counterparty_channel_identifier,
+    ///              vec![]
+    ///     );
+    /// ```
     pub fn chan_open_init(
         module_index: u8,
         order: ChannelOrder,
@@ -457,6 +580,37 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    /// Initialize sending packet flow by:
+    /// - Modify packet sequence by writting to storage `NextSequenceSend`.
+    /// - Deposit a packet sending event.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    ///     let sequence = 1;
+    ///     let timeout_height = 1000;
+    ///     let source_port = "bank".as_bytes().to_vec();
+    ///     let source_channel =
+    ///         hex::decode("00e2e14470ed9a017f586dfe6b76bb0871a8c91c3151778de110db3dfcc286ac").unwrap();
+    ///     let source_channel = H256::from_slice(&source_channel);
+    ///     let dest_port = "bank".as_bytes().to_vec();
+    ///     let dest_channel =
+    ///         hex::decode("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa").unwrap();
+    ///     let dest_channel = H256::from_slice(&dest_channel);
+    ///     let data: Vec<u8> = hex::decode("01020304").unwrap();
+    ///
+    ///     let mut packet = Packet {
+    ///         sequence,
+    ///         timeout_height,
+    ///         source_port,
+    ///         source_channel,
+    ///         dest_port,
+    ///         dest_channel,
+    ///         data,
+    ///     };
+    ///     send_packet(packet.clone());
+    /// ```
+    ///
     pub fn send_packet(packet: Packet) -> dispatch::DispatchResult {
         let channel = Channels::get((packet.source_port.clone(), packet.source_channel));
         // optimistic sends are permitted once the handshake has started
@@ -523,6 +677,7 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn handle_datagram(datagram: Datagram) -> dispatch::DispatchResult {
+        #![warn(missing_docs)]
         match datagram {
             // Receiving the message containing a block header of other chains from relayers,  IBC module tryies to synchronize the block header.
             Datagram::ClientUpdate { identifier, header } => {
