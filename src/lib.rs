@@ -319,6 +319,7 @@ decl_error! {
 // These functions materialize as "extrinsics", which are often compared to transactions.
 // Dispatchable functions must be annotated with a weight and must return a DispatchResult.
 decl_module! {
+    /// The struct defines the major functions for the module.
 	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
 		// Errors must be initialized if they are used by the pallet.
 		type Error = Error<T>;
@@ -676,8 +677,13 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
+    /// This function handles datagram, transmitted from relayers, for the kinds task below:
+    ///     + Synchronizing block headers from other chains.
+    ///     + After connection opening handshakes are initiated, processing the subsequent handshakes - ICS-003.
+    ///     + After channel opening handshakes are initiated, processing the subsequent handshakes - ICS-004.
+    ///     + After packet flows are initiated, processing the subsequent packet flows - ICS-004.
     pub fn handle_datagram(datagram: Datagram) -> dispatch::DispatchResult {
-        #![warn(missing_docs)]
+        #![warn(missing_doc_code_examples)]
         match datagram {
             // Receiving the message containing a block header of other chains from relayers,  IBC module tryies to synchronize the block header.
             Datagram::ClientUpdate { identifier, header } => {
