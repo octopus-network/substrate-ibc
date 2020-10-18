@@ -6,7 +6,7 @@ homepage = 'https://cdot.network'
 license = 'Apache-2.0'
 name = 'pallet-ibc'
 repository = 'https://github.com/cdot-network/substrate-ibc/'
-version = '2.0.0'
+version = '2.0.0-pre.0'
 
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']
