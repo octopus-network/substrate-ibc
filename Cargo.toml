@@ -1,12 +1,13 @@
 [package]
-authors = ['Cdot Network <https://cdot.network>']
+authors = ['Cdot Network <hello@cdot.network>']
 description = 'An IBC implementation on Substrate.'
 edition = '2018'
 homepage = 'https://cdot.network'
 license = 'Apache-2.0'
 name = 'pallet-ibc'
 repository = 'https://github.com/cdot-network/substrate-ibc/'
-version = '2.0.0-pre.0'
+version = '2.0.0-pre.1'
+documentation = "https://docs.rs/pallet-ibc"
 
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']

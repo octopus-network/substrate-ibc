@@ -1,4 +1,6 @@
 # Substrate IBC Pallet (work in progress)
+[![crates.io](https://img.shields.io/crates/v/pallet-ibc.svg)](https://crates.io/crates/pallet-ibc)
+[![Released API docs](https://docs.rs/pallet-ibc/badge.svg)](https://docs.rs/pallet-ibc)
 
 ## Purpose
 
@@ -327,5 +329,5 @@ You can view the reference docs for this pallet by running:
 cargo doc --open
 ```
 
-or by visiting this site: <Add Your Link>
+or by visiting this site: https://docs.rs/pallet-ibc
 
