@@ -163,8 +163,8 @@ It's done by an actor, who invokes the function ```conn_open_init``` in Chain A.
 pub fn conn_open_init(
     identifier: H256,
     desired_counterparty_connection_identifier: H256,
-    client_identifier: H256,
-    counterparty_client_identifier: H256,
+    client_id: H256,
+    counterparty_client_id: H256,
 ) -> dispatch::DispatchResult {
 ...
 }
