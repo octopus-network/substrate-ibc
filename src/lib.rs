@@ -84,6 +84,9 @@ mod tests;
 type BlockNumber = u32;
 type Block = generic::Block<generic::Header<BlockNumber, BlakeTwo256>, UncheckedExtrinsic>;
 
+// Todo: Find a crate specific for semantic version
+const VERSIONS: Vec<i8> = vec![1, 3, 5];
+
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
 pub struct Packet {
     pub sequence: u64,
@@ -111,7 +114,7 @@ pub enum Datagram {
         counterparty_connection_id: H256,
         counterparty_client_id: H256,
         client_id: H256,
-        version: Vec<u8>,
+        version: Vec<u8>,  // Todo: remove this field
         counterparty_version: Vec<u8>,
         proof_init: StorageProof,
         proof_consensus: StorageProof,
@@ -425,7 +428,7 @@ impl<T: Trait> Module<T> {
         connection_id: H256,
         counterparty_connection_id: H256,
         client_id: H256,
-        counterparty_client_id: H256,
+        counterparty_client_id: H256
     ) -> dispatch::DispatchResult {
         // abortTransactionUnless(validateConnectionIdentifier(connection_id))
         ensure!(
@@ -443,7 +446,7 @@ impl<T: Trait> Module<T> {
             counterparty_prefix: vec![],
             client_id,
             counterparty_client_id,
-            version: vec![], // getCompatibleVersions()
+            version: Self::get_compatable_versions()
         };
 
         if_std! {
@@ -850,6 +853,15 @@ impl<T: Trait> Module<T> {
                 //     previous.version === version))
 
                 new_connection_end.state = ConnectionState::TryOpen;
+
+                // Pick the version.
+                let local_versions = Self::get_compatible_versions();
+                let intersection: Vec<String> = counterparty_version
+                    .iter()
+                    .filter(|cv| local_versions.contains(cv))
+                    .cloned()
+                    .collect();
+                new_connection_end.version = Self::pick_version(intersection);
 
                 let identifier = connection_id;
                 Connections::insert(&identifier, new_connection_end);
@@ -1517,4 +1529,13 @@ impl<T: Trait> Module<T> {
 
         None
     }
+
+    fn get_compatible_versions() -> Vec<u8> {
+        VERSIONS
+    }
+
+    fn pick_version(candidate_versions: Vec<u8>) -> u8 {
+        candidate_versions.get(0)
+    }
+
 }
