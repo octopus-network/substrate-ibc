@@ -85,7 +85,10 @@ type BlockNumber = u32;
 type Block = generic::Block<generic::Header<BlockNumber, BlakeTwo256>, UncheckedExtrinsic>;
 
 // Todo: Find a crate specific for semantic version
-const VERSIONS: Vec<i8> = vec![1, 3, 5];
+const VERSIONS: [u8; 3] = [1, 3, 5];
+
+// Todo: Find a proper value for MAX_HISTORY_SIZE
+const MAX_HISTORY_SIZE: u32 = 3;
 
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
 pub struct Packet {
@@ -122,15 +125,16 @@ pub enum Datagram {
         consensus_height: u32,
     },
     ConnOpenAck {
-        identifier: H256,
-        version: Vec<u8>,
+        connection_id: H256,
+        counterparty_connection_id: H256,
+        version: u8,
         proof_try: StorageProof,
         proof_consensus: StorageProof,
         proof_height: u32,
         consensus_height: u32,
     },
     ConnOpenConfirm {
-        identifier: H256,
+        connection_id: H256,
         proof_ack: StorageProof,
         proof_height: u32,
     },
@@ -196,7 +200,7 @@ pub struct ConnectionEnd {
     counterparty_prefix: Vec<u8>,
     client_id: H256,
     counterparty_client_id: H256,
-    version: Vec<u8>,
+    version: Vec<u8>,      // TODO: A ConnectionEnd should only store one version.
 }
 
 #[derive(Clone, PartialEq, Encode, Decode, RuntimeDebug)]
@@ -446,7 +450,7 @@ impl<T: Trait> Module<T> {
             counterparty_prefix: vec![],
             client_id,
             counterparty_client_id,
-            version: Self::get_compatable_versions()
+            version: Self::get_compatible_versions()
         };
 
         if_std! {
@@ -790,10 +794,6 @@ impl<T: Trait> Module<T> {
                 proof_height,
                 consensus_height,
             } => {
-                ensure!(
-                    ClientStates::contains_key(&client_id),
-                    "Client not found"
-                );
 
                 let mut new_connection_end;
                 if Connections::contains_key(&connection_id) {
@@ -856,12 +856,12 @@ impl<T: Trait> Module<T> {
 
                 // Pick the version.
                 let local_versions = Self::get_compatible_versions();
-                let intersection: Vec<String> = counterparty_version
+                let intersection: Vec<u8> = counterparty_version
                     .iter()
                     .filter(|cv| local_versions.contains(cv))
                     .cloned()
                     .collect();
-                new_connection_end.version = Self::pick_version(intersection);
+                new_connection_end.version = vec![Self::pick_version(intersection)];  // Todo: change the field `version` in `new_connection_end` to `u8`
 
                 let identifier = connection_id;
                 Connections::insert(&identifier, new_connection_end);
@@ -872,42 +872,60 @@ impl<T: Trait> Module<T> {
                 Self::deposit_event(RawEvent::ConnOpenTry);
             }
             Datagram::ConnOpenAck {
-                identifier,
+                connection_id,
+                counterparty_connection_id,
                 version,
                 proof_try,
                 proof_consensus,
                 proof_height,
                 consensus_height,
             } => {
+                use sp_runtime::traits::SaturatedConversion;
+                let current_block_number_self = <frame_system::Module<T>>::block_number().saturated_into::<u32>();
+                Self::check_client_consensus_height(current_block_number_self, consensus_height);
+
                 ensure!(
-                    Connections::contains_key(&identifier),
-                    "Connection not found"
+                    Connections::contains_key(&connection_id),
+                    "Connection uninitialized"
                 );
-                // abortTransactionUnless(consensusHeight <= getCurrentHeight())
-                let connection = Connections::get(&identifier);
-                ensure!(
-                    connection.state == ConnectionState::Init
-                        || connection.state == ConnectionState::TryOpen,
-                    "connection state error"
-                );
+
+                let mut new_connection_end;
+                {
+                    let old_conn_end = Connections::get(&connection_id);
+                    let state_is_consistent = old_conn_end.state.eq(&ConnectionState::Init)
+                            && old_conn_end.version.contains(&version)
+                        || old_conn_end.state.eq(&ConnectionState::TryOpen)
+                            && (old_conn_end.version.get(0) == Some(&version));
+
+                    // Check that if the msg's counterparty connection id is not empty then it matches
+                    // the old connection's counterparty.
+                    // Todo: Ensure connecion id is not empty?
+                    let counterparty_matches= old_conn_end.counterparty_connection_id == counterparty_connection_id;
+
+                    ensure!(state_is_consistent && counterparty_matches, "Connection mismatch!");
+
+                    new_connection_end = old_conn_end.clone();
+                }
+
                 // expectedConsensusState = getConsensusState(consensusHeight)
                 // expected = ConnectionEnd{TRYOPEN, identifier, getCommitmentPrefix(),
                 //                          connection.counterpartyClientIdentifier, connection.clientIdentifier,
                 //                          version}
                 ensure!(
-                    ConsensusStates::contains_key((connection.client_id, proof_height)),
+                    ConsensusStates::contains_key((new_connection_end.client_id, proof_height)),
                     "ConsensusState not found"
                 );
                 let value = Self::verify_connection_state(
-                    connection.client_id,
+                    new_connection_end.client_id,
                     proof_height,
-                    connection.counterparty_connection_id,
+                    new_connection_end.counterparty_connection_id,
                     proof_try,
                 );
                 ensure!(value.is_some(), "verify connection state failed");
                 // abortTransactionUnless(connection.verifyConnectionState(proofHeight, proofTry, connection.counterpartyConnectionIdentifier, expected))
                 // abortTransactionUnless(connection.verifyClientConsensusState(proofHeight, proofConsensus, connection.counterpartyClientIdentifier, expectedConsensusState))
-                Connections::mutate(&identifier, |connection| {
+                new_connection_end.version = vec![version];
+                Connections::mutate(&connection_id, |connection| {
                     (*connection).state = ConnectionState::Open;
                 });
                 // abortTransactionUnless(getCompatibleVersions().indexOf(version) !== -1)
@@ -916,36 +934,37 @@ impl<T: Trait> Module<T> {
                 Self::deposit_event(RawEvent::ConnOpenAck);
             }
             Datagram::ConnOpenConfirm {
-                identifier,
+                connection_id,
                 proof_ack,
                 proof_height,
             } => {
                 ensure!(
-                    Connections::contains_key(&identifier),
-                    "Connection not found"
+                    Connections::contains_key(&connection_id),
+                    "Connection uninitialized"
                 );
-                // connection = provableStore.get(connectionPath(identifier))
-                let connection = Connections::get(&identifier);
+
+                let mut new_connection_end;
+                {
+                    let old_conn_end = Connections::get(&connection_id);
+                    ensure!(old_conn_end.state.eq(&ConnectionState::TryOpen), "Connection mismatch!");
+                    new_connection_end = old_conn_end.clone();
+                }
+
                 ensure!(
-                    connection.state == ConnectionState::TryOpen,
-                    "connection state error"
-                );
-                // abortTransactionUnless(connection.state === TRYOPEN)
-                ensure!(
-                    ConsensusStates::contains_key((connection.client_id, proof_height)),
+                    ConsensusStates::contains_key((new_connection_end.client_id, proof_height)),
                     "ConsensusState not found"
                 );
                 let value = Self::verify_connection_state(
-                    connection.client_id,
+                    new_connection_end.client_id,
                     proof_height,
-                    connection.counterparty_connection_id,
+                    new_connection_end.counterparty_connection_id,
                     proof_ack,
                 );
                 ensure!(value.is_some(), "verify connection state failed");
                 // expected = ConnectionEnd{OPEN, identifier, getCommitmentPrefix(), connection.counterpartyClientIdentifier,
                 //                          connection.clientIdentifier, connection.version}
                 // abortTransactionUnless(connection.verifyConnectionState(proofHeight, proofAck, connection.counterpartyConnectionIdentifier, expected))
-                Connections::mutate(&identifier, |connection| {
+                Connections::mutate(&connection_id, |connection| {
                     (*connection).state = ConnectionState::Open;
                 });
                 // provableStore.set(connectionPath(identifier), connection)
@@ -1531,11 +1550,30 @@ impl<T: Trait> Module<T> {
     }
 
     fn get_compatible_versions() -> Vec<u8> {
-        VERSIONS
+        VERSIONS.to_vec().clone()
     }
 
     fn pick_version(candidate_versions: Vec<u8>) -> u8 {
-        candidate_versions.get(0)
+        *candidate_versions.get(0).unwrap()
+    }
+
+    fn check_client_consensus_height(
+        host_current_height: u32,
+        claimed_height: u32,
+    ) -> dispatch::DispatchResult {
+        // Todo: Use Height struct as ibc-rs/modules/src/ics02_client/height.rs?
+
+        ensure!(
+                    claimed_height > host_current_height,
+                    "Consensus height is too advanced!"
+                );
+
+        ensure!(
+                    claimed_height < host_current_height - MAX_HISTORY_SIZE,
+                    "Consensus height is too old!"
+                );
+
+        Ok(())
     }
 
 }
