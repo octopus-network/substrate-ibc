@@ -2,6 +2,8 @@
 [![crates.io](https://img.shields.io/crates/v/pallet-ibc.svg)](https://crates.io/crates/pallet-ibc)
 [![Released API docs](https://docs.rs/pallet-ibc/badge.svg)](https://docs.rs/pallet-ibc)
 
+This project is [funded by Interchain Foundation](https://interchain-io.medium.com/ibc-on-substrate-with-cdot-a7025e521028).
+
 ## Purpose
 
 This pallet implements the standard [IBC protocol](https://github.com/cosmos/ics).
