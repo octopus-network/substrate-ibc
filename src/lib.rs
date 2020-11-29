@@ -893,23 +893,24 @@ impl<T: Trait> Module<T> {
                     "Connection uninitialized"
                 );
 
-                let mut new_connection_end;
-                {
-                    let old_conn_end = Connections::get(&connection_id);
-                    let state_is_consistent = old_conn_end.state.eq(&ConnectionState::Init)
-                            && old_conn_end.version.contains(&version)
-                        || old_conn_end.state.eq(&ConnectionState::TryOpen)
-                            && (old_conn_end.version.get(0) == Some(&version));
+                // let mut new_connection_end;
+                // {
+                //     let old_conn_end = Connections::get(&connection_id);
+                //     let state_is_consistent = old_conn_end.state.eq(&ConnectionState::Init)
+                //             && old_conn_end.version.contains(&version)
+                //         || old_conn_end.state.eq(&ConnectionState::TryOpen)
+                //             && (old_conn_end.version.get(0) == Some(&version));
 
-                    // Check that if the msg's counterparty connection id is not empty then it matches
-                    // the old connection's counterparty.
-                    // Todo: Ensure connecion id is not empty?
-                    let counterparty_matches= old_conn_end.counterparty_connection_id == counterparty_connection_id;
+                //     // Check that if the msg's counterparty connection id is not empty then it matches
+                //     // the old connection's counterparty.
+                //     // Todo: Ensure connecion id is not empty?
+                //     let counterparty_matches= old_conn_end.counterparty_connection_id == counterparty_connection_id;
 
-                    ensure!(state_is_consistent && counterparty_matches, "Connection mismatch!");
+                //     ensure!(state_is_consistent && counterparty_matches, "Connection mismatch!");
 
-                    new_connection_end = old_conn_end.clone();
-                }
+                //     new_connection_end = old_conn_end.clone();
+                // }
+                let mut new_connection_end = Connections::get(&connection_id);
 
                 // expectedConsensusState = getConsensusState(consensusHeight)
                 // expected = ConnectionEnd{TRYOPEN, identifier, getCommitmentPrefix(),
