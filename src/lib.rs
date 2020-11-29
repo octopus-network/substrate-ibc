@@ -84,6 +84,12 @@ mod tests;
 type BlockNumber = u32;
 type Block = generic::Block<generic::Header<BlockNumber, BlakeTwo256>, UncheckedExtrinsic>;
 
+// Todo: Find a crate specific for semantic version
+const VERSIONS: [u8; 3] = [1, 3, 5];
+
+// Todo: Find a proper value for MAX_HISTORY_SIZE
+const MAX_HISTORY_SIZE: u32 = 3;
+
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
 pub struct Packet {
     pub sequence: u64,
@@ -99,7 +105,7 @@ pub struct Packet {
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
 pub enum Datagram {
     ClientUpdate {
-        identifier: H256,
+        client_id: H256,
         header: grandpa::header::Header,
     },
     ClientMisbehaviour {
@@ -107,11 +113,11 @@ pub enum Datagram {
         evidence: Vec<u8>,
     },
     ConnOpenTry {
-        desired_identifier: H256,
-        counterparty_connection_identifier: H256,
-        counterparty_client_identifier: H256,
-        client_identifier: H256,
-        version: Vec<u8>,
+        connection_id: H256,
+        counterparty_connection_id: H256,
+        counterparty_client_id: H256,
+        client_id: H256,
+        version: Vec<u8>,  // Todo: remove this field
         counterparty_version: Vec<u8>,
         proof_init: StorageProof,
         proof_consensus: StorageProof,
@@ -119,40 +125,41 @@ pub enum Datagram {
         consensus_height: u32,
     },
     ConnOpenAck {
-        identifier: H256,
-        version: Vec<u8>,
+        connection_id: H256,
+        counterparty_connection_id: H256,
+        version: u8,
         proof_try: StorageProof,
         proof_consensus: StorageProof,
         proof_height: u32,
         consensus_height: u32,
     },
     ConnOpenConfirm {
-        identifier: H256,
+        connection_id: H256,
         proof_ack: StorageProof,
         proof_height: u32,
     },
     ChanOpenTry {
         order: ChannelOrder,
         connection_hops: Vec<H256>,
-        port_identifier: Vec<u8>,
-        channel_identifier: H256,
-        counterparty_port_identifier: Vec<u8>,
-        counterparty_channel_identifier: H256,
-        version: Vec<u8>,
+        port_id: Vec<u8>,
+        channel_id: H256,
+        counterparty_port_id: Vec<u8>,
+        counterparty_channel_id: H256,
+        channel_version: Vec<u8>,
         counterparty_version: Vec<u8>,
         proof_init: StorageProof,
         proof_height: u32,
     },
     ChanOpenAck {
-        port_identifier: Vec<u8>,
-        channel_identifier: H256,
+        port_id: Vec<u8>,
+        channel_id: H256,
         version: Vec<u8>,
-        proof_try: StorageProof,
+        proof_try: StorageProof,  // Todo: In ibc-rs, proofs contains `object_proof`, `client_proof`, `consensus_proof` and `height`
         proof_height: u32,
     },
     ChanOpenConfirm {
-        port_identifier: Vec<u8>,
-        channel_identifier: H256,
+        port_id: Vec<u8>,
+        channel_id: H256,
         proof_ack: StorageProof,
         proof_height: u32,
     },
@@ -191,9 +198,9 @@ pub struct ConnectionEnd {
     /// The prefix used for state verification on the counterparty chain associated with this connection.
     /// If not specified, a default counterpartyPrefix of "ibc" should be used.
     counterparty_prefix: Vec<u8>,
-    client_id: H256,
+    pub client_id: H256,
     counterparty_client_id: H256,
-    version: Vec<u8>,
+    pub version: Vec<u8>,      // TODO: A ConnectionEnd should only store one version.
 }
 
 #[derive(Clone, PartialEq, Encode, Decode, RuntimeDebug)]
@@ -211,6 +218,7 @@ impl Default for ChannelState {
     }
 }
 
+// Todo: In ibc-rs, `ChannelOrder` is type i32
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
 pub enum ChannelOrder {
     Ordered,
@@ -227,8 +235,8 @@ impl Default for ChannelOrder {
 pub struct ChannelEnd {
     pub state: ChannelState,
     pub ordering: ChannelOrder,
-    pub counterparty_port_identifier: Vec<u8>,
-    pub counterparty_channel_identifier: H256,
+    pub counterparty_port_id: Vec<u8>,
+    pub counterparty_channel_id: H256,
     pub connection_hops: Vec<H256>,
     pub version: Vec<u8>,
 }
@@ -246,8 +254,8 @@ decl_storage! {
 	// A unique name is used to ensure that the pallet's storage items are isolated.
 	// This name may be updated, but each pallet in the runtime must use a unique name.
 	trait Store for Module<T: Trait> as Ibc {
-		ClientStates: map hasher(blake2_128_concat) H256 => grandpa::client_state::ClientState; // client_identifier => ClientState
-		ConsensusStates: map hasher(blake2_128_concat) (H256, u32) => grandpa::consensus_state::ConsensusState; // (client_identifier, height) => ConsensusState
+		ClientStates: map hasher(blake2_128_concat) H256 => grandpa::client_state::ClientState; // client_id => ClientState
+		ConsensusStates: map hasher(blake2_128_concat) (H256, u32) => grandpa::consensus_state::ConsensusState; // (client_id, height) => ConsensusState
 		Connections: map hasher(blake2_128_concat) H256 => ConnectionEnd; // connection_identifier => ConnectionEnd
 		Ports: map hasher(blake2_128_concat) Vec<u8> => u8; // port_identifier => module_index
 		/// Channel structures are stored under a store path prefix unique to a combination of a port identifier and channel identifier.
@@ -270,20 +278,20 @@ decl_event!(
 		ClientCreated,
 		ClientUpdated,
 		ClientMisbehaviourReceived,
-		ConnOpenInitReceived,
-		ConnOpenTryReceived,
-		ConnOpenAckReceived,
-		ConnOpenConfirmReceived,
+		ConnOpenInit,
+		ConnOpenTry,
+		ConnOpenAck,
+		ConnOpenConfirm,
 		PortBound(u8),
 		PortReleased,
-		ChanOpenInitReceived,
-		ChanOpenTryReceived,
-		ChanOpenAckReceived,
-		ChanOpenConfirmReceived,
+		ChanOpenInit,
+		ChanOpenTry,
+		ChanOpenAck,
+		ChanOpenConfirm,
 		SendPacket(u64, Vec<u8>, u32, Vec<u8>, H256, Vec<u8>, H256),
 		RecvPacket(u64, Vec<u8>, u32, Vec<u8>, H256, Vec<u8>, H256, Vec<u8>),
 		PacketRecvReceived,
-		PacketAcknowledgementReceived,
+		AcknowledgePacket,
 	}
 );
 
@@ -366,32 +374,34 @@ impl<T: Trait> Module<T> {
     /// assert_ok!(IbcModule::create_client(identifier1, ClientType::GRANDPA, height.clone(), consensus_state.clone()));
     /// ```
     pub fn create_client(
-        identifier: H256,
+        client_id: H256,
         client_type: client::ClientType,
         height: u32,
         consensus_state: grandpa::consensus_state::ConsensusState,
     ) -> dispatch::DispatchResult {
         ensure!(
-            !ClientStates::contains_key(&identifier),
+            !ClientStates::contains_key(&client_id),
             Error::<T>::ClientIdExist
         );
 
         let client_state = match client_type {
             ClientType::GRANDPA => {
                 grandpa::client_state::ClientState::new(
-                    identifier.clone(),
+                    client_id.clone(),
                     height,
                 )
             }
             _ => {
                 grandpa::client_state::ClientState::new(
-                    identifier.clone(),
+                    client_id.clone(),
                     height,
                 )
             }
         };
-        ConsensusStates::insert((identifier, height), consensus_state);
-        ClientStates::insert(&identifier, client_state);
+
+        ConsensusStates::insert((client_id, height), consensus_state);
+        ClientStates::insert(&client_id, client_state);
+        // Todo: Persiste ClientType to substrate storage per ibc-spec
 
         Self::deposit_event(RawEvent::ClientCreated);
         Ok(())
@@ -408,24 +418,24 @@ impl<T: Trait> Module<T> {
     ///     let identifier = Blake2Hasher::hash("appia-connection".as_bytes());
     ///     let desired_counterparty_connection_identifier =
     ///         Blake2Hasher::hash("flaminia-connection".as_bytes());
-    ///     let client_identifier =
+    ///     let client_id =
     ///         hex::decode("53a954d6a7b1c595e025226e5f2a1782fdea30cd8b0d207ed4cdb040af3bfa10").unwrap();
-    ///     let client_identifier = H256::from_slice(&client_identifier);
-    ///     let counterparty_client_identifier =
+    ///     let client_id = H256::from_slice(&client_id);
+    ///     let counterparty_client_id =
     ///         hex::decode("779ca65108d1d515c3e4bc2e9f6d2f90e27b33b147864d1cd422d9f92ce08e03").unwrap();
-    ///     let counterparty_client_identifier = H256::from_slice(&counterparty_client_identifier);
+    ///     let counterparty_client_id = H256::from_slice(&counterparty_client_id);
     ///     conn_open_init(
     ///         identifier,
     ///         desired_counterparty_connection_identifier,
-    ///         client_identifier,
-    ///         counterparty_client_identifier
+    ///         client_id,
+    ///         counterparty_client_id
     ///     );
     /// ```
     pub fn conn_open_init(
         connection_id: H256,
         counterparty_connection_id: H256,
         client_id: H256,
-        counterparty_client_id: H256,
+        counterparty_client_id: H256
     ) -> dispatch::DispatchResult {
         // abortTransactionUnless(validateConnectionIdentifier(connection_id))
         ensure!(
@@ -443,7 +453,7 @@ impl<T: Trait> Module<T> {
             counterparty_prefix: vec![],
             client_id,
             counterparty_client_id,
-            version: vec![], // getCompatibleVersions()
+            version: Self::get_compatible_versions()
         };
 
         if_std! {
@@ -454,7 +464,7 @@ impl<T: Trait> Module<T> {
         ClientStates::mutate(&client_id, |client_state| {
             (*client_state).connections.push(connection_id);
         });
-        Self::deposit_event(RawEvent::ConnOpenInitReceived);
+        Self::deposit_event(RawEvent::ConnOpenInit);
         Ok(())
     }
 
@@ -525,10 +535,10 @@ impl<T: Trait> Module<T> {
         module_index: u8,
         order: ChannelOrder,
         connection_hops: Vec<H256>,
-        port_identifier: Vec<u8>,
-        channel_identifier: H256,
-        counterparty_port_identifier: Vec<u8>,
-        counterparty_channel_identifier: H256,
+        port_id: Vec<u8>,
+        channel_id: H256,
+        counterparty_port_id: Vec<u8>,
+        counterparty_channel_id: H256,
         version: Vec<u8>,
     ) -> dispatch::DispatchResult {
         // abortTransactionUnless(validateChannelIdentifier(portIdentifier, channelIdentifier))
@@ -538,7 +548,7 @@ impl<T: Trait> Module<T> {
         );
 
         ensure!(
-            !Channels::contains_key((port_identifier.clone(), channel_identifier)),
+            !Channels::contains_key((port_id.clone(), channel_id)),
             Error::<T>::ChannelIdExist
         );
         ensure!(
@@ -554,30 +564,30 @@ impl<T: Trait> Module<T> {
         );
         // abortTransactionUnless(authenticate(privateStore.get(portPath(portIdentifier))))
         ensure!(
-            Ports::get(&port_identifier) == module_index,
+            Ports::get(&port_id) == module_index,
             Error::<T>::PortIdNotMatch
         );
         let channel_end = ChannelEnd {
             state: ChannelState::Init,
             ordering: order,
-            counterparty_port_identifier,
-            counterparty_channel_identifier,
+            counterparty_port_id,
+            counterparty_channel_id: counterparty_channel_id,
             connection_hops,
             version: vec![],
         };
-        Channels::insert((port_identifier.clone(), channel_identifier), channel_end);
+        Channels::insert((port_id.clone(), channel_id), channel_end);
         // key = generate()
         // provableStore.set(channelCapabilityPath(portIdentifier, channelIdentifier), key)
-        NextSequenceSend::insert((port_identifier.clone(), channel_identifier), 1);
-        NextSequenceRecv::insert((port_identifier.clone(), channel_identifier), 1);
-        NextSequenceAck::insert((port_identifier.clone(), channel_identifier), 1);
+        NextSequenceSend::insert((port_id.clone(), channel_id), 1);
+        NextSequenceRecv::insert((port_id.clone(), channel_id), 1);
+        NextSequenceAck::insert((port_id.clone(), channel_id), 1);
         // return key
         ClientStates::mutate(&connection.client_id, |client_state| {
             (*client_state)
                 .channels
-                .push((port_identifier.clone(), channel_identifier));
+                .push((port_id.clone(), channel_id));
         });
-        Self::deposit_event(RawEvent::ChanOpenInitReceived);
+        Self::deposit_event(RawEvent::ChanOpenInit);
         Ok(())
     }
 
@@ -622,11 +632,11 @@ impl<T: Trait> Module<T> {
 
         // abortTransactionUnless(authenticate(privateStore.get(channelCapabilityPath(packet.sourcePort, packet.sourceChannel))))
         ensure!(
-            packet.dest_port == channel.counterparty_port_identifier,
+            packet.dest_port == channel.counterparty_port_id,
             Error::<T>::PortIdNotMatch
         );
         ensure!(
-            packet.dest_channel == channel.counterparty_channel_identifier,
+            packet.dest_channel == channel.counterparty_channel_id,
             Error::<T>::DestChannelIdNotMatch
         );
         let connection = Connections::get(&channel.connection_hops[0]);
@@ -686,19 +696,20 @@ impl<T: Trait> Module<T> {
         #![warn(missing_doc_code_examples)]
         match datagram {
             // Receiving the message containing a block header of other chains from relayers,  IBC module tryies to synchronize the block header.
-            Datagram::ClientUpdate { identifier, header } => {
-                ensure!(ClientStates::contains_key(&identifier), "Client not found");
-                let client_state = ClientStates::get(&identifier);
+            Datagram::ClientUpdate { client_id, header } => {
+                ensure!(ClientStates::contains_key(&client_id), "Client not found");
+                let client_state = ClientStates::get(&client_id);
                 ensure!(
                     client_state.latest_height < header.height,
                     "Client already updated"
                 );
                 ensure!(
-                    ConsensusStates::contains_key((identifier, client_state.latest_height)),
+                    ConsensusStates::contains_key((client_id, client_state.latest_height)),
                     "ConsensusState not found"
                 );
                 let consensus_state =
-                    ConsensusStates::get((identifier, client_state.latest_height));
+                    ConsensusStates::get((client_id, client_state.latest_height));
+
                 // TODO: verify header using validity_predicate
                 let justification = GrandpaJustification::<Block>::decode(
                     &mut &*header.justification,
@@ -723,7 +734,7 @@ impl<T: Trait> Module<T> {
                             println!("block_hash: {:?}", header.block_hash);
                         }
                         assert_eq!(header.block_hash, justification.commit.target_hash);
-                        ClientStates::mutate(&identifier, |client_state| {
+                        ClientStates::mutate(&client_id, |client_state| {
                             (*client_state).latest_height = header.height;
                         });
                         // TODO
@@ -736,11 +747,11 @@ impl<T: Trait> Module<T> {
                         if_std! {
                             println!(
                                 "consensus_state inserted: {:?}, {}",
-                                identifier,
+                                client_id,
                                 header.height
                             );
                         }
-                        ConsensusStates::insert((identifier, header.height), new_consensus_state);
+                        ConsensusStates::insert((client_id, header.height), new_consensus_state);
 
                         let result = read_proof_check::<BlakeTwo256>(
                             header.commitment_root,
@@ -758,7 +769,7 @@ impl<T: Trait> Module<T> {
                         }
                         if new_authorities != consensus_state.authorities {
                             ConsensusStates::mutate(
-                                (identifier, header.height),
+                                (client_id, header.height),
                                 |consensus_state| {
                                     (*consensus_state).set_id += 1;
                                     (*consensus_state).authorities = new_authorities;
@@ -776,10 +787,10 @@ impl<T: Trait> Module<T> {
                 Self::deposit_event(RawEvent::ClientMisbehaviourReceived);
             }
             Datagram::ConnOpenTry {
-                desired_identifier,
-                counterparty_connection_identifier,
-                counterparty_client_identifier,
-                client_identifier,
+                connection_id,
+                counterparty_connection_id,
+                counterparty_client_id,
+                client_id,
                 version,
                 counterparty_version,
                 proof_init,
@@ -787,43 +798,49 @@ impl<T: Trait> Module<T> {
                 proof_height,
                 consensus_height,
             } => {
-                ensure!(
-                    ClientStates::contains_key(&client_identifier),
-                    "Client not found"
-                );
-                ensure!(
-                    !Connections::contains_key(&desired_identifier),
-                    "Connection identifier already exists"
-                );
+
+                let mut new_connection_end;
+                if Connections::contains_key(&connection_id) {
+                    let old_conn_end = Connections::get(&connection_id);
+                    let state_is_consistent = old_conn_end.state.eq(&ConnectionState::Init)
+                        && old_conn_end.counterparty_connection_id.eq(&counterparty_connection_id)
+                        && old_conn_end.counterparty_client_id.eq(&counterparty_client_id);
+
+                    ensure!(state_is_consistent, "Local connection corrupted!");
+
+                    new_connection_end = old_conn_end.clone();
+                } else {
+                    new_connection_end = ConnectionEnd {
+                        state: ConnectionState::Init,
+                        counterparty_connection_id,
+                        counterparty_prefix: vec![],
+                        client_id,
+                        counterparty_client_id,
+                        version: vec![],
+                    };
+                }
+
                 // abortTransactionUnless(validateConnectionIdentifier(desiredIdentifier))
                 // abortTransactionUnless(consensusHeight <= getCurrentHeight())
                 // expectedConsensusState = getConsensusState(consensusHeight)
                 // expected = ConnectionEnd{INIT, desiredIdentifier, getCommitmentPrefix(), counterpartyClientIdentifier,
                 //                          clientIdentifier, counterpartyVersions}
                 // version = pickVersion(counterpartyVersions)
-                let connection = ConnectionEnd {
-                    state: ConnectionState::TryOpen,
-                    counterparty_connection_id: counterparty_connection_identifier,
-                    counterparty_prefix: vec![],
-                    client_id: client_identifier,
-                    counterparty_client_id: counterparty_client_identifier,
-                    version: vec![],
-                };
                 if_std! {
                     println!(
                         "query consensus_state: {:?}, {}",
-                        client_identifier,
+                        client_id,
                         proof_height
                     );
                 }
                 ensure!(
-                    ConsensusStates::contains_key((client_identifier, proof_height)),
+                    ConsensusStates::contains_key((client_id, proof_height)),
                     "ConsensusState not found"
                 );
                 let value = Self::verify_connection_state(
-                    client_identifier,
+                    client_id,
                     proof_height,
-                    counterparty_connection_identifier,
+                    counterparty_connection_id,
                     proof_init,
                 );
                 ensure!(value.is_some(), "verify connection state failed");
@@ -838,102 +855,133 @@ impl<T: Trait> Module<T> {
                 //     previous.clientIdentifier === clientIdentifier &&
                 //     previous.counterpartyClientIdentifier === counterpartyClientIdentifier &&
                 //     previous.version === version))
-                let identifier = desired_identifier;
-                Connections::insert(&identifier, connection);
+
+                new_connection_end.state = ConnectionState::TryOpen;
+
+                // Pick the version.
+                let local_versions = Self::get_compatible_versions();
+                let intersection: Vec<u8> = counterparty_version
+                    .iter()
+                    .filter(|cv| local_versions.contains(cv))
+                    .cloned()
+                    .collect();
+                new_connection_end.version = vec![Self::pick_version(intersection)];  // Todo: change the field `version` in `new_connection_end` to `u8`
+
+                let identifier = connection_id;
+                Connections::insert(&identifier, new_connection_end);
                 // addConnectionToClient(clientIdentifier, identifier)
-                ClientStates::mutate(&client_identifier, |client_state| {
+                ClientStates::mutate(&client_id, |client_state| {
                     (*client_state).connections.push(identifier);
                 });
-                Self::deposit_event(RawEvent::ConnOpenTryReceived);
+                Self::deposit_event(RawEvent::ConnOpenTry);
             }
             Datagram::ConnOpenAck {
-                identifier,
+                connection_id,
+                counterparty_connection_id,
                 version,
                 proof_try,
                 proof_consensus,
                 proof_height,
                 consensus_height,
             } => {
+                use sp_runtime::traits::SaturatedConversion;
+                let current_block_number_self = <frame_system::Module<T>>::block_number().saturated_into::<u32>();
+                Self::check_client_consensus_height(current_block_number_self, consensus_height);
+
                 ensure!(
-                    Connections::contains_key(&identifier),
-                    "Connection not found"
+                    Connections::contains_key(&connection_id),
+                    "Connection uninitialized"
                 );
-                // abortTransactionUnless(consensusHeight <= getCurrentHeight())
-                let connection = Connections::get(&identifier);
-                ensure!(
-                    connection.state == ConnectionState::Init
-                        || connection.state == ConnectionState::TryOpen,
-                    "connection state error"
-                );
+
+                let mut new_connection_end;
+                {
+                    let old_conn_end = Connections::get(&connection_id);
+                    let state_is_consistent = old_conn_end.state.eq(&ConnectionState::Init)
+                            && old_conn_end.version.contains(&version)
+                        || old_conn_end.state.eq(&ConnectionState::TryOpen)
+                            && (old_conn_end.version.get(0) == Some(&version));
+
+                    // Check that if the msg's counterparty connection id is not empty then it matches
+                    // the old connection's counterparty.
+                    // Todo: Ensure connecion id is not empty?
+                    let counterparty_matches= old_conn_end.counterparty_connection_id == counterparty_connection_id;
+
+                    ensure!(state_is_consistent && counterparty_matches, "Connection mismatch!");
+
+                    new_connection_end = old_conn_end.clone();
+                }
+
                 // expectedConsensusState = getConsensusState(consensusHeight)
                 // expected = ConnectionEnd{TRYOPEN, identifier, getCommitmentPrefix(),
                 //                          connection.counterpartyClientIdentifier, connection.clientIdentifier,
                 //                          version}
                 ensure!(
-                    ConsensusStates::contains_key((connection.client_id, proof_height)),
+                    ConsensusStates::contains_key((new_connection_end.client_id, proof_height)),
                     "ConsensusState not found"
                 );
                 let value = Self::verify_connection_state(
-                    connection.client_id,
+                    new_connection_end.client_id,
                     proof_height,
-                    connection.counterparty_connection_id,
+                    new_connection_end.counterparty_connection_id,
                     proof_try,
                 );
                 ensure!(value.is_some(), "verify connection state failed");
                 // abortTransactionUnless(connection.verifyConnectionState(proofHeight, proofTry, connection.counterpartyConnectionIdentifier, expected))
                 // abortTransactionUnless(connection.verifyClientConsensusState(proofHeight, proofConsensus, connection.counterpartyClientIdentifier, expectedConsensusState))
-                Connections::mutate(&identifier, |connection| {
+                new_connection_end.version = vec![version];
+                Connections::mutate(&connection_id, |connection| {
                     (*connection).state = ConnectionState::Open;
                 });
                 // abortTransactionUnless(getCompatibleVersions().indexOf(version) !== -1)
                 // connection.version = version
                 // provableStore.set(connectionPath(identifier), connection)
-                Self::deposit_event(RawEvent::ConnOpenAckReceived);
+                Self::deposit_event(RawEvent::ConnOpenAck);
             }
             Datagram::ConnOpenConfirm {
-                identifier,
+                connection_id,
                 proof_ack,
                 proof_height,
             } => {
                 ensure!(
-                    Connections::contains_key(&identifier),
-                    "Connection not found"
+                    Connections::contains_key(&connection_id),
+                    "Connection uninitialized"
                 );
-                // connection = provableStore.get(connectionPath(identifier))
-                let connection = Connections::get(&identifier);
+
+                let mut new_connection_end;
+                {
+                    let old_conn_end = Connections::get(&connection_id);
+                    ensure!(old_conn_end.state.eq(&ConnectionState::TryOpen), "Connection mismatch!");
+                    new_connection_end = old_conn_end.clone();
+                }
+
                 ensure!(
-                    connection.state == ConnectionState::TryOpen,
-                    "connection state error"
-                );
-                // abortTransactionUnless(connection.state === TRYOPEN)
-                ensure!(
-                    ConsensusStates::contains_key((connection.client_id, proof_height)),
+                    ConsensusStates::contains_key((new_connection_end.client_id, proof_height)),
                     "ConsensusState not found"
                 );
                 let value = Self::verify_connection_state(
-                    connection.client_id,
+                    new_connection_end.client_id,
                     proof_height,
-                    connection.counterparty_connection_id,
+                    new_connection_end.counterparty_connection_id,
                     proof_ack,
                 );
                 ensure!(value.is_some(), "verify connection state failed");
                 // expected = ConnectionEnd{OPEN, identifier, getCommitmentPrefix(), connection.counterpartyClientIdentifier,
                 //                          connection.clientIdentifier, connection.version}
                 // abortTransactionUnless(connection.verifyConnectionState(proofHeight, proofAck, connection.counterpartyConnectionIdentifier, expected))
-                Connections::mutate(&identifier, |connection| {
+                Connections::mutate(&connection_id, |connection| {
                     (*connection).state = ConnectionState::Open;
                 });
                 // provableStore.set(connectionPath(identifier), connection)
-                Self::deposit_event(RawEvent::ConnOpenConfirmReceived);
+                Self::deposit_event(RawEvent::ConnOpenConfirm);
             }
             Datagram::ChanOpenTry {
                 order,
                 connection_hops,
-                port_identifier,
-                channel_identifier,
-                counterparty_port_identifier,
-                counterparty_channel_identifier,
-                version,
+                port_id: port_id,
+                channel_id: channel_id,
+                counterparty_port_id: counterparty_port_id,
+                counterparty_channel_id: counterparty_channel_id,
+                channel_version: version,
                 counterparty_version,
                 proof_init,
                 proof_height,
@@ -955,7 +1003,7 @@ impl<T: Trait> Module<T> {
                 //    previous.version === version)
                 //   )
                 ensure!(
-                    !Channels::contains_key((port_identifier.clone(), channel_identifier)),
+                    !Channels::contains_key((port_id.clone(), channel_id)),
                     "channel identifier already exists"
                 );
                 // abortTransactionUnless(authenticate(privateStore.get(portPath(portIdentifier))))
@@ -976,8 +1024,8 @@ impl<T: Trait> Module<T> {
                 let value = Self::verify_channel_state(
                     connection.client_id,
                     proof_height,
-                    counterparty_port_identifier.clone(),
-                    counterparty_channel_identifier,
+                    counterparty_port_id.clone(),
+                    counterparty_channel_id,
                     proof_init,
                 );
                 ensure!(value.is_some(), "verify channel state failed");
@@ -990,42 +1038,42 @@ impl<T: Trait> Module<T> {
                 //   counterpartyChannelIdentifier,
                 //   expected
                 // ))
-                let dest_module_index = Ports::get(port_identifier.clone());
-                T::ModuleCallbacks::on_chan_open_try(dest_module_index.into(), order.clone(), connection_hops.clone(), port_identifier.clone(), channel_identifier, counterparty_port_identifier.clone(), counterparty_channel_identifier, version.clone(), counterparty_version);
+                let dest_module_index = Ports::get(port_id.clone());
+                T::ModuleCallbacks::on_chan_open_try(dest_module_index.into(), order.clone(), connection_hops.clone(), port_id.clone(), channel_id, counterparty_port_id.clone(), counterparty_channel_id, version.clone(), counterparty_version);
 
                 let channel_end = ChannelEnd {
                     state: ChannelState::TryOpen,
                     ordering: order,
-                    counterparty_port_identifier,
-                    counterparty_channel_identifier,
+                    counterparty_port_id: counterparty_port_id,
+                    counterparty_channel_id: counterparty_channel_id,
                     connection_hops,
                     version,
                 };
-                Channels::insert((port_identifier.clone(), channel_identifier), channel_end);
+                Channels::insert((port_id.clone(), channel_id), channel_end);
                 // key = generate()
                 // provableStore.set(channelCapabilityPath(portIdentifier, channelIdentifier), key)
-                NextSequenceSend::insert((port_identifier.clone(), channel_identifier), 1);
-                NextSequenceRecv::insert((port_identifier.clone(), channel_identifier), 1);
+                NextSequenceSend::insert((port_id.clone(), channel_id), 1);
+                NextSequenceRecv::insert((port_id.clone(), channel_id), 1);
                 // return key
                 ClientStates::mutate(&connection.client_id, |client_state| {
                     (*client_state)
                         .channels
-                        .push((port_identifier.clone(), channel_identifier));
+                        .push((port_id.clone(), channel_id));
                 });
-                Self::deposit_event(RawEvent::ChanOpenTryReceived);
+                Self::deposit_event(RawEvent::ChanOpenTry);
             }
             Datagram::ChanOpenAck {
-                port_identifier,
-                channel_identifier,
+                port_id: port_id,
+                channel_id: channel_id,
                 version,
                 proof_try,
                 proof_height,
             } => {
                 ensure!(
-                    Channels::contains_key((port_identifier.clone(), channel_identifier)),
+                    Channels::contains_key((port_id.clone(), channel_id)),
                     "channel identifier not exists"
                 );
-                let channel = Channels::get((port_identifier.clone(), channel_identifier));
+                let channel = Channels::get((port_id.clone(), channel_id));
                 ensure!(
                     channel.state == ChannelState::Init || channel.state == ChannelState::TryOpen,
                     "channel is not ready"
@@ -1047,8 +1095,8 @@ impl<T: Trait> Module<T> {
                 let value = Self::verify_channel_state(
                     connection.client_id,
                     proof_height,
-                    channel.counterparty_port_identifier,
-                    channel.counterparty_channel_identifier,
+                    channel.counterparty_port_id,
+                    channel.counterparty_channel_id,
                     proof_try,
                 );
                 ensure!(value.is_some(), "verify channel state failed");
@@ -1062,24 +1110,24 @@ impl<T: Trait> Module<T> {
                 //   expected
                 // ))
                 // channel.version = counterpartyVersion
-                let dest_module_index = Ports::get(port_identifier.clone());
-                T::ModuleCallbacks::on_chan_open_ack(dest_module_index.into(), port_identifier.clone(), channel_identifier, version.clone());
-                Channels::mutate((port_identifier, channel_identifier), |channel| {
+                let dest_module_index = Ports::get(port_id.clone());
+                T::ModuleCallbacks::on_chan_open_ack(dest_module_index.into(), port_id.clone(), channel_id, version.clone());
+                Channels::mutate((port_id, channel_id), |channel| {
                     (*channel).state = ChannelState::Open;
                 });
-                Self::deposit_event(RawEvent::ChanOpenAckReceived);
+                Self::deposit_event(RawEvent::ChanOpenAck);
             }
             Datagram::ChanOpenConfirm {
-                port_identifier,
-                channel_identifier,
+                port_id: port_id,
+                channel_id: channel_id,
                 proof_ack,
                 proof_height,
             } => {
                 ensure!(
-                    Channels::contains_key((port_identifier.clone(), channel_identifier)),
+                    Channels::contains_key((port_id.clone(), channel_id)),
                     "channel identifier not exists"
                 );
-                let channel = Channels::get((port_identifier.clone(), channel_identifier));
+                let channel = Channels::get((port_id.clone(), channel_id));
                 ensure!(
                     channel.state == ChannelState::TryOpen,
                     "channel is not ready"
@@ -1101,8 +1149,8 @@ impl<T: Trait> Module<T> {
                 let value = Self::verify_channel_state(
                     connection.client_id,
                     proof_height,
-                    channel.counterparty_port_identifier,
-                    channel.counterparty_channel_identifier,
+                    channel.counterparty_port_id,
+                    channel.counterparty_channel_id,
                     proof_ack,
                 );
                 ensure!(value.is_some(), "verify channel state failed");
@@ -1115,12 +1163,12 @@ impl<T: Trait> Module<T> {
                 //   channel.counterpartyChannelIdentifier,
                 //   expected
                 // ))
-                let dest_module_index = Ports::get(port_identifier.clone());
-                T::ModuleCallbacks::on_chan_open_confirm(dest_module_index.into(), port_identifier.clone(), channel_identifier);
-                Channels::mutate((port_identifier, channel_identifier), |channel| {
+                let dest_module_index = Ports::get(port_id.clone());
+                T::ModuleCallbacks::on_chan_open_confirm(dest_module_index.into(), port_id.clone(), channel_id);
+                Channels::mutate((port_id, channel_id), |channel| {
                     (*channel).state = ChannelState::Open;
                 });
-                Self::deposit_event(RawEvent::ChanOpenConfirmReceived);
+                Self::deposit_event(RawEvent::ChanOpenConfirm);
             }
             Datagram::PacketRecv {
                 packet,
@@ -1135,11 +1183,11 @@ impl<T: Trait> Module<T> {
                 ensure!(channel.state == ChannelState::Open, "channel is not ready");
                 // abortTransactionUnless(authenticate(privateStore.get(channelCapabilityPath(packet.destPort, packet.destChannel))))
                 ensure!(
-                    packet.source_port == channel.counterparty_port_identifier,
+                    packet.source_port == channel.counterparty_port_id,
                     "source port not match"
                 );
                 ensure!(
-                    packet.source_channel == channel.counterparty_channel_identifier,
+                    packet.source_channel == channel.counterparty_channel_id,
                     "source channel not match"
                 );
 
@@ -1248,7 +1296,7 @@ impl<T: Trait> Module<T> {
                 ensure!(channel.state == ChannelState::Open, "channel is not ready");
                 // abortTransactionUnless(authenticate(privateStore.get(channelCapabilityPath(packet.sourcePort, packet.sourceChannel))))
                 ensure!(
-                    packet.dest_channel == channel.counterparty_channel_identifier,
+                    packet.dest_channel == channel.counterparty_channel_id,
                     "dest channel not match"
                 );
 
@@ -1262,7 +1310,7 @@ impl<T: Trait> Module<T> {
                     "connection has been closed"
                 );
                 ensure!(
-                    packet.dest_port == channel.counterparty_port_identifier,
+                    packet.dest_port == channel.counterparty_port_id,
                     "dest port not match"
                 );
 
@@ -1341,12 +1389,12 @@ impl<T: Trait> Module<T> {
     }
 
     fn verify_connection_state(
-        client_identifier: H256,
+        client_id: H256,
         proof_height: u32,
         connection_identifier: H256,
         proof: StorageProof,
     ) -> Option<ConnectionEnd> {
-        let consensus_state = ConsensusStates::get((client_identifier, proof_height));
+        let consensus_state = ConsensusStates::get((client_id, proof_height));
         let key = Connections::hashed_key_for(connection_identifier);
         let value = read_proof_check::<BlakeTwo256>(consensus_state.root, proof, &key);
         match value {
@@ -1381,13 +1429,13 @@ impl<T: Trait> Module<T> {
     }
 
     fn verify_channel_state(
-        client_identifier: H256,
+        client_id: H256,
         proof_height: u32,
         port_identifier: Vec<u8>,
         channel_identifier: H256,
         proof: StorageProof,
     ) -> Option<ChannelEnd> {
-        let consensus_state = ConsensusStates::get((client_identifier, proof_height));
+        let consensus_state = ConsensusStates::get((client_id, proof_height));
         let key = Channels::hashed_key_for((port_identifier, channel_identifier));
         let value = read_proof_check::<BlakeTwo256>(consensus_state.root, proof, &key);
         match value {
@@ -1422,14 +1470,14 @@ impl<T: Trait> Module<T> {
     }
 
     fn verify_packet_data(
-        client_identifier: H256,
+        client_id: H256,
         proof_height: u32,
         proof: StorageProof,
         port_identifier: Vec<u8>,
         channel_identifier: H256,
         sequence: u64,
     ) -> Option<H256> {
-        let consensus_state = ConsensusStates::get((client_identifier, proof_height));
+        let consensus_state = ConsensusStates::get((client_id, proof_height));
         let key = Packets::hashed_key_for((port_identifier, channel_identifier, sequence));
         let value = read_proof_check::<BlakeTwo256>(consensus_state.root, proof, &key);
         match value {
@@ -1464,14 +1512,14 @@ impl<T: Trait> Module<T> {
     }
 
     fn verify_packet_acknowledgement(
-        client_identifier: H256,
+        client_id: H256,
         proof_height: u32,
         proof: StorageProof,
         port_identifier: Vec<u8>,
         channel_identifier: H256,
         sequence: u64,
     ) -> Option<H256> {
-        let consensus_state = ConsensusStates::get((client_identifier, proof_height));
+        let consensus_state = ConsensusStates::get((client_id, proof_height));
         let key = Acknowledgements::hashed_key_for((port_identifier, channel_identifier, sequence));
         let value = read_proof_check::<BlakeTwo256>(consensus_state.root, proof, &key);
         match value {
@@ -1504,4 +1552,32 @@ impl<T: Trait> Module<T> {
 
         None
     }
+
+    fn get_compatible_versions() -> Vec<u8> {
+        VERSIONS.to_vec().clone()
+    }
+
+    fn pick_version(candidate_versions: Vec<u8>) -> u8 {
+        *candidate_versions.get(0).unwrap()
+    }
+
+    fn check_client_consensus_height(
+        host_current_height: u32,
+        claimed_height: u32,
+    ) -> dispatch::DispatchResult {
+        // Todo: Use Height struct as ibc-rs/modules/src/ics02_client/height.rs?
+
+        ensure!(
+                    claimed_height > host_current_height,
+                    "Consensus height is too advanced!"
+                );
+
+        ensure!(
+                    claimed_height < host_current_height - MAX_HISTORY_SIZE,
+                    "Consensus height is too old!"
+                );
+
+        Ok(())
+    }
+
 }

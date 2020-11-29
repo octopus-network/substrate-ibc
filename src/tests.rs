@@ -43,19 +43,19 @@ fn conn_open_init_func() {
     let identifier = Blake2Hasher::hash("appia-connection".as_bytes());
     let desired_counterparty_connection_identifier =
         Blake2Hasher::hash("flaminia-connection".as_bytes());
-    let client_identifier =
+    let client_id =
         hex::decode("53a954d6a7b1c595e025226e5f2a1782fdea30cd8b0d207ed4cdb040af3bfa10").unwrap();
-    let client_identifier = H256::from_slice(&client_identifier);
-    let counterparty_client_identifier =
+    let client_id = H256::from_slice(&client_id);
+    let counterparty_client_id =
         hex::decode("779ca65108d1d515c3e4bc2e9f6d2f90e27b33b147864d1cd422d9f92ce08e03").unwrap();
-    let counterparty_client_identifier = H256::from_slice(&counterparty_client_identifier);
+    let counterparty_client_id = H256::from_slice(&counterparty_client_id);
 
     assert_err!(
         IbcModule::conn_open_init(
             identifier,
             desired_counterparty_connection_identifier,
-            client_identifier,
-            counterparty_client_identifier
+            client_id,
+            counterparty_client_id
         ),
         Error::<Test>::ClientIdNotExist
     );
@@ -73,15 +73,15 @@ fn conn_open_init_func() {
     assert_ok!(IbcModule::conn_open_init(
         identifier,
         desired_counterparty_connection_identifier,
-        client_identifier,
-        counterparty_client_identifier
+        client_id,
+        counterparty_client_id
     ));
     assert_err!(
         IbcModule::conn_open_init(
             identifier,
             desired_counterparty_connection_identifier,
-            client_identifier,
-            counterparty_client_identifier
+            client_id,
+            counterparty_client_id
         ),
         Error::<Test>::ConnectionIdExist
     );
@@ -133,18 +133,18 @@ fn chan_open_init_func() {
     let identifier = Blake2Hasher::hash("appia-connection".as_bytes());
     let desired_counterparty_connection_identifier =
         Blake2Hasher::hash("flaminia-connection".as_bytes());
-    let client_identifier =
+    let client_id =
         hex::decode("53a954d6a7b1c595e025226e5f2a1782fdea30cd8b0d207ed4cdb040af3bfa10").unwrap();
-    let client_identifier = H256::from_slice(&client_identifier);
-    let counterparty_client_identifier =
+    let client_id = H256::from_slice(&client_id);
+    let counterparty_client_id =
         hex::decode("779ca65108d1d515c3e4bc2e9f6d2f90e27b33b147864d1cd422d9f92ce08e03").unwrap();
-    let counterparty_client_identifier = H256::from_slice(&counterparty_client_identifier);
+    let counterparty_client_id = H256::from_slice(&counterparty_client_id);
 
     IbcModule::conn_open_init(
         identifier,
         desired_counterparty_connection_identifier,
-        client_identifier,
-        counterparty_client_identifier,
+        client_id,
+        counterparty_client_id,
     );
 
     assert_err!(
@@ -251,17 +251,17 @@ fn send_packet_func() {
     let identifier = Blake2Hasher::hash("appia-connection".as_bytes());
     let desired_counterparty_connection_identifier =
         Blake2Hasher::hash("flaminia-connection".as_bytes());
-    let client_identifier =
+    let client_id =
         hex::decode("53a954d6a7b1c595e025226e5f2a1782fdea30cd8b0d207ed4cdb040af3bfa10").unwrap();
-    let client_identifier = H256::from_slice(&client_identifier);
-    let counterparty_client_identifier =
+    let client_id = H256::from_slice(&client_id);
+    let counterparty_client_id =
         hex::decode("779ca65108d1d515c3e4bc2e9f6d2f90e27b33b147864d1cd422d9f92ce08e03").unwrap();
-    let counterparty_client_identifier = H256::from_slice(&counterparty_client_identifier);
+    let counterparty_client_id = H256::from_slice(&counterparty_client_id);
     IbcModule::conn_open_init(
         identifier,
         desired_counterparty_connection_identifier,
-        client_identifier,
-        counterparty_client_identifier,
+        client_id,
+        counterparty_client_id,
     );
 
     let module_index = 45 as u8;
