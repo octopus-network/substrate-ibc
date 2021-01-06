@@ -33,6 +33,15 @@ default-features = false
 optional = true
 version = '1.0.101'
 
+[dependencies.ibc]
+default-features = false
+git = 'https://github.com/cdot-network/ibc-rs.git'
+package = 'ibc'
+branch = 'ys'
+
+[dependencies.tendermint-proto]
+version = "=0.17.0"
+
 [dependencies]
 frame-support = { default-features = false, version = '2.0.0' }
 frame-system = { default-features = false, version = '2.0.0' }
@@ -42,6 +51,8 @@ sp-runtime = { default-features = false, version = '2.0.0' }
 sp-finality-grandpa = { default-features = false, version = '2.0.0' }
 sp-std = { default-features = false, version = '2.0.0' }
 sp-trie = { default-features = false, version = '2.0.0' }
+prost = "0.6.1"
+prost-types = "0.6.1"
 
 [dev-dependencies]
 hex = '0.4.0'

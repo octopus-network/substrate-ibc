@@ -51,8 +51,13 @@
 
 use codec::{Decode, Encode};
 use finality_grandpa::voter_set::VoterSet;
-use frame_support::{decl_module, decl_storage, decl_event, decl_error, dispatch, ensure, traits::Get};
+use frame_support::{
+    decl_error, decl_event, decl_module, decl_storage, dispatch, ensure, traits::Get,
+};
 use frame_system::ensure_signed;
+use grandpa::justification::GrandpaJustification;
+use grandpa::state_machine::read_proof_check;
+use ibc;
 use sp_core::H256;
 use sp_finality_grandpa::{AuthorityList, VersionedAuthorityList, GRANDPA_AUTHORITIES_KEY};
 use sp_runtime::{
@@ -62,16 +67,16 @@ use sp_runtime::{
 };
 use sp_std::{if_std, prelude::*};
 use sp_trie::StorageProof;
-use grandpa::state_machine::read_proof_check;
-use grandpa::justification::GrandpaJustification;
 
 pub use client::ClientType;
+use core::marker::PhantomData;
 pub use routing::ModuleCallbacks;
 
 mod client;
 pub mod grandpa;
 mod handler;
 mod header;
+pub mod informalsystems;
 mod routing;
 mod state;
 
@@ -117,7 +122,7 @@ pub enum Datagram {
         counterparty_connection_id: H256,
         counterparty_client_id: H256,
         client_id: H256,
-        version: Vec<u8>,  // Todo: remove this field
+        version: Vec<u8>, // Todo: remove this field
         counterparty_version: Vec<u8>,
         proof_init: StorageProof,
         proof_consensus: StorageProof,
@@ -154,7 +159,7 @@ pub enum Datagram {
         port_id: Vec<u8>,
         channel_id: H256,
         version: Vec<u8>,
-        proof_try: StorageProof,  // Todo: In ibc-rs, proofs contains `object_proof`, `client_proof`, `consensus_proof` and `height`
+        proof_try: StorageProof, // Todo: In ibc-rs, proofs contains `object_proof`, `client_proof`, `consensus_proof` and `height`
         proof_height: u32,
     },
     ChanOpenConfirm {
@@ -200,7 +205,7 @@ pub struct ConnectionEnd {
     counterparty_prefix: Vec<u8>,
     pub client_id: H256,
     counterparty_client_id: H256,
-    pub version: Vec<u8>,      // TODO: A ConnectionEnd should only store one version.
+    pub version: Vec<u8>, // TODO: A ConnectionEnd should only store one version.
 }
 
 #[derive(Clone, PartialEq, Encode, Decode, RuntimeDebug)]
@@ -243,84 +248,90 @@ pub struct ChannelEnd {
 
 /// Configure the pallet by specifying the parameters and types on which it depends.
 pub trait Trait: frame_system::Trait {
-	/// Because this pallet emits events, it depends on the runtime's definition of an event.
-	type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
-	type ModuleCallbacks: routing::ModuleCallbacks;
+    /// Because this pallet emits events, it depends on the runtime's definition of an event.
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+    type ModuleCallbacks: routing::ModuleCallbacks;
 }
 
 // The pallet's runtime storage items.
 // https://substrate.dev/docs/en/knowledgebase/runtime/storage
 decl_storage! {
-	// A unique name is used to ensure that the pallet's storage items are isolated.
-	// This name may be updated, but each pallet in the runtime must use a unique name.
-	trait Store for Module<T: Trait> as Ibc {
-		ClientStates: map hasher(blake2_128_concat) H256 => grandpa::client_state::ClientState; // client_id => ClientState
-		ConsensusStates: map hasher(blake2_128_concat) (H256, u32) => grandpa::consensus_state::ConsensusState; // (client_id, height) => ConsensusState
-		Connections: map hasher(blake2_128_concat) H256 => ConnectionEnd; // connection_identifier => ConnectionEnd
-		Ports: map hasher(blake2_128_concat) Vec<u8> => u8; // port_identifier => module_index
-		/// Channel structures are stored under a store path prefix unique to a combination of a port identifier and channel identifier.
-		Channels: map hasher(blake2_128_concat) (Vec<u8>, H256) => ChannelEnd; // (port_identifier, channel_identifier) => ChannelEnd
-		NextSequenceSend: map hasher(blake2_128_concat) (Vec<u8>, H256) => u64; // (port_identifier, channel_identifier) => Sequence
-		NextSequenceRecv: map hasher(blake2_128_concat) (Vec<u8>, H256) => u64; // (port_identifier, channel_identifier) => Sequence
-		NextSequenceAck: map hasher(blake2_128_concat) (Vec<u8>, H256) => u64; // (port_identifier, channel_identifier) => Sequence
-		Packets: map hasher(blake2_128_concat) (Vec<u8>, H256, u64) => H256; // (port_identifier, channel_identifier, sequence) => Hash
-		Acknowledgements: map hasher(blake2_128_concat) (Vec<u8>, H256, u64) => H256; // (port_identifier, channel_identifier, sequence) => Hash
-	}
+    // A unique name is used to ensure that the pallet's storage items are isolated.
+    // This name may be updated, but each pallet in the runtime must use a unique name.
+    trait Store for Module<T: Trait> as Ibc {
+        ClientStatesV2: map hasher(blake2_128_concat) Vec<u8> => Vec<u8>; // client_id => ClientState
+        ConsensusStatesV2: map hasher(blake2_128_concat) (Vec<u8>, Vec<u8>) => Vec<u8>; // (client_id, height) => ConsensusState
+
+        ClientStates: map hasher(blake2_128_concat) H256 => grandpa::client_state::ClientState; // client_id => ClientState
+        ConsensusStates: map hasher(blake2_128_concat) (H256, u32) => grandpa::consensus_state::ConsensusState; // (client_id, height) => ConsensusState
+        Connections: map hasher(blake2_128_concat) H256 => ConnectionEnd; // connection_identifier => ConnectionEnd
+        Ports: map hasher(blake2_128_concat) Vec<u8> => u8; // port_identifier => module_index
+        /// Channel structures are stored under a store path prefix unique to a combination of a port identifier and channel identifier.
+        Channels: map hasher(blake2_128_concat) (Vec<u8>, H256) => ChannelEnd; // (port_identifier, channel_identifier) => ChannelEnd
+        NextSequenceSend: map hasher(blake2_128_concat) (Vec<u8>, H256) => u64; // (port_identifier, channel_identifier) => Sequence
+        NextSequenceRecv: map hasher(blake2_128_concat) (Vec<u8>, H256) => u64; // (port_identifier, channel_identifier) => Sequence
+        NextSequenceAck: map hasher(blake2_128_concat) (Vec<u8>, H256) => u64; // (port_identifier, channel_identifier) => Sequence
+        Packets: map hasher(blake2_128_concat) (Vec<u8>, H256, u64) => H256; // (port_identifier, channel_identifier, sequence) => Hash
+        Acknowledgements: map hasher(blake2_128_concat) (Vec<u8>, H256, u64) => H256; // (port_identifier, channel_identifier, sequence) => Hash
+    }
 }
 
 // Pallets use events to inform users when important changes are made.
 // https://substrate.dev/docs/en/knowledgebase/runtime/events
 decl_event!(
-	pub enum Event<T> where AccountId = <T as frame_system::Trait>::AccountId {
-		/// Event documentation should end with an array that provides descriptive names for event
-		/// parameters. [something, who]
-		SomethingStored(u32, AccountId),
-		ClientCreated,
-		ClientUpdated,
-		ClientMisbehaviourReceived,
-		ConnOpenInit,
-		ConnOpenTry,
-		ConnOpenAck,
-		ConnOpenConfirm,
-		PortBound(u8),
-		PortReleased,
-		ChanOpenInit,
-		ChanOpenTry,
-		ChanOpenAck,
-		ChanOpenConfirm,
-		SendPacket(u64, Vec<u8>, u32, Vec<u8>, H256, Vec<u8>, H256),
-		RecvPacket(u64, Vec<u8>, u32, Vec<u8>, H256, Vec<u8>, H256, Vec<u8>),
-		PacketRecvReceived,
-		AcknowledgePacket,
-	}
+    pub enum Event<T>
+    where
+        AccountId = <T as frame_system::Trait>::AccountId,
+    {
+        /// Event documentation should end with an array that provides descriptive names for event
+        /// parameters. [something, who]
+        SomethingStored(u32, AccountId),
+        ClientCreated,
+        ClientUpdated,
+        ClientMisbehaviourReceived,
+        ConnOpenInit,
+        ConnOpenTry,
+        ConnOpenAck,
+        ConnOpenConfirm,
+        PortBound(u8),
+        PortReleased,
+        ChanOpenInit,
+        ChanOpenTry,
+        ChanOpenAck,
+        ChanOpenConfirm,
+        SendPacket(u64, Vec<u8>, u32, Vec<u8>, H256, Vec<u8>, H256),
+        RecvPacket(u64, Vec<u8>, u32, Vec<u8>, H256, Vec<u8>, H256, Vec<u8>),
+        PacketRecvReceived,
+        AcknowledgePacket,
+    }
 );
 
 // Errors inform users that something went wrong.
 decl_error! {
-	pub enum Error for Module<T: Trait> {
-		/// The IBC client identifier already exists.
-		ClientIdExist,
-		/// The IBC client identifier doesn't exist.
-		ClientIdNotExist,
-		/// The IBC port identifier is already binded.
-		PortIdBinded,
-		/// The IBC connection identifier already exists.
-		ConnectionIdExist,
-		/// The IBC connection identifier doesn't exist.
-		ConnectionIdNotExist,
-		/// The IBC channel identifier already exists.
-		ChannelIdExist,
-		/// The IBC port identifier doesn't match.
-		PortIdNotMatch,
-		/// The IBC connection is closed.
-		ConnectionClosed,
-		/// Only allow 1 hop for v1 of the IBC protocol.
-		OnlyOneHopAllowedV1,
-		/// The sequence sending packet not match
-		PackedSequenceNotMatch,
-		/// The destination channel identifier doesn't match
-		DestChannelIdNotMatch
-	}
+    pub enum Error for Module<T: Trait> {
+        /// The IBC client identifier already exists.
+        ClientIdExist,
+        /// The IBC client identifier doesn't exist.
+        ClientIdNotExist,
+        /// The IBC port identifier is already binded.
+        PortIdBinded,
+        /// The IBC connection identifier already exists.
+        ConnectionIdExist,
+        /// The IBC connection identifier doesn't exist.
+        ConnectionIdNotExist,
+        /// The IBC channel identifier already exists.
+        ChannelIdExist,
+        /// The IBC port identifier doesn't match.
+        PortIdNotMatch,
+        /// The IBC connection is closed.
+        ConnectionClosed,
+        /// Only allow 1 hop for v1 of the IBC protocol.
+        OnlyOneHopAllowedV1,
+        /// The sequence sending packet not match
+        PackedSequenceNotMatch,
+        /// The destination channel identifier doesn't match
+        DestChannelIdNotMatch
+    }
 }
 
 // Dispatchable functions allows users to interact with the pallet and invoke state changes.
@@ -328,26 +339,59 @@ decl_error! {
 // Dispatchable functions must be annotated with a weight and must return a DispatchResult.
 decl_module! {
     /// The struct defines the major functions for the module.
-	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-		// Errors must be initialized if they are used by the pallet.
-		type Error = Error<T>;
+    pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+        // Errors must be initialized if they are used by the pallet.
+        type Error = Error<T>;
 
-		// Events must be initialized if they are used by the pallet.
-		fn deposit_event() = default;
+        // Events must be initialized if they are used by the pallet.
+        fn deposit_event() = default;
 
-		#[weight = 0]
-		fn submit_datagram(origin, datagram: Datagram) -> dispatch::DispatchResult {
-			let _sender = ensure_signed(origin)?;
-			Self::handle_datagram(datagram)
-		}
+        #[weight = 0]
+        fn submit_datagram(origin, datagram: Datagram) -> dispatch::DispatchResult {
+            let _sender = ensure_signed(origin)?;
+            Self::handle_datagram(datagram)
+        }
 
-		/// An example dispatchable that may throw a custom error.
-		#[weight = 10_000 + T::DbWeight::get().reads_writes(1,1)]
-		pub fn cause_error(origin) -> dispatch::DispatchResult {
-			let _who = ensure_signed(origin)?;
-			Ok(())
-		}
-	}
+        #[weight = 0]
+        fn deliver(origin, msg: informalsystems::ClientMsg) -> dispatch::DispatchResult {
+            use tendermint_proto::Protobuf;
+            use informalsystems::ClientMsg::{CreateClient, UpdateClient};
+            use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
+            use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
+            use ibc::ics26_routing::msgs::ICS26Envelope;
+            use ibc::ics02_client::msgs::ClientMsg;
+            if_std! {
+                println!("in deliver");
+            }
+            let _sender = ensure_signed(origin)?;
+            let mut ctx = informalsystems::Context{_pd: PhantomData::<T>, client_ids_counter: 0, connection_ids_counter: 0};
+            let envelope = match msg {
+                // ICS2 messages
+                CreateClient(data) => {
+                // Pop out the message and then wrap it in the corresponding type
+                let domain_msg = MsgCreateAnyClient::decode_vec(&*data).unwrap();
+                ICS26Envelope::ICS2Msg(ClientMsg::CreateClient(domain_msg))
+                }
+                UpdateClient(data) => {
+                let domain_msg = MsgUpdateAnyClient::decode_vec(&*data).unwrap();
+                ICS26Envelope::ICS2Msg(ClientMsg::UpdateClient(domain_msg))
+                }
+                // TODO: ICS3 messages
+            };
+            let result = ibc::ics26_routing::handler::dispatch(&mut ctx, envelope);
+            if_std! {
+                println!("result: {:?}", result);
+            }
+            Ok(())
+        }
+
+        /// An example dispatchable that may throw a custom error.
+        #[weight = 10_000 + T::DbWeight::get().reads_writes(1,1)]
+        pub fn cause_error(origin) -> dispatch::DispatchResult {
+            let _who = ensure_signed(origin)?;
+            Ok(())
+        }
+    }
 }
 
 // The main implementation block for the module.
@@ -386,17 +430,9 @@ impl<T: Trait> Module<T> {
 
         let client_state = match client_type {
             ClientType::GRANDPA => {
-                grandpa::client_state::ClientState::new(
-                    client_id.clone(),
-                    height,
-                )
+                grandpa::client_state::ClientState::new(client_id.clone(), height)
             }
-            _ => {
-                grandpa::client_state::ClientState::new(
-                    client_id.clone(),
-                    height,
-                )
-            }
+            _ => grandpa::client_state::ClientState::new(client_id.clone(), height),
         };
 
         ConsensusStates::insert((client_id, height), consensus_state);
@@ -435,7 +471,7 @@ impl<T: Trait> Module<T> {
         connection_id: H256,
         counterparty_connection_id: H256,
         client_id: H256,
-        counterparty_client_id: H256
+        counterparty_client_id: H256,
     ) -> dispatch::DispatchResult {
         // abortTransactionUnless(validateConnectionIdentifier(connection_id))
         ensure!(
@@ -453,7 +489,7 @@ impl<T: Trait> Module<T> {
             counterparty_prefix: vec![],
             client_id,
             counterparty_client_id,
-            version: Self::get_compatible_versions()
+            version: Self::get_compatible_versions(),
         };
 
         if_std! {
@@ -482,10 +518,7 @@ impl<T: Trait> Module<T> {
     /// ```
     pub fn bind_port(identifier: Vec<u8>, module_index: u8) -> dispatch::DispatchResult {
         // abortTransactionUnless(validatePortIdentifier(id))
-        ensure!(
-            !Ports::contains_key(&identifier),
-            Error::<T>::PortIdBinded
-        );
+        ensure!(!Ports::contains_key(&identifier), Error::<T>::PortIdBinded);
         Ports::insert(&identifier, module_index);
         Self::deposit_event(RawEvent::PortBound(module_index));
         Ok(())
@@ -542,10 +575,7 @@ impl<T: Trait> Module<T> {
         version: Vec<u8>,
     ) -> dispatch::DispatchResult {
         // abortTransactionUnless(validateChannelIdentifier(portIdentifier, channelIdentifier))
-        ensure!(
-            connection_hops.len() == 1,
-            Error::<T>::OnlyOneHopAllowedV1
-        );
+        ensure!(connection_hops.len() == 1, Error::<T>::OnlyOneHopAllowedV1);
 
         ensure!(
             !Channels::contains_key((port_id.clone(), channel_id)),
@@ -583,9 +613,7 @@ impl<T: Trait> Module<T> {
         NextSequenceAck::insert((port_id.clone(), channel_id), 1);
         // return key
         ClientStates::mutate(&connection.client_id, |client_state| {
-            (*client_state)
-                .channels
-                .push((port_id.clone(), channel_id));
+            (*client_state).channels.push((port_id.clone(), channel_id));
         });
         Self::deposit_event(RawEvent::ChanOpenInit);
         Ok(())
@@ -707,13 +735,11 @@ impl<T: Trait> Module<T> {
                     ConsensusStates::contains_key((client_id, client_state.latest_height)),
                     "ConsensusState not found"
                 );
-                let consensus_state =
-                    ConsensusStates::get((client_id, client_state.latest_height));
+                let consensus_state = ConsensusStates::get((client_id, client_state.latest_height));
 
                 // TODO: verify header using validity_predicate
-                let justification = GrandpaJustification::<Block>::decode(
-                    &mut &*header.justification,
-                );
+                let justification =
+                    GrandpaJustification::<Block>::decode(&mut &*header.justification);
                 if_std! {
                     println!(
                         "consensus_state: {:?}, header: {:?}",
@@ -798,13 +824,16 @@ impl<T: Trait> Module<T> {
                 proof_height,
                 consensus_height,
             } => {
-
                 let mut new_connection_end;
                 if Connections::contains_key(&connection_id) {
                     let old_conn_end = Connections::get(&connection_id);
                     let state_is_consistent = old_conn_end.state.eq(&ConnectionState::Init)
-                        && old_conn_end.counterparty_connection_id.eq(&counterparty_connection_id)
-                        && old_conn_end.counterparty_client_id.eq(&counterparty_client_id);
+                        && old_conn_end
+                            .counterparty_connection_id
+                            .eq(&counterparty_connection_id)
+                        && old_conn_end
+                            .counterparty_client_id
+                            .eq(&counterparty_client_id);
 
                     ensure!(state_is_consistent, "Local connection corrupted!");
 
@@ -865,7 +894,7 @@ impl<T: Trait> Module<T> {
                     .filter(|cv| local_versions.contains(cv))
                     .cloned()
                     .collect();
-                new_connection_end.version = vec![Self::pick_version(intersection)];  // Todo: change the field `version` in `new_connection_end` to `u8`
+                new_connection_end.version = vec![Self::pick_version(intersection)]; // Todo: change the field `version` in `new_connection_end` to `u8`
 
                 let identifier = connection_id;
                 Connections::insert(&identifier, new_connection_end);
@@ -885,7 +914,8 @@ impl<T: Trait> Module<T> {
                 consensus_height,
             } => {
                 use sp_runtime::traits::SaturatedConversion;
-                let current_block_number_self = <frame_system::Module<T>>::block_number().saturated_into::<u32>();
+                let current_block_number_self =
+                    <frame_system::Module<T>>::block_number().saturated_into::<u32>();
                 Self::check_client_consensus_height(current_block_number_self, consensus_height);
 
                 ensure!(
@@ -951,7 +981,10 @@ impl<T: Trait> Module<T> {
                 let mut new_connection_end;
                 {
                     let old_conn_end = Connections::get(&connection_id);
-                    ensure!(old_conn_end.state.eq(&ConnectionState::TryOpen), "Connection mismatch!");
+                    ensure!(
+                        old_conn_end.state.eq(&ConnectionState::TryOpen),
+                        "Connection mismatch!"
+                    );
                     new_connection_end = old_conn_end.clone();
                 }
 
@@ -1040,7 +1073,17 @@ impl<T: Trait> Module<T> {
                 //   expected
                 // ))
                 let dest_module_index = Ports::get(port_id.clone());
-                T::ModuleCallbacks::on_chan_open_try(dest_module_index.into(), order.clone(), connection_hops.clone(), port_id.clone(), channel_id, counterparty_port_id.clone(), counterparty_channel_id, version.clone(), counterparty_version);
+                T::ModuleCallbacks::on_chan_open_try(
+                    dest_module_index.into(),
+                    order.clone(),
+                    connection_hops.clone(),
+                    port_id.clone(),
+                    channel_id,
+                    counterparty_port_id.clone(),
+                    counterparty_channel_id,
+                    version.clone(),
+                    counterparty_version,
+                );
 
                 let channel_end = ChannelEnd {
                     state: ChannelState::TryOpen,
@@ -1057,9 +1100,7 @@ impl<T: Trait> Module<T> {
                 NextSequenceRecv::insert((port_id.clone(), channel_id), 1);
                 // return key
                 ClientStates::mutate(&connection.client_id, |client_state| {
-                    (*client_state)
-                        .channels
-                        .push((port_id.clone(), channel_id));
+                    (*client_state).channels.push((port_id.clone(), channel_id));
                 });
                 Self::deposit_event(RawEvent::ChanOpenTry);
             }
@@ -1112,7 +1153,12 @@ impl<T: Trait> Module<T> {
                 // ))
                 // channel.version = counterpartyVersion
                 let dest_module_index = Ports::get(port_id.clone());
-                T::ModuleCallbacks::on_chan_open_ack(dest_module_index.into(), port_id.clone(), channel_id, version.clone());
+                T::ModuleCallbacks::on_chan_open_ack(
+                    dest_module_index.into(),
+                    port_id.clone(),
+                    channel_id,
+                    version.clone(),
+                );
                 Channels::mutate((port_id, channel_id), |channel| {
                     (*channel).state = ChannelState::Open;
                 });
@@ -1165,7 +1211,11 @@ impl<T: Trait> Module<T> {
                 //   expected
                 // ))
                 let dest_module_index = Ports::get(port_id.clone());
-                T::ModuleCallbacks::on_chan_open_confirm(dest_module_index.into(), port_id.clone(), channel_id);
+                T::ModuleCallbacks::on_chan_open_confirm(
+                    dest_module_index.into(),
+                    port_id.clone(),
+                    channel_id,
+                );
                 Channels::mutate((port_id, channel_id), |channel| {
                     (*channel).state = ChannelState::Open;
                 });
@@ -1569,16 +1619,15 @@ impl<T: Trait> Module<T> {
         // Todo: Use Height struct as ibc-rs/modules/src/ics02_client/height.rs?
 
         ensure!(
-                    claimed_height > host_current_height,
-                    "Consensus height is too advanced!"
-                );
+            claimed_height > host_current_height,
+            "Consensus height is too advanced!"
+        );
 
         ensure!(
-                    claimed_height < host_current_height - MAX_HISTORY_SIZE,
-                    "Consensus height is too old!"
-                );
+            claimed_height < host_current_height - MAX_HISTORY_SIZE,
+            "Consensus height is too old!"
+        );
 
         Ok(())
     }
-
 }
