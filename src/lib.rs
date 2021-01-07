@@ -353,32 +353,17 @@ decl_module! {
         }
 
         #[weight = 0]
-        fn deliver(origin, msg: informalsystems::ClientMsg) -> dispatch::DispatchResult {
-            use tendermint_proto::Protobuf;
-            use informalsystems::ClientMsg::{CreateClient, UpdateClient};
-            use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
-            use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
-            use ibc::ics26_routing::msgs::ICS26Envelope;
-            use ibc::ics02_client::msgs::ClientMsg;
+        fn deliver(origin, messages: Vec<informalsystems::Any>, tmp: u8) -> dispatch::DispatchResult {
             if_std! {
                 println!("in deliver");
             }
             let _sender = ensure_signed(origin)?;
-            let mut ctx = informalsystems::Context{_pd: PhantomData::<T>, client_ids_counter: 0, connection_ids_counter: 0};
-            let envelope = match msg {
-                // ICS2 messages
-                CreateClient(data) => {
-                // Pop out the message and then wrap it in the corresponding type
-                let domain_msg = MsgCreateAnyClient::decode_vec(&*data).unwrap();
-                ICS26Envelope::ICS2Msg(ClientMsg::CreateClient(domain_msg))
-                }
-                UpdateClient(data) => {
-                let domain_msg = MsgUpdateAnyClient::decode_vec(&*data).unwrap();
-                ICS26Envelope::ICS2Msg(ClientMsg::UpdateClient(domain_msg))
-                }
-                // TODO: ICS3 messages
-            };
-            let result = ibc::ics26_routing::handler::dispatch(&mut ctx, envelope);
+            let mut ctx = informalsystems::Context{_pd: PhantomData::<T>, tmp: tmp};
+            let messages = messages.iter().map(|message| prost_types::Any{
+                type_url: message.type_url.clone(),
+                value: message.value.clone(),
+            }).collect();
+            let result = ibc::ics26_routing::handler::deliver(&mut ctx, messages);
             if_std! {
                 println!("result: {:?}", result);
             }

@@ -19,16 +19,15 @@ use std::str::FromStr;
 use tendermint_proto::Protobuf;
 
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
-pub enum ClientMsg {
-    CreateClient(Vec<u8>),
-    UpdateClient(Vec<u8>),
+pub struct Any {
+    pub type_url: String,
+    pub value: Vec<u8>,
 }
 
 #[derive(Clone)]
 pub struct Context<T: Trait> {
     pub _pd: PhantomData<T>,
-    pub client_ids_counter: u32,
-    pub connection_ids_counter: u32,
+    pub tmp: u8,
 }
 
 impl<T: Trait> ICS26Context for Context<T> {}
@@ -38,7 +37,7 @@ impl<T: Trait> ClientReader for Context<T> {
         if_std! {
             println!("in read client_type");
         }
-        None
+        Some(ClientType::GRANDPA)
     }
 
     fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
@@ -86,11 +85,12 @@ impl<T: Trait> ClientKeeper for Context<T> {
     }
 
     fn next_client_id(&mut self) -> ClientId {
-        let prefix = ClientId::default().to_string();
-        let suffix = self.client_ids_counter;
-        self.client_ids_counter += 1;
-
-        ClientId::from_str(format!("{}-{}", prefix, suffix).as_str()).unwrap()
+        // TODO
+        if self.tmp == 0 {
+            ClientId::from_str("appia-client-id").unwrap()
+        } else {
+            ClientId::from_str("flaminia-client-id").unwrap()
+        }
     }
 
     fn store_client_state(
@@ -158,11 +158,7 @@ impl<T: Trait> ConnectionReader for Context<T> {
 
 impl<T: Trait> ConnectionKeeper for Context<T> {
     fn next_connection_id(&mut self) -> ConnectionId {
-        let prefix = ConnectionId::default().to_string();
-        let suffix = self.connection_ids_counter;
-        self.connection_ids_counter += 1;
-
-        ConnectionId::from_str(format!("{}-{}", prefix, suffix).as_str()).unwrap()
+        ConnectionId::from_str("todo").unwrap()
     }
 
     fn store_connection(
