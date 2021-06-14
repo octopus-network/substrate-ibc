@@ -48,6 +48,13 @@
 //!
 //! ## Usage
 //! Please refer to section "How to Interact with the Pallet" in the repository's README.md
+#![allow(unused_variables)]
+#![allow(non_shorthand_field_patterns)]
+#![allow(dead_code)]
+#![allow(unused_mut)]
+#![allow(missing_docs)]
+#![allow(unused_imports)]
+#![allow(unused_must_use)]
 
 use codec::{Decode, Encode};
 use finality_grandpa::voter_set::VoterSet;
@@ -247,9 +254,9 @@ pub struct ChannelEnd {
 }
 
 /// Configure the pallet by specifying the parameters and types on which it depends.
-pub trait Trait: frame_system::Trait {
+pub trait Config: frame_system::Config {
     /// Because this pallet emits events, it depends on the runtime's definition of an event.
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
     type ModuleCallbacks: routing::ModuleCallbacks;
 }
 
@@ -258,7 +265,7 @@ pub trait Trait: frame_system::Trait {
 decl_storage! {
     // A unique name is used to ensure that the pallet's storage items are isolated.
     // This name may be updated, but each pallet in the runtime must use a unique name.
-    trait Store for Module<T: Trait> as Ibc {
+    trait Store for Module<T: Config> as Ibc {
         ClientStatesV2: map hasher(blake2_128_concat) Vec<u8> => Vec<u8>; // client_id => ClientState
         ConsensusStatesV2: map hasher(blake2_128_concat) (Vec<u8>, Vec<u8>) => Vec<u8>; // (client_id, height) => ConsensusState
 
@@ -281,7 +288,7 @@ decl_storage! {
 decl_event!(
     pub enum Event<T>
     where
-        AccountId = <T as frame_system::Trait>::AccountId,
+        AccountId = <T as frame_system::Config>::AccountId,
     {
         /// Event documentation should end with an array that provides descriptive names for event
         /// parameters. [something, who]
@@ -308,7 +315,7 @@ decl_event!(
 
 // Errors inform users that something went wrong.
 decl_error! {
-    pub enum Error for Module<T: Trait> {
+    pub enum Error for Module<T: Config> {
         /// The IBC client identifier already exists.
         ClientIdExist,
         /// The IBC client identifier doesn't exist.
@@ -339,7 +346,7 @@ decl_error! {
 // Dispatchable functions must be annotated with a weight and must return a DispatchResult.
 decl_module! {
     /// The struct defines the major functions for the module.
-    pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::Origin {
         // Errors must be initialized if they are used by the pallet.
         type Error = Error<T>;
 
@@ -380,7 +387,7 @@ decl_module! {
 }
 
 // The main implementation block for the module.
-impl<T: Trait> Module<T> {
+impl<T: Config> Module<T> {
     /// Create an IBC client, by the 2 major steps:
     /// * Insert concensus state into storage "ConsensusStates"
     /// * Insert client state into storage "ClientStates"
@@ -510,7 +517,7 @@ impl<T: Trait> Module<T> {
     }
 
     pub fn release_port(identifier: Vec<u8>, module_index: u8) -> dispatch::DispatchResult {
-        #![warn(missing_docs)]
+        // #![warn(missing_docs)]
         ensure!(
             Ports::get(&identifier) == module_index,
             "Port identifier not found"
