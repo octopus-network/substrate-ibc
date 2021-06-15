@@ -34,10 +34,8 @@ optional = true
 version = '1.0.101'
 
 [dependencies.ibc]
+version = "0.4.0"
 default-features = false
-git = 'https://github.com/DaviRain-Su/ibc-rs.git'
-#branch = 'soares/flex-error'
-rev = "0a00567b"
 
 [dependencies.tendermint-proto]
 version = "0.19.0"
@@ -75,9 +73,10 @@ std = [
 ]
 
 [patch.crates-io]
+ibc = { git = "https://github.com/DaviRain-Su/ibc-rs.git", branch =  "soares/flex-error" }
 tendermint              = { git = "https://github.com/octopus-network/tendermint-rs.git", branch = "octpus-no-std-flex-error" }
-tendermint-rpc          = { git = "https://github.com/octopus-network/tendermint-rs.git", branch = "octpus-no-std-flex-error"}
+#tendermint-rpc          = { git = "https://github.com/octopus-network/tendermint-rs.git", branch = "octpus-no-std-flex-error"}
 tendermint-proto        = { git = "https://github.com/octopus-network/tendermint-rs.git", branch = "octpus-no-std-flex-error"}
-tendermint-light-client = { git = "https://github.com/octopus-network/tendermint-rs.git", branch = "octpus-no-std-flex-error"}
-tendermint-testgen      = { git = "https://github.com/octopus-network/tendermint-rs.git", branch = "octpus-no-std-flex-error"}
+#tendermint-light-client = { git = "https://github.com/octopus-network/tendermint-rs.git", branch = "octpus-no-std-flex-error"}
+#tendermint-testgen      = { git = "https://github.com/octopus-network/tendermint-rs.git", branch = "octpus-no-std-flex-error"}
 ics23 = { git = "https://github.com/DaviRain-Su/ics23.git", branch = "suooprt-no-std" }
