@@ -78,6 +78,9 @@ use sp_trie::StorageProof;
 pub use client::ClientType;
 use core::marker::PhantomData;
 pub use routing::ModuleCallbacks;
+use channel::{ChannelEnd, ChannelOrder, ChannelState};
+use connection::{ConnectionEnd, ConnectionState};
+use packet::{Datagram, Packet};
 
 mod client;
 pub mod grandpa;
@@ -86,6 +89,9 @@ mod header;
 pub mod informalsystems;
 mod routing;
 mod state;
+mod channel;
+mod connection;
+mod packet;
 
 #[cfg(test)]
 mod mock;
@@ -102,156 +108,7 @@ const VERSIONS: [u8; 3] = [1, 3, 5];
 // Todo: Find a proper value for MAX_HISTORY_SIZE
 const MAX_HISTORY_SIZE: u32 = 3;
 
-#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
-pub struct Packet {
-    pub sequence: u64,
-    /// If the latest block height of the destination chain is greater than ```timeout_height```, the packet will not be processed.
-    pub timeout_height: u32,
-    pub source_port: Vec<u8>,
-    pub source_channel: H256,
-    pub dest_port: Vec<u8>,
-    pub dest_channel: H256,
-    pub data: Vec<u8>,
-}
 
-#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
-pub enum Datagram {
-    ClientUpdate {
-        client_id: H256,
-        header: grandpa::header::Header,
-    },
-    ClientMisbehaviour {
-        identifier: H256,
-        evidence: Vec<u8>,
-    },
-    ConnOpenTry {
-        connection_id: H256,
-        counterparty_connection_id: H256,
-        counterparty_client_id: H256,
-        client_id: H256,
-        version: Vec<u8>, // Todo: remove this field
-        counterparty_version: Vec<u8>,
-        proof_init: StorageProof,
-        proof_consensus: StorageProof,
-        proof_height: u32,
-        consensus_height: u32,
-    },
-    ConnOpenAck {
-        connection_id: H256,
-        counterparty_connection_id: H256,
-        version: u8,
-        proof_try: StorageProof,
-        proof_consensus: StorageProof,
-        proof_height: u32,
-        consensus_height: u32,
-    },
-    ConnOpenConfirm {
-        connection_id: H256,
-        proof_ack: StorageProof,
-        proof_height: u32,
-    },
-    ChanOpenTry {
-        order: ChannelOrder,
-        connection_hops: Vec<H256>,
-        port_id: Vec<u8>,
-        channel_id: H256,
-        counterparty_port_id: Vec<u8>,
-        counterparty_channel_id: H256,
-        channel_version: Vec<u8>,
-        counterparty_version: Vec<u8>,
-        proof_init: StorageProof,
-        proof_height: u32,
-    },
-    ChanOpenAck {
-        port_id: Vec<u8>,
-        channel_id: H256,
-        version: Vec<u8>,
-        proof_try: StorageProof, // Todo: In ibc-rs, proofs contains `object_proof`, `client_proof`, `consensus_proof` and `height`
-        proof_height: u32,
-    },
-    ChanOpenConfirm {
-        port_id: Vec<u8>,
-        channel_id: H256,
-        proof_ack: StorageProof,
-        proof_height: u32,
-    },
-    PacketRecv {
-        packet: Packet,
-        proof: StorageProof,
-        proof_height: u32,
-    },
-    PacketAcknowledgement {
-        packet: Packet,
-        acknowledgement: Vec<u8>,
-        proof: StorageProof,
-        proof_height: u32,
-    },
-}
-
-#[derive(Clone, PartialEq, Encode, Decode, RuntimeDebug)]
-pub enum ConnectionState {
-    None,
-    Init,
-    TryOpen,
-    Open,
-    Closed,
-}
-
-impl Default for ConnectionState {
-    fn default() -> Self {
-        Self::None
-    }
-}
-
-#[derive(Clone, Default, Encode, Decode, RuntimeDebug)]
-pub struct ConnectionEnd {
-    pub state: ConnectionState,
-    pub counterparty_connection_id: H256,
-    /// The prefix used for state verification on the counterparty chain associated with this connection.
-    /// If not specified, a default counterpartyPrefix of "ibc" should be used.
-    counterparty_prefix: Vec<u8>,
-    pub client_id: H256,
-    counterparty_client_id: H256,
-    pub version: Vec<u8>, // TODO: A ConnectionEnd should only store one version.
-}
-
-#[derive(Clone, PartialEq, Encode, Decode, RuntimeDebug)]
-pub enum ChannelState {
-    None,
-    Init,
-    TryOpen,
-    Open,
-    Closed,
-}
-
-impl Default for ChannelState {
-    fn default() -> Self {
-        Self::None
-    }
-}
-
-// Todo: In ibc-rs, `ChannelOrder` is type i32
-#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
-pub enum ChannelOrder {
-    Ordered,
-    Unordered,
-}
-
-impl Default for ChannelOrder {
-    fn default() -> Self {
-        Self::Ordered
-    }
-}
-
-#[derive(Clone, Default, Encode, Decode, RuntimeDebug)]
-pub struct ChannelEnd {
-    pub state: ChannelState,
-    pub ordering: ChannelOrder,
-    pub counterparty_port_id: Vec<u8>,
-    pub counterparty_channel_id: H256,
-    pub connection_hops: Vec<H256>,
-    pub version: Vec<u8>,
-}
 
 /// Configure the pallet by specifying the parameters and types on which it depends.
 pub trait Config: frame_system::Config {
