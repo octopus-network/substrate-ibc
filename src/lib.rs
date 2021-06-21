@@ -162,7 +162,6 @@ pub mod pallet {
     #[pallet::storage]
     pub type Channels<T: Config> = StorageMap<_, Blake2_128Concat, (Vec<u8>, H256), ChannelEnd, ValueQuery>;
 
-
     // (port_identifier, channel_identifier) => Sequence
     #[pallet::storage]
     pub type NextSequenceSend<T: Config> = StorageMap<_, Blake2_128Concat, (Vec<u8>, H256), u64, ValueQuery>;
@@ -243,14 +242,14 @@ pub mod pallet {
     impl<T: Config> Pallet<T> {
 
         #[pallet::weight(0)]
-        fn submit_datagram(origin : OriginFor<T>, datagram: Datagram)
+        pub fn submit_datagram(origin : OriginFor<T>, datagram: Datagram)
             -> DispatchResultWithPostInfo {
             let _sender = ensure_signed(origin)?;
             Self::handle_datagram(datagram)
         }
 
         #[pallet::weight(0)]
-        fn deliver(origin : OriginFor<T>, messages: Vec<informalsystems::Any>, tmp: u8)
+        pub fn deliver(origin : OriginFor<T>, messages: Vec<informalsystems::Any>, tmp: u8)
             -> DispatchResultWithPostInfo {
             if_std! {
                 println!("in deliver");
@@ -278,9 +277,19 @@ pub mod pallet {
 
 }
 
+use pallet::{
+    ClientStatesV2, ConsensusStatesV2,
+    ClientStates, ConsensusStates,
+    Connections, Ports,
+    Channels, NextSequenceSend,
+    NextSequenceRecv, NextSequenceAck,
+    Packets, Acknowledgements,
+    Event, Config,
+};
 
 // The main implementation block for the module.
 impl<T: Config> Pallet<T> {
+
     /// Create an IBC client, by the 2 major steps:
     /// * Insert concensus state into storage "ConsensusStates"
     /// * Insert client state into storage "ClientStates"
@@ -802,7 +811,7 @@ impl<T: Config> Pallet<T> {
             } => {
                 use sp_runtime::traits::SaturatedConversion;
                 let current_block_number_self =
-                    <frame_system::Module<T>>::block_number().saturated_into::<u32>();
+                    <frame_system::Pallet<T>>::block_number().saturated_into::<u32>();
                 Self::check_client_consensus_height(current_block_number_self, consensus_height);
 
                 ensure!(

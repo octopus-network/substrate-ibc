@@ -1,4 +1,4 @@
-use super::{Module, Store, Config};
+use super::{Pallet, Store, Config};
 use codec::{Decode, Encode};
 use core::marker::PhantomData;
 use frame_support::storage::StorageMap;
@@ -234,8 +234,8 @@ impl<T: Config> ClientReader for Context<T> {
         if_std! {
             println!("in read client_state");
         }
-        if <Module<T> as Store>::ClientStatesV2::contains_key(client_id.as_bytes()) {
-            let data = <Module<T> as Store>::ClientStatesV2::get(client_id.as_bytes());
+        if <Pallet<T> as Store>::ClientStatesV2::contains_key(client_id.as_bytes()) {
+            let data = <Pallet<T> as Store>::ClientStatesV2::get(client_id.as_bytes());
             Some(AnyClientState::decode_vec(&*data).unwrap())
         } else {
             if_std! {
@@ -250,8 +250,8 @@ impl<T: Config> ClientReader for Context<T> {
             println!("in read consensus_state");
         }
         let height = height.encode_vec().unwrap();
-        if <Module<T> as Store>::ConsensusStatesV2::contains_key((client_id.as_bytes(), &height)) {
-            let data = <Module<T> as Store>::ConsensusStatesV2::get((client_id.as_bytes(), height));
+        if <Pallet<T> as Store>::ConsensusStatesV2::contains_key((client_id.as_bytes(), &height)) {
+            let data = <Pallet<T> as Store>::ConsensusStatesV2::get((client_id.as_bytes(), height));
             Some(AnyConsensusState::decode_vec(&*data).unwrap())
         } else {
             if_std! {
@@ -290,7 +290,7 @@ impl<T: Config> ClientKeeper for Context<T> {
             println!("in store_client_state");
         }
         let data = client_state.encode_vec().unwrap();
-        <Module<T> as Store>::ClientStatesV2::insert(client_id.as_bytes(), data);
+        <Pallet<T> as Store>::ClientStatesV2::insert(client_id.as_bytes(), data);
         Ok(())
     }
 
@@ -305,7 +305,7 @@ impl<T: Config> ClientKeeper for Context<T> {
         }
         let height = height.encode_vec().unwrap();
         let data = consensus_state.encode_vec().unwrap();
-        <Module<T> as Store>::ConsensusStatesV2::insert((client_id.as_bytes(), height), data);
+        <Pallet<T> as Store>::ConsensusStatesV2::insert((client_id.as_bytes(), height), data);
         Ok(())
     }
 }
