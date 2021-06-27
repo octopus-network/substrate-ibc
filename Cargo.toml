@@ -1,58 +1,38 @@
 [package]
-authors = ['Cdot Network <hello@cdot.network>']
+authors = ['Octopus Network <hello@cdot.network>']
 description = 'An IBC implementation on Substrate.'
 edition = '2018'
-homepage = 'https://cdot.network'
+homepage = 'https://oct.network'
 license = 'Apache-2.0'
 name = 'pallet-ibc'
-repository = 'https://github.com/cdot-network/substrate-ibc/'
-version = '2.0.0-pre.2'
+repository = 'https://github.com/octopus-network/substrate-ibc/'
+version = '3.0.0-pre.0'
 documentation = "https://docs.rs/pallet-ibc"
 
 [package.metadata.docs.rs]
 targets = ['x86_64-unknown-linux-gnu']
 
-# alias "parity-scale-code" to "codec"
-[dependencies.codec]
-default-features = false
-features = ['derive']
-package = 'parity-scale-codec'
-version = '1.3.4'
-
-[dependencies.finality-grandpa]
-default-features = false
-features = ['derive-codec']
-version = '0.12.3'
-
-[dependencies.hash-db]
-default-features = false
-version = '0.15.2'
-
-[dependencies.serde]
-default-features = false
-optional = true
-version = '1.0.101'
-
-[dependencies.ibc]
-default-features = false
-git = 'https://github.com/cdot-network/ibc-rs.git'
-package = 'ibc'
-branch = 'ys'
-
-[dependencies.tendermint-proto]
-version = "=0.17.0"
-
 [dependencies]
-frame-support = { default-features = false, version = '2.0.0' }
-frame-system = { default-features = false, version = '2.0.0' }
-sp-core = { default-features = false, version = '2.0.0' }
-sp-io = { default-features = false, version = '2.0.0' }
-sp-runtime = { default-features = false, version = '2.0.0' }
-sp-finality-grandpa = { default-features = false, version = '2.0.0' }
-sp-std = { default-features = false, version = '2.0.0' }
-sp-trie = { default-features = false, version = '2.0.0' }
-prost = "0.6.1"
-prost-types = "0.6.1"
+finality-grandpa = { version = "0.14.0", default-features = false, features = ['derive-codec'] }
+codec = { package = 'parity-scale-codec', version = '2.0.0', default-features = false, features = ['derive', 'full'] }
+
+# normal substrate
+frame-support = { version = "3.0.0", default-features = false }
+frame-system = { version = '3.0.0', default-features = false }
+sp-core = { version = '3.0.0', default-features = false }
+sp-io = { version = '3.0.0', default-features = false }
+sp-runtime = { version = '3.0.0', default-features = false }
+sp-finality-grandpa = { version = '3.0.0', default-features = false }
+sp-std = { version = '3.0.0', default-features = false }
+sp-trie = { version = '3.0.0', default-features = false }
+hash-db = { version = '0.15.2', default-features = false }
+serde = { version = '1.0.101', default-features = false, optional = true }
+
+# IBC
+ibc = { version = "0.4.0", default-features = false }
+tendermint-proto = { version = "0.19.0" }
+prost = { version = "0.7.0", default-features = false }
+prost-types = { version = "0.7.0", default-features = false }
 
 [dev-dependencies]
 hex = '0.4.0'
@@ -71,4 +51,21 @@ std = [
     'sp-runtime/std',
     'sp-std/std',
     'sp-trie/std',
+    'ibc/std',
+    "prost-types/std",
+    "prost/std",
 ]
+
+#[patch.crates-io]
+#ibc              = { git = "https://github.com/octopus-network/ibc-rs.git", branch =  "octopus-no-std" }
+#tendermint       = { git = "https://github.com/octopus-network/tendermint-rs.git", rev = "467dd569" }
+#tendermint-proto = { git = "https://github.com/octopus-network/tendermint-rs.git", rev = "467dd569" }
+#ics23            = { git = "https://github.com/DaviRain-Su/ics23.git", branch = "suooprt-no-std" }
+#frame-support = { git = 'https://github.com/octopus-network/substrate.git', branch = 'master' }
+#frame-system = { git = 'https://github.com/octopus-network/substrate.git', branch = 'master' }
+#sp-core = { git = 'https://github.com/octopus-network/substrate.git', branch = 'master' }
+#sp-io = { git = 'https://github.com/octopus-network/substrate.git', branch = 'master' }
+#sp-runtime = { git = 'https://github.com/octopus-network/substrate.git', branch = 'master' }
+#sp-finality-grandpa = { git = 'https://github.com/octopus-network/substrate.git', branch = 'master' }
+#sp-std = { git = 'https://github.com/octopus-network/substrate.git', branch = 'master' }
+#sp-trie = { git = 'https://github.com/octopus-network/substrate.git', branch = 'master' }

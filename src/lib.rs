@@ -48,12 +48,17 @@
 //!
 //! ## Usage
 //! Please refer to section "How to Interact with the Pallet" in the repository's README.md
+#![allow(unused_variables)]
+#![allow(non_shorthand_field_patterns)]
+#![allow(dead_code)]
+#![allow(unused_mut)]
+#![allow(missing_docs)]
+#![allow(unused_imports)]
+#![allow(unused_must_use)]
 
 use codec::{Decode, Encode};
 use finality_grandpa::voter_set::VoterSet;
-use frame_support::{
-    decl_error, decl_event, decl_module, decl_storage, dispatch, ensure, traits::Get,
-};
+use frame_support::ensure;
 use frame_system::ensure_signed;
 use grandpa::justification::GrandpaJustification;
 use grandpa::state_machine::read_proof_check;
@@ -71,6 +76,10 @@ use sp_trie::StorageProof;
 pub use client::ClientType;
 use core::marker::PhantomData;
 pub use routing::ModuleCallbacks;
+use channel::{ChannelEnd, ChannelOrder, ChannelState};
+use connection::{ConnectionEnd, ConnectionState};
+use packet::{Datagram, Packet};
+use frame_support::dispatch::DispatchResultWithPostInfo;
 
 mod client;
 pub mod grandpa;
@@ -79,6 +88,11 @@ mod header;
 pub mod informalsystems;
 mod routing;
 mod state;
+mod channel;
+mod connection;
+mod packet;
+
+pub use pallet::*;
 
 #[cfg(test)]
 mod mock;
@@ -95,197 +109,85 @@ const VERSIONS: [u8; 3] = [1, 3, 5];
 // Todo: Find a proper value for MAX_HISTORY_SIZE
 const MAX_HISTORY_SIZE: u32 = 3;
 
-#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
-pub struct Packet {
-    pub sequence: u64,
-    /// If the latest block height of the destination chain is greater than ```timeout_height```, the packet will not be processed.
-    pub timeout_height: u32,
-    pub source_port: Vec<u8>,
-    pub source_channel: H256,
-    pub dest_port: Vec<u8>,
-    pub dest_channel: H256,
-    pub data: Vec<u8>,
-}
+#[frame_support::pallet]
+pub mod pallet {
 
-#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
-pub enum Datagram {
-    ClientUpdate {
-        client_id: H256,
-        header: grandpa::header::Header,
-    },
-    ClientMisbehaviour {
-        identifier: H256,
-        evidence: Vec<u8>,
-    },
-    ConnOpenTry {
-        connection_id: H256,
-        counterparty_connection_id: H256,
-        counterparty_client_id: H256,
-        client_id: H256,
-        version: Vec<u8>, // Todo: remove this field
-        counterparty_version: Vec<u8>,
-        proof_init: StorageProof,
-        proof_consensus: StorageProof,
-        proof_height: u32,
-        consensus_height: u32,
-    },
-    ConnOpenAck {
-        connection_id: H256,
-        counterparty_connection_id: H256,
-        version: u8,
-        proof_try: StorageProof,
-        proof_consensus: StorageProof,
-        proof_height: u32,
-        consensus_height: u32,
-    },
-    ConnOpenConfirm {
-        connection_id: H256,
-        proof_ack: StorageProof,
-        proof_height: u32,
-    },
-    ChanOpenTry {
-        order: ChannelOrder,
-        connection_hops: Vec<H256>,
-        port_id: Vec<u8>,
-        channel_id: H256,
-        counterparty_port_id: Vec<u8>,
-        counterparty_channel_id: H256,
-        channel_version: Vec<u8>,
-        counterparty_version: Vec<u8>,
-        proof_init: StorageProof,
-        proof_height: u32,
-    },
-    ChanOpenAck {
-        port_id: Vec<u8>,
-        channel_id: H256,
-        version: Vec<u8>,
-        proof_try: StorageProof, // Todo: In ibc-rs, proofs contains `object_proof`, `client_proof`, `consensus_proof` and `height`
-        proof_height: u32,
-    },
-    ChanOpenConfirm {
-        port_id: Vec<u8>,
-        channel_id: H256,
-        proof_ack: StorageProof,
-        proof_height: u32,
-    },
-    PacketRecv {
-        packet: Packet,
-        proof: StorageProof,
-        proof_height: u32,
-    },
-    PacketAcknowledgement {
-        packet: Packet,
-        acknowledgement: Vec<u8>,
-        proof: StorageProof,
-        proof_height: u32,
-    },
-}
+    use frame_support::pallet_prelude::*;
+    use frame_system::pallet_prelude::*;
+    use super::*;
+    use sp_std::{if_std, prelude::*};
 
-#[derive(Clone, PartialEq, Encode, Decode, RuntimeDebug)]
-pub enum ConnectionState {
-    None,
-    Init,
-    TryOpen,
-    Open,
-    Closed,
-}
-
-impl Default for ConnectionState {
-    fn default() -> Self {
-        Self::None
+    /// Configure the pallet by specifying the parameters and types on which it depends.
+    #[pallet::config]
+    pub trait Config: frame_system::Config {
+        /// Because this pallet emits events, it depends on the runtime's definition of an event.
+        type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+        type ModuleCallbacks: routing::ModuleCallbacks;
     }
-}
 
-#[derive(Clone, Default, Encode, Decode, RuntimeDebug)]
-pub struct ConnectionEnd {
-    pub state: ConnectionState,
-    pub counterparty_connection_id: H256,
-    /// The prefix used for state verification on the counterparty chain associated with this connection.
-    /// If not specified, a default counterpartyPrefix of "ibc" should be used.
-    counterparty_prefix: Vec<u8>,
-    pub client_id: H256,
-    counterparty_client_id: H256,
-    pub version: Vec<u8>, // TODO: A ConnectionEnd should only store one version.
-}
+    #[pallet::pallet]
+    #[pallet::generate_store(pub(super) trait Store)]
+    pub struct Pallet<T>(_);
 
-#[derive(Clone, PartialEq, Encode, Decode, RuntimeDebug)]
-pub enum ChannelState {
-    None,
-    Init,
-    TryOpen,
-    Open,
-    Closed,
-}
-
-impl Default for ChannelState {
-    fn default() -> Self {
-        Self::None
-    }
-}
-
-// Todo: In ibc-rs, `ChannelOrder` is type i32
-#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
-pub enum ChannelOrder {
-    Ordered,
-    Unordered,
-}
-
-impl Default for ChannelOrder {
-    fn default() -> Self {
-        Self::Ordered
-    }
-}
-
-#[derive(Clone, Default, Encode, Decode, RuntimeDebug)]
-pub struct ChannelEnd {
-    pub state: ChannelState,
-    pub ordering: ChannelOrder,
-    pub counterparty_port_id: Vec<u8>,
-    pub counterparty_channel_id: H256,
-    pub connection_hops: Vec<H256>,
-    pub version: Vec<u8>,
-}
-
-/// Configure the pallet by specifying the parameters and types on which it depends.
-pub trait Trait: frame_system::Trait {
-    /// Because this pallet emits events, it depends on the runtime's definition of an event.
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
-    type ModuleCallbacks: routing::ModuleCallbacks;
-}
-
-// The pallet's runtime storage items.
-// https://substrate.dev/docs/en/knowledgebase/runtime/storage
-decl_storage! {
     // A unique name is used to ensure that the pallet's storage items are isolated.
     // This name may be updated, but each pallet in the runtime must use a unique name.
-    trait Store for Module<T: Trait> as Ibc {
-        ClientStatesV2: map hasher(blake2_128_concat) Vec<u8> => Vec<u8>; // client_id => ClientState
-        ConsensusStatesV2: map hasher(blake2_128_concat) (Vec<u8>, Vec<u8>) => Vec<u8>; // (client_id, height) => ConsensusState
 
-        ClientStates: map hasher(blake2_128_concat) H256 => grandpa::client_state::ClientState; // client_id => ClientState
-        ConsensusStates: map hasher(blake2_128_concat) (H256, u32) => grandpa::consensus_state::ConsensusState; // (client_id, height) => ConsensusState
-        Connections: map hasher(blake2_128_concat) H256 => ConnectionEnd; // connection_identifier => ConnectionEnd
-        Ports: map hasher(blake2_128_concat) Vec<u8> => u8; // port_identifier => module_index
-        /// Channel structures are stored under a store path prefix unique to a combination of a port identifier and channel identifier.
-        Channels: map hasher(blake2_128_concat) (Vec<u8>, H256) => ChannelEnd; // (port_identifier, channel_identifier) => ChannelEnd
-        NextSequenceSend: map hasher(blake2_128_concat) (Vec<u8>, H256) => u64; // (port_identifier, channel_identifier) => Sequence
-        NextSequenceRecv: map hasher(blake2_128_concat) (Vec<u8>, H256) => u64; // (port_identifier, channel_identifier) => Sequence
-        NextSequenceAck: map hasher(blake2_128_concat) (Vec<u8>, H256) => u64; // (port_identifier, channel_identifier) => Sequence
-        Packets: map hasher(blake2_128_concat) (Vec<u8>, H256, u64) => H256; // (port_identifier, channel_identifier, sequence) => Hash
-        Acknowledgements: map hasher(blake2_128_concat) (Vec<u8>, H256, u64) => H256; // (port_identifier, channel_identifier, sequence) => Hash
-    }
-}
+    // client_id => ClientState
+    #[pallet::storage]
+    pub type ClientStatesV2<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
-// Pallets use events to inform users when important changes are made.
-// https://substrate.dev/docs/en/knowledgebase/runtime/events
-decl_event!(
-    pub enum Event<T>
-    where
-        AccountId = <T as frame_system::Trait>::AccountId,
+    // (client_id, height) => ConsensusState
+    #[pallet::storage]
+    pub type ConsensusStatesV2<T: Config> = StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
+
+    // client_id => ClientState
+    #[pallet::storage]
+    pub type ClientStates<T: Config> = StorageMap<_, Blake2_128Concat, H256, grandpa::client_state::ClientState, ValueQuery>;
+
+    // (client_id, height) => ConsensusState
+    #[pallet::storage]
+    pub type ConsensusStates<T: Config> = StorageMap<_, Blake2_128Concat, (H256, u32), grandpa::consensus_state::ConsensusState, ValueQuery>;
+
+    // connection_identifier => ConnectionEnd
+    #[pallet::storage]
+    pub type Connections<T: Config> = StorageMap<_, Blake2_128Concat, H256, ConnectionEnd, ValueQuery>;
+
+    // port_identifier => module_index
+    #[pallet::storage]
+    pub type Ports<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, u8, ValueQuery>;
+
+
+    /// Channel structures are stored under a store path prefix unique to a combination of a port identifier and channel identifier.
+    // (port_identifier, channel_identifier) => ChannelEnd
+    #[pallet::storage]
+    pub type Channels<T: Config> = StorageMap<_, Blake2_128Concat, (Vec<u8>, H256), ChannelEnd, ValueQuery>;
+
+    // (port_identifier, channel_identifier) => Sequence
+    #[pallet::storage]
+    pub type NextSequenceSend<T: Config> = StorageMap<_, Blake2_128Concat, (Vec<u8>, H256), u64, ValueQuery>;
+
+    // (port_identifier, channel_identifier) => Sequence
+    #[pallet::storage]
+    pub type NextSequenceRecv<T: Config> = StorageMap<_, Blake2_128Concat, (Vec<u8>, H256), u64, ValueQuery>;
+
+    // (port_identifier, channel_identifier) => Sequence
+    #[pallet::storage]
+    pub type NextSequenceAck<T: Config> = StorageMap<_, Blake2_128Concat, (Vec<u8>, H256), u64, ValueQuery>;
+
+    // (port_identifier, channel_identifier, sequence) => Hash
+    #[pallet::storage]
+    pub type Packets<T: Config> = StorageMap<_, Blake2_128Concat, (Vec<u8>, H256, u64), H256, ValueQuery>;
+
+    // (port_identifier, channel_identifier, sequence) => Hash
+    #[pallet::storage]
+    pub type Acknowledgements<T: Config> = StorageMap<_, Blake2_128Concat, (Vec<u8>, H256, u64), H256, ValueQuery>;
+
+    #[pallet::event]
+    #[pallet::metadata(T::AccountId = "AccountId")]
+    #[pallet::generate_deposit(pub(super) fn deposit_event)]
+    pub enum Event<T : Config>
     {
-        /// Event documentation should end with an array that provides descriptive names for event
-        /// parameters. [something, who]
-        SomethingStored(u32, AccountId),
+        SomethingStored(u32, T::AccountId),
         ClientCreated,
         ClientUpdated,
         ClientMisbehaviourReceived,
@@ -304,11 +206,11 @@ decl_event!(
         PacketRecvReceived,
         AcknowledgePacket,
     }
-);
 
-// Errors inform users that something went wrong.
-decl_error! {
-    pub enum Error for Module<T: Trait> {
+
+    // Errors inform users that something went wrong.
+    #[pallet::error]
+    pub enum Error<T> {
         /// The IBC client identifier already exists.
         ClientIdExist,
         /// The IBC client identifier doesn't exist.
@@ -332,28 +234,23 @@ decl_error! {
         /// The destination channel identifier doesn't match
         DestChannelIdNotMatch
     }
-}
 
-// Dispatchable functions allows users to interact with the pallet and invoke state changes.
-// These functions materialize as "extrinsics", which are often compared to transactions.
-// Dispatchable functions must be annotated with a weight and must return a DispatchResult.
-decl_module! {
-    /// The struct defines the major functions for the module.
-    pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-        // Errors must be initialized if they are used by the pallet.
-        type Error = Error<T>;
+    #[pallet::hooks]
+    impl <T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
 
-        // Events must be initialized if they are used by the pallet.
-        fn deposit_event() = default;
+    #[pallet::call]
+    impl<T: Config> Pallet<T> {
 
-        #[weight = 0]
-        fn submit_datagram(origin, datagram: Datagram) -> dispatch::DispatchResult {
+        #[pallet::weight(0)]
+        pub fn submit_datagram(origin : OriginFor<T>, datagram: Datagram)
+            -> DispatchResultWithPostInfo {
             let _sender = ensure_signed(origin)?;
             Self::handle_datagram(datagram)
         }
 
-        #[weight = 0]
-        fn deliver(origin, messages: Vec<informalsystems::Any>, tmp: u8) -> dispatch::DispatchResult {
+        #[pallet::weight(0)]
+        pub fn deliver(origin : OriginFor<T>, messages: Vec<informalsystems::Any>, tmp: u8)
+            -> DispatchResultWithPostInfo {
             if_std! {
                 println!("in deliver");
             }
@@ -367,20 +264,32 @@ decl_module! {
             if_std! {
                 println!("result: {:?}", result);
             }
-            Ok(())
+            Ok(().into())
         }
 
         /// An example dispatchable that may throw a custom error.
-        #[weight = 10_000 + T::DbWeight::get().reads_writes(1,1)]
-        pub fn cause_error(origin) -> dispatch::DispatchResult {
+        #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
+        pub fn cause_error(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
             let _who = ensure_signed(origin)?;
-            Ok(())
+            Ok(().into())
         }
     }
+
 }
 
+use pallet::{
+    ClientStatesV2, ConsensusStatesV2,
+    ClientStates, ConsensusStates,
+    Connections, Ports,
+    Channels, NextSequenceSend,
+    NextSequenceRecv, NextSequenceAck,
+    Packets, Acknowledgements,
+    Event, Config,
+};
+
 // The main implementation block for the module.
-impl<T: Trait> Module<T> {
+impl<T: Config> Pallet<T> {
+
     /// Create an IBC client, by the 2 major steps:
     /// * Insert concensus state into storage "ConsensusStates"
     /// * Insert client state into storage "ClientStates"
@@ -407,9 +316,9 @@ impl<T: Trait> Module<T> {
         client_type: client::ClientType,
         height: u32,
         consensus_state: grandpa::consensus_state::ConsensusState,
-    ) -> dispatch::DispatchResult {
+    ) -> DispatchResultWithPostInfo {
         ensure!(
-            !ClientStates::contains_key(&client_id),
+            !<ClientStates<T>>::contains_key(&client_id),
             Error::<T>::ClientIdExist
         );
 
@@ -420,12 +329,12 @@ impl<T: Trait> Module<T> {
             _ => grandpa::client_state::ClientState::new(client_id.clone(), height),
         };
 
-        ConsensusStates::insert((client_id, height), consensus_state);
-        ClientStates::insert(&client_id, client_state);
+        <ConsensusStates<T>>::insert((client_id, height), consensus_state);
+        <ClientStates<T>>::insert(&client_id, client_state);
         // Todo: Persiste ClientType to substrate storage per ibc-spec
 
-        Self::deposit_event(RawEvent::ClientCreated);
-        Ok(())
+        Self::deposit_event(Event::ClientCreated);
+        Ok(().into())
     }
 
     /// Initialize an IBC connection opening handshake.
@@ -457,15 +366,15 @@ impl<T: Trait> Module<T> {
         counterparty_connection_id: H256,
         client_id: H256,
         counterparty_client_id: H256,
-    ) -> dispatch::DispatchResult {
+    ) -> DispatchResultWithPostInfo {
         // abortTransactionUnless(validateConnectionIdentifier(connection_id))
         ensure!(
-            ClientStates::contains_key(&client_id),
+            <ClientStates<T>>::contains_key(&client_id),
             Error::<T>::ClientIdNotExist
         );
         // TODO: ensure!(!client.connections.exists(&connection_id)))
         ensure!(
-            !Connections::contains_key(&connection_id),
+            !<Connections<T>>::contains_key(&connection_id),
             Error::<T>::ConnectionIdExist
         );
         let connection_end = ConnectionEnd {
@@ -480,13 +389,13 @@ impl<T: Trait> Module<T> {
         if_std! {
             println!("connection inserted: {:?}", connection_id);
         }
-        Connections::insert(&connection_id, connection_end);
+        <Connections<T>>::insert(&connection_id, connection_end);
         // addConnectionToClient(clientIdentifier, connection_id)
-        ClientStates::mutate(&client_id, |client_state| {
+        <ClientStates<T>>::mutate(&client_id, |client_state| {
             (*client_state).connections.push(connection_id);
         });
-        Self::deposit_event(RawEvent::ConnOpenInit);
-        Ok(())
+        Self::deposit_event(Event::ConnOpenInit);
+        Ok(().into())
     }
 
     /// Allocate a port, which modules can bind to uniquely named ports allocated by the IBC handler.
@@ -501,23 +410,25 @@ impl<T: Trait> Module<T> {
     /// 	let module_index = 45 as u8;
     ///     bind_port(identifier.clone(), module_index);
     /// ```
-    pub fn bind_port(identifier: Vec<u8>, module_index: u8) -> dispatch::DispatchResult {
+    pub fn bind_port(identifier: Vec<u8>, module_index: u8) -> DispatchResultWithPostInfo {
         // abortTransactionUnless(validatePortIdentifier(id))
-        ensure!(!Ports::contains_key(&identifier), Error::<T>::PortIdBinded);
-        Ports::insert(&identifier, module_index);
-        Self::deposit_event(RawEvent::PortBound(module_index));
-        Ok(())
+        ensure!(!<Ports<T>>::contains_key(&identifier), Error::<T>::PortIdBinded);
+        <Ports<T>>::insert(&identifier, module_index);
+        Self::deposit_event(Event::PortBound(module_index));
+
+        Ok(().into())
     }
 
-    pub fn release_port(identifier: Vec<u8>, module_index: u8) -> dispatch::DispatchResult {
-        #![warn(missing_docs)]
+    pub fn release_port(identifier: Vec<u8>, module_index: u8) -> DispatchResultWithPostInfo {
+        // #![warn(missing_docs)]
         ensure!(
-            Ports::get(&identifier) == module_index,
+            <Ports<T>>::get(&identifier) == module_index,
             "Port identifier not found"
         );
-        Ports::remove(&identifier);
-        Self::deposit_event(RawEvent::PortReleased);
-        Ok(())
+        <Ports<T>>::remove(&identifier);
+        Self::deposit_event(Event::PortReleased);
+
+        Ok(().into())
     }
 
     /// Initialize an IBC channel opening handshake by:
@@ -558,28 +469,28 @@ impl<T: Trait> Module<T> {
         counterparty_port_id: Vec<u8>,
         counterparty_channel_id: H256,
         version: Vec<u8>,
-    ) -> dispatch::DispatchResult {
+    ) -> DispatchResultWithPostInfo {
         // abortTransactionUnless(validateChannelIdentifier(portIdentifier, channelIdentifier))
         ensure!(connection_hops.len() == 1, Error::<T>::OnlyOneHopAllowedV1);
 
         ensure!(
-            !Channels::contains_key((port_id.clone(), channel_id)),
+            !<Channels<T>>::contains_key((port_id.clone(), channel_id)),
             Error::<T>::ChannelIdExist
         );
         ensure!(
-            Connections::contains_key(&connection_hops[0]),
+            <Connections<T>>::contains_key(&connection_hops[0]),
             Error::<T>::ConnectionIdNotExist
         );
 
         // optimistic channel handshakes are allowed
-        let connection = Connections::get(&connection_hops[0]);
+        let connection = <Connections<T>>::get(&connection_hops[0]);
         ensure!(
             connection.state != ConnectionState::Closed,
             Error::<T>::ConnectionClosed
         );
         // abortTransactionUnless(authenticate(privateStore.get(portPath(portIdentifier))))
         ensure!(
-            Ports::get(&port_id) == module_index,
+            <Ports<T>>::get(&port_id) == module_index,
             Error::<T>::PortIdNotMatch
         );
         let channel_end = ChannelEnd {
@@ -590,18 +501,18 @@ impl<T: Trait> Module<T> {
             connection_hops,
             version: vec![],
         };
-        Channels::insert((port_id.clone(), channel_id), channel_end);
+        <Channels<T>>::insert((port_id.clone(), channel_id), channel_end);
         // key = generate()
         // provableStore.set(channelCapabilityPath(portIdentifier, channelIdentifier), key)
-        NextSequenceSend::insert((port_id.clone(), channel_id), 1);
-        NextSequenceRecv::insert((port_id.clone(), channel_id), 1);
-        NextSequenceAck::insert((port_id.clone(), channel_id), 1);
+        <NextSequenceSend<T>>::insert((port_id.clone(), channel_id), 1);
+        <NextSequenceRecv<T>>::insert((port_id.clone(), channel_id), 1);
+        <NextSequenceAck<T>>::insert((port_id.clone(), channel_id), 1);
         // return key
-        ClientStates::mutate(&connection.client_id, |client_state| {
+        <ClientStates<T>>::mutate(&connection.client_id, |client_state| {
             (*client_state).channels.push((port_id.clone(), channel_id));
         });
-        Self::deposit_event(RawEvent::ChanOpenInit);
-        Ok(())
+        Self::deposit_event(Event::ChanOpenInit);
+        Ok(().into())
     }
 
     /// Initialize sending packet flow by:
@@ -635,8 +546,8 @@ impl<T: Trait> Module<T> {
     ///     send_packet(packet.clone());
     /// ```
     ///
-    pub fn send_packet(packet: Packet) -> dispatch::DispatchResult {
-        let channel = Channels::get((packet.source_port.clone(), packet.source_channel));
+    pub fn send_packet(packet: Packet) -> DispatchResultWithPostInfo {
+        let channel = <Channels<T>>::get((packet.source_port.clone(), packet.source_channel));
         // optimistic sends are permitted once the handshake has started
         ensure!(
             channel.state != ChannelState::Closed,
@@ -652,7 +563,7 @@ impl<T: Trait> Module<T> {
             packet.dest_channel == channel.counterparty_channel_id,
             Error::<T>::DestChannelIdNotMatch
         );
-        let connection = Connections::get(&channel.connection_hops[0]);
+        let connection = <Connections<T>>::get(&channel.connection_hops[0]);
         ensure!(
             connection.state != ConnectionState::Closed,
             "connection has been closed"
@@ -662,7 +573,7 @@ impl<T: Trait> Module<T> {
         // abortTransactionUnless(consensusState.getHeight() < packet.timeoutHeight)
 
         let mut next_sequence_send =
-            NextSequenceSend::get((packet.source_port.clone(), packet.source_channel));
+            <NextSequenceSend<T>>::get((packet.source_port.clone(), packet.source_channel));
         ensure!(
             packet.sequence == next_sequence_send,
             Error::<T>::PackedSequenceNotMatch
@@ -670,14 +581,14 @@ impl<T: Trait> Module<T> {
 
         // all assertions passed, we can alter state
         next_sequence_send = next_sequence_send + 1;
-        NextSequenceSend::insert(
+        <NextSequenceSend<T>>::insert(
             (packet.source_port.clone(), packet.source_channel),
             next_sequence_send,
         );
         let timeout_height = packet.timeout_height.encode();
         let hash = BlakeTwo256::hash_of(&[&packet.data[..], &timeout_height[..]].concat());
 
-        Packets::insert(
+        <Packets<T>>::insert(
             (
                 packet.source_port.clone(),
                 packet.source_channel,
@@ -688,7 +599,7 @@ impl<T: Trait> Module<T> {
         // provableStore.set(packetCommitmentPath(packet.sourcePort, packet.sourceChannel, packet.sequence), hash(packet.data, packet.timeout))
 
         // log that a packet has been sent
-        Self::deposit_event(RawEvent::SendPacket(
+        Self::deposit_event(Event::SendPacket(
             packet.sequence,
             packet.data,
             packet.timeout_height,
@@ -697,7 +608,7 @@ impl<T: Trait> Module<T> {
             packet.dest_port,
             packet.dest_channel,
         ));
-        Ok(())
+        Ok(().into())
     }
 
     /// This function handles datagram, transmitted from relayers, for the kinds task below:
@@ -705,22 +616,22 @@ impl<T: Trait> Module<T> {
     ///     + After connection opening handshakes are initiated, processing the subsequent handshakes - ICS-003.
     ///     + After channel opening handshakes are initiated, processing the subsequent handshakes - ICS-004.
     ///     + After packet flows are initiated, processing the subsequent packet flows - ICS-004.
-    pub fn handle_datagram(datagram: Datagram) -> dispatch::DispatchResult {
+    pub fn handle_datagram(datagram: Datagram) -> DispatchResultWithPostInfo {
         #![warn(missing_doc_code_examples)]
         match datagram {
             // Receiving the message containing a block header of other chains from relayers,  IBC module tryies to synchronize the block header.
             Datagram::ClientUpdate { client_id, header } => {
-                ensure!(ClientStates::contains_key(&client_id), "Client not found");
-                let client_state = ClientStates::get(&client_id);
+                ensure!(<ClientStates<T>>::contains_key(&client_id), "Client not found");
+                let client_state = <ClientStates<T>>::get(&client_id);
                 ensure!(
                     client_state.latest_height < header.height,
                     "Client already updated"
                 );
                 ensure!(
-                    ConsensusStates::contains_key((client_id, client_state.latest_height)),
+                    <ConsensusStates<T>>::contains_key((client_id, client_state.latest_height)),
                     "ConsensusState not found"
                 );
-                let consensus_state = ConsensusStates::get((client_id, client_state.latest_height));
+                let consensus_state = <ConsensusStates<T>>::get((client_id, client_state.latest_height));
 
                 // TODO: verify header using validity_predicate
                 let justification =
@@ -745,7 +656,7 @@ impl<T: Trait> Module<T> {
                             println!("block_hash: {:?}", header.block_hash);
                         }
                         assert_eq!(header.block_hash, justification.commit.target_hash);
-                        ClientStates::mutate(&client_id, |client_state| {
+                        <ClientStates<T>>::mutate(&client_id, |client_state| {
                             (*client_state).latest_height = header.height;
                         });
                         // TODO
@@ -762,7 +673,7 @@ impl<T: Trait> Module<T> {
                                 header.height
                             );
                         }
-                        ConsensusStates::insert((client_id, header.height), new_consensus_state);
+                        <ConsensusStates<T>>::insert((client_id, header.height), new_consensus_state);
 
                         let result = read_proof_check::<BlakeTwo256>(
                             header.commitment_root,
@@ -779,7 +690,7 @@ impl<T: Trait> Module<T> {
                             println!("new_authorities: {:?}", new_authorities);
                         }
                         if new_authorities != consensus_state.authorities {
-                            ConsensusStates::mutate(
+                            <ConsensusStates<T>>::mutate(
                                 (client_id, header.height),
                                 |consensus_state| {
                                     (*consensus_state).set_id += 1;
@@ -787,7 +698,7 @@ impl<T: Trait> Module<T> {
                                 },
                             );
                         }
-                        Self::deposit_event(RawEvent::ClientUpdated);
+                        Self::deposit_event(Event::ClientUpdated);
                     }
                 }
             }
@@ -795,7 +706,7 @@ impl<T: Trait> Module<T> {
                 identifier,
                 evidence,
             } => {
-                Self::deposit_event(RawEvent::ClientMisbehaviourReceived);
+                Self::deposit_event(Event::ClientMisbehaviourReceived);
             }
             Datagram::ConnOpenTry {
                 connection_id,
@@ -810,8 +721,8 @@ impl<T: Trait> Module<T> {
                 consensus_height,
             } => {
                 let mut new_connection_end;
-                if Connections::contains_key(&connection_id) {
-                    let old_conn_end = Connections::get(&connection_id);
+                if <Connections<T>>::contains_key(&connection_id) {
+                    let old_conn_end = <Connections<T>>::get(&connection_id);
                     let state_is_consistent = old_conn_end.state.eq(&ConnectionState::Init)
                         && old_conn_end
                             .counterparty_connection_id
@@ -848,7 +759,7 @@ impl<T: Trait> Module<T> {
                     );
                 }
                 ensure!(
-                    ConsensusStates::contains_key((client_id, proof_height)),
+                    <ConsensusStates<T>>::contains_key((client_id, proof_height)),
                     "ConsensusState not found"
                 );
                 let value = Self::verify_connection_state(
@@ -882,12 +793,12 @@ impl<T: Trait> Module<T> {
                 new_connection_end.version = vec![Self::pick_version(intersection)]; // Todo: change the field `version` in `new_connection_end` to `u8`
 
                 let identifier = connection_id;
-                Connections::insert(&identifier, new_connection_end);
+                <Connections<T>>::insert(&identifier, new_connection_end);
                 // addConnectionToClient(clientIdentifier, identifier)
-                ClientStates::mutate(&client_id, |client_state| {
+                <ClientStates<T>>::mutate(&client_id, |client_state| {
                     (*client_state).connections.push(identifier);
                 });
-                Self::deposit_event(RawEvent::ConnOpenTry);
+                Self::deposit_event(Event::ConnOpenTry);
             }
             Datagram::ConnOpenAck {
                 connection_id,
@@ -900,11 +811,11 @@ impl<T: Trait> Module<T> {
             } => {
                 use sp_runtime::traits::SaturatedConversion;
                 let current_block_number_self =
-                    <frame_system::Module<T>>::block_number().saturated_into::<u32>();
+                    <frame_system::Pallet<T>>::block_number().saturated_into::<u32>();
                 Self::check_client_consensus_height(current_block_number_self, consensus_height);
 
                 ensure!(
-                    Connections::contains_key(&connection_id),
+                    <Connections<T>>::contains_key(&connection_id),
                     "Connection uninitialized"
                 );
 
@@ -925,14 +836,14 @@ impl<T: Trait> Module<T> {
 
                 //     new_connection_end = old_conn_end.clone();
                 // }
-                let mut new_connection_end = Connections::get(&connection_id);
+                let mut new_connection_end = <Connections<T>>::get(&connection_id);
 
                 // expectedConsensusState = getConsensusState(consensusHeight)
                 // expected = ConnectionEnd{TRYOPEN, identifier, getCommitmentPrefix(),
                 //                          connection.counterpartyClientIdentifier, connection.clientIdentifier,
                 //                          version}
                 ensure!(
-                    ConsensusStates::contains_key((new_connection_end.client_id, proof_height)),
+                    <ConsensusStates<T>>::contains_key((new_connection_end.client_id, proof_height)),
                     "ConsensusState not found"
                 );
                 let value = Self::verify_connection_state(
@@ -945,13 +856,13 @@ impl<T: Trait> Module<T> {
                 // abortTransactionUnless(connection.verifyConnectionState(proofHeight, proofTry, connection.counterpartyConnectionIdentifier, expected))
                 // abortTransactionUnless(connection.verifyClientConsensusState(proofHeight, proofConsensus, connection.counterpartyClientIdentifier, expectedConsensusState))
                 new_connection_end.version = vec![version];
-                Connections::mutate(&connection_id, |connection| {
+                <Connections<T>>::mutate(&connection_id, |connection| {
                     (*connection).state = ConnectionState::Open;
                 });
                 // abortTransactionUnless(getCompatibleVersions().indexOf(version) !== -1)
                 // connection.version = version
                 // provableStore.set(connectionPath(identifier), connection)
-                Self::deposit_event(RawEvent::ConnOpenAck);
+                Self::deposit_event(Event::ConnOpenAck);
             }
             Datagram::ConnOpenConfirm {
                 connection_id,
@@ -959,13 +870,13 @@ impl<T: Trait> Module<T> {
                 proof_height,
             } => {
                 ensure!(
-                    Connections::contains_key(&connection_id),
+                    <Connections<T>>::contains_key(&connection_id),
                     "Connection uninitialized"
                 );
 
                 let mut new_connection_end;
                 {
-                    let old_conn_end = Connections::get(&connection_id);
+                    let old_conn_end = <Connections<T>>::get(&connection_id);
                     ensure!(
                         old_conn_end.state.eq(&ConnectionState::TryOpen),
                         "Connection mismatch!"
@@ -974,7 +885,7 @@ impl<T: Trait> Module<T> {
                 }
 
                 ensure!(
-                    ConsensusStates::contains_key((new_connection_end.client_id, proof_height)),
+                    <ConsensusStates<T>>::contains_key((new_connection_end.client_id, proof_height)),
                     "ConsensusState not found"
                 );
                 let value = Self::verify_connection_state(
@@ -987,11 +898,11 @@ impl<T: Trait> Module<T> {
                 // expected = ConnectionEnd{OPEN, identifier, getCommitmentPrefix(), connection.counterpartyClientIdentifier,
                 //                          connection.clientIdentifier, connection.version}
                 // abortTransactionUnless(connection.verifyConnectionState(proofHeight, proofAck, connection.counterpartyConnectionIdentifier, expected))
-                Connections::mutate(&connection_id, |connection| {
+                <Connections<T>>::mutate(&connection_id, |connection| {
                     (*connection).state = ConnectionState::Open;
                 });
                 // provableStore.set(connectionPath(identifier), connection)
-                Self::deposit_event(RawEvent::ConnOpenConfirm);
+                Self::deposit_event(Event::ConnOpenConfirm);
             }
             Datagram::ChanOpenTry {
                 order,
@@ -1022,22 +933,22 @@ impl<T: Trait> Module<T> {
                 //    previous.version === version)
                 //   )
                 ensure!(
-                    !Channels::contains_key((port_id.clone(), channel_id)),
+                    !<Channels<T>>::contains_key((port_id.clone(), channel_id)),
                     "channel identifier already exists"
                 );
                 // abortTransactionUnless(authenticate(privateStore.get(portPath(portIdentifier))))
                 ensure!(
-                    Connections::contains_key(&connection_hops[0]),
+                    <Connections<T>>::contains_key(&connection_hops[0]),
                     "connection identifier not exists"
                 );
-                let connection = Connections::get(&connection_hops[0]);
+                let connection = <Connections<T>>::get(&connection_hops[0]);
                 ensure!(
                     connection.state == ConnectionState::Open,
                     "connection has been closed"
                 );
 
                 ensure!(
-                    ConsensusStates::contains_key((connection.client_id, proof_height)),
+                    <ConsensusStates<T>>::contains_key((connection.client_id, proof_height)),
                     "ConsensusState not found"
                 );
                 let value = Self::verify_channel_state(
@@ -1057,7 +968,7 @@ impl<T: Trait> Module<T> {
                 //   counterpartyChannelIdentifier,
                 //   expected
                 // ))
-                let dest_module_index = Ports::get(port_id.clone());
+                let dest_module_index = <Ports<T>>::get(port_id.clone());
                 T::ModuleCallbacks::on_chan_open_try(
                     dest_module_index.into(),
                     order.clone(),
@@ -1078,16 +989,16 @@ impl<T: Trait> Module<T> {
                     connection_hops,
                     version,
                 };
-                Channels::insert((port_id.clone(), channel_id), channel_end);
+                <Channels<T>>::insert((port_id.clone(), channel_id), channel_end);
                 // key = generate()
                 // provableStore.set(channelCapabilityPath(portIdentifier, channelIdentifier), key)
-                NextSequenceSend::insert((port_id.clone(), channel_id), 1);
-                NextSequenceRecv::insert((port_id.clone(), channel_id), 1);
+                <NextSequenceSend<T>>::insert((port_id.clone(), channel_id), 1);
+                <NextSequenceRecv<T>>::insert((port_id.clone(), channel_id), 1);
                 // return key
-                ClientStates::mutate(&connection.client_id, |client_state| {
+                <ClientStates<T>>::mutate(&connection.client_id, |client_state| {
                     (*client_state).channels.push((port_id.clone(), channel_id));
                 });
-                Self::deposit_event(RawEvent::ChanOpenTry);
+                Self::deposit_event(Event::ChanOpenTry);
             }
             Datagram::ChanOpenAck {
                 port_id: port_id,
@@ -1097,26 +1008,26 @@ impl<T: Trait> Module<T> {
                 proof_height,
             } => {
                 ensure!(
-                    Channels::contains_key((port_id.clone(), channel_id)),
+                    <Channels<T>>::contains_key((port_id.clone(), channel_id)),
                     "channel identifier not exists"
                 );
-                let channel = Channels::get((port_id.clone(), channel_id));
+                let channel = <Channels<T>>::get((port_id.clone(), channel_id));
                 ensure!(
                     channel.state == ChannelState::Init || channel.state == ChannelState::TryOpen,
                     "channel is not ready"
                 );
                 // abortTransactionUnless(authenticate(privateStore.get(channelCapabilityPath(portIdentifier, channelIdentifier))))
                 ensure!(
-                    Connections::contains_key(&channel.connection_hops[0]),
+                    <Connections<T>>::contains_key(&channel.connection_hops[0]),
                     "connection identifier not exists"
                 );
-                let connection = Connections::get(&channel.connection_hops[0]);
+                let connection = <Connections<T>>::get(&channel.connection_hops[0]);
                 ensure!(
                     connection.state == ConnectionState::Open,
                     "connection has been closed"
                 );
                 ensure!(
-                    ConsensusStates::contains_key((connection.client_id, proof_height)),
+                    <ConsensusStates<T>>::contains_key((connection.client_id, proof_height)),
                     "ConsensusState not found"
                 );
                 let value = Self::verify_channel_state(
@@ -1137,17 +1048,17 @@ impl<T: Trait> Module<T> {
                 //   expected
                 // ))
                 // channel.version = counterpartyVersion
-                let dest_module_index = Ports::get(port_id.clone());
+                let dest_module_index = <Ports<T>>::get(port_id.clone());
                 T::ModuleCallbacks::on_chan_open_ack(
                     dest_module_index.into(),
                     port_id.clone(),
                     channel_id,
                     version.clone(),
                 );
-                Channels::mutate((port_id, channel_id), |channel| {
+                <Channels<T>>::mutate((port_id, channel_id), |channel| {
                     (*channel).state = ChannelState::Open;
                 });
-                Self::deposit_event(RawEvent::ChanOpenAck);
+                Self::deposit_event(Event::ChanOpenAck);
             }
             Datagram::ChanOpenConfirm {
                 port_id: port_id,
@@ -1156,26 +1067,26 @@ impl<T: Trait> Module<T> {
                 proof_height,
             } => {
                 ensure!(
-                    Channels::contains_key((port_id.clone(), channel_id)),
+                    <Channels<T>>::contains_key((port_id.clone(), channel_id)),
                     "channel identifier not exists"
                 );
-                let channel = Channels::get((port_id.clone(), channel_id));
+                let channel = <Channels<T>>::get((port_id.clone(), channel_id));
                 ensure!(
                     channel.state == ChannelState::TryOpen,
                     "channel is not ready"
                 );
                 // abortTransactionUnless(authenticate(privateStore.get(channelCapabilityPath(portIdentifier, channelIdentifier))))
                 ensure!(
-                    Connections::contains_key(&channel.connection_hops[0]),
+                    <Connections<T>>::contains_key(&channel.connection_hops[0]),
                     "connection identifier not exists"
                 );
-                let connection = Connections::get(&channel.connection_hops[0]);
+                let connection = <Connections<T>>::get(&channel.connection_hops[0]);
                 ensure!(
                     connection.state == ConnectionState::Open,
                     "connection has been closed"
                 );
                 ensure!(
-                    ConsensusStates::contains_key((connection.client_id, proof_height)),
+                    <ConsensusStates<T>>::contains_key((connection.client_id, proof_height)),
                     "ConsensusState not found"
                 );
                 let value = Self::verify_channel_state(
@@ -1195,16 +1106,16 @@ impl<T: Trait> Module<T> {
                 //   channel.counterpartyChannelIdentifier,
                 //   expected
                 // ))
-                let dest_module_index = Ports::get(port_id.clone());
+                let dest_module_index = <Ports<T>>::get(port_id.clone());
                 T::ModuleCallbacks::on_chan_open_confirm(
                     dest_module_index.into(),
                     port_id.clone(),
                     channel_id,
                 );
-                Channels::mutate((port_id, channel_id), |channel| {
+                <Channels<T>>::mutate((port_id, channel_id), |channel| {
                     (*channel).state = ChannelState::Open;
                 });
-                Self::deposit_event(RawEvent::ChanOpenConfirm);
+                Self::deposit_event(Event::ChanOpenConfirm);
             }
             Datagram::PacketRecv {
                 packet,
@@ -1212,10 +1123,10 @@ impl<T: Trait> Module<T> {
                 proof_height,
             } => {
                 ensure!(
-                    Channels::contains_key((packet.dest_port.clone(), packet.dest_channel)),
+                    <Channels<T>>::contains_key((packet.dest_port.clone(), packet.dest_channel)),
                     "channel identifier not exists"
                 );
-                let channel = Channels::get((packet.dest_port.clone(), packet.dest_channel));
+                let channel = <Channels<T>>::get((packet.dest_port.clone(), packet.dest_channel));
                 ensure!(channel.state == ChannelState::Open, "channel is not ready");
                 // abortTransactionUnless(authenticate(privateStore.get(channelCapabilityPath(packet.destPort, packet.destChannel))))
                 ensure!(
@@ -1228,10 +1139,10 @@ impl<T: Trait> Module<T> {
                 );
 
                 ensure!(
-                    Connections::contains_key(&channel.connection_hops[0]),
+                    <Connections<T>>::contains_key(&channel.connection_hops[0]),
                     "connection identifier not exists"
                 );
-                let connection = Connections::get(&channel.connection_hops[0]);
+                let connection = <Connections<T>>::get(&channel.connection_hops[0]);
                 ensure!(
                     connection.state == ConnectionState::Open,
                     "connection has been closed"
@@ -1240,7 +1151,7 @@ impl<T: Trait> Module<T> {
                 // abortTransactionUnless(getConsensusHeight() < packet.timeoutHeight)
 
                 ensure!(
-                    ConsensusStates::contains_key((connection.client_id, proof_height)),
+                    <ConsensusStates<T>>::contains_key((connection.client_id, proof_height)),
                     "ConsensusState not found"
                 );
                 let value = Self::verify_packet_data(
@@ -1267,7 +1178,7 @@ impl<T: Trait> Module<T> {
                 // all assertions passed (except sequence check), we can alter state
 
                 // for testing
-                let dest_module_index = Ports::get(packet.dest_port.clone());
+                let dest_module_index = <Ports<T>>::get(packet.dest_port.clone());
                 if_std! {
                     println!("dest_module_index: {}", dest_module_index);
                 }
@@ -1277,7 +1188,7 @@ impl<T: Trait> Module<T> {
                 if acknowledgement.len() > 0 || channel.ordering == ChannelOrder::Unordered {
                     let hash = BlakeTwo256::hash_of(&acknowledgement);
 
-                    Acknowledgements::insert(
+                    <Acknowledgements<T>>::insert(
                         (
                             packet.dest_port.clone(),
                             packet.dest_channel,
@@ -1289,13 +1200,13 @@ impl<T: Trait> Module<T> {
 
                 if channel.ordering == ChannelOrder::Ordered {
                     let mut next_sequence_recv =
-                        NextSequenceRecv::get((packet.dest_port.clone(), packet.dest_channel));
+                        <NextSequenceRecv<T>>::get((packet.dest_port.clone(), packet.dest_channel));
                     ensure!(
                         packet.sequence == next_sequence_recv,
                         "recv sequence not match"
                     );
                     next_sequence_recv = next_sequence_recv + 1;
-                    NextSequenceRecv::insert(
+                    <NextSequenceRecv<T>>::insert(
                         (packet.dest_port.clone(), packet.dest_channel),
                         next_sequence_recv,
                     );
@@ -1303,7 +1214,7 @@ impl<T: Trait> Module<T> {
 
                 // log that a packet has been received & acknowledged
                 // emitLogEntry("recvPacket", {sequence: packet.sequence, timeout: packet.timeout, data: packet.data, acknowledgement})
-                Self::deposit_event(RawEvent::RecvPacket(
+                Self::deposit_event(Event::RecvPacket(
                     packet.sequence,
                     packet.data,
                     packet.timeout_height,
@@ -1325,10 +1236,10 @@ impl<T: Trait> Module<T> {
             } => {
                 // abort transaction unless that channel is open, calling module owns the associated port, and the packet fields match
                 ensure!(
-                    Channels::contains_key((packet.source_port.clone(), packet.source_channel)),
+                    <Channels<T>>::contains_key((packet.source_port.clone(), packet.source_channel)),
                     "channel identifier not exists"
                 );
-                let channel = Channels::get((packet.source_port.clone(), packet.source_channel));
+                let channel = <Channels<T>>::get((packet.source_port.clone(), packet.source_channel));
                 ensure!(channel.state == ChannelState::Open, "channel is not ready");
                 // abortTransactionUnless(authenticate(privateStore.get(channelCapabilityPath(packet.sourcePort, packet.sourceChannel))))
                 ensure!(
@@ -1337,10 +1248,10 @@ impl<T: Trait> Module<T> {
                 );
 
                 ensure!(
-                    Connections::contains_key(&channel.connection_hops[0]),
+                    <Connections<T>>::contains_key(&channel.connection_hops[0]),
                     "connection identifier not exists"
                 );
-                let connection = Connections::get(&channel.connection_hops[0]);
+                let connection = <Connections<T>>::get(&channel.connection_hops[0]);
                 ensure!(
                     connection.state == ConnectionState::Open,
                     "connection has been closed"
@@ -1357,7 +1268,7 @@ impl<T: Trait> Module<T> {
                 let expect_hash =
                     BlakeTwo256::hash_of(&[&packet.data[..], &timeout_height[..]].concat());
 
-                let hash = Packets::get((
+                let hash = <Packets<T>>::get((
                     packet.source_port.clone(),
                     packet.source_channel,
                     packet.sequence,
@@ -1391,13 +1302,13 @@ impl<T: Trait> Module<T> {
                 // abort transaction unless acknowledgement is processed in order
                 if channel.ordering == ChannelOrder::Ordered {
                     let mut next_sequence_ack =
-                        NextSequenceAck::get((packet.dest_port.clone(), packet.dest_channel));
+                        <NextSequenceAck<T>>::get((packet.dest_port.clone(), packet.dest_channel));
                     ensure!(
                         packet.sequence == next_sequence_ack,
                         "recv sequence not match"
                     );
                     next_sequence_ack = next_sequence_ack + 1;
-                    NextSequenceAck::insert(
+                    <NextSequenceAck<T>>::insert(
                         (packet.dest_port.clone(), packet.dest_channel),
                         next_sequence_ack,
                     );
@@ -1406,7 +1317,7 @@ impl<T: Trait> Module<T> {
                 // all assertions passed, we can alter state
 
                 // delete our commitment so we can't "acknowledge" again
-                Acknowledgements::remove((
+                <Acknowledgements<T>>::remove((
                     packet.dest_port.clone(),
                     packet.dest_channel,
                     packet.sequence,
@@ -1416,7 +1327,7 @@ impl<T: Trait> Module<T> {
                 // return packet
             }
         }
-        Ok(())
+        Ok(().into())
     }
 
     // TODO
@@ -1430,8 +1341,8 @@ impl<T: Trait> Module<T> {
         connection_identifier: H256,
         proof: StorageProof,
     ) -> Option<ConnectionEnd> {
-        let consensus_state = ConsensusStates::get((client_id, proof_height));
-        let key = Connections::hashed_key_for(connection_identifier);
+        let consensus_state = <ConsensusStates<T>>::get((client_id, proof_height));
+        let key = <Connections<T>>::hashed_key_for(connection_identifier);
         let value = read_proof_check::<BlakeTwo256>(consensus_state.root, proof, &key);
         match value {
             Ok(value) => match value {
@@ -1471,8 +1382,8 @@ impl<T: Trait> Module<T> {
         channel_identifier: H256,
         proof: StorageProof,
     ) -> Option<ChannelEnd> {
-        let consensus_state = ConsensusStates::get((client_id, proof_height));
-        let key = Channels::hashed_key_for((port_identifier, channel_identifier));
+        let consensus_state = <ConsensusStates<T>>::get((client_id, proof_height));
+        let key = <Channels<T>>::hashed_key_for((port_identifier, channel_identifier));
         let value = read_proof_check::<BlakeTwo256>(consensus_state.root, proof, &key);
         match value {
             Ok(value) => match value {
@@ -1513,8 +1424,8 @@ impl<T: Trait> Module<T> {
         channel_identifier: H256,
         sequence: u64,
     ) -> Option<H256> {
-        let consensus_state = ConsensusStates::get((client_id, proof_height));
-        let key = Packets::hashed_key_for((port_identifier, channel_identifier, sequence));
+        let consensus_state = <ConsensusStates<T>>::get((client_id, proof_height));
+        let key = <Packets<T>>::hashed_key_for((port_identifier, channel_identifier, sequence));
         let value = read_proof_check::<BlakeTwo256>(consensus_state.root, proof, &key);
         match value {
             Ok(value) => match value {
@@ -1555,8 +1466,8 @@ impl<T: Trait> Module<T> {
         channel_identifier: H256,
         sequence: u64,
     ) -> Option<H256> {
-        let consensus_state = ConsensusStates::get((client_id, proof_height));
-        let key = Acknowledgements::hashed_key_for((port_identifier, channel_identifier, sequence));
+        let consensus_state = <ConsensusStates<T>>::get((client_id, proof_height));
+        let key = <Acknowledgements<T>>::hashed_key_for((port_identifier, channel_identifier, sequence));
         let value = read_proof_check::<BlakeTwo256>(consensus_state.root, proof, &key);
         match value {
             Ok(value) => match value {
@@ -1600,7 +1511,7 @@ impl<T: Trait> Module<T> {
     fn check_client_consensus_height(
         host_current_height: u32,
         claimed_height: u32,
-    ) -> dispatch::DispatchResult {
+    ) -> DispatchResultWithPostInfo {
         // Todo: Use Height struct as ibc-rs/modules/src/ics02_client/height.rs?
 
         ensure!(
@@ -1613,6 +1524,6 @@ impl<T: Trait> Module<T> {
             "Consensus height is too old!"
         );
 
-        Ok(())
+        Ok(().into())
     }
 }
