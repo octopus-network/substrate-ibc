@@ -135,7 +135,7 @@ The mock enviroment is built in [mock.rs](src/mock.rs); In [tests.rs](src/tests.
 ## Implementation Logic in Source Code
 
 ### Synchronizing Block Headers of Other Chains
-* Relayers send latest block headers of other chains to ibc pallet by invoking the ```Datagram::ClientUpdate``` are:
+* Relayers send latest block headers of other chains to ibc pallet by invoking the ```Datagram::ClientUpdate``` arm:
 ```rust
 // https://github.com/cdot-network/substrate-ibc/blob/master/src/lib.rs
 pub fn handle_datagram(datagram: Datagram) -> dispatch::DispatchResult {
@@ -332,4 +332,3 @@ cargo doc --open
 ```
 
 or by visiting this site: https://docs.rs/pallet-ibc
-
