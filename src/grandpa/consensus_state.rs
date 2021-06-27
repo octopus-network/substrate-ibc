@@ -12,42 +12,37 @@ use sp_runtime::RuntimeDebug;
 /// - `commitment_root`: State root of a substrate block.
 #[derive(Clone, Default, Encode, Decode, RuntimeDebug)]
 pub struct ConsensusState {
-    pub root: crate::state::CommitmentRoot,
-    pub height: u32,
-    pub set_id: SetId,
-    pub authorities: AuthorityList,
+	pub root: crate::state::CommitmentRoot,
+	pub height: u32,
+	pub set_id: SetId,
+	pub authorities: AuthorityList,
 }
 
 impl ConsensusState {
-    pub fn new(
-        root: crate::state::CommitmentRoot,
-        height: u32,
-        set_id: SetId,
-        authorities: AuthorityList,
-    ) -> Self {
-        Self {
-            root,
-            height,
-            set_id,
-            authorities,
-        }
-    }
+	pub fn new(
+		root: crate::state::CommitmentRoot,
+		height: u32,
+		set_id: SetId,
+		authorities: AuthorityList,
+	) -> Self {
+		Self { root, height, set_id, authorities }
+	}
 }
 
 impl crate::state::ConsensusState for ConsensusState {
-    fn client_type(&self) -> ClientType {
-        ClientType::GRANDPA
-    }
+	fn client_type(&self) -> ClientType {
+		ClientType::GRANDPA
+	}
 
-    fn height(&self) -> u32 {
-        self.height
-    }
+	fn height(&self) -> u32 {
+		self.height
+	}
 
-    fn root(&self) -> crate::state::CommitmentRoot {
-        self.root
-    }
+	fn root(&self) -> crate::state::CommitmentRoot {
+		self.root
+	}
 
-    fn validate_basic(&self) {
-        unimplemented!()
-    }
+	fn validate_basic(&self) {
+		unimplemented!()
+	}
 }

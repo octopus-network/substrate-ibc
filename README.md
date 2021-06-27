@@ -332,4 +332,3 @@ cargo doc --open
 ```
 
 or by visiting this site: https://docs.rs/pallet-ibc
-
