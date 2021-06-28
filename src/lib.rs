@@ -49,19 +49,13 @@
 //! ## Usage
 //! Please refer to section "How to Interact with the Pallet" in the repository's README.md
 
-#[cfg(not(feature = "std"))]
-extern crate alloc;
-
-#[cfg(not(feature = "std"))]
-use alloc::string::{String, ToString};
-
 pub use pallet::*;
 
 pub use client::ClientType;
 use codec::{Decode, Encode};
 use core::marker::PhantomData;
 use finality_grandpa::voter_set::VoterSet;
-use frame_support::{ensure, traits::Get};
+use frame_support::ensure;
 use frame_system::ensure_signed;
 use grandpa::justification::GrandpaJustification;
 use grandpa::state_machine::read_proof_check;
@@ -408,15 +402,13 @@ pub mod pallet {
 			}
 			let _sender = ensure_signed(origin)?;
 			let mut ctx = informalsystems::Context { _pd: PhantomData::<T>, tmp };
-			// TODO: julian
-			// let messages = messages
-			// 	.iter()
-			// 	.map(|message| prost_types::Any {
-			// 		type_url: message.type_url.clone(),
-			// 		value: message.value.clone(),
-			// 	})
-			// 	.collect();
-			let messages = vec![];
+			let messages = messages
+				.iter()
+				.map(|message| prost_types::Any {
+					type_url: message.type_url.clone(),
+					value: message.value.clone(),
+				})
+				.collect();
 			let result = ibc::ics26_routing::handler::deliver(&mut ctx, messages);
 			if_std! {
 				println!("result: {:?}", result);

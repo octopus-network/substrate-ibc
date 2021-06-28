@@ -1,7 +1,4 @@
 use super::*;
-use codec::{Decode, Encode};
-use core::marker::PhantomData;
-use frame_support::storage::StorageMap;
 use ibc::application::ics20_fungible_token_transfer::context::Ics20Context;
 use ibc::ics02_client::client_consensus::AnyConsensusState;
 use ibc::ics02_client::client_state::AnyClientState;
@@ -24,9 +21,6 @@ use ibc::ics24_host::identifier::{ClientId, ConnectionId};
 use ibc::ics26_routing::context::Ics26Context;
 use ibc::timestamp::Timestamp;
 use ibc::Height;
-use sp_runtime::RuntimeDebug;
-use sp_std::{if_std, prelude::*};
-use std::str::FromStr;
 use tendermint_proto::Protobuf;
 
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
@@ -236,33 +230,31 @@ impl<T: Config> ClientReader for Context<T> {
 		if_std! {
 			println!("in read client_state");
 		}
-		None
-		// if <Pallet<T> as Store>::ClientStatesV2::contains_key(client_id.as_bytes()) {
-		//     let data = <Pallet<T> as Store>::ClientStatesV2::get(client_id.as_bytes());
-		//     Some(AnyClientState::decode_vec(&*data).unwrap())
-		// } else {
-		//     if_std! {
-		//         println!("read client_state returns None");
-		//     }
-		//     None
-		// }
+		if <Pallet<T> as Store>::ClientStatesV2::contains_key(client_id.as_bytes()) {
+			let data = <Pallet<T> as Store>::ClientStatesV2::get(client_id.as_bytes());
+			Some(AnyClientState::decode_vec(&*data).unwrap())
+		} else {
+			if_std! {
+				println!("read client_state returns None");
+			}
+			None
+		}
 	}
 
 	fn consensus_state(&self, client_id: &ClientId, height: Height) -> Option<AnyConsensusState> {
 		if_std! {
 			println!("in read consensus_state");
 		}
-		None
-		// let height = height.encode_vec().unwrap();
-		// if <Pallet<T> as Store>::ConsensusStatesV2::contains_key((client_id.as_bytes(), &height)) {
-		//     let data = <Pallet<T> as Store>::ConsensusStatesV2::get((client_id.as_bytes(), height));
-		//     Some(AnyConsensusState::decode_vec(&*data).unwrap())
-		// } else {
-		//     if_std! {
-		//         println!("read consensus_state returns None");
-		//     }
-		//     None
-		// }
+		let height = height.encode_vec().unwrap();
+		if <Pallet<T> as Store>::ConsensusStatesV2::contains_key((client_id.as_bytes(), &height)) {
+			let data = <Pallet<T> as Store>::ConsensusStatesV2::get((client_id.as_bytes(), height));
+			Some(AnyConsensusState::decode_vec(&*data).unwrap())
+		} else {
+			if_std! {
+				println!("read consensus_state returns None");
+			}
+			None
+		}
 	}
 	fn client_counter(&self) -> u64 {
 		0
@@ -293,8 +285,8 @@ impl<T: Config> ClientKeeper for Context<T> {
 		if_std! {
 			println!("in store_client_state");
 		}
-		// let data = client_state.encode_vec().unwrap();
-		// <Pallet<T> as Store>::ClientStatesV2::insert(client_id.as_bytes(), data);
+		let data = client_state.encode_vec().unwrap();
+		<Pallet<T> as Store>::ClientStatesV2::insert(client_id.as_bytes(), data);
 		Ok(())
 	}
 
@@ -307,9 +299,9 @@ impl<T: Config> ClientKeeper for Context<T> {
 		if_std! {
 			println!("in store_consensus_state");
 		}
-		// let height = height.encode_vec().unwrap();
-		// let data = consensus_state.encode_vec().unwrap();
-		// <Pallet<T> as Store>::ConsensusStatesV2::insert((client_id.as_bytes(), height), data);
+		let height = height.encode_vec().unwrap();
+		let data = consensus_state.encode_vec().unwrap();
+		<Pallet<T> as Store>::ConsensusStatesV2::insert((client_id.as_bytes(), height), data);
 		Ok(())
 	}
 }
