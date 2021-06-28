@@ -20,6 +20,7 @@ frame-system = { default-features = false,  version = "3.0.0",  path = "../../..
 frame-benchmarking = { default-features = false,  version = "3.1.0",  path = "../../../../frame/benchmarking", optional = true }
 
 serde = { version = "1.0.101", optional = true }
+log = { version = "0.4.0", default-features = false }
 finality-grandpa = { default-features = false, version = "0.12.3", features = ["derive-codec"] }
 hash-db = { version = "0.15.2", default-features = false }
 sp-core = { default-features = false, version = "3.0.0", path = "../../../../primitives/core" }
@@ -54,6 +55,7 @@ std = [
 	'sp-finality-grandpa/std',
 	'sp-std/std',
 	'sp-trie/std',
+	'log/std',
 ]
 
 runtime-benchmarks = ["frame-benchmarking"]

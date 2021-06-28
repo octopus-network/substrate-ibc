@@ -68,7 +68,7 @@ use sp_runtime::{
 	traits::{BlakeTwo256, Hash},
 	OpaqueExtrinsic as UncheckedExtrinsic, RuntimeDebug,
 };
-use sp_std::{if_std, prelude::*};
+use sp_std::prelude::*;
 use sp_trie::StorageProof;
 
 mod client;
@@ -397,9 +397,9 @@ pub mod pallet {
 			messages: Vec<informalsystems::Any>,
 			tmp: u8,
 		) -> DispatchResult {
-			if_std! {
-				println!("in deliver");
-			}
+
+			log::info!("in deliver");
+
 			let _sender = ensure_signed(origin)?;
 			let mut ctx = informalsystems::Context { _pd: PhantomData::<T>, tmp };
 			let messages = messages
@@ -410,9 +410,9 @@ pub mod pallet {
 				})
 				.collect();
 			let result = ibc::ics26_routing::handler::deliver(&mut ctx, messages);
-			if_std! {
-				println!("result: {:?}", result);
-			}
+
+			log::info!("result: {:?}", result);
+
 			Ok(())
 		}
 	}
@@ -506,9 +506,9 @@ pub mod pallet {
 				version: Self::get_compatible_versions(),
 			};
 
-			if_std! {
-				println!("connection inserted: {:?}", connection_id);
-			}
+
+			log::info!("connection inserted: {:?}", connection_id);
+
 			<Connections<T>>::insert(&connection_id, connection_end);
 			// addConnectionToClient(clientIdentifier, connection_id)
 			<ClientStates<T>>::mutate(&client_id, |client_state| {
@@ -730,25 +730,25 @@ pub mod pallet {
 					// TODO: julian
 					let justification: Result<GrandpaJustification<Block>, u32> = Err(0);
 
-					if_std! {
-						println!(
+
+					log::info!(
 							"consensus_state: {:?}, header: {:?}",
 							consensus_state,
 							header,
 						);
-					}
+
 					let authorities = VoterSet::new(consensus_state.authorities.iter().cloned());
 					ensure!(authorities.is_some(), "Invalid authorities set");
 					let authorities = authorities.unwrap();
 					if let Ok(justification) = justification {
 						let result = justification.verify(consensus_state.set_id, &authorities);
-						if_std! {
-							println!("verify result: {:?}", result);
-						}
+
+						log::info!("verify result: {:?}", result);
+
 						if result.is_ok() {
-							if_std! {
-								println!("block_hash: {:?}", header.block_hash);
-							}
+
+							log::info!("block_hash: {:?}", header.block_hash);
+
 							assert_eq!(header.block_hash, justification.commit.target_hash);
 							<ClientStates<T>>::mutate(&client_id, |client_state| {
 								(*client_state).latest_height = header.height;
@@ -760,13 +760,13 @@ pub mod pallet {
 								set_id: consensus_state.set_id,
 								authorities: consensus_state.authorities.clone(),
 							};
-							if_std! {
-								println!(
+
+							log::info!(
 									"consensus_state inserted: {:?}, {}",
 									client_id,
 									header.height
 								);
-							}
+
 							<ConsensusStates<T>>::insert(
 								(client_id, header.height),
 								new_consensus_state,
@@ -781,9 +781,9 @@ pub mod pallet {
 							let result = result.unwrap().unwrap();
 							let new_authorities: AuthorityList =
 								VersionedAuthorityList::decode(&mut &*result).unwrap().into();
-							if_std! {
-								println!("new_authorities: {:?}", new_authorities);
-							}
+
+							log::info!("new_authorities: {:?}", new_authorities);
+
 							if new_authorities != consensus_state.authorities {
 								<ConsensusStates<T>>::mutate(
 									(client_id, header.height),
@@ -841,13 +841,12 @@ pub mod pallet {
 					// expected = ConnectionEnd{INIT, desiredIdentifier, getCommitmentPrefix(), counterpartyClientIdentifier,
 					//                          clientIdentifier, counterpartyVersions}
 					// version = pickVersion(counterpartyVersions)
-					if_std! {
-						println!(
+					log::info!(
 							"query consensus_state: {:?}, {}",
 							client_id,
 							proof_height
 						);
-					}
+
 					ensure!(
 						<ConsensusStates<T>>::contains_key((client_id, proof_height)),
 						"ConsensusState not found"
@@ -1273,9 +1272,9 @@ pub mod pallet {
 
 					// for testing
 					let dest_module_index = <Ports<T>>::get(packet.dest_port.clone());
-					if_std! {
-						println!("dest_module_index: {}", dest_module_index);
-					}
+
+					log::info!("dest_module_index: {}", dest_module_index);
+
 					T::ModuleCallbacks::on_recv_packet(dest_module_index.into(), packet.clone());
 					let acknowledgement: Vec<u8> = vec![1, 3, 3, 7];
 
@@ -1442,22 +1441,22 @@ pub mod pallet {
 								return Some(connection_end);
 							}
 							Err(error) => {
-								if_std! {
-									println!("trie value decode error: {:?}", error);
-								}
+
+								log::info!("trie value decode error: {:?}", error);
+
 							}
 						}
 					}
 					None => {
-						if_std! {
-							println!("read_proof_check error: value not exists");
-						}
+
+						log::info!("read_proof_check error: value not exists");
+
 					}
 				},
 				Err(error) => {
-					if_std! {
-						println!("read_proof_check error: {:?}", error);
-					}
+
+					log::info!("read_proof_check error: {:?}", error);
+
 				}
 			}
 
@@ -1483,22 +1482,20 @@ pub mod pallet {
 								return Some(channel_end);
 							}
 							Err(error) => {
-								if_std! {
-									println!("trie value decode error: {:?}", error);
-								}
+								log::info!("trie value decode error: {:?}", error);
 							}
 						}
 					}
 					None => {
-						if_std! {
-							println!("read_proof_check error: value not exists");
-						}
+
+						log::info!("read_proof_check error: value not exists");
+
 					}
 				},
 				Err(error) => {
-					if_std! {
-						println!("read_proof_check error: {:?}", error);
-					}
+
+					log::info!("read_proof_check error: {:?}", error);
+
 				}
 			}
 
@@ -1525,22 +1522,21 @@ pub mod pallet {
 								return Some(hash);
 							}
 							Err(error) => {
-								if_std! {
-									println!("trie value decode error: {:?}", error);
-								}
+
+								log::info!("trie value decode error: {:?}", error);
+
 							}
 						}
 					}
 					None => {
-						if_std! {
-							println!("read_proof_check error: value not exists");
-						}
+						log::info!("read_proof_check error: value not exists");
+
 					}
 				},
 				Err(error) => {
-					if_std! {
-						println!("read_proof_check error: {:?}", error);
-					}
+
+					log::info!("read_proof_check error: {:?}", error);
+
 				}
 			}
 
@@ -1571,22 +1567,18 @@ pub mod pallet {
 								return Some(hash);
 							}
 							Err(error) => {
-								if_std! {
-									println!("trie value decode error: {:?}", error);
-								}
+								log::info!("trie value decode error: {:?}", error);
 							}
 						}
 					}
 					None => {
-						if_std! {
-							println!("read_proof_check error: value not exists");
-						}
+						log::info!("read_proof_check error: value not exists");
 					}
 				},
 				Err(error) => {
-					if_std! {
-						println!("read_proof_check error: {:?}", error);
-					}
+
+					log::info!("read_proof_check error: {:?}", error);
+
 				}
 			}
 
