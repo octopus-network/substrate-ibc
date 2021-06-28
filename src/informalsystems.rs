@@ -220,39 +220,38 @@ impl<T: Config> PortReader for Context<T> {
 
 impl<T: Config> ClientReader for Context<T> {
 	fn client_type(&self, client_id: &ClientId) -> Option<ClientType> {
-		if_std! {
-			println!("in read client_type");
-		}
+
+		log::info!("in read client_type");
+
 		Some(ClientType::Tendermint)
 	}
 
 	fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
-		if_std! {
-			println!("in read client_state");
-		}
+
+		log::info!("in read client_state");
+
 		if <Pallet<T> as Store>::ClientStatesV2::contains_key(client_id.as_bytes()) {
 			let data = <Pallet<T> as Store>::ClientStatesV2::get(client_id.as_bytes());
 			Some(AnyClientState::decode_vec(&*data).unwrap())
 		} else {
-			if_std! {
-				println!("read client_state returns None");
-			}
+
+			log::info!("read client_state returns None");
+
 			None
 		}
 	}
 
 	fn consensus_state(&self, client_id: &ClientId, height: Height) -> Option<AnyConsensusState> {
-		if_std! {
-			println!("in read consensus_state");
-		}
+		log::info!("in read consensus_state");
+
 		let height = height.encode_vec().unwrap();
 		if <Pallet<T> as Store>::ConsensusStatesV2::contains_key((client_id.as_bytes(), &height)) {
 			let data = <Pallet<T> as Store>::ConsensusStatesV2::get((client_id.as_bytes(), height));
 			Some(AnyConsensusState::decode_vec(&*data).unwrap())
 		} else {
-			if_std! {
-				println!("read consensus_state returns None");
-			}
+
+			log::info!("read consensus_state returns None");
+
 			None
 		}
 	}
@@ -267,9 +266,9 @@ impl<T: Config> ClientKeeper for Context<T> {
 		client_id: ClientId,
 		client_type: ClientType,
 	) -> Result<(), ICS02Error> {
-		if_std! {
-			println!("in store_client_type");
-		}
+
+		log::info!("in store_client_type");
+
 		Ok(())
 	}
 
@@ -282,9 +281,9 @@ impl<T: Config> ClientKeeper for Context<T> {
 		client_id: ClientId,
 		client_state: AnyClientState,
 	) -> Result<(), ICS02Error> {
-		if_std! {
-			println!("in store_client_state");
-		}
+
+		log::info!("in store_client_state");
+
 		let data = client_state.encode_vec().unwrap();
 		<Pallet<T> as Store>::ClientStatesV2::insert(client_id.as_bytes(), data);
 		Ok(())
@@ -296,9 +295,9 @@ impl<T: Config> ClientKeeper for Context<T> {
 		height: Height,
 		consensus_state: AnyConsensusState,
 	) -> Result<(), ICS02Error> {
-		if_std! {
-			println!("in store_consensus_state");
-		}
+
+		log::info!("in store_consensus_state");
+
 		let height = height.encode_vec().unwrap();
 		let data = consensus_state.encode_vec().unwrap();
 		<Pallet<T> as Store>::ConsensusStatesV2::insert((client_id.as_bytes(), height), data);
