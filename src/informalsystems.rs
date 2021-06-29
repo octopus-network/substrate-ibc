@@ -137,7 +137,7 @@ impl<T: Config> ChannelReader for Context<T> {
 
 	/// Returns the ConnectionState for the given identifier `connection_id`.
 	fn connection_end(&self, connection_id: &ConnectionId) -> Option<ConnectionEnd> {
-		None
+		ConnectionReader::connection_end(self, connection_id)
 	}
 
 	fn connection_channels(&self, cid: &ConnectionId) -> Option<Vec<(PortId, ChannelId)>> {
@@ -301,7 +301,16 @@ impl<T: Config> ClientKeeper for Context<T> {
 
 impl<T: Config> ConnectionReader for Context<T> {
 	fn connection_end(&self, conn_id: &ConnectionId) -> Option<ConnectionEnd> {
-		None
+		log::info!("in connection_end");
+
+		if <Pallet<T> as Store>::ConnectionsV2::contains_key(conn_id.as_bytes()) {
+			let data = <Pallet<T> as Store>::ConnectionsV2::get(conn_id.as_bytes());
+			Some(ConnectionEnd::decode_vec(&*data).unwrap())
+		} else {
+			log::info!("read connection end returns None");
+
+			None
+		}
 	}
 
 	fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
@@ -348,6 +357,10 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		connection_id: ConnectionId,
 		connection_end: &ConnectionEnd,
 	) -> Result<(), ICS03Error> {
+		log::info!("in store_connection");
+
+		let data = connection_end.encode_vec().unwrap();
+		<Pallet<T> as Store>::ConnectionsV2::insert(connection_id.as_bytes(), data);
 		Ok(())
 	}
 

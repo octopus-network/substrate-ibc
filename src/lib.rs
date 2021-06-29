@@ -277,6 +277,11 @@ pub mod pallet {
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
+	// connection_identifier => ConnectionEnd
+	pub type ConnectionsV2<T: Config> =
+		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
+
+	#[pallet::storage]
 	// client_id => ClientState
 	pub type ClientStates<T: Config> =
 		StorageMap<_, Blake2_128Concat, H256, grandpa::client_state::ClientState, ValueQuery>;
