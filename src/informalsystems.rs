@@ -147,7 +147,7 @@ impl<T: Config> ChannelReader for Context<T> {
 	/// Returns the ClientState for the given identifier `client_id`. Necessary dependency towards
 	/// proof verification.
 	fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
-		None
+		ClientReader::client_state(self, client_id)
 	}
 
 	fn client_consensus_state(
@@ -155,7 +155,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		client_id: &ClientId,
 		height: Height,
 	) -> Option<AnyConsensusState> {
-		None
+		ClientReader::consensus_state(self, client_id, height)
 	}
 
 	fn authenticated_capability(&self, port_id: &PortId) -> Result<Capability, Error> {
@@ -220,21 +220,18 @@ impl<T: Config> PortReader for Context<T> {
 
 impl<T: Config> ClientReader for Context<T> {
 	fn client_type(&self, client_id: &ClientId) -> Option<ClientType> {
-
 		log::info!("in read client_type");
 
 		Some(ClientType::Tendermint)
 	}
 
 	fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
-
 		log::info!("in read client_state");
 
 		if <Pallet<T> as Store>::ClientStatesV2::contains_key(client_id.as_bytes()) {
 			let data = <Pallet<T> as Store>::ClientStatesV2::get(client_id.as_bytes());
 			Some(AnyClientState::decode_vec(&*data).unwrap())
 		} else {
-
 			log::info!("read client_state returns None");
 
 			None
@@ -249,7 +246,6 @@ impl<T: Config> ClientReader for Context<T> {
 			let data = <Pallet<T> as Store>::ConsensusStatesV2::get((client_id.as_bytes(), height));
 			Some(AnyConsensusState::decode_vec(&*data).unwrap())
 		} else {
-
 			log::info!("read consensus_state returns None");
 
 			None
@@ -266,7 +262,6 @@ impl<T: Config> ClientKeeper for Context<T> {
 		client_id: ClientId,
 		client_type: ClientType,
 	) -> Result<(), ICS02Error> {
-
 		log::info!("in store_client_type");
 
 		Ok(())
@@ -281,7 +276,6 @@ impl<T: Config> ClientKeeper for Context<T> {
 		client_id: ClientId,
 		client_state: AnyClientState,
 	) -> Result<(), ICS02Error> {
-
 		log::info!("in store_client_state");
 
 		let data = client_state.encode_vec().unwrap();
@@ -311,7 +305,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 	}
 
 	fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
-		None
+		ClientReader::client_state(self, client_id)
 	}
 
 	fn host_current_height(&self) -> Height {
