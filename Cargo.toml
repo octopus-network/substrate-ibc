@@ -29,6 +29,7 @@ sp-runtime = { default-features = false, version = "3.0.0", path = "../../../../
 sp-finality-grandpa = { default-features = false, version = "3.0.0", path = "../../../../primitives/finality-grandpa" }
 sp-std = { default-features = false, version = "3.0.0", path = "../../../../primitives/std" }
 sp-trie = { default-features = false, version = "3.0.0", path = "../../../../primitives/trie" }
+sha2 = { version = "0.9.3", default-features = false }
 
 ibc = { default-features = false, git = "https://github.com/octopus-network/ibc-rs.git", branch = "master" }
 
@@ -56,6 +57,7 @@ std = [
 	'sp-std/std',
 	'sp-trie/std',
 	'log/std',
+	'sha2/std',
 ]
 
 runtime-benchmarks = ["frame-benchmarking"]

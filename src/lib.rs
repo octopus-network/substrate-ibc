@@ -281,6 +281,58 @@ pub mod pallet {
 	pub type ConnectionsV2<T: Config> =
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
+	#[pallet::storage]
+	// (port_identifier, channel_identifier) => ChannelEnd
+	pub type ChannelsV2<T: Config> =
+		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
+
+	#[pallet::storage]
+	// (port_identifier, channel_identifier) => Sequence
+	pub type NextSequenceSendV2<T: Config> =
+		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
+
+	#[pallet::storage]
+	// (port_identifier, channel_identifier) => Sequence
+	pub type NextSequenceRecvV2<T: Config> =
+		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
+
+	#[pallet::storage]
+	// (port_identifier, channel_identifier) = Sequence
+	pub type NextSequenceAckV2<T: Config>
+		= StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
+
+	#[pallet::storage]
+	// (port_identifier, channel_identifier, sequence) => Hash
+	pub type AcknowledgementsV2<T: Config> =
+		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
+
+	#[pallet::storage]
+	// clientId => ClientType
+	pub type ClientsV2<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
+
+	#[pallet::storage]
+	// client counter
+	pub type ClientCounterV2<T: Config> = StorageValue<_, u64>;
+
+	#[pallet::storage]
+	// connection counter
+	pub type ConnectionCounterV2<T: Config> = StorageValue<_, u64>;
+
+	#[pallet::storage]
+	// channel counter
+	pub type ChannelCounterV2<T: Config> = StorageValue<_, u64>;
+
+	#[pallet::storage]
+	// connection id => client id
+	pub type ConnectionToClientV2<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
+
+	#[pallet::storage]
+	// (portid, channelid, sequence) => receipt
+	pub type PacketReceiptV2<T: Config> = StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
+
+	#[pallet::storage]
+	// (portid, channelid, sequence) => hash
+	pub type PacketCommitmentV2<T: Config> = StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
 	// client_id => ClientState
