@@ -42,48 +42,48 @@ impl<T: Config> Ics20Context for Context<T> {}
 impl<T: Config> ChannelKeeper for Context<T> {
 	fn store_packet_commitment(
 		&mut self,
-		key: (PortId, ChannelId, Sequence),
-		timestamp: Timestamp,
-		heigh: Height,
-		data: Vec<u8>,
+		_key: (PortId, ChannelId, Sequence),
+		_timestamp: Timestamp,
+		_heigh: Height,
+		_data: Vec<u8>,
 	) -> Result<(), Error> {
 		Ok(())
 	}
 
 	fn delete_packet_commitment(
 		&mut self,
-		key: (PortId, ChannelId, Sequence),
+		_key: (PortId, ChannelId, Sequence),
 	) -> Result<(), Error> {
 		Ok(())
 	}
 
 	fn store_packet_receipt(
 		&mut self,
-		key: (PortId, ChannelId, Sequence),
-		receipt: Receipt,
+		_key: (PortId, ChannelId, Sequence),
+		_receipt: Receipt,
 	) -> Result<(), Error> {
 		Ok(())
 	}
 
 	fn store_packet_acknowledgement(
 		&mut self,
-		key: (PortId, ChannelId, Sequence),
-		ack: Vec<u8>,
+		_key: (PortId, ChannelId, Sequence),
+		_ack: Vec<u8>,
 	) -> Result<(), Error> {
 		Ok(())
 	}
 
 	fn delete_packet_acknowledgement(
 		&mut self,
-		key: (PortId, ChannelId, Sequence),
+		_key: (PortId, ChannelId, Sequence),
 	) -> Result<(), Error> {
 		Ok(())
 	}
 
 	fn store_connection_channels(
 		&mut self,
-		conn_id: ConnectionId,
-		port_channel_id: &(PortId, ChannelId),
+		_conn_id: ConnectionId,
+		_port_channel_id: &(PortId, ChannelId),
 	) -> Result<(), Error> {
 		Ok(())
 	}
@@ -91,32 +91,32 @@ impl<T: Config> ChannelKeeper for Context<T> {
 	/// Stores the given channel_end at a path associated with the port_id and channel_id.
 	fn store_channel(
 		&mut self,
-		port_channel_id: (PortId, ChannelId),
-		channel_end: &ChannelEnd,
+		_port_channel_id: (PortId, ChannelId),
+		_channel_end: &ChannelEnd,
 	) -> Result<(), Error> {
 		Ok(())
 	}
 
 	fn store_next_sequence_send(
 		&mut self,
-		port_channel_id: (PortId, ChannelId),
-		seq: Sequence,
+		_port_channel_id: (PortId, ChannelId),
+		_seq: Sequence,
 	) -> Result<(), Error> {
 		Ok(())
 	}
 
 	fn store_next_sequence_recv(
 		&mut self,
-		port_channel_id: (PortId, ChannelId),
-		seq: Sequence,
+		_port_channel_id: (PortId, ChannelId),
+		_seq: Sequence,
 	) -> Result<(), Error> {
 		Ok(())
 	}
 
 	fn store_next_sequence_ack(
 		&mut self,
-		port_channel_id: (PortId, ChannelId),
-		seq: Sequence,
+		_port_channel_id: (PortId, ChannelId),
+		_seq: Sequence,
 	) -> Result<(), Error> {
 		Ok(())
 	}
@@ -131,7 +131,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 
 impl<T: Config> ChannelReader for Context<T> {
 	/// Returns the ChannelEnd for the given `port_id` and `chan_id`.
-	fn channel_end(&self, port_channel_id: &(PortId, ChannelId)) -> Option<ChannelEnd> {
+	fn channel_end(&self, _port_channel_id: &(PortId, ChannelId)) -> Option<ChannelEnd> {
 		None
 	}
 
@@ -140,7 +140,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		ConnectionReader::connection_end(self, connection_id)
 	}
 
-	fn connection_channels(&self, cid: &ConnectionId) -> Option<Vec<(PortId, ChannelId)>> {
+	fn connection_channels(&self, _cid: &ConnectionId) -> Option<Vec<(PortId, ChannelId)>> {
 		None
 	}
 
@@ -158,36 +158,36 @@ impl<T: Config> ChannelReader for Context<T> {
 		ClientReader::consensus_state(self, client_id, height)
 	}
 
-	fn authenticated_capability(&self, port_id: &PortId) -> Result<Capability, Error> {
+	fn authenticated_capability(&self, _port_id: &PortId) -> Result<Capability, Error> {
 		unimplemented!()
 	}
 
-	fn get_next_sequence_send(&self, port_channel_id: &(PortId, ChannelId)) -> Option<Sequence> {
+	fn get_next_sequence_send(&self, _port_channel_id: &(PortId, ChannelId)) -> Option<Sequence> {
 		None
 	}
 
-	fn get_next_sequence_recv(&self, port_channel_id: &(PortId, ChannelId)) -> Option<Sequence> {
+	fn get_next_sequence_recv(&self, _port_channel_id: &(PortId, ChannelId)) -> Option<Sequence> {
 		None
 	}
 
-	fn get_next_sequence_ack(&self, port_channel_id: &(PortId, ChannelId)) -> Option<Sequence> {
+	fn get_next_sequence_ack(&self, _port_channel_id: &(PortId, ChannelId)) -> Option<Sequence> {
 		None
 	}
 
-	fn get_packet_commitment(&self, key: &(PortId, ChannelId, Sequence)) -> Option<String> {
+	fn get_packet_commitment(&self, _key: &(PortId, ChannelId, Sequence)) -> Option<String> {
 		None
 	}
 
-	fn get_packet_receipt(&self, key: &(PortId, ChannelId, Sequence)) -> Option<Receipt> {
+	fn get_packet_receipt(&self, _key: &(PortId, ChannelId, Sequence)) -> Option<Receipt> {
 		None
 	}
 
-	fn get_packet_acknowledgement(&self, key: &(PortId, ChannelId, Sequence)) -> Option<String> {
+	fn get_packet_acknowledgement(&self, _key: &(PortId, ChannelId, Sequence)) -> Option<String> {
 		None
 	}
 
 	/// A hashing function for packet commitments
-	fn hash(&self, value: String) -> String {
+	fn hash(&self, _value: String) -> String {
 		String::new()
 	}
 
@@ -210,16 +210,16 @@ impl<T: Config> ChannelReader for Context<T> {
 }
 
 impl<T: Config> PortReader for Context<T> {
-	fn lookup_module_by_port(&self, port_id: &PortId) -> Option<Capability> {
+	fn lookup_module_by_port(&self, _port_id: &PortId) -> Option<Capability> {
 		None
 	}
-	fn authenticate(&self, key: &Capability, port_id: &PortId) -> bool {
+	fn authenticate(&self, _key: &Capability, _port_id: &PortId) -> bool {
 		false
 	}
 }
 
 impl<T: Config> ClientReader for Context<T> {
-	fn client_type(&self, client_id: &ClientId) -> Option<ClientType> {
+	fn client_type(&self, _client_id: &ClientId) -> Option<ClientType> {
 		log::info!("in read client_type");
 
 		Some(ClientType::Tendermint)
@@ -259,8 +259,8 @@ impl<T: Config> ClientReader for Context<T> {
 impl<T: Config> ClientKeeper for Context<T> {
 	fn store_client_type(
 		&mut self,
-		client_id: ClientId,
-		client_type: ClientType,
+		_client_id: ClientId,
+		_client_type: ClientType,
 	) -> Result<(), ICS02Error> {
 		log::info!("in store_client_type");
 
@@ -335,13 +335,13 @@ impl<T: Config> ConnectionReader for Context<T> {
 
 	fn client_consensus_state(
 		&self,
-		client_id: &ClientId,
-		height: Height,
+		_client_id: &ClientId,
+		_height: Height,
 	) -> Option<AnyConsensusState> {
 		None
 	}
 
-	fn host_consensus_state(&self, height: Height) -> Option<AnyConsensusState> {
+	fn host_consensus_state(&self, _height: Height) -> Option<AnyConsensusState> {
 		None
 	}
 }
@@ -366,8 +366,8 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 
 	fn store_connection_to_client(
 		&mut self,
-		connection_id: ConnectionId,
-		client_id: &ClientId,
+		_connection_id: ConnectionId,
+		_client_id: &ClientId,
 	) -> Result<(), ICS03Error> {
 		Ok(())
 	}

@@ -281,6 +281,7 @@ pub mod pallet {
 	pub type ConnectionsV2<T: Config> =
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
+
 	#[pallet::storage]
 	// client_id => ClientState
 	pub type ClientStates<T: Config> =
@@ -588,7 +589,7 @@ pub mod pallet {
 			channel_id: H256,
 			counterparty_port_id: Vec<u8>,
 			counterparty_channel_id: H256,
-			version: Vec<u8>,
+			_version: Vec<u8>,
 		) -> DispatchResult {
 			// abortTransactionUnless(validateChannelIdentifier(portIdentifier, channelIdentifier))
 			ensure!(connection_hops.len() == 1, Error::<T>::OnlyOneHopAllowedV1);
@@ -802,7 +803,7 @@ pub mod pallet {
 						}
 					}
 				}
-				Datagram::ClientMisbehaviour { identifier, evidence } => {
+				Datagram::ClientMisbehaviour { identifier : _, evidence: _ } => {
 					Self::deposit_event(Event::ClientMisbehaviourReceived);
 				}
 				Datagram::ConnOpenTry {
@@ -810,12 +811,12 @@ pub mod pallet {
 					counterparty_connection_id,
 					counterparty_client_id,
 					client_id,
-					version,
+					version: _,
 					counterparty_version,
 					proof_init,
-					proof_consensus,
+					proof_consensus: _,
 					proof_height,
-					consensus_height,
+					consensus_height: _,
 				} => {
 					let mut new_connection_end;
 					if <Connections<T>>::contains_key(&connection_id) {
@@ -896,10 +897,10 @@ pub mod pallet {
 				}
 				Datagram::ConnOpenAck {
 					connection_id,
-					counterparty_connection_id,
+					counterparty_connection_id: _,
 					version,
 					proof_try,
-					proof_consensus,
+					proof_consensus: _,
 					proof_height,
 					consensus_height,
 				} => {
@@ -909,7 +910,7 @@ pub mod pallet {
 					Self::check_client_consensus_height(
 						current_block_number_self,
 						consensus_height,
-					);
+					)?;
 
 					ensure!(
 						<Connections<T>>::contains_key(&connection_id),
@@ -970,7 +971,7 @@ pub mod pallet {
 						"Connection uninitialized"
 					);
 
-					let mut new_connection_end;
+					let new_connection_end;
 					{
 						let old_conn_end = <Connections<T>>::get(&connection_id);
 						ensure!(
@@ -1006,10 +1007,10 @@ pub mod pallet {
 				Datagram::ChanOpenTry {
 					order,
 					connection_hops,
-					port_id: port_id,
-					channel_id: channel_id,
-					counterparty_port_id: counterparty_port_id,
-					counterparty_channel_id: counterparty_channel_id,
+					port_id,
+					channel_id,
+					counterparty_port_id,
+					counterparty_channel_id,
 					channel_version: version,
 					counterparty_version,
 					proof_init,
@@ -1100,8 +1101,8 @@ pub mod pallet {
 					Self::deposit_event(Event::ChanOpenTry);
 				}
 				Datagram::ChanOpenAck {
-					port_id: port_id,
-					channel_id: channel_id,
+					port_id,
+					channel_id,
 					version,
 					proof_try,
 					proof_height,
@@ -1161,8 +1162,8 @@ pub mod pallet {
 					Self::deposit_event(Event::ChanOpenAck);
 				}
 				Datagram::ChanOpenConfirm {
-					port_id: port_id,
-					channel_id: channel_id,
+					port_id,
+					channel_id,
 					proof_ack,
 					proof_height,
 				} => {
