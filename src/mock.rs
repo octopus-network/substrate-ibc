@@ -1,4 +1,4 @@
-use crate as pallet_template;
+use crate as pallet_ibc;
 use sp_core::H256;
 use frame_support::parameter_types;
 use sp_runtime::{
@@ -17,7 +17,7 @@ frame_support::construct_runtime!(
 		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
 		System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-		TemplateModule: pallet_template::{Pallet, Call, Storage, Event<T>},
+		IBC: pallet_ibc::{Pallet, Call, Storage, Event<T>},
 	}
 );
 
@@ -52,8 +52,48 @@ impl system::Config for Test {
 	type OnSetCode = ();
 }
 
-impl pallet_template::Config for Test {
+// The ModuleCallbacksImpl creates a static mapping of module index and callback functions of other modules.
+// The module index is determined at the time of construct_runtime. For example,
+// the index of TemplateModule is 8 in the current runtime.
+// In the future, we should find a more dynamic way to create this mapping.
+pub struct ModuleCallbacksImpl;
+
+impl pallet_ibc::ModuleCallbacks for ModuleCallbacksImpl {
+	fn on_chan_open_try(
+		index: usize,
+		order: pallet_ibc::ChannelOrder,
+		connection_hops: Vec<H256>,
+		port_identifier: Vec<u8>,
+		channel_identifier: H256,
+		counterparty_port_identifier: Vec<u8>,
+		counterparty_channel_identifier: H256,
+		version: Vec<u8>,
+		counterparty_version: Vec<u8>,
+	) {
+		unimplemented!()
+	}
+
+	fn on_chan_open_ack(
+		index: usize,
+		port_identifier: Vec<u8>,
+		channel_identifier: H256,
+		version: Vec<u8>,
+	) {
+		unimplemented!()
+	}
+
+	fn on_chan_open_confirm(index: usize, port_identifier: Vec<u8>, channel_identifier: H256) {
+		unimplemented!()
+	}
+
+	fn on_recv_packet(index: usize, packet: pallet_ibc::Packet) {
+		unimplemented!()
+	}
+}
+
+impl pallet_ibc::Config for Test {
 	type Event = Event;
+	type ModuleCallbacks = ModuleCallbacksImpl;
 }
 
 // Build genesis storage according to the mock runtime.

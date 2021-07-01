@@ -22,7 +22,6 @@ use ibc::ics26_routing::context::Ics26Context;
 use ibc::timestamp::Timestamp;
 use ibc::Height;
 use tendermint_proto::Protobuf;
-use sha2::Digest;
 use std::str::FromStr;
 
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
@@ -342,8 +341,13 @@ impl<T: Config> ChannelReader for Context<T> {
 	fn hash(&self, value: String) -> String {
 		log::info!("in hash");
 
-		let r = sha2::Sha256::digest(value.as_bytes());
-		format!("{:x}", r)
+		let r =  sp_core::hashing::sha2_256(value.as_bytes());
+
+		let mut tmp = String::new();
+		for item in r.iter() {
+			tmp.push_str(&format!("{:02x}", item));
+		}
+		tmp
 	}
 
 	/// Returns the current height of the local chain.
