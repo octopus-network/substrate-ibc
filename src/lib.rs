@@ -49,6 +49,8 @@
 //! ## Usage
 //! Please refer to section "How to Interact with the Pallet" in the repository's README.md
 
+extern crate alloc;
+
 pub use pallet::*;
 
 pub use client::ClientType;
