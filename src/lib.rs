@@ -49,6 +49,8 @@
 //! ## Usage
 //! Please refer to section "How to Interact with the Pallet" in the repository's README.md
 
+extern crate alloc;
+
 pub use pallet::*;
 
 pub use client::ClientType;
@@ -282,6 +284,62 @@ pub mod pallet {
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
+	// (port_identifier, channel_identifier) => ChannelEnd
+	pub type ChannelsV2<T: Config> =
+		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
+
+	#[pallet::storage]
+	// (port_identifier, channel_identifier) => Sequence
+	pub type NextSequenceSendV2<T: Config> =
+		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
+
+	#[pallet::storage]
+	// (port_identifier, channel_identifier) => Sequence
+	pub type NextSequenceRecvV2<T: Config> =
+		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
+
+	#[pallet::storage]
+	// (port_identifier, channel_identifier) = Sequence
+	pub type NextSequenceAckV2<T: Config> =
+		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
+
+	#[pallet::storage]
+	// (port_identifier, channel_identifier, sequence) => Hash
+	pub type AcknowledgementsV2<T: Config> =
+		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
+
+	#[pallet::storage]
+	// clientId => ClientType
+	pub type ClientsV2<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
+
+	#[pallet::storage]
+	// client counter
+	pub type ClientCounterV2<T: Config> = StorageValue<_, u64>;
+
+	#[pallet::storage]
+	// connection counter
+	pub type ConnectionCounterV2<T: Config> = StorageValue<_, u64>;
+
+	#[pallet::storage]
+	// channel counter
+	pub type ChannelCounterV2<T: Config> = StorageValue<_, u64>;
+
+	#[pallet::storage]
+	// connection id => client id
+	pub type ConnectionToClientV2<T: Config> =
+		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
+
+	#[pallet::storage]
+	// (portid, channelid, sequence) => receipt
+	pub type PacketReceiptV2<T: Config> =
+		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
+
+	#[pallet::storage]
+	// (portid, channelid, sequence) => hash
+	pub type PacketCommitmentV2<T: Config> =
+		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
+
+	#[pallet::storage]
 	// client_id => ClientState
 	pub type ClientStates<T: Config> =
 		StorageMap<_, Blake2_128Concat, H256, grandpa::client_state::ClientState, ValueQuery>;
@@ -402,7 +460,6 @@ pub mod pallet {
 			messages: Vec<informalsystems::Any>,
 			tmp: u8,
 		) -> DispatchResult {
-
 			log::info!("in deliver");
 
 			let _sender = ensure_signed(origin)?;
@@ -511,7 +568,6 @@ pub mod pallet {
 				version: Self::get_compatible_versions(),
 			};
 
-
 			log::info!("connection inserted: {:?}", connection_id);
 
 			<Connections<T>>::insert(&connection_id, connection_end);
@@ -588,7 +644,7 @@ pub mod pallet {
 			channel_id: H256,
 			counterparty_port_id: Vec<u8>,
 			counterparty_channel_id: H256,
-			version: Vec<u8>,
+			_version: Vec<u8>,
 		) -> DispatchResult {
 			// abortTransactionUnless(validateChannelIdentifier(portIdentifier, channelIdentifier))
 			ensure!(connection_hops.len() == 1, Error::<T>::OnlyOneHopAllowedV1);
@@ -735,12 +791,7 @@ pub mod pallet {
 					// TODO: julian
 					let justification: Result<GrandpaJustification<Block>, u32> = Err(0);
 
-
-					log::info!(
-							"consensus_state: {:?}, header: {:?}",
-							consensus_state,
-							header,
-						);
+					log::info!("consensus_state: {:?}, header: {:?}", consensus_state, header,);
 
 					let authorities = VoterSet::new(consensus_state.authorities.iter().cloned());
 					ensure!(authorities.is_some(), "Invalid authorities set");
@@ -751,7 +802,6 @@ pub mod pallet {
 						log::info!("verify result: {:?}", result);
 
 						if result.is_ok() {
-
 							log::info!("block_hash: {:?}", header.block_hash);
 
 							assert_eq!(header.block_hash, justification.commit.target_hash);
@@ -767,10 +817,10 @@ pub mod pallet {
 							};
 
 							log::info!(
-									"consensus_state inserted: {:?}, {}",
-									client_id,
-									header.height
-								);
+								"consensus_state inserted: {:?}, {}",
+								client_id,
+								header.height
+							);
 
 							<ConsensusStates<T>>::insert(
 								(client_id, header.height),
@@ -802,7 +852,7 @@ pub mod pallet {
 						}
 					}
 				}
-				Datagram::ClientMisbehaviour { identifier, evidence } => {
+				Datagram::ClientMisbehaviour { identifier: _, evidence: _ } => {
 					Self::deposit_event(Event::ClientMisbehaviourReceived);
 				}
 				Datagram::ConnOpenTry {
@@ -810,12 +860,12 @@ pub mod pallet {
 					counterparty_connection_id,
 					counterparty_client_id,
 					client_id,
-					version,
+					version: _,
 					counterparty_version,
 					proof_init,
-					proof_consensus,
+					proof_consensus: _,
 					proof_height,
-					consensus_height,
+					consensus_height: _,
 				} => {
 					let mut new_connection_end;
 					if <Connections<T>>::contains_key(&connection_id) {
@@ -846,11 +896,7 @@ pub mod pallet {
 					// expected = ConnectionEnd{INIT, desiredIdentifier, getCommitmentPrefix(), counterpartyClientIdentifier,
 					//                          clientIdentifier, counterpartyVersions}
 					// version = pickVersion(counterpartyVersions)
-					log::info!(
-							"query consensus_state: {:?}, {}",
-							client_id,
-							proof_height
-						);
+					log::info!("query consensus_state: {:?}, {}", client_id, proof_height);
 
 					ensure!(
 						<ConsensusStates<T>>::contains_key((client_id, proof_height)),
@@ -896,10 +942,10 @@ pub mod pallet {
 				}
 				Datagram::ConnOpenAck {
 					connection_id,
-					counterparty_connection_id,
+					counterparty_connection_id: _,
 					version,
 					proof_try,
-					proof_consensus,
+					proof_consensus: _,
 					proof_height,
 					consensus_height,
 				} => {
@@ -909,7 +955,7 @@ pub mod pallet {
 					Self::check_client_consensus_height(
 						current_block_number_self,
 						consensus_height,
-					);
+					)?;
 
 					ensure!(
 						<Connections<T>>::contains_key(&connection_id),
@@ -970,7 +1016,7 @@ pub mod pallet {
 						"Connection uninitialized"
 					);
 
-					let mut new_connection_end;
+					let new_connection_end;
 					{
 						let old_conn_end = <Connections<T>>::get(&connection_id);
 						ensure!(
@@ -1006,10 +1052,10 @@ pub mod pallet {
 				Datagram::ChanOpenTry {
 					order,
 					connection_hops,
-					port_id: port_id,
-					channel_id: channel_id,
-					counterparty_port_id: counterparty_port_id,
-					counterparty_channel_id: counterparty_channel_id,
+					port_id,
+					channel_id,
+					counterparty_port_id,
+					counterparty_channel_id,
 					channel_version: version,
 					counterparty_version,
 					proof_init,
@@ -1099,13 +1145,7 @@ pub mod pallet {
 					});
 					Self::deposit_event(Event::ChanOpenTry);
 				}
-				Datagram::ChanOpenAck {
-					port_id: port_id,
-					channel_id: channel_id,
-					version,
-					proof_try,
-					proof_height,
-				} => {
+				Datagram::ChanOpenAck { port_id, channel_id, version, proof_try, proof_height } => {
 					ensure!(
 						<Channels<T>>::contains_key((port_id.clone(), channel_id)),
 						"channel identifier not exists"
@@ -1160,12 +1200,7 @@ pub mod pallet {
 					});
 					Self::deposit_event(Event::ChanOpenAck);
 				}
-				Datagram::ChanOpenConfirm {
-					port_id: port_id,
-					channel_id: channel_id,
-					proof_ack,
-					proof_height,
-				} => {
+				Datagram::ChanOpenConfirm { port_id, channel_id, proof_ack, proof_height } => {
 					ensure!(
 						<Channels<T>>::contains_key((port_id.clone(), channel_id)),
 						"channel identifier not exists"
@@ -1446,22 +1481,16 @@ pub mod pallet {
 								return Some(connection_end);
 							}
 							Err(error) => {
-
 								log::info!("trie value decode error: {:?}", error);
-
 							}
 						}
 					}
 					None => {
-
 						log::info!("read_proof_check error: value not exists");
-
 					}
 				},
 				Err(error) => {
-
 					log::info!("read_proof_check error: {:?}", error);
-
 				}
 			}
 
@@ -1492,15 +1521,11 @@ pub mod pallet {
 						}
 					}
 					None => {
-
 						log::info!("read_proof_check error: value not exists");
-
 					}
 				},
 				Err(error) => {
-
 					log::info!("read_proof_check error: {:?}", error);
-
 				}
 			}
 
@@ -1527,21 +1552,16 @@ pub mod pallet {
 								return Some(hash);
 							}
 							Err(error) => {
-
 								log::info!("trie value decode error: {:?}", error);
-
 							}
 						}
 					}
 					None => {
 						log::info!("read_proof_check error: value not exists");
-
 					}
 				},
 				Err(error) => {
-
 					log::info!("read_proof_check error: {:?}", error);
-
 				}
 			}
 
@@ -1581,9 +1601,7 @@ pub mod pallet {
 					}
 				},
 				Err(error) => {
-
 					log::info!("read_proof_check error: {:?}", error);
-
 				}
 			}
 

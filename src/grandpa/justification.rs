@@ -5,10 +5,7 @@ use sp_runtime::{
 	traits::{Block as BlockT, Header as HeaderT, NumberFor},
 	RuntimeDebug,
 };
-use sp_std::{
-	collections::{btree_map::BTreeMap, btree_set::BTreeSet},
-	prelude::*,
-};
+use sp_std::{collections::btree_map::BTreeMap, prelude::*};
 
 type Commit<Block> = finality_grandpa::Commit<
 	<Block as BlockT>::Hash,
@@ -25,7 +22,7 @@ pub struct GrandpaJustification<Block: BlockT> {
 }
 
 impl<Block: BlockT> GrandpaJustification<Block> {
-	pub fn verify(&self, set_id: SetId, voters: &VoterSet<AuthorityId>) -> Result<(), Error>
+	pub fn verify(&self, _set_id: SetId, _voters: &VoterSet<AuthorityId>) -> Result<(), Error>
 	where
 		NumberFor<Block>: finality_grandpa::BlockNumberOps,
 	{
