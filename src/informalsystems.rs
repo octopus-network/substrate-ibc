@@ -10,7 +10,8 @@ use ibc::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use ibc::ics03_connection::error::Error as ICS03Error;
 use ibc::ics04_channel::channel::ChannelEnd;
 use ibc::ics04_channel::context::{ChannelKeeper, ChannelReader};
-use ibc::ics04_channel::error::Error;
+use ibc::ics04_channel::error::Error as ICS04Error;
+use ibc::ics04_channel::error as channel_error;
 use ibc::ics04_channel::packet::{Receipt, Sequence};
 use ibc::ics05_port::capabilities::Capability;
 use ibc::ics05_port::context::PortReader;
@@ -48,7 +49,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		timestamp: Timestamp,
 		heigh: Height,
 		data: Vec<u8>,
-	) -> Result<(), Error> {
+	) -> Result<(), ICS04Error> {
 		log::info!("in store packet commitment");
 
 		let input = format!("{:?},{:?},{:?}", timestamp, heigh, data);
@@ -65,7 +66,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 	fn delete_packet_commitment(
 		&mut self,
 		key: (PortId, ChannelId, Sequence),
-	) -> Result<(), Error> {
+	) -> Result<(), ICS04Error> {
 		log::info!("delete packet commitment");
 
 		let seq = u64::from(key.2);
@@ -79,7 +80,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		&mut self,
 		key: (PortId, ChannelId, Sequence),
 		receipt: Receipt,
-	) -> Result<(), Error> {
+	) -> Result<(), ICS04Error> {
 		log::info!("in store packet receipt");
 
 		let receipt = match receipt {
@@ -101,7 +102,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		&mut self,
 		key: (PortId, ChannelId, Sequence),
 		ack: Vec<u8>,
-	) -> Result<(), Error> {
+	) -> Result<(), ICS04Error> {
 		log::info!("in store packet acknowledgement");
 
 		let input = format!("{:?}", ack);
@@ -118,7 +119,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 	fn delete_packet_acknowledgement(
 		&mut self,
 		key: (PortId, ChannelId, Sequence),
-	) -> Result<(), Error> {
+	) -> Result<(), ICS04Error> {
 		log::info!("in delete packet acknowledgement");
 
 		let seq = u64::from(key.2);
@@ -137,7 +138,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		&mut self,
 		_conn_id: ConnectionId,
 		_port_channel_id: &(PortId, ChannelId),
-	) -> Result<(), Error> {
+	) -> Result<(), ICS04Error> {
 		Ok(())
 	}
 
@@ -146,7 +147,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		&mut self,
 		port_channel_id: (PortId, ChannelId),
 		channel_end: &ChannelEnd,
-	) -> Result<(), Error> {
+	) -> Result<(), ICS04Error> {
 		log::info!("in store channel");
 
 		let data = channel_end.encode_vec().unwrap();
@@ -162,7 +163,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		&mut self,
 		port_channel_id: (PortId, ChannelId),
 		seq: Sequence,
-	) -> Result<(), Error> {
+	) -> Result<(), ICS04Error> {
 		log::info!("in store next sequence send");
 
 		let seq = u64::from(seq);
@@ -180,7 +181,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		&mut self,
 		port_channel_id: (PortId, ChannelId),
 		seq: Sequence,
-	) -> Result<(), Error> {
+	) -> Result<(), ICS04Error> {
 		log::info!("in store next sequence recv");
 
 		let seq = u64::from(seq);
@@ -198,7 +199,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		&mut self,
 		port_channel_id: (PortId, ChannelId),
 		seq: Sequence,
-	) -> Result<(), Error> {
+	) -> Result<(), ICS04Error> {
 		log::info!("in store next sequence ack");
 
 		let seq = u64::from(seq);
@@ -278,7 +279,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		ClientReader::consensus_state(self, client_id, height)
 	}
 
-	fn authenticated_capability(&self, _port_id: &PortId) -> Result<Capability, Error> {
+	fn authenticated_capability(&self, _port_id: &PortId) -> Result<Capability, ICS04Error> {
 		unimplemented!()
 	}
 
