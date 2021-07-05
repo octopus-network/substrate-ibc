@@ -38,7 +38,7 @@ tendermint-proto = "=0.20.0"
 
 [dev-dependencies]
 hex = '0.4.0'
-sha2 = { version = "0.9.3", default-features = false }
+sha2 = '0.9.3'
 
 [features]
 default = ['std']
@@ -57,7 +57,6 @@ std = [
 	'sp-std/std',
 	'sp-trie/std',
 	'log/std',
-	'sha2/std',
 ]
 
 runtime-benchmarks = ["frame-benchmarking"]

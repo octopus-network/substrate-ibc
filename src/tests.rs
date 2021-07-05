@@ -1,5 +1,6 @@
-use crate::{Error, mock::*};
-use frame_support::{assert_ok, assert_noop};
+use crate::{mock::*, Error};
+use frame_support::{assert_noop, assert_ok};
+
 //
 // #[test]
 // fn it_works_for_default_value() {
@@ -30,18 +31,13 @@ fn test_hashing() {
 
 	let r = sha2::Sha256::digest(hello.as_bytes());
 
-	println!("R-HEX: {:x}", r);
-	println!("r = {:?}", r);
 	let l = sp_core::hashing::sha2_256(hello.as_bytes());
 	assert_eq!(format!("{:?}", r), format!("{:?}", l));
 
-	println!("l = {:?}", l);
 	let mut tmp = String::new();
 	for item in l.iter() {
 		tmp.push_str(&format!("{:02x}", item));
 	}
-	println!("l-HEX: {:?}", tmp);
 	assert_eq!(format!("{:x}", r), tmp);
-
 }
 

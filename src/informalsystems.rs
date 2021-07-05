@@ -54,7 +54,11 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		let input = format!("{:?},{:?},{:?}", timestamp, heigh, data);
 		let seq = u64::from(key.2);
 		let seq = seq.encode();
-		<Pallet<T> as Store>::PacketCommitmentV2::insert((key.0.as_bytes(), key.1.as_bytes(), seq), ChannelReader::hash(self, input).as_bytes());
+
+		<Pallet<T> as Store>::PacketCommitmentV2::insert(
+			(key.0.as_bytes(), key.1.as_bytes(), seq),
+			ChannelReader::hash(self, input).as_bytes(),
+		);
 		Ok(())
 	}
 
@@ -85,7 +89,11 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		let seq = u64::from(key.2);
 		let seq = seq.encode();
 
-		<Pallet<T> as Store>::PacketReceiptV2::insert((key.0.as_bytes(), key.1.as_bytes(), seq), receipt);
+		<Pallet<T> as Store>::PacketReceiptV2::insert(
+			(key.0.as_bytes(), key.1.as_bytes(), seq),
+			receipt,
+		);
+
 		Ok(())
 	}
 
@@ -99,7 +107,11 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		let input = format!("{:?}", ack);
 		let seq = u64::from(key.2);
 		let data = seq.encode();
-		<Pallet<T> as Store>::AcknowledgementsV2::insert((key.0.as_bytes(), key.1.as_bytes(), data), ChannelReader::hash(self, input).as_bytes());
+
+		<Pallet<T> as Store>::AcknowledgementsV2::insert(
+			(key.0.as_bytes(), key.1.as_bytes(), data),
+			ChannelReader::hash(self, input).as_bytes(),
+		);
 		Ok(())
 	}
 
@@ -111,7 +123,13 @@ impl<T: Config> ChannelKeeper for Context<T> {
 
 		let seq = u64::from(key.2);
 		let data = seq.encode();
-		<Pallet<T> as Store>::AcknowledgementsV2::remove((key.0.as_bytes(), key.1.as_bytes(), data));
+
+		<Pallet<T> as Store>::AcknowledgementsV2::remove((
+			key.0.as_bytes(),
+			key.1.as_bytes(),
+			data,
+		));
+
 		Ok(())
 	}
 
@@ -132,7 +150,11 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		log::info!("in store channel");
 
 		let data = channel_end.encode_vec().unwrap();
-		<Pallet<T> as Store>::ChannelsV2::insert((port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes()), data);
+
+		<Pallet<T> as Store>::ChannelsV2::insert(
+			(port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes()),
+			data,
+		);
 		Ok(())
 	}
 
@@ -145,7 +167,12 @@ impl<T: Config> ChannelKeeper for Context<T> {
 
 		let seq = u64::from(seq);
 		let data = seq.encode();
-		<Pallet<T> as Store>::NextSequenceSendV2::insert((port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes()), data);
+
+		<Pallet<T> as Store>::NextSequenceSendV2::insert(
+			(port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes()),
+			data,
+		);
+
 		Ok(())
 	}
 
@@ -158,7 +185,12 @@ impl<T: Config> ChannelKeeper for Context<T> {
 
 		let seq = u64::from(seq);
 		let data = seq.encode();
-		<Pallet<T> as Store>::NextSequenceRecvV2::insert((port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes()), data);
+
+		<Pallet<T> as Store>::NextSequenceRecvV2::insert(
+			(port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes()),
+			data,
+		);
+
 		Ok(())
 	}
 
@@ -171,7 +203,12 @@ impl<T: Config> ChannelKeeper for Context<T> {
 
 		let seq = u64::from(seq);
 		let data = seq.encode();
-		<Pallet<T> as Store>::NextSequenceAckV2::insert((port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes()), data);
+
+		<Pallet<T> as Store>::NextSequenceAckV2::insert(
+			(port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes()),
+			data,
+		);
+
 		Ok(())
 	}
 
@@ -182,11 +219,11 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		log::info!("in increase channel counter");
 
 		match <Pallet<T> as Store>::ChannelCounterV2::get() {
-			None => {},
+			None => {}
 			Some(old) => {
-				let new  = old.checked_add(1).unwrap();
+				let new = old.checked_add(1).unwrap();
 				<Pallet<T> as Store>::ChannelCounterV2::put(new)
-			},
+			}
 		}
 	}
 }
@@ -196,8 +233,14 @@ impl<T: Config> ChannelReader for Context<T> {
 	fn channel_end(&self, port_channel_id: &(PortId, ChannelId)) -> Option<ChannelEnd> {
 		log::info!("in channel_end");
 
-		if <Pallet<T> as Store>::ChannelsV2::contains_key((port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes())) {
-			let data = <Pallet<T> as Store>::ChannelsV2::get((port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes()));
+		if <Pallet<T> as Store>::ChannelsV2::contains_key((
+			port_channel_id.0.as_bytes(),
+			port_channel_id.1.as_bytes(),
+		)) {
+			let data = <Pallet<T> as Store>::ChannelsV2::get((
+				port_channel_id.0.as_bytes(),
+				port_channel_id.1.as_bytes(),
+			));
 			Some(ChannelEnd::decode_vec(&*data).unwrap())
 		} else {
 			log::info!("read channel_end return None");
@@ -242,9 +285,15 @@ impl<T: Config> ChannelReader for Context<T> {
 	fn get_next_sequence_send(&self, port_channel_id: &(PortId, ChannelId)) -> Option<Sequence> {
 		log::info!("in get_next_sequence");
 
-		if <Pallet<T> as Store>::NextSequenceSendV2::contains_key((port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes())) {
-			let data = <Pallet<T> as Store>::NextSequenceSendV2::get((port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes()));
-			let mut data : &[u8] = &data;
+		if <Pallet<T> as Store>::NextSequenceSendV2::contains_key((
+			port_channel_id.0.as_bytes(),
+			port_channel_id.1.as_bytes(),
+		)) {
+			let data = <Pallet<T> as Store>::NextSequenceSendV2::get((
+				port_channel_id.0.as_bytes(),
+				port_channel_id.1.as_bytes(),
+			));
+			let mut data: &[u8] = &data;
 			let seq = u64::decode(&mut data).unwrap();
 			Some(Sequence::from(seq))
 		} else {
@@ -257,9 +306,15 @@ impl<T: Config> ChannelReader for Context<T> {
 	fn get_next_sequence_recv(&self, port_channel_id: &(PortId, ChannelId)) -> Option<Sequence> {
 		log::info!("in get next sequence recv");
 
-		if <Pallet<T> as Store>::NextSequenceRecvV2::contains_key((port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes())) {
-			let data = <Pallet<T> as Store>::NextSequenceRecvV2::get((port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes()));
-			let mut data : &[u8] = &data;
+		if <Pallet<T> as Store>::NextSequenceRecvV2::contains_key((
+			port_channel_id.0.as_bytes(),
+			port_channel_id.1.as_bytes(),
+		)) {
+			let data = <Pallet<T> as Store>::NextSequenceRecvV2::get((
+				port_channel_id.0.as_bytes(),
+				port_channel_id.1.as_bytes(),
+			));
+			let mut data: &[u8] = &data;
 			let seq = u64::decode(&mut data).unwrap();
 			Some(Sequence::from(seq))
 		} else {
@@ -272,9 +327,15 @@ impl<T: Config> ChannelReader for Context<T> {
 	fn get_next_sequence_ack(&self, port_channel_id: &(PortId, ChannelId)) -> Option<Sequence> {
 		log::info!("in get next sequence ack");
 
-		if <Pallet<T> as Store>::NextSequenceAckV2::contains_key((port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes())) {
-			let data = <Pallet<T> as Store>::NextSequenceAckV2::get((port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes()));
-			let mut data : &[u8] = &data;
+		if <Pallet<T> as Store>::NextSequenceAckV2::contains_key((
+			port_channel_id.0.as_bytes(),
+			port_channel_id.1.as_bytes(),
+		)) {
+			let data = <Pallet<T> as Store>::NextSequenceAckV2::get((
+				port_channel_id.0.as_bytes(),
+				port_channel_id.1.as_bytes(),
+			));
+			let mut data: &[u8] = &data;
 			let seq = u64::decode(&mut data).unwrap();
 			Some(Sequence::from(seq))
 		} else {
@@ -289,9 +350,18 @@ impl<T: Config> ChannelReader for Context<T> {
 
 		let seq = u64::from(key.2);
 		let seq = seq.encode();
-		if <Pallet<T> as Store>::PacketCommitmentV2::contains_key((key.0.as_bytes(), key.1.as_bytes(), seq.clone())) {
-			let data = <Pallet<T> as Store>::PacketCommitmentV2::get((key.0.as_bytes(), key.1.as_bytes(), seq));
-			let mut data : &[u8] = &data;
+
+		if <Pallet<T> as Store>::PacketCommitmentV2::contains_key((
+			key.0.as_bytes(),
+			key.1.as_bytes(),
+			seq.clone(),
+		)) {
+			let data = <Pallet<T> as Store>::PacketCommitmentV2::get((
+				key.0.as_bytes(),
+				key.1.as_bytes(),
+				seq,
+			));
+			let mut data: &[u8] = &data;
 			Some(String::decode(&mut data).unwrap())
 		} else {
 			log::info!("read get packet commitment return None");
@@ -305,9 +375,18 @@ impl<T: Config> ChannelReader for Context<T> {
 
 		let seq = u64::from(key.2);
 		let seq = seq.encode();
-		if <Pallet<T> as Store>::PacketReceiptV2::contains_key((key.0.as_bytes(), key.1.as_bytes(), seq.clone())) {
-			let data = <Pallet<T> as Store>::PacketReceiptV2::get((key.0.as_bytes(), key.1.as_bytes(), seq));
-			let mut data : &[u8] = &data;
+
+		if <Pallet<T> as Store>::PacketReceiptV2::contains_key((
+			key.0.as_bytes(),
+			key.1.as_bytes(),
+			seq.clone(),
+		)) {
+			let data = <Pallet<T> as Store>::PacketReceiptV2::get((
+				key.0.as_bytes(),
+				key.1.as_bytes(),
+				seq,
+			));
+			let mut data: &[u8] = &data;
 			let data = String::decode(&mut data).unwrap();
 
 			let data = match data.as_ref() {
@@ -327,9 +406,18 @@ impl<T: Config> ChannelReader for Context<T> {
 
 		let seq = u64::from(key.2);
 		let data = seq.encode();
-		if <Pallet<T> as Store>::AcknowledgementsV2::contains_key((key.0.as_bytes(), key.1.as_bytes(), data.clone())) {
-			let data = <Pallet<T> as Store>::AcknowledgementsV2::get((key.0.as_bytes(), key.1.as_bytes(), data));
-			let mut data : &[u8] = &data;
+
+		if <Pallet<T> as Store>::AcknowledgementsV2::contains_key((
+			key.0.as_bytes(),
+			key.1.as_bytes(),
+			data.clone(),
+		)) {
+			let data = <Pallet<T> as Store>::AcknowledgementsV2::get((
+				key.0.as_bytes(),
+				key.1.as_bytes(),
+				data,
+			));
+			let mut data: &[u8] = &data;
 			Some(String::decode(&mut data).unwrap())
 		} else {
 			log::info!("read get acknowledgement return None");
@@ -342,7 +430,7 @@ impl<T: Config> ChannelReader for Context<T> {
 	fn hash(&self, value: String) -> String {
 		log::info!("in hash");
 
-		let r =  sp_core::hashing::sha2_256(value.as_bytes());
+		let r = sp_core::hashing::sha2_256(value.as_bytes());
 
 		let mut tmp = String::new();
 		for item in r.iter() {
@@ -386,7 +474,7 @@ impl<T: Config> ClientReader for Context<T> {
 
 		if <Pallet<T> as Store>::ClientsV2::contains_key(client_id.as_bytes()) {
 			let data = <Pallet<T> as Store>::ClientsV2::get(client_id.as_bytes());
-			let mut data : &[u8] = &data;
+			let mut data: &[u8] = &data;
 			let data = String::decode(&mut data).unwrap();
 			match ClientType::from_str(&data) {
 				Err(_err) => None,
@@ -449,11 +537,11 @@ impl<T: Config> ClientKeeper for Context<T> {
 		log::info!("in increase client counter");
 
 		match <Pallet<T> as Store>::ClientCounterV2::get() {
-			None => {},
+			None => {}
 			Some(old) => {
-				let new  = old.checked_add(1).unwrap();
+				let new = old.checked_add(1).unwrap();
 				<Pallet<T> as Store>::ClientCounterV2::put(new)
-			},
+			}
 		}
 	}
 
@@ -528,7 +616,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 		height: Height,
 	) -> Option<AnyConsensusState> {
 		log::info!("in client consensus state");
-		
+
 		ClientReader::consensus_state(self, client_id, height)
 	}
 
@@ -542,11 +630,11 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		log::info!("in increase connection counter");
 
 		match <Pallet<T> as Store>::ConnectionCounterV2::get() {
-			None => {},
+			None => {}
 			Some(old) => {
-				let new  = old.checked_add(1).unwrap();
+				let new = old.checked_add(1).unwrap();
 				<Pallet<T> as Store>::ConnectionCounterV2::put(new)
-			},
+			}
 		}
 	}
 
@@ -569,7 +657,10 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 	) -> Result<(), ICS03Error> {
 		log::info!("in store connection to client");
 
-		<Pallet<T> as Store>::ConnectionToClientV2::insert(connection_id.as_bytes(), client_id.as_bytes());
+		<Pallet<T> as Store>::ConnectionToClientV2::insert(
+			connection_id.as_bytes(),
+			client_id.as_bytes(),
+		);
 		Ok(())
 	}
 }

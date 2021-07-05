@@ -5,10 +5,7 @@ use sp_runtime::{
 	traits::{Block as BlockT, Header as HeaderT, NumberFor},
 	RuntimeDebug,
 };
-use sp_std::{
-	collections::btree_map::BTreeMap,
-	prelude::*,
-};
+use sp_std::{collections::btree_map::BTreeMap, prelude::*};
 
 type Commit<Block> = finality_grandpa::Commit<
 	<Block as BlockT>::Hash,
