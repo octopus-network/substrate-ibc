@@ -219,11 +219,11 @@ impl<T: Config> ChannelKeeper for Context<T> {
 	fn increase_channel_counter(&mut self) {
 		log::info!("in increase channel counter");
 
-		match <Pallet<T> as Store>::ChannelCounterV2::get() {
+		match <Pallet<T> as Store>::ChannelCounter::get() {
 			None => {}
 			Some(old) => {
 				let new = old.checked_add(1).unwrap();
-				<Pallet<T> as Store>::ChannelCounterV2::put(new)
+				<Pallet<T> as Store>::ChannelCounter::put(new)
 			}
 		}
 	}
@@ -456,7 +456,7 @@ impl<T: Config> ChannelReader for Context<T> {
 	fn channel_counter(&self) -> u64 {
 		log::info!("in channel counter");
 
-		<Pallet<T> as Store>::ChannelCounterV2::get().unwrap()
+		<Pallet<T> as Store>::ChannelCounter::get().unwrap()
 	}
 }
 
@@ -517,7 +517,7 @@ impl<T: Config> ClientReader for Context<T> {
 	fn client_counter(&self) -> u64 {
 		log::info!("in read client counter");
 
-		<Pallet<T> as Store>::ClientCounterV2::get().unwrap()
+		<Pallet<T> as Store>::ClientCounter::get()
 	}
 }
 
@@ -537,13 +537,9 @@ impl<T: Config> ClientKeeper for Context<T> {
 	fn increase_client_counter(&mut self) {
 		log::info!("in increase client counter");
 
-		match <Pallet<T> as Store>::ClientCounterV2::get() {
-			None => {}
-			Some(old) => {
-				let new = old.checked_add(1).unwrap();
-				<Pallet<T> as Store>::ClientCounterV2::put(new)
-			}
-		}
+		let old = <Pallet<T> as Store>::ClientCounter::get();
+		let new = old.checked_add(1).unwrap();
+		<Pallet<T> as Store>::ClientCounter::put(new);
 	}
 
 	fn store_client_state(
@@ -604,7 +600,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 	fn connection_counter(&self) -> u64 {
 		log::info!("in connection counter");
 
-		<Pallet<T> as Store>::ConnectionCounterV2::get().unwrap()
+		<Pallet<T> as Store>::ConnectionCounter::get().unwrap()
 	}
 
 	fn commitment_prefix(&self) -> CommitmentPrefix {
@@ -630,11 +626,11 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 	fn increase_connection_counter(&mut self) {
 		log::info!("in increase connection counter");
 
-		match <Pallet<T> as Store>::ConnectionCounterV2::get() {
+		match <Pallet<T> as Store>::ConnectionCounter::get() {
 			None => {}
 			Some(old) => {
 				let new = old.checked_add(1).unwrap();
-				<Pallet<T> as Store>::ConnectionCounterV2::put(new)
+				<Pallet<T> as Store>::ConnectionCounter::put(new)
 			}
 		}
 	}
@@ -658,7 +654,7 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 	) -> Result<(), ICS03Error> {
 		log::info!("in store connection to client");
 
-		<Pallet<T> as Store>::ConnectionToClientV2::insert(
+		<Pallet<T> as Store>::ConnectionClient::insert(
 			connection_id.as_bytes(),
 			client_id.as_bytes(),
 		);

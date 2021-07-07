@@ -312,21 +312,27 @@ pub mod pallet {
 	// clientId => ClientType
 	pub type ClientsV2<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
+	#[pallet::type_value]
+	pub fn DefaultClientCounter() -> u64 {
+		0u64
+	}
+
 	#[pallet::storage]
+	#[pallet::getter(fn client_counter)]
 	// client counter
-	pub type ClientCounterV2<T: Config> = StorageValue<_, u64>;
+	pub type ClientCounter<T: Config> = StorageValue<_, u64, ValueQuery, DefaultClientCounter>;
 
 	#[pallet::storage]
 	// connection counter
-	pub type ConnectionCounterV2<T: Config> = StorageValue<_, u64>;
+	pub type ConnectionCounter<T: Config> = StorageValue<_, u64>;
 
 	#[pallet::storage]
 	// channel counter
-	pub type ChannelCounterV2<T: Config> = StorageValue<_, u64>;
+	pub type ChannelCounter<T: Config> = StorageValue<_, u64>;
 
 	#[pallet::storage]
 	// connection id => client id
-	pub type ConnectionToClientV2<T: Config> =
+	pub type ConnectionClient<T: Config> =
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
@@ -393,6 +399,7 @@ pub mod pallet {
 	// (port_identifier, channel_identifier, sequence) => Hash
 	pub type Acknowledgements<T: Config> =
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, H256, u64), H256, ValueQuery>;
+
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
