@@ -537,9 +537,11 @@ impl<T: Config> ClientKeeper for Context<T> {
 	fn increase_client_counter(&mut self) {
 		log::info!("in increase client counter");
 
-		let old = <Pallet<T> as Store>::ClientCounter::get();
-		let new = old.checked_add(1).unwrap();
-		<Pallet<T> as Store>::ClientCounter::put(new);
+		<Pallet<T> as Store>::ClientCounter::try_mutate(|val| -> Result<(), &'static str> {
+			let new = val.checked_add(1).ok_or("Add client counter error")?;
+			*val = new;
+			Ok(())
+		}).expect("increase client counter error");
 	}
 
 	fn store_client_state(
