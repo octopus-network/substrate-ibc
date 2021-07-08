@@ -1,5 +1,4 @@
 use super::*;
-use alloc::format;
 use ibc::application::ics20_fungible_token_transfer::context::Ics20Context;
 use ibc::ics02_client::client_consensus::AnyConsensusState;
 use ibc::ics02_client::client_state::AnyClientState;
@@ -11,7 +10,8 @@ use ibc::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use ibc::ics03_connection::error::Error as ICS03Error;
 use ibc::ics04_channel::channel::ChannelEnd;
 use ibc::ics04_channel::context::{ChannelKeeper, ChannelReader};
-use ibc::ics04_channel::error::Error;
+use ibc::ics04_channel::error::Error as ICS04Error;
+use ibc::ics04_channel::error as channel_error;
 use ibc::ics04_channel::packet::{Receipt, Sequence};
 use ibc::ics05_port::capabilities::Capability;
 use ibc::ics05_port::context::PortReader;
@@ -22,8 +22,9 @@ use ibc::ics24_host::identifier::{ClientId, ConnectionId};
 use ibc::ics26_routing::context::Ics26Context;
 use ibc::timestamp::Timestamp;
 use ibc::Height;
-use std::str::FromStr;
 use tendermint_proto::Protobuf;
+use std::str::FromStr;
+use alloc::format;
 
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
 pub struct Any {
@@ -48,12 +49,13 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		timestamp: Timestamp,
 		heigh: Height,
 		data: Vec<u8>,
-	) -> Result<(), Error> {
+	) -> Result<(), ICS04Error> {
 		log::info!("in store packet commitment");
 
 		let input = format!("{:?},{:?},{:?}", timestamp, heigh, data);
 		let seq = u64::from(key.2);
 		let seq = seq.encode();
+
 		<Pallet<T> as Store>::PacketCommitmentV2::insert(
 			(key.0.as_bytes(), key.1.as_bytes(), seq),
 			ChannelReader::hash(self, input).as_bytes(),
@@ -64,7 +66,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 	fn delete_packet_commitment(
 		&mut self,
 		key: (PortId, ChannelId, Sequence),
-	) -> Result<(), Error> {
+	) -> Result<(), ICS04Error> {
 		log::info!("delete packet commitment");
 
 		let seq = u64::from(key.2);
@@ -78,7 +80,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		&mut self,
 		key: (PortId, ChannelId, Sequence),
 		receipt: Receipt,
-	) -> Result<(), Error> {
+	) -> Result<(), ICS04Error> {
 		log::info!("in store packet receipt");
 
 		let receipt = match receipt {
@@ -92,6 +94,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 			(key.0.as_bytes(), key.1.as_bytes(), seq),
 			receipt,
 		);
+
 		Ok(())
 	}
 
@@ -99,12 +102,13 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		&mut self,
 		key: (PortId, ChannelId, Sequence),
 		ack: Vec<u8>,
-	) -> Result<(), Error> {
+	) -> Result<(), ICS04Error> {
 		log::info!("in store packet acknowledgement");
 
 		let input = format!("{:?}", ack);
 		let seq = u64::from(key.2);
 		let data = seq.encode();
+
 		<Pallet<T> as Store>::AcknowledgementsV2::insert(
 			(key.0.as_bytes(), key.1.as_bytes(), data),
 			ChannelReader::hash(self, input).as_bytes(),
@@ -115,16 +119,18 @@ impl<T: Config> ChannelKeeper for Context<T> {
 	fn delete_packet_acknowledgement(
 		&mut self,
 		key: (PortId, ChannelId, Sequence),
-	) -> Result<(), Error> {
+	) -> Result<(), ICS04Error> {
 		log::info!("in delete packet acknowledgement");
 
 		let seq = u64::from(key.2);
 		let data = seq.encode();
+
 		<Pallet<T> as Store>::AcknowledgementsV2::remove((
 			key.0.as_bytes(),
 			key.1.as_bytes(),
 			data,
 		));
+
 		Ok(())
 	}
 
@@ -132,7 +138,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		&mut self,
 		_conn_id: ConnectionId,
 		_port_channel_id: &(PortId, ChannelId),
-	) -> Result<(), Error> {
+	) -> Result<(), ICS04Error> {
 		Ok(())
 	}
 
@@ -141,10 +147,11 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		&mut self,
 		port_channel_id: (PortId, ChannelId),
 		channel_end: &ChannelEnd,
-	) -> Result<(), Error> {
+	) -> Result<(), ICS04Error> {
 		log::info!("in store channel");
 
 		let data = channel_end.encode_vec().unwrap();
+
 		<Pallet<T> as Store>::ChannelsV2::insert(
 			(port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes()),
 			data,
@@ -156,15 +163,17 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		&mut self,
 		port_channel_id: (PortId, ChannelId),
 		seq: Sequence,
-	) -> Result<(), Error> {
+	) -> Result<(), ICS04Error> {
 		log::info!("in store next sequence send");
 
 		let seq = u64::from(seq);
 		let data = seq.encode();
+
 		<Pallet<T> as Store>::NextSequenceSendV2::insert(
 			(port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes()),
 			data,
 		);
+
 		Ok(())
 	}
 
@@ -172,15 +181,17 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		&mut self,
 		port_channel_id: (PortId, ChannelId),
 		seq: Sequence,
-	) -> Result<(), Error> {
+	) -> Result<(), ICS04Error> {
 		log::info!("in store next sequence recv");
 
 		let seq = u64::from(seq);
 		let data = seq.encode();
+
 		<Pallet<T> as Store>::NextSequenceRecvV2::insert(
 			(port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes()),
 			data,
 		);
+
 		Ok(())
 	}
 
@@ -188,15 +199,17 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		&mut self,
 		port_channel_id: (PortId, ChannelId),
 		seq: Sequence,
-	) -> Result<(), Error> {
+	) -> Result<(), ICS04Error> {
 		log::info!("in store next sequence ack");
 
 		let seq = u64::from(seq);
 		let data = seq.encode();
+
 		<Pallet<T> as Store>::NextSequenceAckV2::insert(
 			(port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes()),
 			data,
 		);
+
 		Ok(())
 	}
 
@@ -206,11 +219,11 @@ impl<T: Config> ChannelKeeper for Context<T> {
 	fn increase_channel_counter(&mut self) {
 		log::info!("in increase channel counter");
 
-		match <Pallet<T> as Store>::ChannelCounterV2::get() {
+		match <Pallet<T> as Store>::ChannelCounter::get() {
 			None => {}
 			Some(old) => {
 				let new = old.checked_add(1).unwrap();
-				<Pallet<T> as Store>::ChannelCounterV2::put(new)
+				<Pallet<T> as Store>::ChannelCounter::put(new)
 			}
 		}
 	}
@@ -266,7 +279,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		ClientReader::consensus_state(self, client_id, height)
 	}
 
-	fn authenticated_capability(&self, _port_id: &PortId) -> Result<Capability, Error> {
+	fn authenticated_capability(&self, _port_id: &PortId) -> Result<Capability, ICS04Error> {
 		unimplemented!()
 	}
 
@@ -338,6 +351,7 @@ impl<T: Config> ChannelReader for Context<T> {
 
 		let seq = u64::from(key.2);
 		let seq = seq.encode();
+
 		if <Pallet<T> as Store>::PacketCommitmentV2::contains_key((
 			key.0.as_bytes(),
 			key.1.as_bytes(),
@@ -362,6 +376,7 @@ impl<T: Config> ChannelReader for Context<T> {
 
 		let seq = u64::from(key.2);
 		let seq = seq.encode();
+
 		if <Pallet<T> as Store>::PacketReceiptV2::contains_key((
 			key.0.as_bytes(),
 			key.1.as_bytes(),
@@ -392,6 +407,7 @@ impl<T: Config> ChannelReader for Context<T> {
 
 		let seq = u64::from(key.2);
 		let data = seq.encode();
+
 		if <Pallet<T> as Store>::AcknowledgementsV2::contains_key((
 			key.0.as_bytes(),
 			key.1.as_bytes(),
@@ -440,7 +456,7 @@ impl<T: Config> ChannelReader for Context<T> {
 	fn channel_counter(&self) -> u64 {
 		log::info!("in channel counter");
 
-		<Pallet<T> as Store>::ChannelCounterV2::get().unwrap()
+		<Pallet<T> as Store>::ChannelCounter::get().unwrap()
 	}
 }
 
@@ -501,7 +517,7 @@ impl<T: Config> ClientReader for Context<T> {
 	fn client_counter(&self) -> u64 {
 		log::info!("in read client counter");
 
-		<Pallet<T> as Store>::ClientCounterV2::get().unwrap()
+		<Pallet<T> as Store>::ClientCounter::get()
 	}
 }
 
@@ -521,13 +537,11 @@ impl<T: Config> ClientKeeper for Context<T> {
 	fn increase_client_counter(&mut self) {
 		log::info!("in increase client counter");
 
-		match <Pallet<T> as Store>::ClientCounterV2::get() {
-			None => {}
-			Some(old) => {
-				let new = old.checked_add(1).unwrap();
-				<Pallet<T> as Store>::ClientCounterV2::put(new)
-			}
-		}
+		<Pallet<T> as Store>::ClientCounter::try_mutate(|val| -> Result<(), &'static str> {
+			let new = val.checked_add(1).ok_or("Add client counter error")?;
+			*val = new;
+			Ok(())
+		}).expect("increase client counter error");
 	}
 
 	fn store_client_state(
@@ -588,7 +602,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 	fn connection_counter(&self) -> u64 {
 		log::info!("in connection counter");
 
-		<Pallet<T> as Store>::ConnectionCounterV2::get().unwrap()
+		<Pallet<T> as Store>::ConnectionCounter::get().unwrap()
 	}
 
 	fn commitment_prefix(&self) -> CommitmentPrefix {
@@ -614,11 +628,11 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 	fn increase_connection_counter(&mut self) {
 		log::info!("in increase connection counter");
 
-		match <Pallet<T> as Store>::ConnectionCounterV2::get() {
+		match <Pallet<T> as Store>::ConnectionCounter::get() {
 			None => {}
 			Some(old) => {
 				let new = old.checked_add(1).unwrap();
-				<Pallet<T> as Store>::ConnectionCounterV2::put(new)
+				<Pallet<T> as Store>::ConnectionCounter::put(new)
 			}
 		}
 	}
@@ -642,7 +656,7 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 	) -> Result<(), ICS03Error> {
 		log::info!("in store connection to client");
 
-		<Pallet<T> as Store>::ConnectionToClientV2::insert(
+		<Pallet<T> as Store>::ConnectionClient::insert(
 			connection_id.as_bytes(),
 			client_id.as_bytes(),
 		);
