@@ -1,3 +1,17 @@
+use super::*;
+use ibc::application::ics20_fungible_token_transfer::context::Ics20Context;
+use ibc::ics26_routing::context::Ics26Context;
+
+#[derive(Clone)]
+pub struct Context<T: Config> {
+	pub _pd: PhantomData<T>,
+	pub tmp: u8,
+}
+
+impl<T: Config> Ics26Context for Context<T> {}
+
+impl<T: Config> Ics20Context for Context<T> {}
+
 pub trait ModuleCallbacks {
 	// fn on_chan_open_try(
 	// 	index: usize,
@@ -19,19 +33,3 @@ pub trait ModuleCallbacks {
 	// fn on_chan_open_confirm(index: usize, port_identifier: Vec<u8>, channel_identifier: H256);
 	// fn on_recv_packet(index: usize, packet: Packet);
 }
-
-// fn conn_open_try() {}
-// fn conn_open_ack() {}
-// fn conn_open_confirm() {}
-//
-// fn chan_open_try() {}
-// fn chan_open_ack() {}
-// fn chan_open_confirm() {}
-// fn chan_close_confirm() {}
-//
-// fn send_packet() {}
-// fn recv_packet() {}
-// fn acknowledge_packet() {}
-// fn timeout_packet() {}
-// fn timeout_on_close() {}
-// fn cleanup_packet() {}

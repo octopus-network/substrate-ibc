@@ -64,8 +64,17 @@ use sp_runtime::RuntimeDebug;
 use sp_std::prelude::*;
 use std::str::FromStr;
 
-pub mod informalsystems;
+mod channel;
+mod client;
+mod connection;
+mod port;
 mod routing;
+
+#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
+pub struct Any {
+	pub type_url: String,
+	pub value: Vec<u8>,
+}
 
 #[cfg(test)]
 mod mock;
@@ -96,47 +105,46 @@ pub mod pallet {
 
 	#[pallet::storage]
 	// client_id => ClientState
-	pub type ClientStatesV2<T: Config> =
+	pub type ClientStates<T: Config> =
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
 	// (client_id, height) => ConsensusState
-	pub type ConsensusStatesV2<T: Config> =
+	pub type ConsensusStates<T: Config> =
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
 	// connection_identifier => ConnectionEnd
-	pub type ConnectionsV2<T: Config> =
-		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
+	pub type Connections<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
 	// (port_identifier, channel_identifier) => ChannelEnd
-	pub type ChannelsV2<T: Config> =
+	pub type Channels<T: Config> =
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
 	// (port_identifier, channel_identifier) => Sequence
-	pub type NextSequenceSendV2<T: Config> =
+	pub type NextSequenceSend<T: Config> =
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
 	// (port_identifier, channel_identifier) => Sequence
-	pub type NextSequenceRecvV2<T: Config> =
+	pub type NextSequenceRecv<T: Config> =
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
 	// (port_identifier, channel_identifier) = Sequence
-	pub type NextSequenceAckV2<T: Config> =
+	pub type NextSequenceAck<T: Config> =
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
 	// (port_identifier, channel_identifier, sequence) => Hash
-	pub type AcknowledgementsV2<T: Config> =
+	pub type Acknowledgements<T: Config> =
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
 	// clientId => ClientType
-	pub type ClientsV2<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
+	pub type Clients<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::type_value]
 	pub fn DefaultClientCounter() -> u64 {
@@ -163,12 +171,12 @@ pub mod pallet {
 
 	#[pallet::storage]
 	// (portid, channelid, sequence) => receipt
-	pub type PacketReceiptV2<T: Config> =
+	pub type PacketReceipt<T: Config> =
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
 	// (portid, channelid, sequence) => hash
-	pub type PacketCommitmentV2<T: Config> =
+	pub type PacketCommitment<T: Config> =
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
 
 	#[pallet::event]
@@ -226,15 +234,11 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		#[pallet::weight(0)]
-		pub fn deliver(
-			origin: OriginFor<T>,
-			messages: Vec<informalsystems::Any>,
-			tmp: u8,
-		) -> DispatchResult {
+		pub fn deliver(origin: OriginFor<T>, messages: Vec<Any>, tmp: u8) -> DispatchResult {
 			log::info!("in deliver");
 
 			let _sender = ensure_signed(origin)?;
-			let mut ctx = informalsystems::Context { _pd: PhantomData::<T>, tmp };
+			let mut ctx = routing::Context { _pd: PhantomData::<T>, tmp };
 			let messages = messages
 				.iter()
 				.map(|message| prost_types::Any {

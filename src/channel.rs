@@ -1,0 +1,430 @@
+use super::*;
+
+use crate::routing::Context;
+use ibc::ics02_client::client_consensus::AnyConsensusState;
+use ibc::ics02_client::client_state::AnyClientState;
+use ibc::ics02_client::context::ClientReader;
+use ibc::ics03_connection::connection::ConnectionEnd;
+use ibc::ics03_connection::context::ConnectionReader;
+use ibc::ics04_channel::channel::ChannelEnd;
+use ibc::ics04_channel::context::{ChannelKeeper, ChannelReader};
+use ibc::ics04_channel::error::Error as ICS04Error;
+use ibc::ics04_channel::packet::{Receipt, Sequence};
+use ibc::ics05_port::capabilities::Capability;
+use ibc::ics24_host::identifier::ChannelId;
+use ibc::ics24_host::identifier::PortId;
+use ibc::ics24_host::identifier::{ClientId, ConnectionId};
+use ibc::timestamp::Timestamp;
+use ibc::Height;
+use tendermint_proto::Protobuf;
+
+impl<T: Config> ChannelReader for Context<T> {
+	/// Returns the ChannelEnd for the given `port_id` and `chan_id`.
+	fn channel_end(&self, port_channel_id: &(PortId, ChannelId)) -> Option<ChannelEnd> {
+		log::info!("in channel_end");
+
+		if <Pallet<T> as Store>::Channels::contains_key((
+			port_channel_id.0.as_bytes(),
+			port_channel_id.1.as_bytes(),
+		)) {
+			let data = <Pallet<T> as Store>::Channels::get((
+				port_channel_id.0.as_bytes(),
+				port_channel_id.1.as_bytes(),
+			));
+			Some(ChannelEnd::decode_vec(&*data).unwrap())
+		} else {
+			log::info!("read channel_end return None");
+
+			None
+		}
+	}
+
+	/// Returns the ConnectionState for the given identifier `connection_id`.
+	fn connection_end(&self, connection_id: &ConnectionId) -> Option<ConnectionEnd> {
+		log::info!("in connection end");
+
+		ConnectionReader::connection_end(self, connection_id)
+	}
+
+	fn connection_channels(&self, _cid: &ConnectionId) -> Option<Vec<(PortId, ChannelId)>> {
+		None
+	}
+
+	/// Returns the ClientState for the given identifier `client_id`. Necessary dependency towards
+	/// proof verification.
+	fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
+		log::info!("in client state");
+
+		ClientReader::client_state(self, client_id)
+	}
+
+	fn client_consensus_state(
+		&self,
+		client_id: &ClientId,
+		height: Height,
+	) -> Option<AnyConsensusState> {
+		log::info!("in client consensus state");
+
+		ClientReader::consensus_state(self, client_id, height)
+	}
+
+	fn authenticated_capability(&self, _port_id: &PortId) -> Result<Capability, ICS04Error> {
+		unimplemented!()
+	}
+
+	fn get_next_sequence_send(&self, port_channel_id: &(PortId, ChannelId)) -> Option<Sequence> {
+		log::info!("in get_next_sequence");
+
+		if <Pallet<T> as Store>::NextSequenceSend::contains_key((
+			port_channel_id.0.as_bytes(),
+			port_channel_id.1.as_bytes(),
+		)) {
+			let data = <Pallet<T> as Store>::NextSequenceSend::get((
+				port_channel_id.0.as_bytes(),
+				port_channel_id.1.as_bytes(),
+			));
+			let mut data: &[u8] = &data;
+			let seq = u64::decode(&mut data).unwrap();
+			Some(Sequence::from(seq))
+		} else {
+			log::info!("read get next sequence send return None");
+
+			None
+		}
+	}
+
+	fn get_next_sequence_recv(&self, port_channel_id: &(PortId, ChannelId)) -> Option<Sequence> {
+		log::info!("in get next sequence recv");
+
+		if <Pallet<T> as Store>::NextSequenceRecv::contains_key((
+			port_channel_id.0.as_bytes(),
+			port_channel_id.1.as_bytes(),
+		)) {
+			let data = <Pallet<T> as Store>::NextSequenceRecv::get((
+				port_channel_id.0.as_bytes(),
+				port_channel_id.1.as_bytes(),
+			));
+			let mut data: &[u8] = &data;
+			let seq = u64::decode(&mut data).unwrap();
+			Some(Sequence::from(seq))
+		} else {
+			log::info!("read get next sequence recv return None");
+
+			None
+		}
+	}
+
+	fn get_next_sequence_ack(&self, port_channel_id: &(PortId, ChannelId)) -> Option<Sequence> {
+		log::info!("in get next sequence ack");
+
+		if <Pallet<T> as Store>::NextSequenceAck::contains_key((
+			port_channel_id.0.as_bytes(),
+			port_channel_id.1.as_bytes(),
+		)) {
+			let data = <Pallet<T> as Store>::NextSequenceAck::get((
+				port_channel_id.0.as_bytes(),
+				port_channel_id.1.as_bytes(),
+			));
+			let mut data: &[u8] = &data;
+			let seq = u64::decode(&mut data).unwrap();
+			Some(Sequence::from(seq))
+		} else {
+			log::info!("read get next sequence ack return None");
+
+			None
+		}
+	}
+
+	fn get_packet_commitment(&self, key: &(PortId, ChannelId, Sequence)) -> Option<String> {
+		log::info!("in get packet commitment");
+
+		let seq = u64::from(key.2);
+		let seq = seq.encode();
+
+		if <Pallet<T> as Store>::PacketCommitment::contains_key((
+			key.0.as_bytes(),
+			key.1.as_bytes(),
+			seq.clone(),
+		)) {
+			let data = <Pallet<T> as Store>::PacketCommitment::get((
+				key.0.as_bytes(),
+				key.1.as_bytes(),
+				seq,
+			));
+			let mut data: &[u8] = &data;
+			Some(String::decode(&mut data).unwrap())
+		} else {
+			log::info!("read get packet commitment return None");
+
+			None
+		}
+	}
+
+	fn get_packet_receipt(&self, key: &(PortId, ChannelId, Sequence)) -> Option<Receipt> {
+		log::info!("in get packet receipt");
+
+		let seq = u64::from(key.2);
+		let seq = seq.encode();
+
+		if <Pallet<T> as Store>::PacketReceipt::contains_key((
+			key.0.as_bytes(),
+			key.1.as_bytes(),
+			seq.clone(),
+		)) {
+			let data =
+				<Pallet<T> as Store>::PacketReceipt::get((key.0.as_bytes(), key.1.as_bytes(), seq));
+			let mut data: &[u8] = &data;
+			let data = String::decode(&mut data).unwrap();
+
+			let data = match data.as_ref() {
+				"Ok" => Receipt::Ok,
+				_ => unreachable!(),
+			};
+			Some(data)
+		} else {
+			log::info!("read get packet receipt return None");
+
+			None
+		}
+	}
+
+	fn get_packet_acknowledgement(&self, key: &(PortId, ChannelId, Sequence)) -> Option<String> {
+		log::info!("in get packet acknowledgement");
+
+		let seq = u64::from(key.2);
+		let data = seq.encode();
+
+		if <Pallet<T> as Store>::Acknowledgements::contains_key((
+			key.0.as_bytes(),
+			key.1.as_bytes(),
+			data.clone(),
+		)) {
+			let data = <Pallet<T> as Store>::Acknowledgements::get((
+				key.0.as_bytes(),
+				key.1.as_bytes(),
+				data,
+			));
+			let mut data: &[u8] = &data;
+			Some(String::decode(&mut data).unwrap())
+		} else {
+			log::info!("read get acknowledgement return None");
+
+			None
+		}
+	}
+
+	/// A hashing function for packet commitments
+	fn hash(&self, value: String) -> String {
+		log::info!("in hash");
+
+		let r = sp_core::hashing::sha2_256(value.as_bytes());
+
+		let mut tmp = String::new();
+		for item in r.iter() {
+			tmp.push_str(&format!("{:02x}", item));
+		}
+		tmp
+	}
+
+	/// Returns the current height of the local chain.
+	fn host_height(&self) -> Height {
+		Height::zero()
+	}
+
+	/// Returns the current timestamp of the local chain.
+	fn host_timestamp(&self) -> Timestamp {
+		Timestamp::now()
+	}
+
+	/// Returns a counter on the number of channel ids have been created thus far.
+	/// The value of this counter should increase only via method
+	/// `ChannelKeeper::increase_channel_counter`.
+	fn channel_counter(&self) -> u64 {
+		log::info!("in channel counter");
+
+		<Pallet<T> as Store>::ChannelCounter::get().unwrap()
+	}
+}
+
+impl<T: Config> ChannelKeeper for Context<T> {
+	fn store_packet_commitment(
+		&mut self,
+		key: (PortId, ChannelId, Sequence),
+		timestamp: Timestamp,
+		heigh: Height,
+		data: Vec<u8>,
+	) -> Result<(), ICS04Error> {
+		log::info!("in store packet commitment");
+
+		let input = format!("{:?},{:?},{:?}", timestamp, heigh, data);
+		let seq = u64::from(key.2);
+		let seq = seq.encode();
+
+		<Pallet<T> as Store>::PacketCommitment::insert(
+			(key.0.as_bytes(), key.1.as_bytes(), seq),
+			ChannelReader::hash(self, input).as_bytes(),
+		);
+		Ok(())
+	}
+
+	fn delete_packet_commitment(
+		&mut self,
+		key: (PortId, ChannelId, Sequence),
+	) -> Result<(), ICS04Error> {
+		log::info!("delete packet commitment");
+
+		let seq = u64::from(key.2);
+		let seq = seq.encode();
+		<Pallet<T> as Store>::PacketCommitment::remove((key.0.as_bytes(), key.1.as_bytes(), seq));
+
+		Ok(())
+	}
+
+	fn store_packet_receipt(
+		&mut self,
+		key: (PortId, ChannelId, Sequence),
+		receipt: Receipt,
+	) -> Result<(), ICS04Error> {
+		log::info!("in store packet receipt");
+
+		let receipt = match receipt {
+			Receipt::Ok => "Ok".encode(),
+		};
+
+		let seq = u64::from(key.2);
+		let seq = seq.encode();
+
+		<Pallet<T> as Store>::PacketReceipt::insert(
+			(key.0.as_bytes(), key.1.as_bytes(), seq),
+			receipt,
+		);
+
+		Ok(())
+	}
+
+	fn store_packet_acknowledgement(
+		&mut self,
+		key: (PortId, ChannelId, Sequence),
+		ack: Vec<u8>,
+	) -> Result<(), ICS04Error> {
+		log::info!("in store packet acknowledgement");
+
+		let input = format!("{:?}", ack);
+		let seq = u64::from(key.2);
+		let data = seq.encode();
+
+		<Pallet<T> as Store>::Acknowledgements::insert(
+			(key.0.as_bytes(), key.1.as_bytes(), data),
+			ChannelReader::hash(self, input).as_bytes(),
+		);
+		Ok(())
+	}
+
+	fn delete_packet_acknowledgement(
+		&mut self,
+		key: (PortId, ChannelId, Sequence),
+	) -> Result<(), ICS04Error> {
+		log::info!("in delete packet acknowledgement");
+
+		let seq = u64::from(key.2);
+		let data = seq.encode();
+
+		<Pallet<T> as Store>::Acknowledgements::remove((key.0.as_bytes(), key.1.as_bytes(), data));
+
+		Ok(())
+	}
+
+	fn store_connection_channels(
+		&mut self,
+		_conn_id: ConnectionId,
+		_port_channel_id: &(PortId, ChannelId),
+	) -> Result<(), ICS04Error> {
+		Ok(())
+	}
+
+	/// Stores the given channel_end at a path associated with the port_id and channel_id.
+	fn store_channel(
+		&mut self,
+		port_channel_id: (PortId, ChannelId),
+		channel_end: &ChannelEnd,
+	) -> Result<(), ICS04Error> {
+		log::info!("in store channel");
+
+		let data = channel_end.encode_vec().unwrap();
+
+		<Pallet<T> as Store>::Channels::insert(
+			(port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes()),
+			data,
+		);
+		Ok(())
+	}
+
+	fn store_next_sequence_send(
+		&mut self,
+		port_channel_id: (PortId, ChannelId),
+		seq: Sequence,
+	) -> Result<(), ICS04Error> {
+		log::info!("in store next sequence send");
+
+		let seq = u64::from(seq);
+		let data = seq.encode();
+
+		<Pallet<T> as Store>::NextSequenceSend::insert(
+			(port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes()),
+			data,
+		);
+
+		Ok(())
+	}
+
+	fn store_next_sequence_recv(
+		&mut self,
+		port_channel_id: (PortId, ChannelId),
+		seq: Sequence,
+	) -> Result<(), ICS04Error> {
+		log::info!("in store next sequence recv");
+
+		let seq = u64::from(seq);
+		let data = seq.encode();
+
+		<Pallet<T> as Store>::NextSequenceRecv::insert(
+			(port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes()),
+			data,
+		);
+
+		Ok(())
+	}
+
+	fn store_next_sequence_ack(
+		&mut self,
+		port_channel_id: (PortId, ChannelId),
+		seq: Sequence,
+	) -> Result<(), ICS04Error> {
+		log::info!("in store next sequence ack");
+
+		let seq = u64::from(seq);
+		let data = seq.encode();
+
+		<Pallet<T> as Store>::NextSequenceAck::insert(
+			(port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes()),
+			data,
+		);
+
+		Ok(())
+	}
+
+	/// Called upon channel identifier creation (Init or Try message processing).
+	/// Increases the counter which keeps track of how many channels have been created.
+	/// Should never fail.
+	fn increase_channel_counter(&mut self) {
+		log::info!("in increase channel counter");
+
+		match <Pallet<T> as Store>::ChannelCounter::get() {
+			None => {}
+			Some(old) => {
+				let new = old.checked_add(1).unwrap();
+				<Pallet<T> as Store>::ChannelCounter::put(new)
+			}
+		}
+	}
+}
