@@ -11,7 +11,6 @@ use ibc::ics03_connection::error::Error as ICS03Error;
 use ibc::ics04_channel::channel::ChannelEnd;
 use ibc::ics04_channel::context::{ChannelKeeper, ChannelReader};
 use ibc::ics04_channel::error::Error as ICS04Error;
-use ibc::ics04_channel::error as channel_error;
 use ibc::ics04_channel::packet::{Receipt, Sequence};
 use ibc::ics05_port::capabilities::Capability;
 use ibc::ics05_port::context::PortReader;
@@ -23,8 +22,6 @@ use ibc::ics26_routing::context::Ics26Context;
 use ibc::timestamp::Timestamp;
 use ibc::Height;
 use tendermint_proto::Protobuf;
-use std::str::FromStr;
-use alloc::format;
 
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
 pub struct Any {
@@ -541,7 +538,8 @@ impl<T: Config> ClientKeeper for Context<T> {
 			let new = val.checked_add(1).ok_or("Add client counter error")?;
 			*val = new;
 			Ok(())
-		}).expect("increase client counter error");
+		})
+		.expect("increase client counter error");
 	}
 
 	fn store_client_state(
