@@ -69,7 +69,7 @@ mod client;
 mod connection;
 mod port;
 mod routing;
-mod event;
+pub mod event;
 
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
 pub struct Any {

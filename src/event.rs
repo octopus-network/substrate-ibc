@@ -29,7 +29,7 @@ pub mod primitive {
 
     #[derive(Clone, PartialEq, Eq,  Encode, Decode, RuntimeDebug)]
     pub enum ClientType {
-        Tendermint = 1,
+        Tendermint,
     }
 
     impl From<IbcClientType> for ClientType {
