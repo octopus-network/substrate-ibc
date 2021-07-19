@@ -69,6 +69,7 @@ mod client;
 mod connection;
 mod port;
 mod routing;
+mod event;
 
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
 pub struct Any {
@@ -90,6 +91,7 @@ pub mod pallet {
 	use super::*;
 	use frame_support::{dispatch::DispatchResult, pallet_prelude::*};
 	use frame_system::pallet_prelude::*;
+	use event::primitive::{ClientType, ClientId, Height};
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -182,23 +184,22 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		ClientCreated,
-		ClientUpdated,
-		ClientMisbehaviourReceived,
-		ConnOpenInit,
-		ConnOpenTry,
-		ConnOpenAck,
-		ConnOpenConfirm,
-		PortBound(u8),
-		PortReleased,
-		ChanOpenInit,
-		ChanOpenTry,
-		ChanOpenAck,
-		ChanOpenConfirm,
-		SendPacket(u64, Vec<u8>, u32, Vec<u8>, H256, Vec<u8>, H256),
-		RecvPacket(u64, Vec<u8>, u32, Vec<u8>, H256, Vec<u8>, H256, Vec<u8>),
-		PacketRecvReceived,
-		AcknowledgePacket,
+		CreateClient(Height, ClientId, ClientType, Height),
+	}
+
+	impl<T: Config> From<ibc::events::IbcEvent> for Event<T> {
+		fn from(value: ibc::events::IbcEvent) -> Self {
+			match value {
+				ibc::events::IbcEvent::CreateClient(value) => {
+					let height = value.0.height;
+					let client_id = value.0.client_id;
+					let client_type = value.0.client_type;
+					let consensus_height = value.0.consensus_height;
+					Event::CreateClient(height.into(), client_id.into(), client_type.into(), consensus_height.into())
+				},
+				_ => unimplemented!(),
+			}
+		}
 	}
 
 	// Errors inform users that something went wrong.
@@ -246,9 +247,15 @@ pub mod pallet {
 					value: message.value.clone(),
 				})
 				.collect();
-			let result = ibc::ics26_routing::handler::deliver(&mut ctx, messages);
+			let result = ibc::ics26_routing::handler::deliver(&mut ctx, messages).unwrap();
 
 			log::info!("result: {:?}", result);
+
+			use ibc::events::IbcEvent;
+
+			for event in result.iter() {
+				Self::deposit_event(event.clone().into());
+			}
 
 			Ok(())
 		}
