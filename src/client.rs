@@ -70,7 +70,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 	) -> Result<(), ICS02Error> {
 		log::info!("in store_client_type");
 
-		let data = client_type.as_string().encode();
+		let data = client_type.to_string().encode();
 		<Pallet<T> as Store>::Clients::insert(client_id.as_bytes(), data);
 		Ok(())
 	}
