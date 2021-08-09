@@ -43,7 +43,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 	fn connection_counter(&self) -> u64 {
 		log::info!("in connection counter");
 
-		<Pallet<T> as Store>::ConnectionCounter::get().unwrap()
+		<Pallet<T> as Store>::ConnectionCounter::get()
 	}
 
 	fn commitment_prefix(&self) -> CommitmentPrefix {
@@ -69,13 +69,20 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 	fn increase_connection_counter(&mut self) {
 		log::info!("in increase connection counter");
 
-		match <Pallet<T> as Store>::ConnectionCounter::get() {
-			None => {}
-			Some(old) => {
-				let new = old.checked_add(1).unwrap();
-				<Pallet<T> as Store>::ConnectionCounter::put(new)
-			}
-		}
+		<Pallet<T> as Store>::ConnectionCounter::try_mutate(|val| -> Result<(), &'static str> {
+			let new = val.checked_add(1).ok_or("Add client counter error")?;
+			*val = new;
+			Ok(())
+		})
+			.expect("increase connection counter error");
+
+		// match <Pallet<T> as Store>::ConnectionCounter::get() {
+		// 	None => {}
+		// 	Some(old) => {
+		// 		let new = old.checked_add(1).unwrap();
+		// 		<Pallet<T> as Store>::ConnectionCounter::put(new)
+		// 	}
+		// }
 	}
 
 	fn store_connection(

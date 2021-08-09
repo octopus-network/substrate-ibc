@@ -158,9 +158,13 @@ pub mod pallet {
 	// client counter
 	pub type ClientCounter<T: Config> = StorageValue<_, u64, ValueQuery, DefaultClientCounter>;
 
+	#[pallet::type_value]
+	pub fn DefaultConnectionCounter() -> u64 { 0u64 }
+
 	#[pallet::storage]
+	#[pallet::getter(fn connection_counter)]
 	// connection counter
-	pub type ConnectionCounter<T: Config> = StorageValue<_, u64>;
+	pub type ConnectionCounter<T: Config> = StorageValue<_, u64, ValueQuery, DefaultConnectionCounter>;
 
 	#[pallet::storage]
 	// channel counter
