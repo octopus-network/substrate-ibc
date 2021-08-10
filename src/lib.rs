@@ -188,7 +188,10 @@ pub mod pallet {
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
+		// CreateClient(height, client_id, client_type, consensus_height)
         CreateClient(Height, ClientId, ClientType, Height),
+		// UpdateClient(height, client_id, client_type, consensus_height)
+		UpdateClient(Height, ClientId, ClientType, Height),
         OpenInitConnection(
             Height,
             Option<ConnectionId>,
@@ -233,6 +236,19 @@ pub mod pallet {
                         counterparty_client_id.into(),
                     )
                 }
+
+				ibc::events::IbcEvent::UpdateClient(value) => {
+					let height = value.common.height;
+					let client_id = value.common.client_id;
+					let client_type = value.common.client_type;
+					let consensus_height = value.common.consensus_height;
+					Event::UpdateClient(
+						height.into(),
+						client_id.into(),
+						client_type.into(),
+						consensus_height.into()
+					)
+				}
                 _ => unimplemented!(),
             }
         }

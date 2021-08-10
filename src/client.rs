@@ -18,9 +18,13 @@ impl<T: Config> ClientReader for Context<T> {
 			let data = <Pallet<T> as Store>::Clients::get(client_id.as_bytes());
 			let mut data: &[u8] = &data;
 			let data = String::decode(&mut data).unwrap();
+			log::info!("read client type data: {} ", data);
 			match ClientType::from_str(&data) {
 				Err(_err) => None,
-				Ok(val) => Some(val),
+				Ok(val) => {
+					log::info!("client type is {}", val);
+					Some(val)
+				},
 			}
 		} else {
 			log::info!("read client type returns None");
@@ -69,9 +73,12 @@ impl<T: Config> ClientKeeper for Context<T> {
 		client_type: ClientType,
 	) -> Result<(), ICS02Error> {
 		log::info!("in store_client_type");
+		log::info!("client id: {}", client_id);
+		log::info!("client type: {}", client_type.as_str());
 
-		let data = client_type.to_string().encode();
-		<Pallet<T> as Store>::Clients::insert(client_id.as_bytes(), data);
+		let client_id = client_id.as_bytes().to_vec();
+		let client_type = client_type.as_str().encode();
+		<Pallet<T> as Store>::Clients::insert(client_id, client_type);
 		Ok(())
 	}
 

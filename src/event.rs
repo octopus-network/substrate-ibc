@@ -36,12 +36,14 @@ pub mod primitive {
     #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
     pub enum ClientType {
         Tendermint,
+        Grandpa,
     }
 
     impl From<IbcClientType> for ClientType {
         fn from(value: IbcClientType) -> Self {
             match value {
                 IbcClientType::Tendermint => ClientType::Tendermint,
+                IbcClientType::Grandpa => ClientType::Grandpa,
                 _ => unreachable!(),
             }
         }
