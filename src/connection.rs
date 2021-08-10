@@ -7,8 +7,9 @@ use ibc::ics02_client::context::ClientReader;
 use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use ibc::ics03_connection::error::Error as ICS03Error;
-use ibc::ics23_commitment::commitment::CommitmentPrefix;
+use ibc::ics23_commitment::commitment::{CommitmentPrefix, CommitmentRoot};
 use ibc::ics24_host::identifier::{ClientId, ConnectionId};
+use ibc::ics10_grandpa::consensus_state::ConsensusState as GPConsensusState;
 use ibc::Height;
 use tendermint_proto::Protobuf;
 
@@ -16,8 +17,8 @@ impl<T: Config> ConnectionReader for Context<T> {
 	fn connection_end(&self, conn_id: &ConnectionId) -> Option<ConnectionEnd> {
 		log::info!("in connection_end");
 
-		if <Pallet<T> as Store>::Connections::contains_key(conn_id.as_bytes()) {
-			let data = <Pallet<T> as Store>::Connections::get(conn_id.as_bytes());
+		if <Connections<T>>::contains_key(conn_id.as_bytes()) {
+			let data = <Connections<T>>::get(conn_id.as_bytes());
 			Some(ConnectionEnd::decode_vec(&*data).unwrap())
 		} else {
 			log::info!("read connection end returns None");
@@ -33,17 +34,33 @@ impl<T: Config> ConnectionReader for Context<T> {
 	}
 
 	fn host_current_height(&self) -> Height {
-		Height::zero()
+		log::info!("in host_current_height");
+
+		let block_number: String = <frame_system::Pallet<T>>::block_number().to_string();
+		let current_height : u64 = block_number.parse().unwrap_or_default();
+
+		<OldHeight<T>>::put(current_height);
+
+		Height::new(0, current_height)
 	}
 
 	fn host_oldest_height(&self) -> Height {
-		Height::zero()
+		log::info!("In host_oldest_height");
+
+		let height = <OldHeight<T>>::get();
+		//
+		// let block_number: String = <frame_system::Pallet<T>>::block_number().to_string();
+		// let current_height : u64 = block_number.parse().unwrap_or_default();
+		//
+		// <OldHeight<T>>::put(current_height);
+
+		Height::new(0, height)
 	}
 
 	fn connection_counter(&self) -> u64 {
 		log::info!("in connection counter");
 
-		<Pallet<T> as Store>::ConnectionCounter::get()
+		<ConnectionCounter<T>>::get()
 	}
 
 	fn commitment_prefix(&self) -> CommitmentPrefix {
@@ -61,7 +78,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 	}
 
 	fn host_consensus_state(&self, _height: Height) -> Option<AnyConsensusState> {
-		None
+		Some(AnyConsensusState::Grandpa(GPConsensusState::new(CommitmentRoot::from(vec![1, 2, 3]))))
 	}
 }
 
@@ -69,20 +86,12 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 	fn increase_connection_counter(&mut self) {
 		log::info!("in increase connection counter");
 
-		<Pallet<T> as Store>::ConnectionCounter::try_mutate(|val| -> Result<(), &'static str> {
+		<ConnectionCounter<T>>::try_mutate(|val| -> Result<(), &'static str> {
 			let new = val.checked_add(1).ok_or("Add client counter error")?;
 			*val = new;
 			Ok(())
 		})
 			.expect("increase connection counter error");
-
-		// match <Pallet<T> as Store>::ConnectionCounter::get() {
-		// 	None => {}
-		// 	Some(old) => {
-		// 		let new = old.checked_add(1).unwrap();
-		// 		<Pallet<T> as Store>::ConnectionCounter::put(new)
-		// 	}
-		// }
 	}
 
 	fn store_connection(
@@ -93,7 +102,7 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		log::info!("in store_connection");
 
 		let data = connection_end.encode_vec().unwrap();
-		<Pallet<T> as Store>::Connections::insert(connection_id.as_bytes(), data);
+		<Connections<T>>::insert(connection_id.as_bytes(), data);
 		Ok(())
 	}
 
@@ -104,9 +113,9 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 	) -> Result<(), ICS03Error> {
 		log::info!("in store connection to client");
 
-		<Pallet<T> as Store>::ConnectionClient::insert(
-			connection_id.as_bytes(),
+		<ConnectionClient<T>>::insert(
 			client_id.as_bytes(),
+			connection_id.as_bytes(),
 		);
 		Ok(())
 	}

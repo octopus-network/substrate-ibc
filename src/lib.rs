@@ -67,14 +67,23 @@ use std::str::FromStr;
 mod channel;
 mod client;
 mod connection;
+pub mod event;
 mod port;
 mod routing;
-pub mod event;
 
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
 pub struct Any {
-	pub type_url: String,
-	pub value: Vec<u8>,
+    pub type_url: String,
+    pub value: Vec<u8>,
+}
+
+impl From<prost_types::Any> for Any {
+	fn from(any: prost_types::Any) -> Self {
+        Self {
+			type_url: any.type_url,
+			value: any.value,
+		}
+    }
 }
 
 #[cfg(test)]
@@ -91,7 +100,8 @@ pub mod pallet {
 	use super::*;
 	use frame_support::{dispatch::DispatchResult, pallet_prelude::*};
 	use frame_system::pallet_prelude::*;
-	use event::primitive::{ClientType, ClientId, Height};
+	use event::primitive::{ClientType, ClientId, Height, ConnectionId};
+	use ibc::events::IbcEvent;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -116,7 +126,7 @@ pub mod pallet {
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
-	// connection_identifier => ConnectionEnd
+	// connection_id => ConnectionEnd
 	pub type Connections<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
@@ -171,7 +181,7 @@ pub mod pallet {
 	pub type ChannelCounter<T: Config> = StorageValue<_, u64>;
 
 	#[pallet::storage]
-	// connection id => client id
+	// client_id => Connection id
 	pub type ConnectionClient<T: Config> =
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
@@ -185,26 +195,180 @@ pub mod pallet {
 	pub type PacketCommitment<T: Config> =
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
 
-	#[pallet::event]
-	#[pallet::generate_deposit(pub(super) fn deposit_event)]
-	pub enum Event<T: Config> {
-		CreateClient(Height, ClientId, ClientType, Height),
-	}
+	#[pallet::type_value]
+	pub fn DefaultOldHeight() -> u64 { 0u64 }
 
-	impl<T: Config> From<ibc::events::IbcEvent> for Event<T> {
-		fn from(value: ibc::events::IbcEvent) -> Self {
-			match value {
-				ibc::events::IbcEvent::CreateClient(value) => {
+	#[pallet::storage]
+	// store oldest height
+	pub type OldHeight<T: Config> = StorageValue<_, u64, ValueQuery, DefaultOldHeight>;
+
+    #[pallet::event]
+    #[pallet::generate_deposit(pub(super) fn deposit_event)]
+    pub enum Event<T: Config> {
+		// CreateClient(height, client_id, client_type, consensus_height)
+        CreateClient(Height, ClientId, ClientType, Height),
+		// UpdateClient(height, client_id, client_type, consensus_height)
+		UpdateClient(Height, ClientId, ClientType, Height),
+		// UpgradeClient(height, client_id, client_type, height)
+		UpgradeClient(Height, ClientId, ClientType, Height),
+		// Open Init Connection
+        OpenInitConnection(
+            Height,
+            Option<ConnectionId>,
+            ClientId,
+            Option<ConnectionId>,
+            ClientId,
+        ),
+		// Open try Connection
+		OpenTryConnection(
+			Height,
+			Option<ConnectionId>,
+			ClientId,
+			Option<ConnectionId>,
+			ClientId,
+		),
+		// Open ack Connection
+		OpenAckConnection(
+			Height,
+			Option<ConnectionId>,
+			ClientId,
+			Option<ConnectionId>,
+			ClientId,
+		),
+		// Open ack Connection
+		OpenConfirmConnection(
+			Height,
+			Option<ConnectionId>,
+			ClientId,
+			Option<ConnectionId>,
+			ClientId,
+		),
+
+    }
+
+    impl<T: Config> From<ibc::events::IbcEvent> for Event<T> {
+        fn from(value: ibc::events::IbcEvent) -> Self {
+            match value {
+                ibc::events::IbcEvent::CreateClient(value) => {
+                    let height = value.0.height;
+                    let client_id = value.0.client_id;
+                    let client_type = value.0.client_type;
+                    let consensus_height = value.0.consensus_height;
+                    Event::CreateClient(
+                        height.into(),
+                        client_id.into(),
+                        client_type.into(),
+                        consensus_height.into(),
+                    )
+                }
+				ibc::events::IbcEvent::UpdateClient(value) => {
+					let height = value.common.height;
+					let client_id = value.common.client_id;
+					let client_type = value.common.client_type;
+					let consensus_height = value.common.consensus_height;
+					Event::UpdateClient(
+						height.into(),
+						client_id.into(),
+						client_type.into(),
+						consensus_height.into()
+					)
+				}
+				ibc::events::IbcEvent::UpgradeClient(value) => {
 					let height = value.0.height;
 					let client_id = value.0.client_id;
 					let client_type = value.0.client_type;
 					let consensus_height = value.0.consensus_height;
-					Event::CreateClient(height.into(), client_id.into(), client_type.into(), consensus_height.into())
-				},
-				_ => unimplemented!(),
-			}
-		}
-	}
+					Event::UpgradeClient(
+						height.into(),
+						client_id.into(),
+						client_type.into(),
+						consensus_height.into(),
+					)
+				}
+				ibc::events::IbcEvent::OpenInitConnection(value) => {
+					let height = value.0.height;
+					let connection_id = match value.0.connection_id {
+						Some(val) => Some(val.into()),
+						None => None,
+					};
+					let client_id = value.0.client_id;
+					let counterparty_connection_id = match value.0.counterparty_connection_id {
+						Some(val) => Some(val.into()),
+						None => None,
+					};
+					let counterparty_client_id = value.0.counterparty_client_id;
+					Event::OpenInitConnection(
+						height.into(),
+						connection_id,
+						client_id.into(),
+						counterparty_connection_id,
+						counterparty_client_id.into(),
+					)
+				}
+				ibc::events::IbcEvent::OpenTryConnection(value) => {
+					let height = value.0.height;
+					let connection_id = match value.0.connection_id {
+						Some(val) => Some(val.into()),
+						None => None,
+					};
+					let client_id = value.0.client_id;
+					let counterparty_connection_id = match value.0.counterparty_connection_id {
+						Some(val) => Some(val.into()),
+						None => None,
+					};
+					let counterparty_client_id = value.0.counterparty_client_id;
+					Event::OpenTryConnection(
+						height.into(),
+						connection_id,
+						client_id.into(),
+						counterparty_connection_id,
+						counterparty_client_id.into(),
+					)
+				}
+				ibc::events::IbcEvent::OpenAckConnection(value) => {
+					let height = value.0.height;
+					let connection_id = match value.0.connection_id {
+						Some(val) => Some(val.into()),
+						None => None,
+					};
+					let client_id = value.0.client_id;
+					let counterparty_connection_id = match value.0.counterparty_connection_id {
+						Some(val) => Some(val.into()),
+						None => None,
+					};
+					let counterparty_client_id = value.0.counterparty_client_id;
+					Event::OpenAckConnection(
+						height.into(),
+						connection_id,
+						client_id.into(),
+						counterparty_connection_id,
+						counterparty_client_id.into(),
+					)
+				}
+				ibc::events::IbcEvent::OpenConfirmConnection(value) => {
+					let height = value.0.height;
+					let connection_id = match value.0.connection_id {
+						Some(val) => Some(val.into()),
+						None => None,
+					};
+					let client_id = value.0.client_id;
+					let counterparty_connection_id = match value.0.counterparty_connection_id {
+						Some(val) => Some(val.into()),
+						None => None,
+					};
+					let counterparty_client_id = value.0.counterparty_client_id;
+					Event::OpenConfirmConnection(
+						height.into(),
+						connection_id,
+						client_id.into(),
+						counterparty_connection_id,
+						counterparty_client_id.into(),
+					)
+				}
+                _ => unimplemented!(),
+            }
+        }
+    }
 
 	// Errors inform users that something went wrong.
 	#[pallet::error]
@@ -257,11 +421,30 @@ pub mod pallet {
 
 			use ibc::events::IbcEvent;
 
-			for event in result.iter() {
-				Self::deposit_event(event.clone().into());
+			for event in result {
+				log::info!("Event: {:?}", event);
+				Self::deposit_event(event.into());
 			}
 
 			Ok(())
 		}
 	}
+
+
+	impl <T: Config> Pallet<T> {
+		pub fn get_consensus_state_with_height(client_id: Vec<u8>) -> Vec<(Vec<u8>, Vec<u8>)> {
+			let mut result = vec![];
+
+			<ConsensusStates<T>>::iter().for_each(|val| {
+				let (id, height) = val.0;
+				if id == client_id {
+					result.push((height, val.1));
+				}
+			});
+			
+			result
+		}
+	}
 }
+
+
