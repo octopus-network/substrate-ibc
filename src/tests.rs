@@ -40,4 +40,3 @@ fn test_hashing() {
 	}
 	assert_eq!(format!("{:x}", r), tmp);
 }
-

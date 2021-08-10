@@ -75,14 +75,6 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 			Ok(())
 		})
 			.expect("increase connection counter error");
-
-		// match <Pallet<T> as Store>::ConnectionCounter::get() {
-		// 	None => {}
-		// 	Some(old) => {
-		// 		let new = old.checked_add(1).unwrap();
-		// 		<Pallet<T> as Store>::ConnectionCounter::put(new)
-		// 	}
-		// }
 	}
 
 	fn store_connection(

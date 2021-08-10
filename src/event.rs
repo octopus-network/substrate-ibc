@@ -2,14 +2,15 @@ use codec::{Decode, Encode};
 use sp_runtime::RuntimeDebug;
 
 pub mod primitive {
+    use ibc::ics02_client::client_type::ClientType as IbcClientType;
     use ibc::ics02_client::height::Height as IbcHeight;
     use ibc::ics24_host::identifier::ClientId as IbcClientId;
-    use ibc::ics02_client::client_type::ClientType as IbcClientType;
+    use ibc::ics24_host::identifier::ConnectionId as IbcConnectionId;
 
     use codec::{Decode, Encode};
     use sp_runtime::RuntimeDebug;
 
-    #[derive(Clone, PartialEq, Eq,  Encode, Decode, RuntimeDebug)]
+    #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
     pub struct Height {
         /// Previously known as "epoch"
         pub revision_number: u64,
@@ -19,7 +20,12 @@ pub mod primitive {
     }
 
     impl From<IbcHeight> for Height {
-        fn from(IbcHeight{revision_number, revision_height} : IbcHeight) -> Self {
+        fn from(
+            IbcHeight {
+                revision_number,
+                revision_height,
+            }: IbcHeight,
+        ) -> Self {
             Height {
                 revision_number,
                 revision_height,
@@ -27,7 +33,7 @@ pub mod primitive {
         }
     }
 
-    #[derive(Clone, PartialEq, Eq,  Encode, Decode, RuntimeDebug)]
+    #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
     pub enum ClientType {
         Tendermint,
     }
@@ -36,7 +42,7 @@ pub mod primitive {
         fn from(value: IbcClientType) -> Self {
             match value {
                 IbcClientType::Tendermint => ClientType::Tendermint,
-                _ => unreachable!()
+                _ => unreachable!(),
             }
         }
     }
@@ -50,9 +56,14 @@ pub mod primitive {
             Self(value.to_string())
         }
     }
+
+    #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
+    pub struct ConnectionId(String);
+
+    impl From<IbcConnectionId> for ConnectionId {
+        fn from(value: IbcConnectionId) -> Self {
+            let value = value.as_str();
+            Self(value.to_string())
+        }
+    }
 }
-
-
-
-
-

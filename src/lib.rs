@@ -67,14 +67,14 @@ use std::str::FromStr;
 mod channel;
 mod client;
 mod connection;
+pub mod event;
 mod port;
 mod routing;
-pub mod event;
 
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
 pub struct Any {
-	pub type_url: String,
-	pub value: Vec<u8>,
+    pub type_url: String,
+    pub value: Vec<u8>,
 }
 
 #[cfg(test)]
@@ -91,7 +91,7 @@ pub mod pallet {
 	use super::*;
 	use frame_support::{dispatch::DispatchResult, pallet_prelude::*};
 	use frame_system::pallet_prelude::*;
-	use event::primitive::{ClientType, ClientId, Height};
+	use event::primitive::{ClientType, ClientId, Height, ConnectionId};
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -185,26 +185,52 @@ pub mod pallet {
 	pub type PacketCommitment<T: Config> =
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
 
-	#[pallet::event]
-	#[pallet::generate_deposit(pub(super) fn deposit_event)]
-	pub enum Event<T: Config> {
-		CreateClient(Height, ClientId, ClientType, Height),
-	}
+    #[pallet::event]
+    #[pallet::generate_deposit(pub(super) fn deposit_event)]
+    pub enum Event<T: Config> {
+        CreateClient(Height, ClientId, ClientType, Height),
+        OpenInitConnection(
+            Height,
+            Option<ConnectionId>,
+            ClientId,
+            Option<ConnectionId>,
+            ClientId,
+        ),
+    }
 
-	impl<T: Config> From<ibc::events::IbcEvent> for Event<T> {
-		fn from(value: ibc::events::IbcEvent) -> Self {
-			match value {
-				ibc::events::IbcEvent::CreateClient(value) => {
-					let height = value.0.height;
-					let client_id = value.0.client_id;
-					let client_type = value.0.client_type;
-					let consensus_height = value.0.consensus_height;
-					Event::CreateClient(height.into(), client_id.into(), client_type.into(), consensus_height.into())
-				},
-				_ => unimplemented!(),
-			}
-		}
-	}
+    impl<T: Config> From<ibc::events::IbcEvent> for Event<T> {
+        fn from(value: ibc::events::IbcEvent) -> Self {
+            match value {
+                ibc::events::IbcEvent::CreateClient(value) => {
+                    let height = value.0.height;
+                    let client_id = value.0.client_id;
+                    let client_type = value.0.client_type;
+                    let consensus_height = value.0.consensus_height;
+                    Event::CreateClient(
+                        height.into(),
+                        client_id.into(),
+                        client_type.into(),
+                        consensus_height.into(),
+                    )
+                }
+                ibc::events::IbcEvent::OpenInitConnection(value) => {
+                    let height = value.0.height;
+                    let connection_id = value.0.connection_id;
+                    let client_id = value.0.client_id;
+                    let counterparty_connection_id = value.0.counterparty_connection_id;
+                    let counterparty_client_id = value.0.counterparty_client_id;
+                    Event::OpenInitConnection(
+                        height.into(),
+                        connection_id.into(),
+                        client_id.into(),
+                        counterparty_connection_id.into(),
+                        counterparty_client_id.into(),
+                    )
+                }
+                _ => unimplemented!(),
+            }
+        }
+    }
 
 	// Errors inform users that something went wrong.
 	#[pallet::error]
