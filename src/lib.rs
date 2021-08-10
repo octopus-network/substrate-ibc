@@ -215,15 +215,21 @@ pub mod pallet {
                 }
                 ibc::events::IbcEvent::OpenInitConnection(value) => {
                     let height = value.0.height;
-                    let connection_id = value.0.connection_id;
+					let connection_id = match value.0.connection_id {
+						Some(val) => Some(val.into()),
+						None => None,
+					};
                     let client_id = value.0.client_id;
-                    let counterparty_connection_id = value.0.counterparty_connection_id;
+                    let counterparty_connection_id = match value.0.counterparty_connection_id {
+						Some(val) => Some(val.into()),
+						None => None,
+					};
                     let counterparty_client_id = value.0.counterparty_client_id;
                     Event::OpenInitConnection(
                         height.into(),
-                        connection_id.into(),
+                        connection_id,
                         client_id.into(),
-                        counterparty_connection_id.into(),
+                        counterparty_connection_id,
                         counterparty_client_id.into(),
                     )
                 }
