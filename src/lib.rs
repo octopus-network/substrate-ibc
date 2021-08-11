@@ -192,6 +192,9 @@ pub mod pallet {
         CreateClient(Height, ClientId, ClientType, Height),
 		// UpdateClient(height, client_id, client_type, consensus_height)
 		UpdateClient(Height, ClientId, ClientType, Height),
+		// UpgradeClient(height, client_id, client_type, height)
+		UpgradeClient(Height, ClientId, ClientType, Height),
+
         OpenInitConnection(
             Height,
             Option<ConnectionId>,
@@ -236,7 +239,6 @@ pub mod pallet {
                         counterparty_client_id.into(),
                     )
                 }
-
 				ibc::events::IbcEvent::UpdateClient(value) => {
 					let height = value.common.height;
 					let client_id = value.common.client_id;
@@ -247,6 +249,18 @@ pub mod pallet {
 						client_id.into(),
 						client_type.into(),
 						consensus_height.into()
+					)
+				}
+				ibc::events::IbcEvent::UpgradeClient(value) => {
+					let height = value.0.height;
+					let client_id = value.0.client_id;
+					let client_type = value.0.client_type;
+					let consensus_height = value.0.consensus_height;
+					Event::UpgradeClient(
+						height.into(),
+						client_id.into(),
+						client_type.into(),
+						consensus_height.into(),
 					)
 				}
                 _ => unimplemented!(),
