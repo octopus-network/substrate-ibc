@@ -16,8 +16,8 @@ impl<T: Config> ConnectionReader for Context<T> {
 	fn connection_end(&self, conn_id: &ConnectionId) -> Option<ConnectionEnd> {
 		log::info!("in connection_end");
 
-		if <Pallet<T> as Store>::Connections::contains_key(conn_id.as_bytes()) {
-			let data = <Pallet<T> as Store>::Connections::get(conn_id.as_bytes());
+		if <Connections<T>>::contains_key(conn_id.as_bytes()) {
+			let data = <Connections<T>>::get(conn_id.as_bytes());
 			Some(ConnectionEnd::decode_vec(&*data).unwrap())
 		} else {
 			log::info!("read connection end returns None");
@@ -43,7 +43,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 	fn connection_counter(&self) -> u64 {
 		log::info!("in connection counter");
 
-		<Pallet<T> as Store>::ConnectionCounter::get()
+		<ConnectionCounter<T>>::get()
 	}
 
 	fn commitment_prefix(&self) -> CommitmentPrefix {
@@ -69,7 +69,7 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 	fn increase_connection_counter(&mut self) {
 		log::info!("in increase connection counter");
 
-		<Pallet<T> as Store>::ConnectionCounter::try_mutate(|val| -> Result<(), &'static str> {
+		<ConnectionCounter<T>>::try_mutate(|val| -> Result<(), &'static str> {
 			let new = val.checked_add(1).ok_or("Add client counter error")?;
 			*val = new;
 			Ok(())
@@ -85,7 +85,7 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		log::info!("in store_connection");
 
 		let data = connection_end.encode_vec().unwrap();
-		<Pallet<T> as Store>::Connections::insert(connection_id.as_bytes(), data);
+		<Connections<T>>::insert(connection_id.as_bytes(), data);
 		Ok(())
 	}
 
@@ -96,7 +96,7 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 	) -> Result<(), ICS03Error> {
 		log::info!("in store connection to client");
 
-		<Pallet<T> as Store>::ConnectionClient::insert(
+		<ConnectionClient<T>>::insert(
 			connection_id.as_bytes(),
 			client_id.as_bytes(),
 		);

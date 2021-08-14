@@ -14,8 +14,8 @@ impl<T: Config> ClientReader for Context<T> {
 	fn client_type(&self, client_id: &ClientId) -> Option<ClientType> {
 		log::info!("in read client_type");
 
-		if <Pallet<T> as Store>::Clients::contains_key(client_id.as_bytes()) {
-			let data = <Pallet<T> as Store>::Clients::get(client_id.as_bytes());
+		if <Clients<T>>::contains_key(client_id.as_bytes()) {
+			let data = <Clients<T>>::get(client_id.as_bytes());
 			let mut data: &[u8] = &data;
 			let data = String::decode(&mut data).unwrap();
 			log::info!("read client type data: {} ", data);
@@ -36,8 +36,8 @@ impl<T: Config> ClientReader for Context<T> {
 	fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
 		log::info!("in read client_state");
 
-		if <Pallet<T> as Store>::ClientStates::contains_key(client_id.as_bytes()) {
-			let data = <Pallet<T> as Store>::ClientStates::get(client_id.as_bytes());
+		if <ClientStates<T>>::contains_key(client_id.as_bytes()) {
+			let data = <ClientStates<T>>::get(client_id.as_bytes());
 			Some(AnyClientState::decode_vec(&*data).unwrap())
 		} else {
 			log::info!("read client_state returns None");
@@ -51,7 +51,7 @@ impl<T: Config> ClientReader for Context<T> {
 
 		let height = height.encode_vec().unwrap();
 		if <Pallet<T> as Store>::ConsensusStates::contains_key((client_id.as_bytes(), &height)) {
-			let data = <Pallet<T> as Store>::ConsensusStates::get((client_id.as_bytes(), height));
+			let data = <ConsensusStates<T>>::get((client_id.as_bytes(), height));
 			Some(AnyConsensusState::decode_vec(&*data).unwrap())
 		} else {
 			log::info!("read consensus_state returns None");
@@ -62,7 +62,7 @@ impl<T: Config> ClientReader for Context<T> {
 	fn client_counter(&self) -> u64 {
 		log::info!("in read client counter");
 
-		<Pallet<T> as Store>::ClientCounter::get()
+		<ClientCounter<T>>::get()
 	}
 }
 
@@ -78,14 +78,14 @@ impl<T: Config> ClientKeeper for Context<T> {
 
 		let client_id = client_id.as_bytes().to_vec();
 		let client_type = client_type.as_str().encode();
-		<Pallet<T> as Store>::Clients::insert(client_id, client_type);
+		<Clients<T>>::insert(client_id, client_type);
 		Ok(())
 	}
 
 	fn increase_client_counter(&mut self) {
 		log::info!("in increase client counter");
 
-		<Pallet<T> as Store>::ClientCounter::try_mutate(|val| -> Result<(), &'static str> {
+		<ClientCounter<T>>::try_mutate(|val| -> Result<(), &'static str> {
 			let new = val.checked_add(1).ok_or("Add client counter error")?;
 			*val = new;
 			Ok(())
@@ -101,7 +101,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 		log::info!("in store_client_state");
 
 		let data = client_state.encode_vec().unwrap();
-		<Pallet<T> as Store>::ClientStates::insert(client_id.as_bytes(), data);
+		<ClientStates<T>>::insert(client_id.as_bytes(), data);
 		Ok(())
 	}
 
@@ -115,7 +115,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 
 		let height = height.encode_vec().unwrap();
 		let data = consensus_state.encode_vec().unwrap();
-		<Pallet<T> as Store>::ConsensusStates::insert((client_id.as_bytes(), height), data);
+		<ConsensusStates<T>>::insert((client_id.as_bytes(), height), data);
 		Ok(())
 	}
 }

@@ -23,11 +23,11 @@ impl<T: Config> ChannelReader for Context<T> {
 	fn channel_end(&self, port_channel_id: &(PortId, ChannelId)) -> Option<ChannelEnd> {
 		log::info!("in channel_end");
 
-		if <Pallet<T> as Store>::Channels::contains_key((
+		if <Channels<T>>::contains_key((
 			port_channel_id.0.as_bytes(),
 			port_channel_id.1.as_bytes(),
 		)) {
-			let data = <Pallet<T> as Store>::Channels::get((
+			let data = <Channels<T>>::get((
 				port_channel_id.0.as_bytes(),
 				port_channel_id.1.as_bytes(),
 			));
@@ -75,11 +75,11 @@ impl<T: Config> ChannelReader for Context<T> {
 	fn get_next_sequence_send(&self, port_channel_id: &(PortId, ChannelId)) -> Option<Sequence> {
 		log::info!("in get_next_sequence");
 
-		if <Pallet<T> as Store>::NextSequenceSend::contains_key((
+		if <NextSequenceSend<T>>::contains_key((
 			port_channel_id.0.as_bytes(),
 			port_channel_id.1.as_bytes(),
 		)) {
-			let data = <Pallet<T> as Store>::NextSequenceSend::get((
+			let data = <NextSequenceSend<T>>::get((
 				port_channel_id.0.as_bytes(),
 				port_channel_id.1.as_bytes(),
 			));
@@ -96,11 +96,11 @@ impl<T: Config> ChannelReader for Context<T> {
 	fn get_next_sequence_recv(&self, port_channel_id: &(PortId, ChannelId)) -> Option<Sequence> {
 		log::info!("in get next sequence recv");
 
-		if <Pallet<T> as Store>::NextSequenceRecv::contains_key((
+		if <NextSequenceRecv<T>>::contains_key((
 			port_channel_id.0.as_bytes(),
 			port_channel_id.1.as_bytes(),
 		)) {
-			let data = <Pallet<T> as Store>::NextSequenceRecv::get((
+			let data = <NextSequenceRecv<T>>::get((
 				port_channel_id.0.as_bytes(),
 				port_channel_id.1.as_bytes(),
 			));
@@ -117,11 +117,11 @@ impl<T: Config> ChannelReader for Context<T> {
 	fn get_next_sequence_ack(&self, port_channel_id: &(PortId, ChannelId)) -> Option<Sequence> {
 		log::info!("in get next sequence ack");
 
-		if <Pallet<T> as Store>::NextSequenceAck::contains_key((
+		if <NextSequenceAck<T>>::contains_key((
 			port_channel_id.0.as_bytes(),
 			port_channel_id.1.as_bytes(),
 		)) {
-			let data = <Pallet<T> as Store>::NextSequenceAck::get((
+			let data = <NextSequenceAck<T>>::get((
 				port_channel_id.0.as_bytes(),
 				port_channel_id.1.as_bytes(),
 			));
@@ -141,12 +141,12 @@ impl<T: Config> ChannelReader for Context<T> {
 		let seq = u64::from(key.2);
 		let seq = seq.encode();
 
-		if <Pallet<T> as Store>::PacketCommitment::contains_key((
+		if <PacketCommitment<T>>::contains_key((
 			key.0.as_bytes(),
 			key.1.as_bytes(),
 			seq.clone(),
 		)) {
-			let data = <Pallet<T> as Store>::PacketCommitment::get((
+			let data = <PacketCommitment<T>>::get((
 				key.0.as_bytes(),
 				key.1.as_bytes(),
 				seq,
@@ -166,13 +166,13 @@ impl<T: Config> ChannelReader for Context<T> {
 		let seq = u64::from(key.2);
 		let seq = seq.encode();
 
-		if <Pallet<T> as Store>::PacketReceipt::contains_key((
+		if <PacketReceipt<T>>::contains_key((
 			key.0.as_bytes(),
 			key.1.as_bytes(),
 			seq.clone(),
 		)) {
 			let data =
-				<Pallet<T> as Store>::PacketReceipt::get((key.0.as_bytes(), key.1.as_bytes(), seq));
+				<PacketReceipt<T>>::get((key.0.as_bytes(), key.1.as_bytes(), seq));
 			let mut data: &[u8] = &data;
 			let data = String::decode(&mut data).unwrap();
 
@@ -194,12 +194,12 @@ impl<T: Config> ChannelReader for Context<T> {
 		let seq = u64::from(key.2);
 		let data = seq.encode();
 
-		if <Pallet<T> as Store>::Acknowledgements::contains_key((
+		if <Acknowledgements<T>>::contains_key((
 			key.0.as_bytes(),
 			key.1.as_bytes(),
 			data.clone(),
 		)) {
-			let data = <Pallet<T> as Store>::Acknowledgements::get((
+			let data = <Acknowledgements<T>>::get((
 				key.0.as_bytes(),
 				key.1.as_bytes(),
 				data,
@@ -260,7 +260,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		let seq = u64::from(key.2);
 		let seq = seq.encode();
 
-		<Pallet<T> as Store>::PacketCommitment::insert(
+		<PacketCommitment<T>>::insert(
 			(key.0.as_bytes(), key.1.as_bytes(), seq),
 			ChannelReader::hash(self, input).as_bytes(),
 		);
@@ -275,7 +275,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 
 		let seq = u64::from(key.2);
 		let seq = seq.encode();
-		<Pallet<T> as Store>::PacketCommitment::remove((key.0.as_bytes(), key.1.as_bytes(), seq));
+		<PacketCommitment<T>>::remove((key.0.as_bytes(), key.1.as_bytes(), seq));
 
 		Ok(())
 	}
@@ -294,7 +294,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		let seq = u64::from(key.2);
 		let seq = seq.encode();
 
-		<Pallet<T> as Store>::PacketReceipt::insert(
+		<PacketReceipt<T>>::insert(
 			(key.0.as_bytes(), key.1.as_bytes(), seq),
 			receipt,
 		);
@@ -313,7 +313,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		let seq = u64::from(key.2);
 		let data = seq.encode();
 
-		<Pallet<T> as Store>::Acknowledgements::insert(
+		<Acknowledgements<T>>::insert(
 			(key.0.as_bytes(), key.1.as_bytes(), data),
 			ChannelReader::hash(self, input).as_bytes(),
 		);
@@ -329,7 +329,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		let seq = u64::from(key.2);
 		let data = seq.encode();
 
-		<Pallet<T> as Store>::Acknowledgements::remove((key.0.as_bytes(), key.1.as_bytes(), data));
+		<Acknowledgements<T>>::remove((key.0.as_bytes(), key.1.as_bytes(), data));
 
 		Ok(())
 	}
@@ -352,7 +352,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 
 		let data = channel_end.encode_vec().unwrap();
 
-		<Pallet<T> as Store>::Channels::insert(
+		<Channels<T>>::insert(
 			(port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes()),
 			data,
 		);
@@ -369,7 +369,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		let seq = u64::from(seq);
 		let data = seq.encode();
 
-		<Pallet<T> as Store>::NextSequenceSend::insert(
+		<NextSequenceSend<T>>::insert(
 			(port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes()),
 			data,
 		);
@@ -387,7 +387,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		let seq = u64::from(seq);
 		let data = seq.encode();
 
-		<Pallet<T> as Store>::NextSequenceRecv::insert(
+		<NextSequenceRecv<T>>::insert(
 			(port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes()),
 			data,
 		);
@@ -405,7 +405,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		let seq = u64::from(seq);
 		let data = seq.encode();
 
-		<Pallet<T> as Store>::NextSequenceAck::insert(
+		<NextSequenceAck<T>>::insert(
 			(port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes()),
 			data,
 		);
@@ -419,11 +419,11 @@ impl<T: Config> ChannelKeeper for Context<T> {
 	fn increase_channel_counter(&mut self) {
 		log::info!("in increase channel counter");
 
-		match <Pallet<T> as Store>::ChannelCounter::get() {
+		match <ChannelCounter<T>>::get() {
 			None => {}
 			Some(old) => {
 				let new = old.checked_add(1).unwrap();
-				<Pallet<T> as Store>::ChannelCounter::put(new)
+				<ChannelCounter<T>>::put(new)
 			}
 		}
 	}
