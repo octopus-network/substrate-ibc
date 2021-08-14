@@ -77,6 +77,15 @@ pub struct Any {
     pub value: Vec<u8>,
 }
 
+impl From<prost_types::Any> for Any {
+	fn from(any: prost_types::Any) -> Self {
+        Self {
+			type_url: any.type_url,
+			value: any.value,
+		}
+    }
+}
+
 #[cfg(test)]
 mod mock;
 
