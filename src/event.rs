@@ -33,15 +33,15 @@ pub mod primitive {
         }
     }
 
-    impl From<Height> for IbcHeight {
-        fn from(val : Height) -> Self {
-            Self {
-                revision_number: val.revision_number,
-                revision_height: val.revision_height,
+    impl Height {
+        fn to_ibc_height(self) -> IbcHeight {
+            IbcHeight {
+                revision_number: self.revision_number,
+                revision_height: self.revision_height,
             }
         }
     }
-
+    
     #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
     pub enum ClientType {
         Tendermint,
@@ -58,9 +58,10 @@ pub mod primitive {
         }
     }
 
-    impl From<ClientType> for IbcClientType {
-        fn from(val: ClientType) -> Self {
-            match val {
+
+    impl ClientType {
+        fn to_ibc_client_type(self) -> IbcClientType {
+            match self {
                 ClientType::Tendermint => IbcClientType::Tendermint,
                 ClientType::Grandpa => IbcClientType::Grandpa,
                 _ => unreachable!(),
@@ -84,10 +85,9 @@ pub mod primitive {
         }
     }
 
-    impl From<ClientId> for IbcClientId {
-        fn from(val : ClientId) -> Self {
-            let val = val.as_str();
-            Self(val.to_string())
+    impl ClientId {
+        fn to_ibc_client_id(self) -> IbcClientId {
+            IbcClientId(self.0)
         }
     }
 
@@ -107,10 +107,9 @@ pub mod primitive {
         }
     }
 
-    impl From<ConnectionId> for IbcConnectionId {
-        fn from(val : ConnectionId) -> Self {
-            let val = val.as_str();
-            Self(val.to_string())
+    impl ConnectionId {
+        fn to_ibc_connection_id(self) -> IbcConnectionId {
+            IbcConnectionId(self.0)
         }
     }
 }
