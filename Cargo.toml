@@ -30,7 +30,7 @@ ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "dv-merg
 
 prost = "0.7"
 prost-types = "0.7"
-tendermint-proto = "=0.21.0"
+tendermint-proto = "=0.22.0"
 
 [dev-dependencies]
 hex = '0.4.0'

@@ -11,7 +11,7 @@ use ibc::Height;
 use tendermint_proto::Protobuf;
 
 impl<T: Config> ClientReader for Context<T> {
-	fn client_type(&self, client_id: &ClientId) -> Option<ClientType> {
+	fn client_type(&self, client_id: &ClientId) -> Result<ClientType, ICS02Error> {
 		log::info!("In client: [client_type]");
 
 		if <Clients<T>>::contains_key(client_id.as_bytes()) {
@@ -20,36 +20,35 @@ impl<T: Config> ClientReader for Context<T> {
 			let data = String::decode(&mut data).unwrap();
 			log::info!("In client: [client_type] >> date: {} ", data);
 			match ClientType::from_str(&data) {
-				Err(_err) => None,
+				Err(_err) => {
+					todo!()
+				},
 				Ok(val) => {
 					log::info!("In client: [client_type] >> client_type : {}", val);
-
-					Some(val)
+					Ok(val)
 				},
 			}
 		} else {
 			log::info!("In client : [client_type] >> read client_type is None");
-
-			None
+			todo!()
 		}
 	}
 
-	fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
+	fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, ICS02Error> {
 		log::info!("In client: [client_state]");
 
 		if <ClientStates<T>>::contains_key(client_id.as_bytes()) {
 			let data = <ClientStates<T>>::get(client_id.as_bytes());
 			log::info!("In client: [client_state] >> client_state: {:?}", AnyClientState::decode_vec(&*data).unwrap());
-
-			Some(AnyClientState::decode_vec(&*data).unwrap())
+			Ok(AnyClientState::decode_vec(&*data).unwrap())
 		} else {
 			log::info!("In client: [client_state] >> read client_state is None");
 
-			None
+			todo!()
 		}
 	}
 
-	fn consensus_state(&self, client_id: &ClientId, height: Height) -> Option<AnyConsensusState> {
+	fn consensus_state(&self, client_id: &ClientId, height: Height) -> Result<AnyConsensusState, ICS02Error> {
 		log::info!("In client: [consensus_state]");
 
 		let height = height.encode_vec().unwrap();
@@ -57,19 +56,25 @@ impl<T: Config> ClientReader for Context<T> {
 		if <ConsensusStates<T>>::contains_key((client_id.as_bytes(), &height) ) {
 			let data = <ConsensusStates<T>>::get((client_id.as_bytes(), height));
 			log::info!("In client: [consensus_state] >> consensus_state : {:?}", AnyConsensusState::decode_vec(&*data).unwrap());
-
 			Some(AnyConsensusState::decode_vec(&*data).unwrap())
 		} else {
 			log::info!("In client: [consensus_state] >> read consensus_state is None");
-
-			None
 		}
+
+		for item in value.iter() {
+			if item.0 == height {
+				let any_consensus_state = AnyConsensusState::decode_vec(&*item.1).unwrap();
+				return Ok(any_consensus_state);
+			}
+		}
+		todo!()
 	}
-	fn client_counter(&self) -> u64 {
+
+	fn client_counter(&self) -> Result<u64,ICS02Error> {
 		log::info!("In client: [client_counter]");
 		log::info!("In client: [client_counter] >> client_counter: {:?}", <ClientCounter<T>>::get());
 
-		<ClientCounter<T>>::get()
+		Ok(<ClientCounter<T>>::get())
 	}
 }
 
@@ -120,15 +125,25 @@ impl<T: Config> ClientKeeper for Context<T> {
 		height: Height,
 		consensus_state: AnyConsensusState,
 	) -> Result<(), ICS02Error> {
-		log::info!("In client: [store_client_state]");
-		log::info!("In client: [store_client_state] >> client_id: {}", client_id);
-		log::info!("In client: [store_client_state] >> height: {:?}", height);
-		log::info!("In client: [store_client_state] >> consensus_state: {:?}", consensus_state);
+		log::info!("In client: [store_consensus_state]");
+		log::info!("In client: [store_consensus_state] >> client_id: {}", client_id);
+		log::info!("In client: [store_consensus_state] >> height: {:?}", height);
+		log::info!("In client: [store_consensus_state] >> consensus_state: {:?}", consensus_state);
 
 
 		let height = height.encode_vec().unwrap();
 		let data = consensus_state.encode_vec().unwrap();
-		<ConsensusStates<T>>::insert((client_id.as_bytes(), height), data);
+		if <ConsensusStates<T>>::contains_key(client_id.as_bytes()) {
+			// if consensus_state is no empty use push insert an exist ConsensusStates
+			<ConsensusStates<T>>::try_mutate(client_id.as_bytes(),|val| -> Result<(), &'static str> {
+				val.push((height, data));
+				Ok(())
+			}).expect("store consensus state error");
+
+		} else {
+			// if consensus state is empty insert a new item.
+			<ConsensusStates<T>>::insert(client_id.as_bytes(), vec![(height, data)]);
+		}
 		Ok(())
 	}
 }

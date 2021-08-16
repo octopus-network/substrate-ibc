@@ -100,7 +100,7 @@ pub mod pallet {
 	use super::*;
 	use frame_support::{dispatch::DispatchResult, pallet_prelude::*};
 	use frame_system::pallet_prelude::*;
-	use event::primitive::{ClientType, ClientId, Height, ConnectionId};
+	use event::primitive::{ClientType, ClientId, Height, ConnectionId, PortId, ChannelId, Packet};
 	use ibc::events::IbcEvent;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
@@ -121,9 +121,10 @@ pub mod pallet {
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
-	// (client_id, height) => ConsensusState
+	// fix before : (client_id, height) => ConsensusState
+	// fix after: client_id => (Height, ConsensusState)
 	pub type ConsensusStates<T: Config> =
-		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
+		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<(Vec<u8>, Vec<u8>)>, ValueQuery>;
 
 	#[pallet::storage]
 	// connection_id => ConnectionEnd
@@ -133,6 +134,13 @@ pub mod pallet {
 	// (port_identifier, channel_identifier) => ChannelEnd
 	pub type Channels<T: Config> =
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
+
+	// store_connection_channels
+	#[pallet::storage]
+	// connection_identifier => Vec<(port_id, channel_id)>
+	pub type ChannelsConnection<T: Config> =
+		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<(Vec<u8>,Vec<u8>)>, ValueQuery>;
+
 
 	#[pallet::storage]
 	// (port_identifier, channel_identifier) => Sequence
@@ -176,12 +184,15 @@ pub mod pallet {
 	// connection counter
 	pub type ConnectionCounter<T: Config> = StorageValue<_, u64, ValueQuery, DefaultConnectionCounter>;
 
-	#[pallet::storage]
-	// channel counter
-	pub type ChannelCounter<T: Config> = StorageValue<_, u64>;
+	#[pallet::type_value]
+	pub fn DefaultChannelCounter() -> u64 { 0u64 }
 
 	#[pallet::storage]
-	// client_id => Connection id
+	// channel counter
+	pub type ChannelCounter<T: Config> = StorageValue<_, u64, ValueQuery, DefaultChannelCounter>;
+
+	#[pallet::storage]
+	// client_id => Connection_id
 	pub type ConnectionClient<T: Config> =
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
@@ -205,13 +216,57 @@ pub mod pallet {
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
-		// CreateClient(height, client_id, client_type, consensus_height)
+		// This event for Client
+		//
+		// CreateClient Event
+		//
+		// CreateClient(
+		// 	height: Height,
+		// 	client_id: ClientId,
+		// 	client_type: ClientType,
+		// 	consensus_height: Height,
+		// )
         CreateClient(Height, ClientId, ClientType, Height),
-		// UpdateClient(height, client_id, client_type, consensus_height)
+		// UpdateClient Event
+		//
+		// UpdateClient(
+		// 	height: Height,
+		// 	client_id: ClientId,
+		// 	client_type: ClientType,
+		// 	consensus_height: Height,
+		// )
 		UpdateClient(Height, ClientId, ClientType, Height),
-		// UpgradeClient(height, client_id, client_type, height)
+		// UpgradeClient Event
+		//
+		// UpgradeClient(
+		// 	height: Height,
+		// 	client_id: ClientId,
+		// 	client_type: ClientType,
+		// 	consensus_height: Height,
+		// )
 		UpgradeClient(Height, ClientId, ClientType, Height),
+		// ClientMisbehaviour Event
+		//
+		// ClientMisbehaviour(
+		// 	height: Height,
+		// 	client_id: ClientId,
+		// 	client_type: ClientType,
+		// 	consensus_height: Height,
+		// )
+		ClientMisbehaviour(Height, ClientId, ClientType, Height),
+		// This Event for Connection
+		//
 		// Open Init Connection
+		//
+		// OpenInitConnection(
+		// 	height: Height,
+		// 	port_id: PortId,
+		// 	channel_id: Option<ChannelId>,
+		// 	connection_id: ConnectionId,
+		// 	counterparty_port_id: PortId,
+		// 	counterparty_channel_id: Option<ChannelId>
+		// )
+
         OpenInitConnection(
             Height,
             Option<ConnectionId>,
@@ -220,6 +275,15 @@ pub mod pallet {
             ClientId,
         ),
 		// Open try Connection
+		//
+		// OpenTryConnection(
+		// 	height: Height,
+		// 	port_id: PortId,
+		// 	channel_id: Option<ChannelId>,
+		// 	connection_id: ConnectionId,
+		// 	counterparty_port_id: PortId,
+		// 	counterparty_channel_id: Option<ChannelId>
+		// )
 		OpenTryConnection(
 			Height,
 			Option<ConnectionId>,
@@ -228,6 +292,15 @@ pub mod pallet {
 			ClientId,
 		),
 		// Open ack Connection
+		//
+		// OpenAckConnection(
+		// 	height: Height,
+		// 	port_id: PortId,
+		// 	channel_id: Option<ChannelId>,
+		// 	connection_id: ConnectionId,
+		// 	counterparty_port_id: PortId,
+		// 	counterparty_channel_id: Option<ChannelId>
+		// )
 		OpenAckConnection(
 			Height,
 			Option<ConnectionId>,
@@ -236,6 +309,15 @@ pub mod pallet {
 			ClientId,
 		),
 		// Open ack Connection
+		//
+		// OpenConfirmConnection(
+		// 	height: Height,
+		// 	port_id: PortId,
+		// 	channel_id: Option<ChannelId>,
+		// 	connection_id: ConnectionId,
+		// 	counterparty_port_id: PortId,
+		// 	counterparty_channel_id: Option<ChannelId>
+		// )
 		OpenConfirmConnection(
 			Height,
 			Option<ConnectionId>,
@@ -243,23 +325,109 @@ pub mod pallet {
 			Option<ConnectionId>,
 			ClientId,
 		),
+		//  This Event for Channel
+		//
+		// OpenInitChannel(
+		// 	height: Height,
+		// 	port_id: PortId,
+		// 	channel_id: Option<ChannelId>,
+		// 	connection_id: ConnectionId,
+		// 	counterparty_port_id: PortId,
+		// 	counterparty_channel_id: Option<ChannelId>
+		// )
+		OpenInitChannel(
+			Height,
+			PortId,
+			Option<ChannelId>,
+			ConnectionId,
+			PortId,
+			Option<ChannelId>,
+		),
+		// OpenTryChannel(
+		// 	height: Height,
+		// 	port_id: PortId,
+		// 	channel_id: Option<ChannelId>,
+		// 	connection_id: ConnectionId,
+		// 	counterparty_port_id: PortId,
+		// 	counterparty_channel_id: Option<ChannelId>
+		// )
+		OpenTryChannel(
+			Height,
+			PortId,
+			Option<ChannelId>,
+			ConnectionId,
+			PortId,
+			Option<ChannelId>,
+		),
+		// OpenAckChannel(
+		// 	height: Height,
+		// 	port_id: PortId,
+		// 	channel_id: Option<ChannelId>,
+		// 	connection_id: ConnectionId,
+		// 	counterparty_port_id: PortId,
+		// 	counterparty_channel_id: Option<ChannelId>
+		// )
+		OpenAckChannel(
+			Height,
+			PortId,
+			Option<ChannelId>,
+			ConnectionId,
+			PortId,
+			Option<ChannelId>,
+		),
+		// OpenAckChannel(
+		// 	height: Height,
+		// 	port_id: PortId,
+		// 	channel_id: Option<ChannelId>,
+		// 	connection_id: ConnectionId,
+		// 	counterparty_port_id: PortId,
+		// 	counterparty_channel_id: Option<ChannelId>
+		// )
+		OpenConfirmChannel(
+			Height,
+			PortId,
+			Option<ChannelId>,
+			ConnectionId,
+			PortId,
+			Option<ChannelId>,
+		),
+		// SendPacket {
+		// 	height: Height,
+		// 	packet: Packet,
+		// }
+		SendPacket(
+			Height,
+			Packet,
+		)
     }
 
     impl<T: Config> From<ibc::events::IbcEvent> for Event<T> {
         fn from(value: ibc::events::IbcEvent) -> Self {
             match value {
-                ibc::events::IbcEvent::CreateClient(value) => {
-                    let height = value.0.height;
-                    let client_id = value.0.client_id;
-                    let client_type = value.0.client_type;
-                    let consensus_height = value.0.consensus_height;
-                    Event::CreateClient(
-                        height.into(),
-                        client_id.into(),
-                        client_type.into(),
-                        consensus_height.into(),
-                    )
-                }
+				// CreateClient(
+				// 	height: Height,
+				// 	client_id: ClientId,
+				// 	client_type: ClientType,
+				// 	consensus_height: Height,
+				// )
+				ibc::events::IbcEvent::CreateClient(value) => {
+					let height = value.0.height;
+					let client_id = value.0.client_id;
+					let client_type = value.0.client_type;
+					let consensus_height = value.0.consensus_height;
+					Event::CreateClient(
+						height.into(),
+						client_id.into(),
+						client_type.into(),
+						consensus_height.into(),
+					)
+				}
+				// UpdateClient(
+				// 	height: Height,
+				// 	client_id: ClientId,
+				// 	client_type: ClientType,
+				// 	consensus_height: Height,
+				// )
 				ibc::events::IbcEvent::UpdateClient(value) => {
 					let height = value.common.height;
 					let client_id = value.common.client_id;
@@ -272,6 +440,13 @@ pub mod pallet {
 						consensus_height.into()
 					)
 				}
+				// TODO! Upgrade client events are not currently being used
+				// UpgradeClient(
+				// 	height: Height,
+				// 	client_id: ClientId,
+				// 	client_type: ClientType,
+				// 	consensus_height: Height,
+				// )
 				ibc::events::IbcEvent::UpgradeClient(value) => {
 					let height = value.0.height;
 					let client_id = value.0.client_id;
@@ -284,17 +459,30 @@ pub mod pallet {
 						consensus_height.into(),
 					)
 				}
+				ibc::events::IbcEvent::ClientMisbehaviour(value ) => {
+					let height = value.0.height;
+					let client_id = value.0.client_id;
+					let client_type = value.0.client_type;
+					let consensus_height = value.0.consensus_height;
+					Event::ClientMisbehaviour(
+						height.into(),
+						client_id.into(),
+						client_type.into(),
+						consensus_height.into(),
+					)
+				}
+				// OpenInitConnection(
+				// 	height: Height,
+				// 	connection_id: Option<ConnectionId>,
+				// 	client_id: ClientId,
+				// 	counterparty_connection_id: Option<ConnectionId>,
+				// 	counterparty_client_id: ClientId,
+				// }
 				ibc::events::IbcEvent::OpenInitConnection(value) => {
 					let height = value.0.height;
-					let connection_id = match value.0.connection_id {
-						Some(val) => Some(val.into()),
-						None => None,
-					};
+					let connection_id : Option<ConnectionId> = value.0.connection_id.map(|val| val.into());
 					let client_id = value.0.client_id;
-					let counterparty_connection_id = match value.0.counterparty_connection_id {
-						Some(val) => Some(val.into()),
-						None => None,
-					};
+					let counterparty_connection_id: Option<ConnectionId> = value.0.counterparty_connection_id.map(|val| val.into());
 					let counterparty_client_id = value.0.counterparty_client_id;
 					Event::OpenInitConnection(
 						height.into(),
@@ -304,17 +492,18 @@ pub mod pallet {
 						counterparty_client_id.into(),
 					)
 				}
+				// OpenTryConnection(
+				// 	height: Height,
+				// 	connection_id: Option<ConnectionId>,
+				// 	client_id: ClientId,
+				// 	counterparty_connection_id: Option<ConnectionId>,
+				// 	counterparty_client_id: ClientId,
+				// }
 				ibc::events::IbcEvent::OpenTryConnection(value) => {
 					let height = value.0.height;
-					let connection_id = match value.0.connection_id {
-						Some(val) => Some(val.into()),
-						None => None,
-					};
+					let connection_id : Option<ConnectionId> = value.0.connection_id.map(|val| val.into());
 					let client_id = value.0.client_id;
-					let counterparty_connection_id = match value.0.counterparty_connection_id {
-						Some(val) => Some(val.into()),
-						None => None,
-					};
+					let counterparty_connection_id: Option<ConnectionId> = value.0.counterparty_connection_id.map(|val| val.into());
 					let counterparty_client_id = value.0.counterparty_client_id;
 					Event::OpenTryConnection(
 						height.into(),
@@ -324,17 +513,18 @@ pub mod pallet {
 						counterparty_client_id.into(),
 					)
 				}
+				// OpenAckConnection(
+				// 	height: Height,
+				// 	connection_id: Option<ConnectionId>,
+				// 	client_id: ClientId,
+				// 	counterparty_connection_id: Option<ConnectionId>,
+				// 	counterparty_client_id: ClientId,
+				// }
 				ibc::events::IbcEvent::OpenAckConnection(value) => {
 					let height = value.0.height;
-					let connection_id = match value.0.connection_id {
-						Some(val) => Some(val.into()),
-						None => None,
-					};
+					let connection_id : Option<ConnectionId> = value.0.connection_id.map(|val| val.into());
 					let client_id = value.0.client_id;
-					let counterparty_connection_id = match value.0.counterparty_connection_id {
-						Some(val) => Some(val.into()),
-						None => None,
-					};
+					let counterparty_connection_id: Option<ConnectionId> = value.0.counterparty_connection_id.map(|val| val.into());
 					let counterparty_client_id = value.0.counterparty_client_id;
 					Event::OpenAckConnection(
 						height.into(),
@@ -344,17 +534,18 @@ pub mod pallet {
 						counterparty_client_id.into(),
 					)
 				}
+				// OpenConfirmConnection(
+				// 	height: Height,
+				// 	connection_id: Option<ConnectionId>,
+				// 	client_id: ClientId,
+				// 	counterparty_connection_id: Option<ConnectionId>,
+				// 	counterparty_client_id: ClientId,
+				// }
 				ibc::events::IbcEvent::OpenConfirmConnection(value) => {
 					let height = value.0.height;
-					let connection_id = match value.0.connection_id {
-						Some(val) => Some(val.into()),
-						None => None,
-					};
+					let connection_id : Option<ConnectionId> = value.0.connection_id.map(|val| val.into());
 					let client_id = value.0.client_id;
-					let counterparty_connection_id = match value.0.counterparty_connection_id {
-						Some(val) => Some(val.into()),
-						None => None,
-					};
+					let counterparty_connection_id: Option<ConnectionId> = value.0.counterparty_connection_id.map(|val| val.into());
 					let counterparty_client_id = value.0.counterparty_client_id;
 					Event::OpenConfirmConnection(
 						height.into(),
@@ -362,6 +553,114 @@ pub mod pallet {
 						client_id.into(),
 						counterparty_connection_id,
 						counterparty_client_id.into(),
+					)
+				}
+				// OpenInitChannel(
+				// 	height: Height,
+				// 	port_id: PortId,
+				// 	channel_id: Option<ChannelId>,
+				// 	connection_id: ConnectionId,
+				// 	counterparty_port_id: PortId,
+				// 	counterparty_channel_id: Option<ChannelId>
+				// );
+				ibc::events::IbcEvent::OpenInitChannel(value) => {
+					let height = value.0.height;
+					let port_id = value.0.port_id;
+					let channel_id : Option<ChannelId> = value.0.channel_id.clone().map(|val| val.into());
+					let connection_id = value.0.connection_id;
+					let counterparty_port_id = value.0.counterparty_port_id;
+					let counterparty_channel_id: Option<ChannelId> = value.0.channel_id.clone().map(|val| val.into());
+					Event::OpenInitChannel(
+						height.into(),
+						port_id.into(),
+						channel_id,
+						connection_id.into(),
+						counterparty_port_id.into(),
+						counterparty_channel_id,
+					)
+				}
+				// OpenTryChannel(
+				// 	height: Height,
+				// 	port_id: PortId,
+				// 	channel_id: Option<ChannelId>,
+				// 	connection_id: ConnectionId,
+				// 	counterparty_port_id: PortId,
+				// 	counterparty_channel_id: Option<ChannelId>
+				// );
+				ibc::events::IbcEvent::OpenTryChannel(value) => {
+					let height = value.0.height;
+					let port_id = value.0.port_id;
+					let channel_id : Option<ChannelId> = value.0.channel_id.clone().map(|val| val.into());
+					let connection_id = value.0.connection_id;
+					let counterparty_port_id = value.0.counterparty_port_id;
+					let counterparty_channel_id: Option<ChannelId> = value.0.channel_id.clone().map(|val| val.into());
+					Event::OpenTryChannel(
+						height.into(),
+						port_id.into(),
+						channel_id,
+						connection_id.into(),
+						counterparty_port_id.into(),
+						counterparty_channel_id,
+					)
+				}
+				// OpenAckChannel(
+				// 	height: Height,
+				// 	port_id: PortId,
+				// 	channel_id: Option<ChannelId>,
+				// 	connection_id: ConnectionId,
+				// 	counterparty_port_id: PortId,
+				// 	counterparty_channel_id: Option<ChannelId>
+				// );
+				ibc::events::IbcEvent::OpenAckChannel(value) => {
+					let height = value.0.height;
+					let port_id = value.0.port_id;
+					let channel_id : Option<ChannelId> = value.0.channel_id.clone().map(|val| val.into());
+					let connection_id = value.0.connection_id;
+					let counterparty_port_id = value.0.counterparty_port_id;
+					let counterparty_channel_id: Option<ChannelId> = value.0.channel_id.clone().map(|val| val.into());
+					Event::OpenAckChannel(
+						height.into(),
+						port_id.into(),
+						channel_id,
+						connection_id.into(),
+						counterparty_port_id.into(),
+						counterparty_channel_id,
+					)
+				}
+				// OpenConfirmChannel(
+				// 	height: Height,
+				// 	port_id: PortId,
+				// 	channel_id: Option<ChannelId>,
+				// 	connection_id: ConnectionId,
+				// 	counterparty_port_id: PortId,
+				// 	counterparty_channel_id: Option<ChannelId>
+				// );
+				ibc::events::IbcEvent::OpenConfirmChannel(value) => {
+					let height = value.0.height;
+					let port_id = value.0.port_id;
+					let channel_id : Option<ChannelId> = value.0.channel_id.clone().map(|val| val.into());
+					let connection_id = value.0.connection_id;
+					let counterparty_port_id = value.0.counterparty_port_id;
+					let counterparty_channel_id: Option<ChannelId> = value.0.channel_id.clone().map(|val| val.into());
+					Event::OpenConfirmChannel(
+						height.into(),
+						port_id.into(),
+						channel_id,
+						connection_id.into(),
+						counterparty_port_id.into(),
+						counterparty_channel_id,
+					)
+				}
+				// SendPacket {
+				//     pub height: Height,
+				//     pub packet: Packet,
+				// }
+				ibc::events::IbcEvent::SendPacket(value) => {
+					let height = value.height;
+					let packet = value.packet;
+					Event::SendPacket(
+						height.into(),
+						packet.into(),
 					)
 				}
                 _ => unimplemented!(),
@@ -372,28 +671,28 @@ pub mod pallet {
 	// Errors inform users that something went wrong.
 	#[pallet::error]
 	pub enum Error<T> {
-		/// The IBC client identifier already exists.
-		ClientIdExist,
-		/// The IBC client identifier doesn't exist.
-		ClientIdNotExist,
-		/// The IBC port identifier is already binded.
-		PortIdBinded,
-		/// The IBC connection identifier already exists.
-		ConnectionIdExist,
-		/// The IBC connection identifier doesn't exist.
-		ConnectionIdNotExist,
-		/// The IBC channel identifier already exists.
-		ChannelIdExist,
-		/// The IBC port identifier doesn't match.
-		PortIdNotMatch,
-		/// The IBC connection is closed.
-		ConnectionClosed,
-		/// Only allow 1 hop for v1 of the IBC protocol.
-		OnlyOneHopAllowedV1,
-		/// The sequence sending packet not match
-		PackedSequenceNotMatch,
-		/// The destination channel identifier doesn't match
-		DestChannelIdNotMatch,
+		// /// The IBC client identifier already exists.
+		// ClientIdExist,
+		// /// The IBC client identifier doesn't exist.
+		// ClientIdNotExist,
+		// /// The IBC port identifier is already binded.
+		// PortIdBinded,
+		// /// The IBC connection identifier already exists.
+		// ConnectionIdExist,
+		// /// The IBC connection identifier doesn't exist.
+		// ConnectionIdNotExist,
+		// /// The IBC channel identifier already exists.
+		// ChannelIdExist,
+		// /// The IBC port identifier doesn't match.
+		// PortIdNotMatch,
+		// /// The IBC connection is closed.
+		// ConnectionClosed,
+		// /// Only allow 1 hop for v1 of the IBC protocol.
+		// OnlyOneHopAllowedV1,
+		// /// The sequence sending packet not match
+		// PackedSequenceNotMatch,
+		// /// The destination channel identifier doesn't match
+		// DestChannelIdNotMatch,
 	}
 
 	// Dispatchable functions allows users to interact with the pallet and invoke state changes.
@@ -431,16 +730,14 @@ pub mod pallet {
 
 
 	impl <T: Config> Pallet<T> {
-		pub fn get_consensus_state_with_height(client_id: Vec<u8>) -> Vec<(Vec<u8>, Vec<u8>)> {
+		/// get key-value pair (client_identifier, client_state)
+		pub fn get_identified_any_client_state() -> Vec<(Vec<u8>, Vec<u8>)> {
 			let mut result = vec![];
 
-			<ConsensusStates<T>>::iter().for_each(|val| {
-				let (id, height) = val.0;
-				if id == client_id {
-					result.push((height, val.1));
-				}
+			<ClientStates<T>>::iter().for_each(|val| {
+				result.push((val.0, val.1));
 			});
-			
+
 			result
 		}
 	}
