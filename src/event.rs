@@ -34,14 +34,14 @@ pub mod primitive {
     }
 
     impl Height {
-        fn to_ibc_height(self) -> IbcHeight {
+        pub fn to_ibc_height(self) -> IbcHeight {
             IbcHeight {
                 revision_number: self.revision_number,
                 revision_height: self.revision_height,
             }
         }
     }
-    
+
     #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
     pub enum ClientType {
         Tendermint,
@@ -60,7 +60,7 @@ pub mod primitive {
 
 
     impl ClientType {
-        fn to_ibc_client_type(self) -> IbcClientType {
+        pub fn to_ibc_client_type(self) -> IbcClientType {
             match self {
                 ClientType::Tendermint => IbcClientType::Tendermint,
                 ClientType::Grandpa => IbcClientType::Grandpa,
@@ -86,7 +86,7 @@ pub mod primitive {
     }
 
     impl ClientId {
-        fn to_ibc_client_id(self) -> IbcClientId {
+        pub fn to_ibc_client_id(self) -> IbcClientId {
             IbcClientId(self.0)
         }
     }
@@ -108,7 +108,7 @@ pub mod primitive {
     }
 
     impl ConnectionId {
-        fn to_ibc_connection_id(self) -> IbcConnectionId {
+        pub fn to_ibc_connection_id(self) -> IbcConnectionId {
             IbcConnectionId(self.0)
         }
     }
