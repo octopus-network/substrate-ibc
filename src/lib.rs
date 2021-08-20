@@ -123,7 +123,7 @@ pub mod pallet {
 	#[pallet::storage]
 	// (client_id, height) => ConsensusState
 	pub type ConsensusStates<T: Config> =
-		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
+		StorageDoubleMap<_, Blake2_128Concat, Vec<u8>, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
 	// connection_identifier => ConnectionEnd
@@ -181,7 +181,7 @@ pub mod pallet {
 	pub type ChannelCounter<T: Config> = StorageValue<_, u64>;
 
 	#[pallet::storage]
-	// connection id => client id
+	// client_id => Connection id
 	pub type ConnectionClient<T: Config> =
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
@@ -194,6 +194,13 @@ pub mod pallet {
 	// (portid, channelid, sequence) => hash
 	pub type PacketCommitment<T: Config> =
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
+
+	#[pallet::type_value]
+	pub fn DefaultOldHeight() -> u64 { 0u64 }
+
+	#[pallet::storage]
+	// store oldest height
+	pub type OldHeight<T: Config> = StorageValue<_, u64, ValueQuery, DefaultOldHeight>;
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]

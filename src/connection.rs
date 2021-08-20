@@ -33,11 +33,30 @@ impl<T: Config> ConnectionReader for Context<T> {
 	}
 
 	fn host_current_height(&self) -> Height {
-		Height::zero()
+		log::info!("in host_current_height");
+
+		let block_number: String = <frame_system::Pallet<T>>::block_number().to_string();
+		let current_height : u64 = block_number.parse().unwrap_or_default();
+		// log::info!("😂 in host_current_height: {}", current_height);
+
+		<OldHeight<T>>::put(current_height);
+
+		Height::new(0, current_height)
 	}
 
 	fn host_oldest_height(&self) -> Height {
-		Height::zero()
+		log::info!("In host_oldest_height");
+
+		let height = <OldHeight<T>>::get();
+
+		let block_number: String = <frame_system::Pallet<T>>::block_number().to_string();
+		let current_height : u64 = block_number.parse().unwrap_or_default();
+
+		<OldHeight<T>>::put(current_height);
+
+		// log::info!("😂In host_oldest_height: {}", height);
+
+		Height::new(0, height)
 	}
 
 	fn connection_counter(&self) -> u64 {
@@ -97,8 +116,8 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		log::info!("in store connection to client");
 
 		<ConnectionClient<T>>::insert(
-			connection_id.as_bytes(),
 			client_id.as_bytes(),
+			connection_id.as_bytes(),
 		);
 		Ok(())
 	}
