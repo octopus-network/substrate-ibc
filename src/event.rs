@@ -10,7 +10,7 @@ pub mod primitive {
     use codec::{Decode, Encode};
     use sp_runtime::RuntimeDebug;
 
-    #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
+    #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
     pub struct Height {
         /// Previously known as "epoch"
         pub revision_number: u64,
@@ -42,7 +42,7 @@ pub mod primitive {
         }
     }
 
-    #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
+    #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
     pub enum ClientType {
         Tendermint,
         Grandpa,
@@ -69,7 +69,7 @@ pub mod primitive {
         }
     }
 
-    #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
+    #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
     pub struct ClientId(pub String);
 
     impl ClientId {
@@ -91,7 +91,7 @@ pub mod primitive {
         }
     }
 
-    #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
+    #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
     pub struct ConnectionId(String);
 
     impl ConnectionId {
