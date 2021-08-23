@@ -30,9 +30,9 @@ fn test_get_consensus_states_is_empty() {
 		let key_1 = vec![1, 2, 3];
 		let key_2 = vec![2, 3, 4];
 		let value  = vec![4, 5, 6];
-		<ConsensusStates<Test>>::insert(key_1.clone(), key_2.clone(), value.clone());
+		<ConsensusStates<Test>>::insert((key_1.clone(), key_2.clone()), value.clone());
 
-		assert!(<ConsensusStates<Test>>::contains_key(key_1, key_2));
+		assert!(<ConsensusStates<Test>>::contains_key((key_1, key_2)));
 	})
 }
 
