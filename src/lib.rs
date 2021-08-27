@@ -126,7 +126,7 @@ pub mod pallet {
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
-	// connection_identifier => ConnectionEnd
+	// connection_id => ConnectionEnd
 	pub type Connections<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
@@ -211,7 +211,7 @@ pub mod pallet {
 		UpdateClient(Height, ClientId, ClientType, Height),
 		// UpgradeClient(height, client_id, client_type, height)
 		UpgradeClient(Height, ClientId, ClientType, Height),
-
+		// Open Init Connection
         OpenInitConnection(
             Height,
             Option<ConnectionId>,
@@ -219,6 +219,15 @@ pub mod pallet {
             Option<ConnectionId>,
             ClientId,
         ),
+		// Open try Connection
+		OpenTryConnection(
+			Height,
+			Option<ConnectionId>,
+			ClientId,
+			Option<ConnectionId>,
+			ClientId,
+		),
+
     }
 
     impl<T: Config> From<ibc::events::IbcEvent> for Event<T> {
@@ -234,26 +243,6 @@ pub mod pallet {
                         client_id.into(),
                         client_type.into(),
                         consensus_height.into(),
-                    )
-                }
-                ibc::events::IbcEvent::OpenInitConnection(value) => {
-                    let height = value.0.height;
-					let connection_id = match value.0.connection_id {
-						Some(val) => Some(val.into()),
-						None => None,
-					};
-                    let client_id = value.0.client_id;
-                    let counterparty_connection_id = match value.0.counterparty_connection_id {
-						Some(val) => Some(val.into()),
-						None => None,
-					};
-                    let counterparty_client_id = value.0.counterparty_client_id;
-                    Event::OpenInitConnection(
-                        height.into(),
-                        connection_id,
-                        client_id.into(),
-                        counterparty_connection_id,
-                        counterparty_client_id.into(),
                     )
                 }
 				ibc::events::IbcEvent::UpdateClient(value) => {
@@ -278,6 +267,46 @@ pub mod pallet {
 						client_id.into(),
 						client_type.into(),
 						consensus_height.into(),
+					)
+				}
+				ibc::events::IbcEvent::OpenInitConnection(value) => {
+					let height = value.0.height;
+					let connection_id = match value.0.connection_id {
+						Some(val) => Some(val.into()),
+						None => None,
+					};
+					let client_id = value.0.client_id;
+					let counterparty_connection_id = match value.0.counterparty_connection_id {
+						Some(val) => Some(val.into()),
+						None => None,
+					};
+					let counterparty_client_id = value.0.counterparty_client_id;
+					Event::OpenInitConnection(
+						height.into(),
+						connection_id,
+						client_id.into(),
+						counterparty_connection_id,
+						counterparty_client_id.into(),
+					)
+				}
+				ibc::events::IbcEvent::OpenTryConnection(value) => {
+					let height = value.0.height;
+					let connection_id = match value.0.connection_id {
+						Some(val) => Some(val.into()),
+						None => None,
+					};
+					let client_id = value.0.client_id;
+					let counterparty_connection_id = match value.0.counterparty_connection_id {
+						Some(val) => Some(val.into()),
+						None => None,
+					};
+					let counterparty_client_id = value.0.counterparty_client_id;
+					Event::OpenTryConnection(
+						height.into(),
+						connection_id,
+						client_id.into(),
+						counterparty_connection_id,
+						counterparty_client_id.into(),
 					)
 				}
                 _ => unimplemented!(),
@@ -336,8 +365,17 @@ pub mod pallet {
 
 			use ibc::events::IbcEvent;
 
-			for event in result.iter() {
-				Self::deposit_event(event.clone().into());
+			// if result.len() > 1 {
+			// 	log::info!("Event: {:?}", result[result.len() - 1]);
+			// 	Self::deposit_event(result[result.len() - 1].clone().into());
+			// } else {
+			// 	log::info!("Event: {:?}", result[0]);
+			// 	Self::deposit_event(result[0].clone().into());
+			// }
+
+			for event in result {
+				log::info!("Event: {:?}", event);
+				Self::deposit_event(event.into());
 			}
 
 			Ok(())

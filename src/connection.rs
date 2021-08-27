@@ -7,8 +7,9 @@ use ibc::ics02_client::context::ClientReader;
 use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use ibc::ics03_connection::error::Error as ICS03Error;
-use ibc::ics23_commitment::commitment::CommitmentPrefix;
+use ibc::ics23_commitment::commitment::{CommitmentPrefix, CommitmentRoot};
 use ibc::ics24_host::identifier::{ClientId, ConnectionId};
+use ibc::ics10_grandpa::consensus_state::ConsensusState as GPConsensusState;
 use ibc::Height;
 use tendermint_proto::Protobuf;
 
@@ -37,7 +38,6 @@ impl<T: Config> ConnectionReader for Context<T> {
 
 		let block_number: String = <frame_system::Pallet<T>>::block_number().to_string();
 		let current_height : u64 = block_number.parse().unwrap_or_default();
-		// log::info!("😂 in host_current_height: {}", current_height);
 
 		<OldHeight<T>>::put(current_height);
 
@@ -48,13 +48,11 @@ impl<T: Config> ConnectionReader for Context<T> {
 		log::info!("In host_oldest_height");
 
 		let height = <OldHeight<T>>::get();
-
-		let block_number: String = <frame_system::Pallet<T>>::block_number().to_string();
-		let current_height : u64 = block_number.parse().unwrap_or_default();
-
-		<OldHeight<T>>::put(current_height);
-
-		// log::info!("😂In host_oldest_height: {}", height);
+		//
+		// let block_number: String = <frame_system::Pallet<T>>::block_number().to_string();
+		// let current_height : u64 = block_number.parse().unwrap_or_default();
+		//
+		// <OldHeight<T>>::put(current_height);
 
 		Height::new(0, height)
 	}
@@ -80,7 +78,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 	}
 
 	fn host_consensus_state(&self, _height: Height) -> Option<AnyConsensusState> {
-		None
+		Some(AnyConsensusState::Grandpa(GPConsensusState::new(CommitmentRoot::from(vec![1, 2, 3]))))
 	}
 }
 
