@@ -227,6 +227,22 @@ pub mod pallet {
 			Option<ConnectionId>,
 			ClientId,
 		),
+		// Open ack Connection
+		OpenAckConnection(
+			Height,
+			Option<ConnectionId>,
+			ClientId,
+			Option<ConnectionId>,
+			ClientId,
+		),
+		// Open ack Connection
+		OpenConfirmConnection(
+			Height,
+			Option<ConnectionId>,
+			ClientId,
+			Option<ConnectionId>,
+			ClientId,
+		),
 
     }
 
@@ -309,6 +325,46 @@ pub mod pallet {
 						counterparty_client_id.into(),
 					)
 				}
+				ibc::events::IbcEvent::OpenAckConnection(value) => {
+					let height = value.0.height;
+					let connection_id = match value.0.connection_id {
+						Some(val) => Some(val.into()),
+						None => None,
+					};
+					let client_id = value.0.client_id;
+					let counterparty_connection_id = match value.0.counterparty_connection_id {
+						Some(val) => Some(val.into()),
+						None => None,
+					};
+					let counterparty_client_id = value.0.counterparty_client_id;
+					Event::OpenAckConnection(
+						height.into(),
+						connection_id,
+						client_id.into(),
+						counterparty_connection_id,
+						counterparty_client_id.into(),
+					)
+				}
+				ibc::events::IbcEvent::OpenConfirmConnection(value) => {
+					let height = value.0.height;
+					let connection_id = match value.0.connection_id {
+						Some(val) => Some(val.into()),
+						None => None,
+					};
+					let client_id = value.0.client_id;
+					let counterparty_connection_id = match value.0.counterparty_connection_id {
+						Some(val) => Some(val.into()),
+						None => None,
+					};
+					let counterparty_client_id = value.0.counterparty_client_id;
+					Event::OpenConfirmConnection(
+						height.into(),
+						connection_id,
+						client_id.into(),
+						counterparty_connection_id,
+						counterparty_client_id.into(),
+					)
+				}
                 _ => unimplemented!(),
             }
         }
@@ -364,14 +420,6 @@ pub mod pallet {
 			log::info!("result: {:?}", result);
 
 			use ibc::events::IbcEvent;
-
-			// if result.len() > 1 {
-			// 	log::info!("Event: {:?}", result[result.len() - 1]);
-			// 	Self::deposit_event(result[result.len() - 1].clone().into());
-			// } else {
-			// 	log::info!("Event: {:?}", result[0]);
-			// 	Self::deposit_event(result[0].clone().into());
-			// }
 
 			for event in result {
 				log::info!("Event: {:?}", event);
