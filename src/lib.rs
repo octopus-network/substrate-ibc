@@ -395,15 +395,9 @@ pub mod pallet {
 				// }
 				ibc::events::IbcEvent::OpenInitConnection(value) => {
 					let height = value.0.height;
-					let connection_id = match value.0.connection_id {
-						Some(val) => Some(val.into()),
-						None => None,
-					};
+					let connection_id : Option<ConnectionId> = value.0.connection_id.map(|val| val.into());
 					let client_id = value.0.client_id;
-					let counterparty_connection_id = match value.0.counterparty_connection_id {
-						Some(val) => Some(val.into()),
-						None => None,
-					};
+					let counterparty_connection_id: Option<ConnectionId> = value.0.counterparty_connection_id.map(|val| val.into());
 					let counterparty_client_id = value.0.counterparty_client_id;
 					Event::OpenInitConnection(
 						height.into(),
@@ -422,15 +416,9 @@ pub mod pallet {
 				// }
 				ibc::events::IbcEvent::OpenTryConnection(value) => {
 					let height = value.0.height;
-					let connection_id = match value.0.connection_id {
-						Some(val) => Some(val.into()),
-						None => None,
-					};
+					let connection_id : Option<ConnectionId> = value.0.connection_id.map(|val| val.into());
 					let client_id = value.0.client_id;
-					let counterparty_connection_id = match value.0.counterparty_connection_id {
-						Some(val) => Some(val.into()),
-						None => None,
-					};
+					let counterparty_connection_id: Option<ConnectionId> = value.0.counterparty_connection_id.map(|val| val.into());
 					let counterparty_client_id = value.0.counterparty_client_id;
 					Event::OpenTryConnection(
 						height.into(),
@@ -449,15 +437,9 @@ pub mod pallet {
 				// }
 				ibc::events::IbcEvent::OpenAckConnection(value) => {
 					let height = value.0.height;
-					let connection_id = match value.0.connection_id {
-						Some(val) => Some(val.into()),
-						None => None,
-					};
+					let connection_id : Option<ConnectionId> = value.0.connection_id.map(|val| val.into());
 					let client_id = value.0.client_id;
-					let counterparty_connection_id = match value.0.counterparty_connection_id {
-						Some(val) => Some(val.into()),
-						None => None,
-					};
+					let counterparty_connection_id: Option<ConnectionId> = value.0.counterparty_connection_id.map(|val| val.into());
 					let counterparty_client_id = value.0.counterparty_client_id;
 					Event::OpenAckConnection(
 						height.into(),
@@ -476,15 +458,9 @@ pub mod pallet {
 				// }
 				ibc::events::IbcEvent::OpenConfirmConnection(value) => {
 					let height = value.0.height;
-					let connection_id = match value.0.connection_id {
-						Some(val) => Some(val.into()),
-						None => None,
-					};
+					let connection_id : Option<ConnectionId> = value.0.connection_id.map(|val| val.into());
 					let client_id = value.0.client_id;
-					let counterparty_connection_id = match value.0.counterparty_connection_id {
-						Some(val) => Some(val.into()),
-						None => None,
-					};
+					let counterparty_connection_id: Option<ConnectionId> = value.0.counterparty_connection_id.map(|val| val.into());
 					let counterparty_client_id = value.0.counterparty_client_id;
 					Event::OpenConfirmConnection(
 						height.into(),
