@@ -28,6 +28,12 @@ pub mod primitive {
         }
     }
 
+    impl PortId {
+        pub fn to_ibc_port_id(self) -> IbcPortId {
+            IbcPortId(self.0)
+        }
+    }
+
     #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
     pub struct ChannelId(pub String);
 
@@ -41,6 +47,12 @@ pub mod primitive {
         fn from(value : IbcChannelId) -> Self {
             let value = value.as_str();
             Self(value.to_string())
+        }
+    }
+
+    impl ChannelId {
+        pub fn to_ibc_channel_id(self) -> IbcChannelId {
+            IbcChannelId(self.0)
         }
     }
 
