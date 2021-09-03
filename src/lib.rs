@@ -176,9 +176,12 @@ pub mod pallet {
 	// connection counter
 	pub type ConnectionCounter<T: Config> = StorageValue<_, u64, ValueQuery, DefaultConnectionCounter>;
 
+	#[pallet::type_value]
+	pub fn DefaultChannelCounter() -> u64 { 0u64 }
+
 	#[pallet::storage]
 	// channel counter
-	pub type ChannelCounter<T: Config> = StorageValue<_, u64>;
+	pub type ChannelCounter<T: Config> = StorageValue<_, u64, ValueQuery, DefaultChannelCounter>;
 
 	#[pallet::storage]
 	// client_id => Connection id
@@ -364,6 +367,9 @@ pub mod pallet {
 						counterparty_connection_id,
 						counterparty_client_id.into(),
 					)
+				}
+				ibc::events::IbcEvent::OpenInitChannel(value) => {
+
 				}
                 _ => unimplemented!(),
             }

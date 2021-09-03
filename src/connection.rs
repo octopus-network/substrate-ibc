@@ -84,10 +84,10 @@ impl<T: Config> ConnectionReader for Context<T> {
 
 impl<T: Config> ConnectionKeeper for Context<T> {
 	fn increase_connection_counter(&mut self) {
-		log::info!("in increase connection counter");
+		log::info!("In connection: [increase_connection_counter]");
 
 		<ConnectionCounter<T>>::try_mutate(|val| -> Result<(), &'static str> {
-			let new = val.checked_add(1).ok_or("Add client counter error")?;
+			let new = val.checked_add(1).ok_or("Add connection counter error")?;
 			*val = new;
 			Ok(())
 		})

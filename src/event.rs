@@ -6,9 +6,43 @@ pub mod primitive {
     use ibc::ics02_client::height::Height as IbcHeight;
     use ibc::ics24_host::identifier::ClientId as IbcClientId;
     use ibc::ics24_host::identifier::ConnectionId as IbcConnectionId;
+    use ibc::ics24_host::identifier::PortId as IbcPortId;
+    use ibc::ics24_host::identifier::ChannelId as IbcChannelId;
 
     use codec::{Decode, Encode};
     use sp_runtime::RuntimeDebug;
+
+    #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
+    pub struct PortId(pub String);
+
+    impl PortId {
+        fn as_str(&self) -> &str {
+            &self.0
+        }
+    }
+
+    impl From<IbcPortId> for PortId {
+        fn from(value : IbcPortId) -> Self {
+            let value = value.as_str();
+            Self(value.to_string())
+        }
+    }
+
+    #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
+    pub struct ChannelId(pub String);
+
+    impl ChannelId {
+        fn as_str(&self) -> &str {
+            &self.0
+        }
+    }
+    
+    impl From<IbcChannelId> for ChannelId {
+        fn from(value : IbcChannelId) -> Self {
+            let value = value.as_str();
+            Self(value.to_string())
+        }
+    }
 
     #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
     pub struct Height {

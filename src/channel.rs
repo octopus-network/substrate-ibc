@@ -17,6 +17,7 @@ use ibc::ics24_host::identifier::{ClientId, ConnectionId};
 use ibc::timestamp::Timestamp;
 use ibc::Height;
 use tendermint_proto::Protobuf;
+use ibc::ics05_port::context::PortReader;
 
 impl<T: Config> ChannelReader for Context<T> {
 	/// Returns the ChannelEnd for the given `port_id` and `chan_id`.
@@ -68,8 +69,18 @@ impl<T: Config> ChannelReader for Context<T> {
 		ClientReader::consensus_state(self, client_id, height)
 	}
 
-	fn authenticated_capability(&self, _port_id: &PortId) -> Result<Capability, ICS04Error> {
-		unimplemented!()
+	fn authenticated_capability(&self, port_id: &PortId) -> Result<Capability, ICS04Error> {
+		let cap = PortReader::lookup_module_by_port(self, port_id);
+		match cap {
+			Some(key) => {
+				if !PortReader::authenticate(self, &key, port_id) {
+					Err(ICS04Error::invalid_port_capability())
+				} else {
+					Ok(key)
+				}
+			}
+			None => Err(ICS04Error::no_port_capability(port_id.clone())),
+		}
 	}
 
 	fn get_next_sequence_send(&self, port_channel_id: &(PortId, ChannelId)) -> Option<Sequence> {
@@ -242,7 +253,7 @@ impl<T: Config> ChannelReader for Context<T> {
 	fn channel_counter(&self) -> u64 {
 		log::info!("in channel counter");
 
-		<Pallet<T> as Store>::ChannelCounter::get().unwrap()
+		<Pallet<T> as Store>::ChannelCounter::get()
 	}
 }
 
@@ -417,14 +428,13 @@ impl<T: Config> ChannelKeeper for Context<T> {
 	/// Increases the counter which keeps track of how many channels have been created.
 	/// Should never fail.
 	fn increase_channel_counter(&mut self) {
-		log::info!("in increase channel counter");
+		log::info!("In client: [increase_channel_counter]");
 
-		match <ChannelCounter<T>>::get() {
-			None => {}
-			Some(old) => {
-				let new = old.checked_add(1).unwrap();
-				<ChannelCounter<T>>::put(new)
-			}
-		}
+		<ChannelCounter<T>>::try_mutate(|val| -> Result<(), &'static str> {
+			let new = val.checked_add(1).ok_or("Add channel counter error")?;
+			*val = new;
+			Ok(())
+		})
+			.expect("increase channel counter error");
 	}
 }
