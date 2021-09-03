@@ -100,7 +100,7 @@ pub mod pallet {
 	use super::*;
 	use frame_support::{dispatch::DispatchResult, pallet_prelude::*};
 	use frame_system::pallet_prelude::*;
-	use event::primitive::{ClientType, ClientId, Height, ConnectionId};
+	use event::primitive::{ClientType, ClientId, Height, ConnectionId, PortId, ChannelId};
 	use ibc::events::IbcEvent;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
@@ -208,12 +208,16 @@ pub mod pallet {
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
+		// This event for Client
+		//
 		// CreateClient(height, client_id, client_type, consensus_height)
         CreateClient(Height, ClientId, ClientType, Height),
 		// UpdateClient(height, client_id, client_type, consensus_height)
 		UpdateClient(Height, ClientId, ClientType, Height),
 		// UpgradeClient(height, client_id, client_type, height)
 		UpgradeClient(Height, ClientId, ClientType, Height),
+		// This Event for Connection
+		//
 		// Open Init Connection
         OpenInitConnection(
             Height,
@@ -246,6 +250,24 @@ pub mod pallet {
 			Option<ConnectionId>,
 			ClientId,
 		),
+		//  This Event for Channel
+		//
+		// OpenInitChannel(
+		// 	height: Height,
+		// 	port_id: PortId,
+		// 	channel_id: Option<ChannelId>,
+		// 	connection_id: ConnectionId,
+		// 	counterparty_port_id: PortId,
+		// 	counterparty_channel_id: Option<ChannelId>
+		// );
+		OpenInitChannel(
+			Height,
+			PortId,
+			Option<ChannelId>,
+			ConnectionId,
+			PortId,
+			Option<ChannelId>,
+		)
 
     }
 
@@ -368,8 +390,29 @@ pub mod pallet {
 						counterparty_client_id.into(),
 					)
 				}
+				// OpenInitChannel(
+				// 	height: Height,
+				// 	port_id: PortId,
+				// 	channel_id: Option<ChannelId>,
+				// 	connection_id: ConnectionId,
+				// 	counterparty_port_id: PortId,
+				// 	counterparty_channel_id: Option<ChannelId>
+				// );
 				ibc::events::IbcEvent::OpenInitChannel(value) => {
-
+					let height = value.0.height;
+					let port_id = value.0.port_id;
+					let channel_id : Option<ChannelId> = value.0.channel_id.clone().map(|val| val.into());
+					let connection_id = value.0.connection_id;
+					let counterparty_port_id = value.0.counterparty_port_id;
+					let counterparty_channel_id: Option<ChannelId> = value.0.channel_id.clone().map(|val| val.into());
+					Event::OpenInitChannel(
+						height.into(),
+						port_id.into(),
+						channel_id,
+						connection_id.into(),
+						counterparty_port_id.into(),
+						counterparty_channel_id,
+					)
 				}
                 _ => unimplemented!(),
             }
