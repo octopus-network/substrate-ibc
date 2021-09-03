@@ -210,15 +210,45 @@ pub mod pallet {
     pub enum Event<T: Config> {
 		// This event for Client
 		//
-		// CreateClient(height, client_id, client_type, consensus_height)
+		// CreateClient Event
+		//
+		// CreateClient(
+		// 	height: Height,
+		// 	client_id: ClientId,
+		// 	client_type: ClientType,
+		// 	consensus_height: Height,
+		// )
         CreateClient(Height, ClientId, ClientType, Height),
-		// UpdateClient(height, client_id, client_type, consensus_height)
+		// UpdateClient Event
+		//
+		// UpdateClient(
+		// 	height: Height,
+		// 	client_id: ClientId,
+		// 	client_type: ClientType,
+		// 	consensus_height: Height,
+		// )
 		UpdateClient(Height, ClientId, ClientType, Height),
-		// UpgradeClient(height, client_id, client_type, height)
+		// UpgradeClient Event
+		//
+		// UpgradeClient(
+		// 	height: Height,
+		// 	client_id: ClientId,
+		// 	client_type: ClientType,
+		// 	consensus_height: Height,
+		// )
 		UpgradeClient(Height, ClientId, ClientType, Height),
 		// This Event for Connection
 		//
 		// Open Init Connection
+		//
+		// OpenInitConnection(
+		// 	height: Height,
+		// 	port_id: PortId,
+		// 	channel_id: Option<ChannelId>,
+		// 	connection_id: ConnectionId,
+		// 	counterparty_port_id: PortId,
+		// 	counterparty_channel_id: Option<ChannelId>
+		// )
         OpenInitConnection(
             Height,
             Option<ConnectionId>,
@@ -227,6 +257,15 @@ pub mod pallet {
             ClientId,
         ),
 		// Open try Connection
+		//
+		// OpenTryConnection(
+		// 	height: Height,
+		// 	port_id: PortId,
+		// 	channel_id: Option<ChannelId>,
+		// 	connection_id: ConnectionId,
+		// 	counterparty_port_id: PortId,
+		// 	counterparty_channel_id: Option<ChannelId>
+		// )
 		OpenTryConnection(
 			Height,
 			Option<ConnectionId>,
@@ -235,6 +274,15 @@ pub mod pallet {
 			ClientId,
 		),
 		// Open ack Connection
+		//
+		// OpenAckConnection(
+		// 	height: Height,
+		// 	port_id: PortId,
+		// 	channel_id: Option<ChannelId>,
+		// 	connection_id: ConnectionId,
+		// 	counterparty_port_id: PortId,
+		// 	counterparty_channel_id: Option<ChannelId>
+		// )
 		OpenAckConnection(
 			Height,
 			Option<ConnectionId>,
@@ -243,6 +291,15 @@ pub mod pallet {
 			ClientId,
 		),
 		// Open ack Connection
+		//
+		// OpenConfirmConnection(
+		// 	height: Height,
+		// 	port_id: PortId,
+		// 	channel_id: Option<ChannelId>,
+		// 	connection_id: ConnectionId,
+		// 	counterparty_port_id: PortId,
+		// 	counterparty_channel_id: Option<ChannelId>
+		// )
 		OpenConfirmConnection(
 			Height,
 			Option<ConnectionId>,
@@ -259,7 +316,7 @@ pub mod pallet {
 		// 	connection_id: ConnectionId,
 		// 	counterparty_port_id: PortId,
 		// 	counterparty_channel_id: Option<ChannelId>
-		// );
+		// )
 		OpenInitChannel(
 			Height,
 			PortId,
@@ -274,18 +331,30 @@ pub mod pallet {
     impl<T: Config> From<ibc::events::IbcEvent> for Event<T> {
         fn from(value: ibc::events::IbcEvent) -> Self {
             match value {
-                ibc::events::IbcEvent::CreateClient(value) => {
-                    let height = value.0.height;
-                    let client_id = value.0.client_id;
-                    let client_type = value.0.client_type;
-                    let consensus_height = value.0.consensus_height;
-                    Event::CreateClient(
-                        height.into(),
-                        client_id.into(),
-                        client_type.into(),
-                        consensus_height.into(),
-                    )
-                }
+				// CreateClient(
+				// 	height: Height,
+				// 	client_id: ClientId,
+				// 	client_type: ClientType,
+				// 	consensus_height: Height,
+				// )
+				ibc::events::IbcEvent::CreateClient(value) => {
+					let height = value.0.height;
+					let client_id = value.0.client_id;
+					let client_type = value.0.client_type;
+					let consensus_height = value.0.consensus_height;
+					Event::CreateClient(
+						height.into(),
+						client_id.into(),
+						client_type.into(),
+						consensus_height.into(),
+					)
+				}
+				// UpdateClient(
+				// 	height: Height,
+				// 	client_id: ClientId,
+				// 	client_type: ClientType,
+				// 	consensus_height: Height,
+				// )
 				ibc::events::IbcEvent::UpdateClient(value) => {
 					let height = value.common.height;
 					let client_id = value.common.client_id;
@@ -298,6 +367,13 @@ pub mod pallet {
 						consensus_height.into()
 					)
 				}
+				// TODO! Upgrade client events are not currently being used
+				// UpgradeClient(
+				// 	height: Height,
+				// 	client_id: ClientId,
+				// 	client_type: ClientType,
+				// 	consensus_height: Height,
+				// )
 				ibc::events::IbcEvent::UpgradeClient(value) => {
 					let height = value.0.height;
 					let client_id = value.0.client_id;
@@ -310,6 +386,13 @@ pub mod pallet {
 						consensus_height.into(),
 					)
 				}
+				// OpenInitConnection(
+				// 	height: Height,
+				// 	connection_id: Option<ConnectionId>,
+				// 	client_id: ClientId,
+				// 	counterparty_connection_id: Option<ConnectionId>,
+				// 	counterparty_client_id: ClientId,
+				// }
 				ibc::events::IbcEvent::OpenInitConnection(value) => {
 					let height = value.0.height;
 					let connection_id = match value.0.connection_id {
@@ -330,6 +413,13 @@ pub mod pallet {
 						counterparty_client_id.into(),
 					)
 				}
+				// OpenTryConnection(
+				// 	height: Height,
+				// 	connection_id: Option<ConnectionId>,
+				// 	client_id: ClientId,
+				// 	counterparty_connection_id: Option<ConnectionId>,
+				// 	counterparty_client_id: ClientId,
+				// }
 				ibc::events::IbcEvent::OpenTryConnection(value) => {
 					let height = value.0.height;
 					let connection_id = match value.0.connection_id {
@@ -350,6 +440,13 @@ pub mod pallet {
 						counterparty_client_id.into(),
 					)
 				}
+				// OpenAckConnection(
+				// 	height: Height,
+				// 	connection_id: Option<ConnectionId>,
+				// 	client_id: ClientId,
+				// 	counterparty_connection_id: Option<ConnectionId>,
+				// 	counterparty_client_id: ClientId,
+				// }
 				ibc::events::IbcEvent::OpenAckConnection(value) => {
 					let height = value.0.height;
 					let connection_id = match value.0.connection_id {
@@ -370,6 +467,13 @@ pub mod pallet {
 						counterparty_client_id.into(),
 					)
 				}
+				// OpenConfirmConnection(
+				// 	height: Height,
+				// 	connection_id: Option<ConnectionId>,
+				// 	client_id: ClientId,
+				// 	counterparty_connection_id: Option<ConnectionId>,
+				// 	counterparty_client_id: ClientId,
+				// }
 				ibc::events::IbcEvent::OpenConfirmConnection(value) => {
 					let height = value.0.height;
 					let connection_id = match value.0.connection_id {
