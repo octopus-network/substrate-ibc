@@ -15,11 +15,13 @@ use tendermint_proto::Protobuf;
 
 impl<T: Config> ConnectionReader for Context<T> {
 	fn connection_end(&self, conn_id: &ConnectionId) -> Option<ConnectionEnd> {
-		log::info!("in connection_end");
+		log::info!("in [connection]: connection_end");
 
 		if <Connections<T>>::contains_key(conn_id.as_bytes()) {
 			let data = <Connections<T>>::get(conn_id.as_bytes());
-			Some(ConnectionEnd::decode_vec(&*data).unwrap())
+			let ret = ConnectionEnd::decode_vec(&*data).unwrap();
+			log::info!("In [connection]: connection_end: {:?}", ret.clone());
+			Some(ret)
 		} else {
 			log::info!("read connection end returns None");
 
@@ -48,11 +50,6 @@ impl<T: Config> ConnectionReader for Context<T> {
 		log::info!("In host_oldest_height");
 
 		let height = <OldHeight<T>>::get();
-		//
-		// let block_number: String = <frame_system::Pallet<T>>::block_number().to_string();
-		// let current_height : u64 = block_number.parse().unwrap_or_default();
-		//
-		// <OldHeight<T>>::put(current_height);
 
 		Height::new(0, height)
 	}
@@ -64,7 +61,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 	}
 
 	fn commitment_prefix(&self) -> CommitmentPrefix {
-		vec![0].into()
+		"ibc".as_bytes().to_vec().into()
 	}
 
 	fn client_consensus_state(
@@ -100,9 +97,13 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		connection_end: &ConnectionEnd,
 	) -> Result<(), ICS03Error> {
 		log::info!("in store_connection");
+		log::info!("in connection: [store_connection] >> connection_id: {:?}, connection_end: {:?}", connection_id.clone(), connection_end.clone());
 
 		let data = connection_end.encode_vec().unwrap();
 		<Connections<T>>::insert(connection_id.as_bytes(), data);
+		let temp = ConnectionReader::connection_end(self, &connection_id);
+		log::info!("in connection: [store_connection] >> read store after: {:?}", temp);
+
 		Ok(())
 	}
 

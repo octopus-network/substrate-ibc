@@ -42,9 +42,13 @@ impl<T: Config> ChannelReader for Context<T> {
 
 	/// Returns the ConnectionState for the given identifier `connection_id`.
 	fn connection_end(&self, connection_id: &ConnectionId) -> Option<ConnectionEnd> {
-		log::info!("in connection end");
+		log::info!("in [channel] : connection end");
 
-		ConnectionReader::connection_end(self, connection_id)
+		let ret = ConnectionReader::connection_end(self, connection_id);
+
+		log::info!("in connection end: {:?}", ret);
+
+		ret
 	}
 
 	fn connection_channels(&self, _cid: &ConnectionId) -> Option<Vec<(PortId, ChannelId)>> {
