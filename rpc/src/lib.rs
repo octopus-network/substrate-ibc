@@ -19,6 +19,9 @@ pub trait IbcApi<BlockHash> {
 
     #[rpc(name = "get_client_connections")]
     fn get_client_connections(&self, client_id: Vec<u8>, at: Option<BlockHash>) -> Result<Vec<Vec<u8>>>;
+
+    #[rpc(name = "get_connection_channels")]
+    fn get_connection_channels(&self, connection_id: Vec<u8>, at: Option<BlockHash>) -> Result<Vec<(Vec<u8>, Vec<u8>, Vec<u8>)>>;
 }
 
 /// A struct that implements the `ConsensusStateWithHeightApi`.
@@ -89,6 +92,20 @@ impl<C, Block> IbcApi<<Block as BlockT>::Hash> for IbcStorage<C, Block>
             self.client.info().best_hash));
 
         let runtime_api_result = api.get_client_connections(&at, client_id);
+        runtime_api_result.map_err(|e| RpcError {
+            code: ErrorCode::ServerError(9876), // No real reason for this value
+            message: "Something wrong".into(),
+            data: Some(format!("{:?}", e).into()),
+        })
+    }
+
+    fn get_connection_channels(&self, connection_id: Vec<u8>, at: Option<<Block as BlockT>::Hash>) -> Result<Vec<(Vec<u8>, Vec<u8>, Vec<u8>)>> {
+        let api = self.client.runtime_api();
+        let at = BlockId::hash(at.unwrap_or_else(||
+            // If the block hash is not supplied assume the best block.
+            self.client.info().best_hash));
+
+        let runtime_api_result = api.get_connection_channels(&at, connection_id);
         runtime_api_result.map_err(|e| RpcError {
             code: ErrorCode::ServerError(9876), // No real reason for this value
             message: "Something wrong".into(),

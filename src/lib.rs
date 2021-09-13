@@ -687,6 +687,8 @@ pub mod pallet {
 
 
 	impl <T: Config> Pallet<T> {
+
+		/// get key-value vector of (height, consensus_state) according by client_identifier
 		pub fn get_consensus_state_with_height(client_id: Vec<u8>) -> Vec<(Vec<u8>, Vec<u8>)> {
 			let mut result = vec![];
 
@@ -700,6 +702,7 @@ pub mod pallet {
 			result
 		}
 
+		/// get key-value pair (client_identifier, client_state)
 		pub fn get_identified_any_client_state() -> Vec<(Vec<u8>, Vec<u8>)> {
 			let mut result = vec![];
 
@@ -710,6 +713,7 @@ pub mod pallet {
 			result
 		}
 
+		/// get connection_identifier vector according by client_identifier
 		pub fn get_client_connections(client_id: Vec<u8>) -> Vec<Vec<u8>> {
 			let mut result = vec![];
 
@@ -720,6 +724,22 @@ pub mod pallet {
 					result.push(connection_id);
 				}
 			});
+
+			result
+		}
+
+		/// get port_identifier, channel_identifier, channel_end according by connection_id
+		pub fn get_connection_channels(connection_id: Vec<u8>) -> Vec<(Vec<u8>, Vec<u8>, Vec<u8>)> {
+			let mut result = vec![];
+
+			let channel_id_and_port_id = <ChannelsConnection<T>>::get(connection_id);
+
+			for id in channel_id_and_port_id.iter() {
+				let channel_end = <Channels<T>>::get(id);
+				let port_id = id.0.clone();
+				let channel_id = id.1.clone();
+				result.push((port_id, channel_id, channel_end));
+			}
 
 			result
 		}
