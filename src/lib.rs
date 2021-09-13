@@ -741,6 +741,8 @@ pub mod pallet {
 				result.push((port_id, channel_id, channel_end));
 			}
 
+			assert!(!result.is_empty());
+
 			result
 		}
 	}

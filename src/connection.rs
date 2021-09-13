@@ -15,12 +15,12 @@ use tendermint_proto::Protobuf;
 
 impl<T: Config> ConnectionReader for Context<T> {
 	fn connection_end(&self, conn_id: &ConnectionId) -> Option<ConnectionEnd> {
-		log::info!("in [connection]: connection_end");
+		log::info!("in connection : [connection_end]");
 
 		if <Connections<T>>::contains_key(conn_id.as_bytes()) {
 			let data = <Connections<T>>::get(conn_id.as_bytes());
 			let ret = ConnectionEnd::decode_vec(&*data).unwrap();
-			log::info!("In [connection]: connection_end: {:?}", ret.clone());
+			log::info!("In connection: [connection_end] >>  {:?}", ret.clone());
 			Some(ret)
 		} else {
 			log::info!("read connection end returns None");
@@ -30,13 +30,13 @@ impl<T: Config> ConnectionReader for Context<T> {
 	}
 
 	fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
-		log::info!("in client state");
+		log::info!("in connection : [client_state]");
 
 		ClientReader::client_state(self, client_id)
 	}
 
 	fn host_current_height(&self) -> Height {
-		log::info!("in host_current_height");
+		log::info!("in connection: [host_current_height]");
 
 		let block_number: String = <frame_system::Pallet<T>>::block_number().to_string();
 		let current_height : u64 = block_number.parse().unwrap_or_default();
@@ -47,7 +47,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 	}
 
 	fn host_oldest_height(&self) -> Height {
-		log::info!("In host_oldest_height");
+		log::info!("In connection: [host_oldest_height]");
 
 		let height = <OldHeight<T>>::get();
 
@@ -55,12 +55,14 @@ impl<T: Config> ConnectionReader for Context<T> {
 	}
 
 	fn connection_counter(&self) -> u64 {
-		log::info!("in connection counter");
+		log::info!("in connection: [connection_counter]");
 
 		<ConnectionCounter<T>>::get()
 	}
 
 	fn commitment_prefix(&self) -> CommitmentPrefix {
+		log::info!("in connection: [commitment_prefix]");
+
 		"ibc".as_bytes().to_vec().into()
 	}
 
@@ -69,12 +71,14 @@ impl<T: Config> ConnectionReader for Context<T> {
 		client_id: &ClientId,
 		height: Height,
 	) -> Option<AnyConsensusState> {
-		log::info!("in client consensus state");
+		log::info!("in connection: [client_consensus_state]");
 
 		ClientReader::consensus_state(self, client_id, height)
 	}
 
 	fn host_consensus_state(&self, _height: Height) -> Option<AnyConsensusState> {
+		log::info!("in connection: [host_consensus_state]");
+
 		Some(AnyConsensusState::Grandpa(GPConsensusState::new(CommitmentRoot::from(vec![1, 2, 3]))))
 	}
 }
@@ -96,7 +100,7 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		connection_id: ConnectionId,
 		connection_end: &ConnectionEnd,
 	) -> Result<(), ICS03Error> {
-		log::info!("in store_connection");
+		log::info!("in connection: [store_connection]");
 		log::info!("in connection: [store_connection] >> connection_id: {:?}, connection_end: {:?}", connection_id.clone(), connection_end.clone());
 
 		let data = connection_end.encode_vec().unwrap();
@@ -112,7 +116,7 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		connection_id: ConnectionId,
 		client_id: &ClientId,
 	) -> Result<(), ICS03Error> {
-		log::info!("in store connection to client");
+		log::info!("in connection: [store_connection_to_client]");
 
 		<ConnectionClient<T>>::insert(
 			client_id.as_bytes(),
