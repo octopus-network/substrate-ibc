@@ -134,6 +134,13 @@ pub mod pallet {
 	pub type Channels<T: Config> =
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
 
+	// store_connection_channels
+	#[pallet::storage]
+	// connection_identifier => Vec<(port_id, channel_id)>
+	pub type ChannelsConnection<T: Config> =
+		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<(Vec<u8>,Vec<u8>)>, ValueQuery>;
+
+
 	#[pallet::storage]
 	// (port_identifier, channel_identifier) => Sequence
 	pub type NextSequenceSend<T: Config> =

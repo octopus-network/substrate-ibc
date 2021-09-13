@@ -351,9 +351,26 @@ impl<T: Config> ChannelKeeper for Context<T> {
 
 	fn store_connection_channels(
 		&mut self,
-		_conn_id: ConnectionId,
-		_port_channel_id: &(PortId, ChannelId),
+		conn_id: ConnectionId,
+		port_channel_id: &(PortId, ChannelId),
 	) -> Result<(), ICS04Error> {
+		log::info!("in store connection_channels");
+
+		let conn_id = conn_id.as_bytes().to_vec();
+
+		let port_channel_id = (port_channel_id.0.as_bytes().to_vec(), port_channel_id.1.as_bytes().to_vec());
+
+		if <ChannelsConnection<T>>::contains_key(conn_id.clone())  {
+			// if connection_identifier exist
+			<ChannelsConnection<T>>::try_mutate(conn_id, |val| -> Result<(), &'static str> {
+				val.push(port_channel_id);
+				Ok(())
+			}).expect("store connection channels error");
+		} else {
+			// if connection_identifier no exist
+			<ChannelsConnection<T>>::insert(conn_id, Vec::<(Vec<u8>, Vec<u8>)>::new());
+		}
+
 		Ok(())
 	}
 
