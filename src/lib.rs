@@ -733,15 +733,20 @@ pub mod pallet {
 			let mut result = vec![];
 
 			let channel_id_and_port_id = <ChannelsConnection<T>>::get(connection_id);
+			log::info!("in pallet_ibc: [lib] >> channel_port_id: {:?}", channel_id_and_port_id);
 
 			for id in channel_id_and_port_id.iter() {
 				let channel_end = <Channels<T>>::get(id);
+				log::info!("in pallet_ibc: [lib] >> channel_end: {:?}", channel_end);
 				let port_id = id.0.clone();
+				log::info!("in pallet_ibc: [lib] >> port_id: {:?}", port_id);
 				let channel_id = id.1.clone();
+				log::info!("in pallet_ibc: [lib] >> channel_id: {:?}", channel_id);
+
 				result.push((port_id, channel_id, channel_end));
 			}
-
-			assert!(!result.is_empty());
+			log::info!("in pallet_ibc: [lib] >> result: {:?}", result);
+			// assert!(!result.is_empty());
 
 			result
 		}

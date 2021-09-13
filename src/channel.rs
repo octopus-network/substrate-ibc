@@ -57,8 +57,8 @@ impl<T: Config> ChannelReader for Context<T> {
 		log::info!("in channel: [connection_channels]");
 		log::info!("in channel: [connection_channels] >> connection_id : {:?}", conn_id);
 
-		return if <ChannelsConnection<T>>::contains_key(conn_id) {
-			let port_and_channel_id = <ChannelsConnection<T>>::get(conn_id);
+		return if <ChannelsConnection<T>>::contains_key(conn_id.as_bytes()) {
+			let port_and_channel_id = <ChannelsConnection<T>>::get(conn_id.as_bytes());
 
 			let mut result = vec![];
 
@@ -391,6 +391,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		let port_channel_id = (port_channel_id.0.as_bytes().to_vec(), port_channel_id.1.as_bytes().to_vec());
 
 		if <ChannelsConnection<T>>::contains_key(conn_id.clone())  {
+			log::info!("in channel: [store_connection_channels] >> insert port_channel_id");
 			// if connection_identifier exist
 			<ChannelsConnection<T>>::try_mutate(conn_id, |val| -> Result<(), &'static str> {
 				val.push(port_channel_id);
@@ -398,7 +399,10 @@ impl<T: Config> ChannelKeeper for Context<T> {
 			}).expect("store connection channels error");
 		} else {
 			// if connection_identifier no exist
-			<ChannelsConnection<T>>::insert(conn_id, Vec::<(Vec<u8>, Vec<u8>)>::new());
+			log::info!("in channel: [store_connection_channels] >> init ChannelsConnection");
+			let mut temp_connection_channels = vec![];
+			temp_connection_channels.push(port_channel_id);
+			<ChannelsConnection<T>>::insert(conn_id, temp_connection_channels);
 		}
 
 		Ok(())
