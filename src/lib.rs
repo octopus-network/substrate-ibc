@@ -692,6 +692,16 @@ pub mod pallet {
 			
 			result
 		}
+
+		pub fn get_identified_any_client_state() -> Vec<(Vec<u8>, Vec<u8>)> {
+			let mut result = vec![];
+
+			<ClientStates<T>>::iter().for_each(|val| {
+				result.push((val.0, val.1));
+			});
+
+			result
+		}
 	}
 }
 
