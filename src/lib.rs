@@ -244,6 +244,15 @@ pub mod pallet {
 		// 	consensus_height: Height,
 		// )
 		UpgradeClient(Height, ClientId, ClientType, Height),
+		// ClientMisbehaviour Event
+		//
+		// ClientMisbehaviour(
+		// 	height: Height,
+		// 	client_id: ClientId,
+		// 	client_type: ClientType,
+		// 	consensus_height: Height,
+		// )
+		ClientMisbehaviour(Height, ClientId, ClientType, Height),
 		// This Event for Connection
 		//
 		// Open Init Connection
@@ -256,6 +265,7 @@ pub mod pallet {
 		// 	counterparty_port_id: PortId,
 		// 	counterparty_channel_id: Option<ChannelId>
 		// )
+
         OpenInitConnection(
             Height,
             Option<ConnectionId>,
@@ -434,6 +444,18 @@ pub mod pallet {
 					let client_type = value.0.client_type;
 					let consensus_height = value.0.consensus_height;
 					Event::UpgradeClient(
+						height.into(),
+						client_id.into(),
+						client_type.into(),
+						consensus_height.into(),
+					)
+				}
+				ibc::events::IbcEvent::ClientMisbehaviour(value ) => {
+					let height = value.0.height;
+					let client_id = value.0.client_id;
+					let client_type = value.0.client_type;
+					let consensus_height = value.0.consensus_height;
+					Event::ClientMisbehaviour(
 						height.into(),
 						client_id.into(),
 						client_type.into(),

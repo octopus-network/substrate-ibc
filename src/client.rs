@@ -116,10 +116,10 @@ impl<T: Config> ClientKeeper for Context<T> {
 		height: Height,
 		consensus_state: AnyConsensusState,
 	) -> Result<(), ICS02Error> {
-		log::info!("In client: [store_client_state]");
-		log::info!("In client: [store_client_state] >> client_id: {}", client_id);
-		log::info!("In client: [store_client_state] >> height: {:?}", height);
-		log::info!("In client: [store_client_state] >> consensus_state: {:?}", consensus_state);
+		log::info!("In client: [store_consensus_state]");
+		log::info!("In client: [store_consensus_state] >> client_id: {}", client_id);
+		log::info!("In client: [store_consensus_state] >> height: {:?}", height);
+		log::info!("In client: [store_consensus_state] >> consensus_state: {:?}", consensus_state);
 
 
 		let height = height.encode_vec().unwrap();
