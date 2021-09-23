@@ -1,0 +1,18 @@
+[package]
+name = "pallet-ibc-runtime-api"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+sp-api = { version = '3.0', default-features = false, path = "../../../../../primitives/api" }
+
+[dev-dependencies]
+serde_json = "1.0"
+
+[features]
+default = ["std"]
+std = [
+    "sp-api/std",
+]
