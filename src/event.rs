@@ -8,6 +8,9 @@ pub mod primitive {
     use ibc::ics24_host::identifier::ConnectionId as IbcConnectionId;
     use ibc::ics24_host::identifier::PortId as IbcPortId;
     use ibc::ics24_host::identifier::ChannelId as IbcChannelId;
+    use ibc::ics04_channel::packet::{Packet as IbcPacket, Sequence as IbcSequence};
+    use ibc::timestamp::Timestamp as IbcTimestamp;
+
 
     use codec::{Decode, Encode};
     use sp_runtime::RuntimeDebug;
@@ -158,4 +161,57 @@ pub mod primitive {
             IbcConnectionId(self.0)
         }
     }
+
+    #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
+    pub struct Timestamp {
+        time: String,
+    }
+
+    impl From<IbcTimestamp> for Timestamp {
+        fn from(val : IbcTimestamp) -> Self {
+            Self {
+                time: val.to_string(),
+            }
+        }
+    }
+
+    #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
+    pub struct Sequence(u64);
+
+    impl From<IbcSequence> for Sequence {
+        fn from(val : IbcSequence) -> Self {
+            Self(val.0)
+        }
+    }
+
+    #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
+    pub struct Packet {
+        pub sequence: Sequence,
+        pub source_port: PortId,
+        pub source_channel: ChannelId,
+        pub destination_port: PortId,
+        pub destination_channel: ChannelId,
+        pub data: Vec<u8>,
+        pub timeout_height: Height,
+        pub timeout_timestamp: Timestamp,
+    }
+
+    impl From<IbcPacket> for Packet {
+        fn from(val: IbcPacket) -> Self {
+            Self {
+                sequence: val.sequence.into(),
+                source_port: val.source_port.into(),
+                source_channel: val.source_channel.into(),
+                destination_port: val.destination_port.into(),
+                destination_channel: val.destination_channel.into(),
+                data: val.data,
+                timeout_height: val.timeout_height.into(),
+                timeout_timestamp: val.timeout_timestamp.into(),
+            }
+        }
+    }
+
+
+
+
 }

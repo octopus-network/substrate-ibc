@@ -100,7 +100,7 @@ pub mod pallet {
 	use super::*;
 	use frame_support::{dispatch::DispatchResult, pallet_prelude::*};
 	use frame_system::pallet_prelude::*;
-	use event::primitive::{ClientType, ClientId, Height, ConnectionId, PortId, ChannelId};
+	use event::primitive::{ClientType, ClientId, Height, ConnectionId, PortId, ChannelId, Packet};
 	use ibc::events::IbcEvent;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
@@ -389,6 +389,14 @@ pub mod pallet {
 			ConnectionId,
 			PortId,
 			Option<ChannelId>,
+		),
+		// SendPacket {
+		// 	height: Height,
+		// 	packet: Packet,
+		// }
+		SendPacket(
+			Height,
+			Packet,
 		)
     }
 
@@ -640,6 +648,18 @@ pub mod pallet {
 						connection_id.into(),
 						counterparty_port_id.into(),
 						counterparty_channel_id,
+					)
+				}
+				// SendPacket {
+				//     pub height: Height,
+				//     pub packet: Packet,
+				// }
+				ibc::events::IbcEvent::SendPacket(value) => {
+					let height = value.height;
+					let packet = value.packet;
+					Event::SendPacket(
+						height.into(),
+						packet.into(),
 					)
 				}
                 _ => unimplemented!(),
