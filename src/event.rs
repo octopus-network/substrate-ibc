@@ -1,7 +1,10 @@
 use codec::{Decode, Encode};
 use sp_runtime::RuntimeDebug;
 
+
 pub mod primitive {
+    use sp_std::str::FromStr;
+
     use ibc::ics02_client::client_type::ClientType as IbcClientType;
     use ibc::ics02_client::height::Height as IbcHeight;
     use ibc::ics24_host::identifier::ClientId as IbcClientId;
@@ -175,6 +178,14 @@ pub mod primitive {
         }
     }
 
+    impl Timestamp {
+        pub fn to_ibc_timestamp(self) -> IbcTimestamp {
+            let timestamp = IbcTimestamp::from_str(self.time.as_str()).unwrap();
+            timestamp
+        }
+
+    }
+
     #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
     pub struct Sequence(u64);
 
@@ -183,6 +194,14 @@ pub mod primitive {
             Self(val.0)
         }
     }
+
+
+    impl Sequence {
+        pub fn to_ibc_sequence(self) -> IbcSequence {
+            IbcSequence(self.0)
+        }
+    }
+
 
     #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
     pub struct Packet {
@@ -211,6 +230,21 @@ pub mod primitive {
         }
     }
 
+
+    impl Packet {
+        pub fn to_ibc_packet(self) -> IbcPacket {
+            IbcPacket {
+                sequence: self.sequence.to_ibc_sequence(),
+                source_port: self.source_port.to_ibc_port_id(),
+                source_channel: self.source_channel.to_ibc_channel_id(),
+                destination_port: self.destination_port.to_ibc_port_id(),
+                destination_channel: self.destination_channel.to_ibc_channel_id(),
+                data: self.data,
+                timeout_height: self.timeout_height.to_ibc_height(),
+                timeout_timestamp: self.timeout_timestamp.to_ibc_timestamp(),
+            }
+        }
+    }
 
 
 
