@@ -121,9 +121,10 @@ pub mod pallet {
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
-	// (client_id, height) => ConsensusState
+	// fix before : (client_id, height) => ConsensusState
+	// fix after: client_id => (Height, ConsensusState)
 	pub type ConsensusStates<T: Config> =
-		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
+		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<(Vec<u8>, Vec<u8>)>, ValueQuery>;
 
 	#[pallet::storage]
 	// connection_id => ConnectionEnd
@@ -427,22 +428,6 @@ pub mod pallet {
 			}
 
 			Ok(())
-		}
-	}
-
-
-	impl <T: Config> Pallet<T> {
-		pub fn get_consensus_state_with_height(client_id: Vec<u8>) -> Vec<(Vec<u8>, Vec<u8>)> {
-			let mut result = vec![];
-
-			<ConsensusStates<T>>::iter().for_each(|val| {
-				let (id, height) = val.0;
-				if id == client_id {
-					result.push((height, val.1));
-				}
-			});
-			
-			result
 		}
 	}
 }

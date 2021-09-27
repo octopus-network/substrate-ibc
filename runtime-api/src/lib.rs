@@ -5,7 +5,7 @@
 // Here we declare the runtime API. It is implemented it the `impl` block in
 // runtime amalgamator file (the `runtime/src/lib.rs`)
 sp_api::decl_runtime_apis! {
-	pub trait ConsensusStateWithHeightApi {
-		fn consensus_state_with_height(client_id: Vec<u8>) -> Vec<(Vec<u8>, Vec<u8>)>;
+	pub trait IbcApi {
+		fn get_consensus_state_with_height(client_id: Vec<u8>) -> Vec<(Vec<u8>, Vec<u8>)>;
 	}
 }
