@@ -58,7 +58,6 @@ std = [
 runtime-benchmarks = ["frame-benchmarking"]
 try-runtime = ["frame-support/try-runtime"]
 
-
 [patch."https://github.com/paritytech/substrate"]
 frame-support = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
 frame-system = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }

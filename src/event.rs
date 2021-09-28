@@ -4,7 +4,6 @@ use sp_runtime::RuntimeDebug;
 
 pub mod primitive {
     use sp_std::str::FromStr;
-
     use ibc::ics02_client::client_type::ClientType as IbcClientType;
     use ibc::ics02_client::height::Height as IbcHeight;
     use ibc::ics24_host::identifier::ClientId as IbcClientId;
@@ -246,7 +245,4 @@ pub mod primitive {
             }
         }
     }
-
-
-
 }

@@ -13,6 +13,7 @@ pub trait IbcApi<BlockHash> {
     #[rpc(name = "get_consensus_state_with_height")]
     fn get_consensus_state_with_height(&self, client_id: Vec<u8>,  at: Option<BlockHash>)
         -> Result<Vec<(Vec<u8>, Vec<u8>)>>;
+<<<<<<< HEAD
 
     #[rpc(name = "get_identified_any_client_state")]
     fn get_identified_any_client_state(&self, at: Option<BlockHash>) -> Result<Vec<(Vec<u8>, Vec<u8>)>>;
@@ -22,6 +23,8 @@ pub trait IbcApi<BlockHash> {
 
     #[rpc(name = "get_connection_channels")]
     fn get_connection_channels(&self, connection_id: Vec<u8>, at: Option<BlockHash>) -> Result<Vec<(Vec<u8>, Vec<u8>, Vec<u8>)>>;
+=======
+>>>>>>> dv-fix-rpc
 }
 
 /// A struct that implements the `ConsensusStateWithHeightApi`.
@@ -51,10 +54,14 @@ impl<C, Block> IbcApi<<Block as BlockT>::Hash> for IbcStorage<C, Block>
         C: HeaderBackend<Block>,
         C::Api: IbcRuntimeApi<Block>,
 {
+<<<<<<< HEAD
     fn get_consensus_state_with_height(&self, client_id: Vec<u8>, at: Option<<Block as BlockT>::Hash>)
         -> Result<Vec<(Vec<u8>, Vec<u8>)>>
     {
 
+=======
+    fn get_consensus_state_with_height(&self, client_id: Vec<u8>, at: Option<<Block as BlockT>::Hash>) -> Result<Vec<(Vec<u8>, Vec<u8>)>> {
+>>>>>>> dv-fix-rpc
         let api = self.client.runtime_api();
         let at = BlockId::hash(at.unwrap_or_else(||
             // If the block hash is not supplied assume the best block.
@@ -67,6 +74,7 @@ impl<C, Block> IbcApi<<Block as BlockT>::Hash> for IbcStorage<C, Block>
             data: Some(format!("{:?}", e).into()),
         })
     }
+<<<<<<< HEAD
 
     fn get_identified_any_client_state(&self, at: Option<<Block as BlockT>::Hash>)
         -> Result<Vec<(Vec<u8>, Vec<u8>)>> {
@@ -112,4 +120,6 @@ impl<C, Block> IbcApi<<Block as BlockT>::Hash> for IbcStorage<C, Block>
             data: Some(format!("{:?}", e).into()),
         })
     }
+=======
+>>>>>>> dv-fix-rpc
 }

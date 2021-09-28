@@ -491,5 +491,6 @@ impl<T: Config> ChannelKeeper for Context<T> {
 			Ok(())
 		})
 			.expect("increase channel counter error");
+
 	}
 }

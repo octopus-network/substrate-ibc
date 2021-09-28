@@ -121,9 +121,10 @@ pub mod pallet {
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
-	// (client_id, height) => ConsensusState
+	// fix before : (client_id, height) => ConsensusState
+	// fix after: client_id => (Height, ConsensusState)
 	pub type ConsensusStates<T: Config> =
-		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
+		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<(Vec<u8>, Vec<u8>)>, ValueQuery>;
 
 	#[pallet::storage]
 	// connection_id => ConnectionEnd
@@ -186,12 +187,13 @@ pub mod pallet {
 	#[pallet::type_value]
 	pub fn DefaultChannelCounter() -> u64 { 0u64 }
 
+
 	#[pallet::storage]
 	// channel counter
 	pub type ChannelCounter<T: Config> = StorageValue<_, u64, ValueQuery, DefaultChannelCounter>;
 
 	#[pallet::storage]
-	// client_id => Connection_id
+	// client_id => Connection id
 	pub type ConnectionClient<T: Config> =
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
@@ -265,7 +267,6 @@ pub mod pallet {
 		// 	counterparty_port_id: PortId,
 		// 	counterparty_channel_id: Option<ChannelId>
 		// )
-
         OpenInitConnection(
             Height,
             Option<ConnectionId>,
@@ -482,6 +483,7 @@ pub mod pallet {
 					let connection_id : Option<ConnectionId> = value.0.connection_id.map(|val| val.into());
 					let client_id = value.0.client_id;
 					let counterparty_connection_id: Option<ConnectionId> = value.0.counterparty_connection_id.map(|val| val.into());
+
 					let counterparty_client_id = value.0.counterparty_client_id;
 					Event::OpenInitConnection(
 						height.into(),
@@ -491,6 +493,7 @@ pub mod pallet {
 						counterparty_client_id.into(),
 					)
 				}
+
 				// OpenTryConnection(
 				// 	height: Height,
 				// 	connection_id: Option<ConnectionId>,
@@ -503,6 +506,7 @@ pub mod pallet {
 					let connection_id : Option<ConnectionId> = value.0.connection_id.map(|val| val.into());
 					let client_id = value.0.client_id;
 					let counterparty_connection_id: Option<ConnectionId> = value.0.counterparty_connection_id.map(|val| val.into());
+
 					let counterparty_client_id = value.0.counterparty_client_id;
 					Event::OpenTryConnection(
 						height.into(),
@@ -524,6 +528,7 @@ pub mod pallet {
 					let connection_id : Option<ConnectionId> = value.0.connection_id.map(|val| val.into());
 					let client_id = value.0.client_id;
 					let counterparty_connection_id: Option<ConnectionId> = value.0.counterparty_connection_id.map(|val| val.into());
+
 					let counterparty_client_id = value.0.counterparty_client_id;
 					Event::OpenAckConnection(
 						height.into(),
@@ -545,6 +550,7 @@ pub mod pallet {
 					let connection_id : Option<ConnectionId> = value.0.connection_id.map(|val| val.into());
 					let client_id = value.0.client_id;
 					let counterparty_connection_id: Option<ConnectionId> = value.0.counterparty_connection_id.map(|val| val.into());
+
 					let counterparty_client_id = value.0.counterparty_client_id;
 					Event::OpenConfirmConnection(
 						height.into(),
@@ -732,16 +738,17 @@ pub mod pallet {
 
 		/// get key-value vector of (height, consensus_state) according by client_identifier
 		pub fn get_consensus_state_with_height(client_id: Vec<u8>) -> Vec<(Vec<u8>, Vec<u8>)> {
-			let mut result = vec![];
-
-			<ConsensusStates<T>>::iter().for_each(|val| {
-				let (id, height) = val.0;
-				if id == client_id {
-					result.push((height, val.1));
-				}
-			});
-			
-			result
+			// let mut result = vec![];
+			//
+			// <ConsensusStates<T>>::iter().for_each(|val| {
+			// 	let (id, height) = val.0;
+			// 	if id == client_id {
+			// 		result.push((height, val.1));
+			// 	}
+			// });
+			//
+			// result
+			todo!()
 		}
 
 		/// get key-value pair (client_identifier, client_state)
