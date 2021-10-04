@@ -738,16 +738,6 @@ pub mod pallet {
 
 		/// get key-value vector of (height, consensus_state) according by client_identifier
 		pub fn get_consensus_state_with_height(client_id: Vec<u8>) -> Vec<(Vec<u8>, Vec<u8>)> {
-			// let mut result = vec![];
-			//
-			// <ConsensusStates<T>>::iter().for_each(|val| {
-			// 	let (id, height) = val.0;
-			// 	if id == client_id {
-			// 		result.push((height, val.1));
-			// 	}
-			// });
-			//
-			// result
 			todo!()
 		}
 
@@ -764,40 +754,12 @@ pub mod pallet {
 
 		/// get connection_identifier vector according by client_identifier
 		pub fn get_client_connections(client_id: Vec<u8>) -> Vec<Vec<u8>> {
-			let mut result = vec![];
-
-			<ConnectionClient<T>>::iter().for_each(|val| {
-				let (id, connection_id) = val;
-
-				if id == client_id {
-					result.push(connection_id);
-				}
-			});
-
-			result
+			todo!()
 		}
 
 		/// get port_identifier, channel_identifier, channel_end according by connection_id
 		pub fn get_connection_channels(connection_id: Vec<u8>) -> Vec<(Vec<u8>, Vec<u8>, Vec<u8>)> {
-			let mut result = vec![];
-
-			let channel_id_and_port_id = <ChannelsConnection<T>>::get(connection_id);
-			log::info!("in pallet_ibc: [lib] >> channel_port_id: {:?}", channel_id_and_port_id);
-
-			for id in channel_id_and_port_id.iter() {
-				let channel_end = <Channels<T>>::get(id);
-				log::info!("in pallet_ibc: [lib] >> channel_end: {:?}", channel_end);
-				let port_id = id.0.clone();
-				log::info!("in pallet_ibc: [lib] >> port_id: {:?}", port_id);
-				let channel_id = id.1.clone();
-				log::info!("in pallet_ibc: [lib] >> channel_id: {:?}", channel_id);
-
-				result.push((port_id, channel_id, channel_end));
-			}
-			log::info!("in pallet_ibc: [lib] >> result: {:?}", result);
-			// assert!(!result.is_empty());
-
-			result
+			todo!()
 		}
 	}
 }
