@@ -7,6 +7,7 @@ use ibc::ics02_client::context::ClientReader;
 use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use ibc::ics03_connection::error::Error as ICS03Error;
+use ibc::ics02_client::error::Error as ICS02Error;
 use ibc::ics23_commitment::commitment::{CommitmentPrefix, CommitmentRoot};
 use ibc::ics24_host::identifier::{ClientId, ConnectionId};
 use ibc::ics10_grandpa::consensus_state::ConsensusState as GPConsensusState;
@@ -14,25 +15,34 @@ use ibc::Height;
 use tendermint_proto::Protobuf;
 
 impl<T: Config> ConnectionReader for Context<T> {
-	fn connection_end(&self, conn_id: &ConnectionId) -> Option<ConnectionEnd> {
+	fn connection_end(&self, conn_id: &ConnectionId) -> Result<ConnectionEnd, ICS03Error> {
 		log::info!("in connection : [connection_end]");
 
 		if <Connections<T>>::contains_key(conn_id.as_bytes()) {
 			let data = <Connections<T>>::get(conn_id.as_bytes());
 			let ret = ConnectionEnd::decode_vec(&*data).unwrap();
 			log::info!("In connection: [connection_end] >>  {:?}", ret.clone());
-			Some(ret)
+			Ok(ret)
 		} else {
 			log::info!("read connection end returns None");
 
-			None
+			todo!()
 		}
 	}
 
-	fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
+	fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, ICS03Error> {
 		log::info!("in connection : [client_state]");
 
-		ClientReader::client_state(self, client_id)
+		// ClientReader::client_state(self, client_id)
+		if <ClientStates<T>>::contains_key(client_id.as_bytes()) {
+			let data = <ClientStates<T>>::get(client_id.as_bytes());
+			log::info!("In client: [client_state] >> client_state: {:?}", AnyClientState::decode_vec(&*data).unwrap());
+			Ok(AnyClientState::decode_vec(&*data).unwrap())
+		} else {
+			log::info!("In client: [client_state] >> read client_state is None");
+
+			todo!()
+		}
 	}
 
 	fn host_current_height(&self) -> Height {
@@ -54,10 +64,10 @@ impl<T: Config> ConnectionReader for Context<T> {
 		Height::new(0, height)
 	}
 
-	fn connection_counter(&self) -> u64 {
+	fn connection_counter(&self) -> Result<u64, ICS03Error> {
 		log::info!("in connection: [connection_counter]");
 
-		<ConnectionCounter<T>>::get()
+		Ok(<ConnectionCounter<T>>::get())
 	}
 
 	fn commitment_prefix(&self) -> CommitmentPrefix {
@@ -70,15 +80,25 @@ impl<T: Config> ConnectionReader for Context<T> {
 		&self,
 		client_id: &ClientId,
 		height: Height,
-	) -> Option<AnyConsensusState> {
+	) -> Result<AnyConsensusState, ICS03Error> {
 		log::info!("in connection: [client_consensus_state]");
 
-		ClientReader::consensus_state(self, client_id, height)
+		// ClientReader::consensus_state(self, client_id, height)
+		let height = height.encode_vec().unwrap();
+		let value = <ConsensusStates<T>>::get(client_id.as_bytes());
+
+		for item in value.iter() {
+			if item.0 == height {
+				let any_consensus_state = AnyConsensusState::decode_vec(&*item.1).unwrap();
+				return Ok(any_consensus_state);
+			}
+		}
+		todo!()
 	}
 
-	fn host_consensus_state(&self, _height: Height) -> Option<AnyConsensusState> {
+	fn host_consensus_state(&self, _height: Height) -> Result<AnyConsensusState, ICS03Error> {
 		log::info!("in connection: [host_consensus_state]");
-		Some(AnyConsensusState::Grandpa(GPConsensusState::new(CommitmentRoot::from(vec![1, 2, 3]))))
+		Ok(AnyConsensusState::Grandpa(GPConsensusState::new(CommitmentRoot::from(vec![1, 2, 3]))))
 	}
 }
 

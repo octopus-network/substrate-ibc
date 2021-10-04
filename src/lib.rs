@@ -676,28 +676,28 @@ pub mod pallet {
 	// Errors inform users that something went wrong.
 	#[pallet::error]
 	pub enum Error<T> {
-		/// The IBC client identifier already exists.
-		ClientIdExist,
-		/// The IBC client identifier doesn't exist.
-		ClientIdNotExist,
-		/// The IBC port identifier is already binded.
-		PortIdBinded,
-		/// The IBC connection identifier already exists.
-		ConnectionIdExist,
-		/// The IBC connection identifier doesn't exist.
-		ConnectionIdNotExist,
-		/// The IBC channel identifier already exists.
-		ChannelIdExist,
-		/// The IBC port identifier doesn't match.
-		PortIdNotMatch,
-		/// The IBC connection is closed.
-		ConnectionClosed,
-		/// Only allow 1 hop for v1 of the IBC protocol.
-		OnlyOneHopAllowedV1,
-		/// The sequence sending packet not match
-		PackedSequenceNotMatch,
-		/// The destination channel identifier doesn't match
-		DestChannelIdNotMatch,
+		// /// The IBC client identifier already exists.
+		// ClientIdExist,
+		// /// The IBC client identifier doesn't exist.
+		// ClientIdNotExist,
+		// /// The IBC port identifier is already binded.
+		// PortIdBinded,
+		// /// The IBC connection identifier already exists.
+		// ConnectionIdExist,
+		// /// The IBC connection identifier doesn't exist.
+		// ConnectionIdNotExist,
+		// /// The IBC channel identifier already exists.
+		// ChannelIdExist,
+		// /// The IBC port identifier doesn't match.
+		// PortIdNotMatch,
+		// /// The IBC connection is closed.
+		// ConnectionClosed,
+		// /// Only allow 1 hop for v1 of the IBC protocol.
+		// OnlyOneHopAllowedV1,
+		// /// The sequence sending packet not match
+		// PackedSequenceNotMatch,
+		// /// The destination channel identifier doesn't match
+		// DestChannelIdNotMatch,
 	}
 
 	// Dispatchable functions allows users to interact with the pallet and invoke state changes.
@@ -735,22 +735,6 @@ pub mod pallet {
 
 
 	impl <T: Config> Pallet<T> {
-
-		/// get key-value vector of (height, consensus_state) according by client_identifier
-		pub fn get_consensus_state_with_height(client_id: Vec<u8>) -> Vec<(Vec<u8>, Vec<u8>)> {
-			// let mut result = vec![];
-			//
-			// <ConsensusStates<T>>::iter().for_each(|val| {
-			// 	let (id, height) = val.0;
-			// 	if id == client_id {
-			// 		result.push((height, val.1));
-			// 	}
-			// });
-			//
-			// result
-			todo!()
-		}
-
 		/// get key-value pair (client_identifier, client_state)
 		pub fn get_identified_any_client_state() -> Vec<(Vec<u8>, Vec<u8>)> {
 			let mut result = vec![];
@@ -758,44 +742,6 @@ pub mod pallet {
 			<ClientStates<T>>::iter().for_each(|val| {
 				result.push((val.0, val.1));
 			});
-
-			result
-		}
-
-		/// get connection_identifier vector according by client_identifier
-		pub fn get_client_connections(client_id: Vec<u8>) -> Vec<Vec<u8>> {
-			let mut result = vec![];
-
-			<ConnectionClient<T>>::iter().for_each(|val| {
-				let (id, connection_id) = val;
-
-				if id == client_id {
-					result.push(connection_id);
-				}
-			});
-
-			result
-		}
-
-		/// get port_identifier, channel_identifier, channel_end according by connection_id
-		pub fn get_connection_channels(connection_id: Vec<u8>) -> Vec<(Vec<u8>, Vec<u8>, Vec<u8>)> {
-			let mut result = vec![];
-
-			let channel_id_and_port_id = <ChannelsConnection<T>>::get(connection_id);
-			log::info!("in pallet_ibc: [lib] >> channel_port_id: {:?}", channel_id_and_port_id);
-
-			for id in channel_id_and_port_id.iter() {
-				let channel_end = <Channels<T>>::get(id);
-				log::info!("in pallet_ibc: [lib] >> channel_end: {:?}", channel_end);
-				let port_id = id.0.clone();
-				log::info!("in pallet_ibc: [lib] >> port_id: {:?}", port_id);
-				let channel_id = id.1.clone();
-				log::info!("in pallet_ibc: [lib] >> channel_id: {:?}", channel_id);
-
-				result.push((port_id, channel_id, channel_end));
-			}
-			log::info!("in pallet_ibc: [lib] >> result: {:?}", result);
-			// assert!(!result.is_empty());
 
 			result
 		}
