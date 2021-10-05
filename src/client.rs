@@ -23,6 +23,7 @@ impl<T: Config> ClientReader for Context<T> {
 				Err(_err) => None,
 				Ok(val) => {
 					log::info!("In client: [client_type] >> client_type : {}", val);
+
 					Some(val)
 				},
 			}
@@ -39,6 +40,7 @@ impl<T: Config> ClientReader for Context<T> {
 		if <ClientStates<T>>::contains_key(client_id.as_bytes()) {
 			let data = <ClientStates<T>>::get(client_id.as_bytes());
 			log::info!("In client: [client_state] >> client_state: {:?}", AnyClientState::decode_vec(&*data).unwrap());
+
 			Some(AnyClientState::decode_vec(&*data).unwrap())
 		} else {
 			log::info!("In client: [client_state] >> read client_state is None");
@@ -51,9 +53,11 @@ impl<T: Config> ClientReader for Context<T> {
 		log::info!("In client: [consensus_state]");
 
 		let height = height.encode_vec().unwrap();
+
 		if <ConsensusStates<T>>::contains_key((client_id.as_bytes(), &height) ) {
 			let data = <ConsensusStates<T>>::get((client_id.as_bytes(), height));
 			log::info!("In client: [consensus_state] >> consensus_state : {:?}", AnyConsensusState::decode_vec(&*data).unwrap());
+
 			Some(AnyConsensusState::decode_vec(&*data).unwrap())
 		} else {
 			log::info!("In client: [consensus_state] >> read consensus_state is None");

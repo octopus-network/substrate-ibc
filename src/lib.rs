@@ -243,7 +243,6 @@ pub mod pallet {
 			Option<ConnectionId>,
 			ClientId,
 		),
-
     }
 
     impl<T: Config> From<ibc::events::IbcEvent> for Event<T> {

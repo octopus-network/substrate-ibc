@@ -41,7 +41,7 @@ pub mod primitive {
             }
         }
     }
-
+    
     #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
     pub enum ClientType {
         Tendermint,
@@ -53,6 +53,7 @@ pub mod primitive {
             match value {
                 IbcClientType::Tendermint => ClientType::Tendermint,
                 IbcClientType::Grandpa => ClientType::Grandpa,
+
                 _ => unreachable!(),
             }
         }
@@ -61,6 +62,17 @@ pub mod primitive {
 
     impl ClientType {
         pub fn to_ibc_client_type(self) -> IbcClientType {
+            match self {
+                ClientType::Tendermint => IbcClientType::Tendermint,
+                ClientType::Grandpa => IbcClientType::Grandpa,
+                _ => unreachable!(),
+            }
+        }
+    }
+
+
+    impl ClientType {
+        fn to_ibc_client_type(self) -> IbcClientType {
             match self {
                 ClientType::Tendermint => IbcClientType::Tendermint,
                 ClientType::Grandpa => IbcClientType::Grandpa,
