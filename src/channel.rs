@@ -4,13 +4,16 @@ use crate::routing::Context;
 use ibc::ics02_client::client_consensus::AnyConsensusState;
 use ibc::ics02_client::client_state::AnyClientState;
 use ibc::ics02_client::context::ClientReader;
+use ibc::ics02_client::error::Error as ICS02Error;
 use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics03_connection::context::ConnectionReader;
+use ibc::ics03_connection::error::Error as ICS03Error;
 use ibc::ics04_channel::channel::ChannelEnd;
 use ibc::ics04_channel::context::{ChannelKeeper, ChannelReader};
 use ibc::ics04_channel::error::Error as ICS04Error;
 use ibc::ics04_channel::packet::{Receipt, Sequence};
 use ibc::ics05_port::capabilities::Capability;
+use ibc::ics05_port::error::Error as Ics05Error;
 use ibc::ics24_host::identifier::ChannelId;
 use ibc::ics24_host::identifier::PortId;
 use ibc::ics24_host::identifier::{ClientId, ConnectionId};
@@ -21,7 +24,7 @@ use ibc::ics05_port::context::PortReader;
 
 impl<T: Config> ChannelReader for Context<T> {
 	/// Returns the ChannelEnd for the given `port_id` and `chan_id`.
-	fn channel_end(&self, port_channel_id: &(PortId, ChannelId)) -> Option<ChannelEnd> {
+	fn channel_end(&self, port_channel_id: &(PortId, ChannelId)) -> Result<ChannelEnd,ICS04Error > {
 		log::info!("in channel: [channel_end]");
 
 		if <Channels<T>>::contains_key((
@@ -34,26 +37,31 @@ impl<T: Config> ChannelReader for Context<T> {
 			));
 			let channel_end = ChannelEnd::decode_vec(&*data).unwrap();
 			log::info!("in channel: [channel_end] >> channel_end : {:?}", channel_end.clone());
-			Some(channel_end)
+			Ok(channel_end)
 		} else {
 			log::info!("read channel_end return None");
 
-			None
+			todo!()
 		}
 	}
 
 	/// Returns the ConnectionState for the given identifier `connection_id`.
-	fn connection_end(&self, connection_id: &ConnectionId) -> Option<ConnectionEnd> {
+	fn connection_end(&self, connection_id: &ConnectionId) -> Result<ConnectionEnd, ICS04Error> {
 		log::info!("in channel: [connection_end]");
 
-		let connection_end = ConnectionReader::connection_end(self, connection_id);
+		if <Connections<T>>::contains_key(connection_id.as_bytes()) {
+			let data = <Connections<T>>::get(connection_id.as_bytes());
+			let ret = ConnectionEnd::decode_vec(&*data).unwrap();
+			log::info!("In connection: [connection_end] >>  {:?}", ret.clone());
+			Ok(ret)
+		} else {
+			log::info!("read connection end returns None");
 
-		log::info!("in connection end: {:?}", connection_end);
-
-		connection_end
+			todo!()
+		}
 	}
 
-	fn connection_channels(&self, conn_id: &ConnectionId) -> Option<Vec<(PortId, ChannelId)>> {
+	fn connection_channels(&self, conn_id: &ConnectionId) -> Result<Vec<(PortId, ChannelId)>, ICS04Error> {
 		log::info!("in channel: [connection_channels]");
 		log::info!("in channel: [connection_channels] >> connection_id : {:?}", conn_id);
 
@@ -73,47 +81,68 @@ impl<T: Config> ChannelReader for Context<T> {
 			}
 
 			log::info!("in channel: [connection_channels] >> result: {:?}", result);
-			Some(result)
+			Ok(result)
 		} else {
-			None
+			todo!()
 		}
 	}
 
 	/// Returns the ClientState for the given identifier `client_id`. Necessary dependency towards
 	/// proof verification.
-	fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
+	fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, ICS04Error> {
 		log::info!("in channel: [client_state]");
 
-		ClientReader::client_state(self, client_id)
+		// ClientReader::client_state(self, client_id)
+		if <ClientStates<T>>::contains_key(client_id.as_bytes()) {
+			let data = <ClientStates<T>>::get(client_id.as_bytes());
+			log::info!("In client: [client_state] >> client_state: {:?}", AnyClientState::decode_vec(&*data).unwrap());
+			Ok(AnyClientState::decode_vec(&*data).unwrap())
+		} else {
+			log::info!("In client: [client_state] >> read client_state is None");
+
+			todo!()
+		}
 	}
 
 	fn client_consensus_state(
 		&self,
 		client_id: &ClientId,
 		height: Height,
-	) -> Option<AnyConsensusState> {
+	) -> Result<AnyConsensusState, ICS04Error> {
 		log::info!("in channel: [client_consensus_state]");
 
-		ClientReader::consensus_state(self, client_id, height)
+		let height = height.encode_vec().unwrap();
+		let value = <ConsensusStates<T>>::get(client_id.as_bytes());
+
+		for item in value.iter() {
+			if item.0 == height {
+				let any_consensus_state = AnyConsensusState::decode_vec(&*item.1).unwrap();
+				return Ok(any_consensus_state);
+			}
+		}
+		todo!()
+		// ClientReader::consensus_state(self, client_id, height)
 	}
 
 	fn authenticated_capability(&self, port_id: &PortId) -> Result<Capability, ICS04Error> {
 		log::info!("in channel: [authenticated_capability]");
 
-		let cap = PortReader::lookup_module_by_port(self, port_id);
-		match cap {
-			Some(key) => {
+		match PortReader::lookup_module_by_port(self, port_id) {
+			Ok(key) => {
 				if !PortReader::authenticate(self, &key, port_id) {
 					Err(ICS04Error::invalid_port_capability())
 				} else {
 					Ok(key)
 				}
 			}
-			None => Err(ICS04Error::no_port_capability(port_id.clone())),
+			Err(e) if e.detail() == Ics05Error::unknown_port(port_id.clone()).detail() => {
+				Err(ICS04Error::no_port_capability(port_id.clone()))
+			}
+			Err(_) => Err(ICS04Error::implementation_specific()),
 		}
 	}
 
-	fn get_next_sequence_send(&self, port_channel_id: &(PortId, ChannelId)) -> Option<Sequence> {
+	fn get_next_sequence_send(&self, port_channel_id: &(PortId, ChannelId)) -> Result<Sequence, ICS04Error> {
 		log::info!("in channel: [get_next_sequence]");
 
 		if <NextSequenceSend<T>>::contains_key((
@@ -126,15 +155,15 @@ impl<T: Config> ChannelReader for Context<T> {
 			));
 			let mut data: &[u8] = &data;
 			let seq = u64::decode(&mut data).unwrap();
-			Some(Sequence::from(seq))
+			Ok(Sequence::from(seq))
 		} else {
 			log::info!("read get next sequence send return None");
 
-			None
+			todo!()
 		}
 	}
 
-	fn get_next_sequence_recv(&self, port_channel_id: &(PortId, ChannelId)) -> Option<Sequence> {
+	fn get_next_sequence_recv(&self, port_channel_id: &(PortId, ChannelId)) -> Result<Sequence, ICS04Error> {
 		log::info!("in channel: [get_next_sequence_recv]");
 
 		if <NextSequenceRecv<T>>::contains_key((
@@ -147,15 +176,15 @@ impl<T: Config> ChannelReader for Context<T> {
 			));
 			let mut data: &[u8] = &data;
 			let seq = u64::decode(&mut data).unwrap();
-			Some(Sequence::from(seq))
+			Ok(Sequence::from(seq))
 		} else {
 			log::info!("read get next sequence recv return None");
 
-			None
+			todo!()
 		}
 	}
 
-	fn get_next_sequence_ack(&self, port_channel_id: &(PortId, ChannelId)) -> Option<Sequence> {
+	fn get_next_sequence_ack(&self, port_channel_id: &(PortId, ChannelId)) -> Result<Sequence, ICS04Error> {
 		log::info!("in channel: [get_next_sequence_ack]");
 
 		if <NextSequenceAck<T>>::contains_key((
@@ -168,15 +197,15 @@ impl<T: Config> ChannelReader for Context<T> {
 			));
 			let mut data: &[u8] = &data;
 			let seq = u64::decode(&mut data).unwrap();
-			Some(Sequence::from(seq))
+			Ok(Sequence::from(seq))
 		} else {
 			log::info!("read get next sequence ack return None");
 
-			None
+			todo!()
 		}
 	}
 
-	fn get_packet_commitment(&self, key: &(PortId, ChannelId, Sequence)) -> Option<String> {
+		fn get_packet_commitment(&self, key: &(PortId, ChannelId, Sequence)) -> Result<String, ICS04Error> {
 		log::info!("in channel: [get_packet_commitment]");
 
 		let seq = u64::from(key.2);
@@ -193,15 +222,15 @@ impl<T: Config> ChannelReader for Context<T> {
 				seq,
 			));
 			let mut data: &[u8] = &data;
-			Some(String::decode(&mut data).unwrap())
+			Ok(String::decode(&mut data).unwrap())
 		} else {
 			log::info!("read get packet commitment return None");
 
-			None
+			todo!()
 		}
 	}
 
-	fn get_packet_receipt(&self, key: &(PortId, ChannelId, Sequence)) -> Option<Receipt> {
+	fn get_packet_receipt(&self, key: &(PortId, ChannelId, Sequence)) -> Result<Receipt, ICS04Error> {
 		log::info!("in channel: [get_packet_receipt]");
 
 		let seq = u64::from(key.2);
@@ -221,15 +250,15 @@ impl<T: Config> ChannelReader for Context<T> {
 				"Ok" => Receipt::Ok,
 				_ => unreachable!(),
 			};
-			Some(data)
+			Ok(data)
 		} else {
 			log::info!("read get packet receipt return None");
 
-			None
+			todo!()
 		}
 	}
 
-	fn get_packet_acknowledgement(&self, key: &(PortId, ChannelId, Sequence)) -> Option<String> {
+	fn get_packet_acknowledgement(&self, key: &(PortId, ChannelId, Sequence)) -> Result<String, ICS04Error> {
 		log::info!("in channel: [get_packet_acknowledgement]");
 
 		let seq = u64::from(key.2);
@@ -246,11 +275,11 @@ impl<T: Config> ChannelReader for Context<T> {
 				seq,
 			));
 			let mut data: &[u8] = &data;
-			Some(String::decode(&mut data).unwrap())
+			Ok(String::decode(&mut data).unwrap())
 		} else {
 			log::info!("read get acknowledgement return None");
 
-			None
+			todo!()
 		}
 	}
 
@@ -284,10 +313,10 @@ impl<T: Config> ChannelReader for Context<T> {
 	/// Returns a counter on the number of channel ids have been created thus far.
 	/// The value of this counter should increase only via method
 	/// `ChannelKeeper::increase_channel_counter`.
-	fn channel_counter(&self) -> u64 {
+	fn channel_counter(&self) -> Result<u64, ICS04Error> {
 		log::info!("in channel : [channel_counter]");
 
-		<Pallet<T> as Store>::ChannelCounter::get()
+		Ok(<Pallet<T> as Store>::ChannelCounter::get())
 	}
 }
 

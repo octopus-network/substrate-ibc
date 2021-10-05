@@ -11,7 +11,7 @@ use ibc::Height;
 use tendermint_proto::Protobuf;
 
 impl<T: Config> ClientReader for Context<T> {
-	fn client_type(&self, client_id: &ClientId) -> Option<ClientType> {
+	fn client_type(&self, client_id: &ClientId) -> Result<ClientType, ICS02Error> {
 		log::info!("In client: [client_type]");
 
 		if <Clients<T>>::contains_key(client_id.as_bytes()) {
@@ -20,34 +20,35 @@ impl<T: Config> ClientReader for Context<T> {
 			let data = String::decode(&mut data).unwrap();
 			log::info!("In client: [client_type] >> date: {} ", data);
 			match ClientType::from_str(&data) {
-				Err(_err) => None,
+				Err(_err) => {
+					todo!()
+				},
 				Ok(val) => {
 					log::info!("In client: [client_type] >> client_type : {}", val);
-					Some(val)
+					Ok(val)
 				},
 			}
 		} else {
 			log::info!("In client : [client_type] >> read client_type is None");
-
-			None
+			todo!()
 		}
 	}
 
-	fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
+	fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, ICS02Error> {
 		log::info!("In client: [client_state]");
 
 		if <ClientStates<T>>::contains_key(client_id.as_bytes()) {
 			let data = <ClientStates<T>>::get(client_id.as_bytes());
 			log::info!("In client: [client_state] >> client_state: {:?}", AnyClientState::decode_vec(&*data).unwrap());
-			Some(AnyClientState::decode_vec(&*data).unwrap())
+			Ok(AnyClientState::decode_vec(&*data).unwrap())
 		} else {
 			log::info!("In client: [client_state] >> read client_state is None");
 
-			None
+			todo!()
 		}
 	}
 
-	fn consensus_state(&self, client_id: &ClientId, height: Height) -> Option<AnyConsensusState> {
+	fn consensus_state(&self, client_id: &ClientId, height: Height) -> Result<AnyConsensusState, ICS02Error> {
 		log::info!("In client: [consensus_state]");
 
 		let height = height.encode_vec().unwrap();
@@ -56,16 +57,16 @@ impl<T: Config> ClientReader for Context<T> {
 		for item in value.iter() {
 			if item.0 == height {
 				let any_consensus_state = AnyConsensusState::decode_vec(&*item.1).unwrap();
-				return Some(any_consensus_state);
+				return Ok(any_consensus_state);
 			}
 		}
-		None
+		todo!()
 	}
-	fn client_counter(&self) -> u64 {
+	fn client_counter(&self) -> Result<u64,ICS02Error> {
 		log::info!("In client: [client_counter]");
 		log::info!("In client: [client_counter] >> client_counter: {:?}", <ClientCounter<T>>::get());
 
-		<ClientCounter<T>>::get()
+		Ok(<ClientCounter<T>>::get())
 	}
 }
 
