@@ -266,7 +266,6 @@ pub mod pallet {
 		// 	counterparty_port_id: PortId,
 		// 	counterparty_channel_id: Option<ChannelId>
 		// )
-
         OpenInitConnection(
             Height,
             Option<ConnectionId>,

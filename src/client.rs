@@ -52,14 +52,7 @@ impl<T: Config> ClientReader for Context<T> {
 		log::info!("In client: [consensus_state]");
 
 		let height = height.encode_vec().unwrap();
-
-		if <ConsensusStates<T>>::contains_key((client_id.as_bytes(), &height) ) {
-			let data = <ConsensusStates<T>>::get((client_id.as_bytes(), height));
-			log::info!("In client: [consensus_state] >> consensus_state : {:?}", AnyConsensusState::decode_vec(&*data).unwrap());
-			Some(AnyConsensusState::decode_vec(&*data).unwrap())
-		} else {
-			log::info!("In client: [consensus_state] >> read consensus_state is None");
-		}
+		let value = <ConsensusStates<T>>::get(client_id.as_bytes());
 
 		for item in value.iter() {
 			if item.0 == height {
@@ -131,6 +124,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 		log::info!("In client: [store_consensus_state] >> consensus_state: {:?}", consensus_state);
 
 
+		
 		let height = height.encode_vec().unwrap();
 		let data = consensus_state.encode_vec().unwrap();
 		if <ConsensusStates<T>>::contains_key(client_id.as_bytes()) {

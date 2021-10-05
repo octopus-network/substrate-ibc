@@ -98,7 +98,6 @@ impl<T: Config> ConnectionReader for Context<T> {
 
 	fn host_consensus_state(&self, _height: Height) -> Result<AnyConsensusState, ICS03Error> {
 		log::info!("in connection: [host_consensus_state]");
-
 		Ok(AnyConsensusState::Grandpa(GPConsensusState::new(CommitmentRoot::from(vec![1, 2, 3]))))
 	}
 }
@@ -127,7 +126,6 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		<Connections<T>>::insert(connection_id.as_bytes(), data);
 		let temp = ConnectionReader::connection_end(self, &connection_id);
 		log::info!("in connection: [store_connection] >> read store after: {:?}", temp);
-
 		Ok(())
 	}
 
