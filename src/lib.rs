@@ -761,6 +761,33 @@ pub mod pallet {
 		pub fn get_connection_channels(connection_id: Vec<u8>) -> Vec<(Vec<u8>, Vec<u8>, Vec<u8>)> {
 			todo!()
 		}
+
+		// get PacketCommitment PacketState(port_id, channel_id, sequence, data)
+		pub fn get_packet_commitment_state() -> Vec<(Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>)> {
+			let mut result = vec![];
+
+			<PacketCommitment<T>>::iter().for_each(|(key, value)| {
+				let port_id = key.0;
+				let channel_id = key.1;
+				let sequence = key.2;
+				let data = value;
+				result.push((port_id, channel_id, sequence, data));
+			});
+			result
+		}
+
+		pub fn get_packet_acknowledge_state() -> Vec<(Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>)> {
+			let mut result = vec![];
+
+			<Acknowledgements<T>>::iter().for_each(|(key, value)| {
+				let port_id = key.0;
+				let channel_id = key.1;
+				let sequence = key.2;
+				let data = value;
+				result.push((port_id, channel_id, sequence, data));
+			});
+			result
+		}
 	}
 }
 
