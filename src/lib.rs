@@ -472,10 +472,10 @@ pub mod pallet {
 			Height,
 			Packet,
 		),
-
 		// Empty(String) Special event, signifying empty response
 		Empty(Vec<u8>),
-
+		// ChainError(String) Special event, signifying an error an CheckTx or DeliverTx
+		ChainError(Vec<u8>),
     }
 
     impl<T: Config> From<ibc::events::IbcEvent> for Event<T> {
@@ -858,6 +858,10 @@ pub mod pallet {
 				// Empty(String)
 				ibc::events::IbcEvent::Empty(value) => {
 					Event::Empty(value.as_bytes().to_vec())
+				}
+				// ChainError(String)
+				ibc::events::IbcEvent::ChainError(value) => {
+					Event::ChainError(value.as_bytes().to_vec())
 				}
                 _ => unimplemented!(),
             }
