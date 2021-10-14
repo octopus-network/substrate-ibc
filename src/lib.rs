@@ -430,6 +430,14 @@ pub mod pallet {
 		SendPacket(
 			Height,
 			Packet,
+		),
+		// ReceivePacket {
+		// 	height: Height,
+		// 	packet: Packet,
+		// }
+		ReceivePacket(
+			Height,
+			Packet,
 		)
     }
 
@@ -744,6 +752,18 @@ pub mod pallet {
 					let height = value.height;
 					let packet = value.packet;
 					Event::SendPacket(
+						height.into(),
+						packet.into(),
+					)
+				}
+				// SendPacket {
+				//     pub height: Height,
+				//     pub packet: Packet,
+				// }
+				ibc::events::IbcEvent::ReceivePacket(value) => {
+					let height = value.height;
+					let packet = value.packet;
+					Event::ReceivePacket(
 						height.into(),
 						packet.into(),
 					)
