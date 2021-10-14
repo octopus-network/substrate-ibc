@@ -407,6 +407,22 @@ pub mod pallet {
 			PortId,
 			Option<ChannelId>,
 		),
+		// CloseConfirmChannel(
+		// 	height: Height,
+		// 	port_id: PortId,
+		// 	channel_id: Option<ChannelId>,
+		// 	connection_id: ConnectionId,
+		// 	counterparty_port_id: PortId,
+		// 	counterparty_channel_id: Option<ChannelId>
+		// )
+		CloseConfirmChannel(
+			Height,
+			PortId,
+			Option<ChannelId>,
+			ConnectionId,
+			PortId,
+			Option<ChannelId>,
+		),
 		// SendPacket {
 		// 	height: Height,
 		// 	packet: Packet,
@@ -688,6 +704,30 @@ pub mod pallet {
 					let counterparty_port_id = value.0.counterparty_port_id;
 					let counterparty_channel_id: Option<ChannelId> = value.0.channel_id.clone().map(|val| val.into());
 					Event::CloseInitChannel(
+						height.into(),
+						port_id.into(),
+						channel_id,
+						connection_id.into(),
+						counterparty_port_id.into(),
+						counterparty_channel_id,
+					)
+				}
+				// CloseConfirmChannel(
+				// 	height: Height,
+				// 	port_id: PortId,
+				// 	channel_id: Option<ChannelId>,
+				// 	connection_id: ConnectionId,
+				// 	counterparty_port_id: PortId,
+				// 	counterparty_channel_id: Option<ChannelId>
+				// );
+				ibc::events::IbcEvent::CloseConfirmChannel(value)  => {
+					let height = value.0.height;
+					let port_id = value.0.port_id;
+					let channel_id : Option<ChannelId> = value.0.channel_id.clone().map(|val| val.into());
+					let connection_id = value.0.connection_id;
+					let counterparty_port_id = value.0.counterparty_port_id;
+					let counterparty_channel_id: Option<ChannelId> = value.0.channel_id.clone().map(|val| val.into());
+					Event::CloseConfirmChannel(
 						height.into(),
 						port_id.into(),
 						channel_id,
