@@ -456,6 +456,14 @@ pub mod pallet {
 			Height,
 			Packet,
 		),
+		// TimeoutPacket {
+		// 	height: Height,
+		// 	packet: Packet,
+		// }
+		TimeoutPacket(
+			Height,
+			Packet,
+		),
 
     }
 
@@ -808,6 +816,18 @@ pub mod pallet {
 					let height = value.height;
 					let packet = value.packet;
 					Event::AcknowledgePacket(
+						height.into(),
+						packet.into(),
+					)
+				}
+				// TimeoutPacket {
+				//     pub height: Height,
+				//     pub packet: Packet,
+				// }
+				ibc::events::IbcEvent::TimeoutPacket(value) => {
+					let height = value.height;
+					let packet = value.packet;
+					Event::TimeoutPacket(
 						height.into(),
 						packet.into(),
 					)
