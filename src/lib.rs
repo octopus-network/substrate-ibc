@@ -447,7 +447,15 @@ pub mod pallet {
 			Height,
 			Packet,
 			Vec<u8>,
-		)
+		),
+		// AcknowledgePacket {
+		// 	height: Height,
+		// 	packet: Packet,
+		// }
+		AcknowledgePacket(
+			Height,
+			Packet,
+		),
 
     }
 
@@ -790,6 +798,18 @@ pub mod pallet {
 						height.into(),
 						packet.into(),
 						data,
+					)
+				}
+				// AcknowledgePacket {
+				//     pub height: Height,
+				//     pub packet: Packet,
+				// }
+				ibc::events::IbcEvent::AcknowledgePacket(value) => {
+					let height = value.height;
+					let packet = value.packet;
+					Event::AcknowledgePacket(
+						height.into(),
+						packet.into(),
 					)
 				}
                 _ => unimplemented!(),
