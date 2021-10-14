@@ -217,6 +217,9 @@ pub mod pallet {
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
+		// NewBlock(height: Height)
+		NewBlock(Height),
+
 		// This event for Client
 		//
 		// CreateClient Event
@@ -481,6 +484,10 @@ pub mod pallet {
     impl<T: Config> From<ibc::events::IbcEvent> for Event<T> {
         fn from(value: ibc::events::IbcEvent) -> Self {
             match value {
+				// NewBlock(height: Height)
+				ibc::events::IbcEvent::NewBlock(value) => {
+					 Event::NewBlock(value.height.into())
+				}
 				// CreateClient(
 				// 	height: Height,
 				// 	client_id: ClientId,
