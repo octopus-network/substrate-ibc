@@ -438,7 +438,17 @@ pub mod pallet {
 		ReceivePacket(
 			Height,
 			Packet,
+		),
+		// WriteAcknowledgement {
+		// 	height: Height,
+		// 	packet: Packet,
+		// }
+		WriteAcknowledgement(
+			Height,
+			Packet,
+			Vec<u8>,
 		)
+
     }
 
     impl<T: Config> From<ibc::events::IbcEvent> for Event<T> {
@@ -756,7 +766,7 @@ pub mod pallet {
 						packet.into(),
 					)
 				}
-				// SendPacket {
+				// ReceivePacket {
 				//     pub height: Height,
 				//     pub packet: Packet,
 				// }
@@ -766,6 +776,20 @@ pub mod pallet {
 					Event::ReceivePacket(
 						height.into(),
 						packet.into(),
+					)
+				}
+				// WriteAcknowledgement {
+				//     pub height: Height,
+				//     pub packet: Packet,
+				// }
+				ibc::events::IbcEvent::WriteAcknowledgement(value) => {
+					let height = value.height;
+					let packet = value.packet;
+					let data = value.ack;
+					Event::WriteAcknowledgement(
+						height.into(),
+						packet.into(),
+						data,
 					)
 				}
                 _ => unimplemented!(),
