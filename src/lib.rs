@@ -473,6 +473,9 @@ pub mod pallet {
 			Packet,
 		),
 
+		// Empty(String) Special event, signifying empty response
+		Empty(Vec<u8>),
+
     }
 
     impl<T: Config> From<ibc::events::IbcEvent> for Event<T> {
@@ -851,6 +854,10 @@ pub mod pallet {
 						height.into(),
 						packet.into(),
 					)
+				}
+				// Empty(String)
+				ibc::events::IbcEvent::Empty(value) => {
+					Event::Empty(value.as_bytes().to_vec())
 				}
                 _ => unimplemented!(),
             }
