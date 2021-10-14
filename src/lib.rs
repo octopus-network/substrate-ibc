@@ -464,6 +464,14 @@ pub mod pallet {
 			Height,
 			Packet,
 		),
+		// TimeoutOnClosePacket {
+		// 	height: Height,
+		// 	packet: Packet,
+		// }
+		TimeoutOnClosePacket(
+			Height,
+			Packet,
+		),
 
     }
 
@@ -828,6 +836,18 @@ pub mod pallet {
 					let height = value.height;
 					let packet = value.packet;
 					Event::TimeoutPacket(
+						height.into(),
+						packet.into(),
+					)
+				}
+				// TimeoutOnClosePacket {
+				//     pub height: Height,
+				//     pub packet: Packet,
+				// }
+				ibc::events::IbcEvent::TimeoutOnClosePacket(value) => {
+					let height = value.height;
+					let packet = value.packet;
+					Event::TimeoutOnClosePacket(
 						height.into(),
 						packet.into(),
 					)
