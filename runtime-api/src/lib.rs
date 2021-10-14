@@ -8,6 +8,10 @@ sp_api::decl_runtime_apis! {
 	pub trait IbcApi {
 		fn get_identified_any_client_state() -> Vec<(Vec<u8>, Vec<u8>)>;
 
+		fn get_idenfitied_connection_end() -> Vec<(Vec<u8>, Vec<u8>)>;
+
+		fn get_idenfitied_channel_end() -> Vec<(Vec<u8>, Vec<u8>, Vec<u8>)>;
+
 		fn get_packet_commitment_state() -> Vec<(Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>)>;
 
 		fn get_packet_acknowledge_state() -> Vec<(Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>)>;

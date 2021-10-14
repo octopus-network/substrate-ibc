@@ -445,6 +445,7 @@ pub mod pallet {
 		// WriteAcknowledgement {
 		// 	height: Height,
 		// 	packet: Packet,
+		//  ack: Vec<u8>,
 		// }
 		WriteAcknowledgement(
 			Height,
@@ -815,15 +816,16 @@ pub mod pallet {
 				// WriteAcknowledgement {
 				//     pub height: Height,
 				//     pub packet: Packet,
+				//     pub ack: Vec<u8>,
 				// }
 				ibc::events::IbcEvent::WriteAcknowledgement(value) => {
 					let height = value.height;
 					let packet = value.packet;
-					let data = value.ack;
+					let ack = value.ack;
 					Event::WriteAcknowledgement(
 						height.into(),
 						packet.into(),
-						data,
+						ack,
 					)
 				}
 				// AcknowledgePacket {
@@ -949,6 +951,28 @@ pub mod pallet {
 
 			<ClientStates<T>>::iter().for_each(|val| {
 				result.push((val.0, val.1));
+			});
+
+			result
+		}
+
+		/// get key-value pair(connection_id, connectionEnd)
+		pub fn get_idenfitied_connection_end() -> Vec<(Vec<u8>, Vec<u8>)> {
+			let mut result = vec![];
+
+			<Connections<T>>::iter().for_each(|val| {
+				result.push((val.0, val.1));
+			});
+
+			result
+		}
+
+		/// get (port_id, channel_id, channel_end)
+		pub fn get_idenfitied_channel_end() -> Vec<(Vec<u8>, Vec<u8>, Vec<u8>)> {
+			let mut result = vec![];
+
+			<Channels<T>>::iter().for_each(|(key, value)| {
+				result.push((key.0, key.1, value));
 			});
 
 			result
