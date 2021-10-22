@@ -307,7 +307,7 @@ impl<T: Config> ChannelReader for Context<T> {
 	fn host_timestamp(&self) -> Timestamp {
 		log::info!("in channel: [host_timestamp]");
 
-		Timestamp::now()
+		Timestamp::none()
 	}
 
 	/// Returns a counter on the number of channel ids have been created thus far.

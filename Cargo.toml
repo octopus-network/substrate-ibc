@@ -26,11 +26,11 @@ sp-runtime = { default-features = false, version = "3.0.0" }
 sp-std = { default-features = false, version = "3.0.0" }
 
 ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "dv-octopus-relayer" }
-#ibc = { path = "../../../../../ibc-rs/modules" }
+#ibc = { path = "../../../../../ibc-rs/modules", default-features = false }
 
-prost = "0.7"
-prost-types = "0.7"
-tendermint-proto = "=0.22.0"
+prost = { package = "informalsystems-prost", version = "0.8.1", default-features = false }
+prost-types = { package = "informalsystems-prost-types", version = "0.8.1", default-features = false }
+tendermint-proto = { version = "=0.22.0", default-featuers = false }
 
 [dev-dependencies]
 hex = '0.4.0'
@@ -53,6 +53,10 @@ std = [
 	'sp-runtime/std',
 	'sp-std/std',
 	'log/std',
+	'ibc/std',
+	'prost/std',
+	'prost-types/std',
+	'tendermint-proto/std',
 ]
 
 runtime-benchmarks = ["frame-benchmarking"]
@@ -73,3 +77,24 @@ sp-core = { git = "https://github.com/octopus-network/substrate", branch = "polk
 sp-runtime = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
 sp-std = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
 frame-benchmarking = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+
+# for tendermint
+#tendermint              = { git = "https://github.com/octopus-network/tendermint-rs", branch = "dv-octopus-no-std" }
+#tendermint-rpc          = { git = "https://github.com/octopus-network/tendermint-rs", branch = "dv-octopus-no-std" }
+#tendermint-proto        = { git = "https://github.com/octopus-network/tendermint-rs", branch = "dv-octopus-no-std" }
+#tendermint-light-client = { git = "https://github.com/octopus-network/tendermint-rs", branch = "dv-octopus-no-std" }
+#tendermint-testgen      = { git = "https://github.com/octopus-network/tendermint-rs", branch = "dv-octopus-no-std" }
+
+# for tendermint
+tendermint              = { git = "https://github.com/informalsystems/tendermint-rs", branch = "soares/activate-no-std" }
+tendermint-rpc          = { git = "https://github.com/informalsystems/tendermint-rs", branch = "soares/activate-no-std" }
+tendermint-proto        = { git = "https://github.com/informalsystems/tendermint-rs", branch = "soares/activate-no-std" }
+tendermint-light-client = { git = "https://github.com/informalsystems/tendermint-rs", branch = "soares/activate-no-std" }
+tendermint-testgen      = { git = "https://github.com/informalsystems/tendermint-rs", branch = "soares/activate-no-std" }
+ics23                   = { git = "https://github.com/informalsystems/ics23.git", branch = "master" }
+safe-regex          = { git = "https://github.com/informalsystems/safe-regex.git", branch = "main" }
+safe-regex-macro    = { git = "https://github.com/informalsystems/safe-regex.git", branch = "main" }
+safe-regex-compiler = { git = "https://github.com/informalsystems/safe-regex.git", branch = "main" }
+safe-quote          = { git = "https://github.com/informalsystems/safe-regex.git", branch = "main" }
+safe-proc-macro2    = { git = "https://github.com/informalsystems/safe-regex.git", branch = "main" }
+tonic = { package = "informalsystems-tonic", git = "https://github.com/informalsystems/tonic.git", branch = "thane/informal-0.5.2" }
