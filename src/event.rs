@@ -3,6 +3,7 @@ use sp_runtime::RuntimeDebug;
 
 
 pub mod primitive {
+    use std::io::Read;
     use sp_std::str::FromStr;
     use ibc::ics02_client::client_type::ClientType as IbcClientType;
     use ibc::ics02_client::height::Height as IbcHeight;
@@ -12,52 +13,55 @@ pub mod primitive {
     use ibc::ics24_host::identifier::ChannelId as IbcChannelId;
     use ibc::ics04_channel::packet::{Packet as IbcPacket, Sequence as IbcSequence};
     use ibc::timestamp::Timestamp as IbcTimestamp;
+    // use alloc::string::String;
 
 
     use codec::{Decode, Encode};
     use sp_runtime::RuntimeDebug;
 
     #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
-    pub struct PortId(pub String);
+    pub struct PortId(pub Vec<u8>);
 
     impl PortId {
-        fn as_str(&self) -> &str {
-            &self.0
-        }
+        // fn as_str(&self) -> &str {
+        //     &self.0
+        // }
     }
 
     impl From<IbcPortId> for PortId {
         fn from(value : IbcPortId) -> Self {
-            let value = value.as_str();
-            Self(value.to_string())
+            let value = value.0.as_bytes().to_vec();
+            Self(value)
         }
     }
 
     impl PortId {
         pub fn to_ibc_port_id(self) -> IbcPortId {
-            IbcPortId(self.0)
+            let value = String::from_utf8(self.0).unwrap();
+            IbcPortId(value)
         }
     }
 
     #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
-    pub struct ChannelId(pub String);
+    pub struct ChannelId(pub Vec<u8>);
 
     impl ChannelId {
-        fn as_str(&self) -> &str {
-            &self.0
-        }
+        // fn as_str(&self) -> &str {
+        //     &self.0
+        // }
     }
     
     impl From<IbcChannelId> for ChannelId {
         fn from(value : IbcChannelId) -> Self {
-            let value = value.as_str();
-            Self(value.to_string())
+            let value = value.0.as_bytes().to_vec();
+            Self(value)
         }
     }
 
     impl ChannelId {
         pub fn to_ibc_channel_id(self) -> IbcChannelId {
-            IbcChannelId(self.0)
+            let value = String::from_utf8(self.0).unwrap();
+            IbcChannelId(value)
         }
     }
 
@@ -121,65 +125,68 @@ pub mod primitive {
     }
 
     #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
-    pub struct ClientId(pub String);
+    pub struct ClientId(pub Vec<u8>);
 
     impl ClientId {
-        pub fn as_str(&self) -> &str {
-            &self.0
-        }
+        // pub fn as_str(&self) -> &str {
+        //     &self.0
+        // }
     }
 
     impl From<IbcClientId> for ClientId {
         fn from(value: IbcClientId) -> Self {
-            let value = value.as_str();
-            Self(value.to_string())
+            let value = value.0.as_bytes().to_vec();
+            Self(value)
         }
     }
 
     impl ClientId {
         pub fn to_ibc_client_id(self) -> IbcClientId {
-            IbcClientId(self.0)
+            let value = String::from_utf8(self.0).unwrap();
+            IbcClientId(value)
         }
     }
 
     #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
-    pub struct ConnectionId(String);
+    pub struct ConnectionId(pub Vec<u8>);
 
     impl ConnectionId {
-        pub fn as_str(&self) -> &str {
-            &self.0
-        }
+        // pub fn as_str(&self) -> &str {
+        //     &self.0
+        // }
     }
 
     impl From<IbcConnectionId> for ConnectionId {
         fn from(value: IbcConnectionId) -> Self {
-            let value = value.as_str();
-            Self(value.to_string())
+            let value = value.0.as_bytes().to_vec();
+            Self(value)
         }
     }
 
     impl ConnectionId {
         pub fn to_ibc_connection_id(self) -> IbcConnectionId {
-            IbcConnectionId(self.0)
+            let value = String::from_utf8(self.0).unwrap();
+            IbcConnectionId(value)
         }
     }
 
     #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
     pub struct Timestamp {
-        time: String,
+        pub time: Vec<u8>,
     }
 
     impl From<IbcTimestamp> for Timestamp {
         fn from(val : IbcTimestamp) -> Self {
             Self {
-                time: val.to_string(),
+                time: val.to_string().as_bytes().to_vec(),
             }
         }
     }
 
     impl Timestamp {
         pub fn to_ibc_timestamp(self) -> IbcTimestamp {
-            let timestamp = IbcTimestamp::from_str(self.time.as_str()).unwrap();
+            let value = String::from_utf8(self.time).unwrap();
+            let timestamp = IbcTimestamp::from_str(&value).unwrap();
             timestamp
         }
 
@@ -240,8 +247,8 @@ pub mod primitive {
                 destination_channel: self.destination_channel.to_ibc_channel_id(),
                 data: self.data,
                 timeout_height: self.timeout_height.to_ibc_height(),
-                timeout_timestamp: IbcTimestamp::none(),
-                // timeout_timestamp: self.timeout_timestamp.to_ibc_timestamp(),
+                // timeout_timestamp: IbcTimestamp::none(),
+                timeout_timestamp: self.timeout_timestamp.to_ibc_timestamp(),
             }
         }
     }

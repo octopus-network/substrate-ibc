@@ -222,7 +222,8 @@ impl<T: Config> ChannelReader for Context<T> {
 				seq,
 			));
 			let mut data: &[u8] = &data;
-			Ok(String::decode(&mut data).unwrap())
+			let data = Vec::<u8>::decode(&mut data).unwrap();
+			Ok(String::from_utf8(data).unwrap())
 		} else {
 			log::info!("read get packet commitment return None");
 
@@ -244,7 +245,9 @@ impl<T: Config> ChannelReader for Context<T> {
 			let data =
 				<PacketReceipt<T>>::get((key.0.as_bytes(), key.1.as_bytes(), seq));
 			let mut data: &[u8] = &data;
-			let data = String::decode(&mut data).unwrap();
+			// let data = String::decode(&mut data).unwrap();
+			let data = Vec::<u8>::decode(&mut data).unwrap();
+			let data = String::from_utf8(data).unwrap();
 
 			let data = match data.as_ref() {
 				"Ok" => Receipt::Ok,
@@ -275,7 +278,8 @@ impl<T: Config> ChannelReader for Context<T> {
 				seq,
 			));
 			let mut data: &[u8] = &data;
-			Ok(String::decode(&mut data).unwrap())
+			let data = Vec::<u8>::decode(&mut data).unwrap();
+			Ok(String::from_utf8(data).unwrap())
 		} else {
 			log::info!("read get acknowledgement return None");
 

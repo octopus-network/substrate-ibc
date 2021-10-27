@@ -13,19 +13,10 @@ jsonrpc-derive = "15.0"
 serde = { version = "1.0", features = ["derive"], optional = true }
 
 # Substrate packages
-sp-api = { version = '3.0', default-features = false , path = "../../../../../primitives/api" }
-sp-blockchain = { version = '3.0', default-features = false, path = "../../../../../primitives/blockchain" }
-sp-rpc = { version = '3.0', default-features = false, path = "../../../../../primitives/rpc" }
-sp-runtime = { version = '3.0', default-features = false, path = "../../../../../primitives/runtime" }
+sp-api = { version = '3.0', path = "../../../../../primitives/api" }
+sp-blockchain = { version = '3.0', path = "../../../../../primitives/blockchain" }
+sp-rpc = { version = '3.0', path = "../../../../../primitives/rpc" }
+sp-runtime = { version = '3.0', path = "../../../../../primitives/runtime" }
 
 # local packages
 pallet-ibc-runtime-api = { path  = "../runtime-api" }
-
-[features]
-default = ["std"]
-std = [
-    "serde",
-    "sp-api/std",
-    "sp-runtime/std",
-    "pallet-ibc-runtime-api/std",
-]

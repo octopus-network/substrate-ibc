@@ -17,7 +17,8 @@ impl<T: Config> ClientReader for Context<T> {
 		if <Clients<T>>::contains_key(client_id.as_bytes()) {
 			let data = <Clients<T>>::get(client_id.as_bytes());
 			let mut data: &[u8] = &data;
-			let data = String::decode(&mut data).unwrap();
+			let data = Vec::<u8>::decode(&mut data).unwrap();
+			let data = String::from_utf8(data).unwrap();
 			log::info!("In client: [client_type] >> date: {} ", data);
 			match ClientType::from_str(&data) {
 				Err(_err) => {

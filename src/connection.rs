@@ -48,8 +48,9 @@ impl<T: Config> ConnectionReader for Context<T> {
 	fn host_current_height(&self) -> Height {
 		log::info!("in connection: [host_current_height]");
 
-		let block_number: String = <frame_system::Pallet<T>>::block_number().to_string();
+		let block_number  = format!("{:?}",<frame_system::Pallet<T>>::block_number());
 		let current_height : u64 = block_number.parse().unwrap_or_default();
+		// let current_height = block_number;
 
 		<OldHeight<T>>::put(current_height);
 

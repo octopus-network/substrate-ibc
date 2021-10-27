@@ -73,14 +73,14 @@ mod routing;
 
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
 pub struct Any {
-    pub type_url: String,
+    pub type_url: Vec<u8>,
     pub value: Vec<u8>,
 }
 
 impl From<prost_types::Any> for Any {
 	fn from(any: prost_types::Any) -> Self {
         Self {
-			type_url: any.type_url,
+			type_url: any.type_url.as_bytes().to_vec(),
 			value: any.value,
 		}
     }
@@ -918,7 +918,7 @@ pub mod pallet {
 			let messages = messages
 				.iter()
 				.map(|message| prost_types::Any {
-					type_url: message.type_url.clone(),
+					type_url: String::from_utf8(message.type_url.clone()).unwrap(),
 					value: message.value.clone(),
 				})
 				.collect();
