@@ -178,7 +178,7 @@ pub mod primitive {
     impl From<IbcTimestamp> for Timestamp {
         fn from(val : IbcTimestamp) -> Self {
             Self {
-                time: val.to_string().as_bytes().to_vec(),
+                time: val.as_nanoseconds().to_string().as_bytes().to_vec(),
             }
         }
     }

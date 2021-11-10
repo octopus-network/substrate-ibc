@@ -100,8 +100,9 @@ pub mod pallet {
 	use super::*;
 	use frame_support::{dispatch::DispatchResult, pallet_prelude::*};
 	use frame_system::pallet_prelude::*;
-	use event::primitive::{ClientType, ClientId, Height, ConnectionId, PortId, ChannelId, Packet};
+	use event::primitive::{ClientType, ClientId, Height, ConnectionId, PortId, ChannelId, Packet, Timestamp};
 	use ibc::events::IbcEvent;
+	use crate::event::primitive::Sequence;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -206,6 +207,11 @@ pub mod pallet {
 	// (portid, channelid, sequence) => hash
 	pub type PacketCommitment<T: Config> =
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
+
+	#[pallet::storage]
+	// (height, port_id, channelid, sequence) => event
+	pub type SendPacketEvent<T: Config> =
+	StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>, u64), Vec<u8>, ValueQuery>;
 
 	#[pallet::type_value]
 	pub fn DefaultOldHeight() -> u64 { 0u64 }
@@ -930,7 +936,33 @@ pub mod pallet {
 
 			for event in result {
 				log::info!("Event: {:?}", event);
-				Self::deposit_event(event.into());
+				Self::deposit_event(event.clone().into());
+
+				match event {
+					ibc::events::IbcEvent::SendPacket(value) => {
+						let _value = value.clone();
+						let packet = Packet {
+							sequence: Sequence::from(_value.packet.sequence),
+							source_channel: ChannelId::from(_value.packet.source_channel),
+							source_port: PortId::from(_value.packet.source_port),
+							destination_channel: ChannelId::from(_value.packet.destination_channel),
+							destination_port: PortId::from(_value.packet.destination_port),
+							data: _value.packet.data,
+							timeout_timestamp: Timestamp::from(_value.packet.timeout_timestamp),
+							timeout_height: Height::from(_value.packet.timeout_height),
+						};
+						let packet = packet.encode();
+
+						let port_id = value.packet.source_port.as_bytes().to_vec();
+						let channel_id = value.packet.source_channel.as_bytes().to_vec();
+
+						<SendPacketEvent<T>>::insert(
+							(port_id, channel_id, u64::from(value.packet.sequence)),
+							packet
+						);
+					}
+					_ => {}
+				}
 			}
 
 			Ok(())
