@@ -3,8 +3,7 @@ use super::*;
 use crate::routing::Context;
 use ibc::{
 	ics02_client::{
-		client_consensus::AnyConsensusState, client_state::AnyClientState, context::ClientReader,
-		error::Error as ICS02Error,
+		client_consensus::AnyConsensusState, client_state::AnyClientState,
 	},
 	ics03_connection::{
 		connection::ConnectionEnd,

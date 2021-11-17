@@ -1,6 +1,3 @@
-use codec::{Decode, Encode};
-use sp_runtime::RuntimeDebug;
-
 pub mod primitive {
 	use crate::alloc::string::ToString;
 	use alloc::string::String;

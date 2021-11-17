@@ -1,4 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(unreachable_patterns)]
 
 //! # IBC Module
 //!
@@ -63,9 +64,8 @@ use core::marker::PhantomData;
 use frame_system::ensure_signed;
 use ibc;
 pub use routing::ModuleCallbacks;
-use sp_core::H256;
 use sp_runtime::RuntimeDebug;
-use sp_std::{prelude::*, str::FromStr};
+use sp_std::prelude::*;
 use tendermint_proto::Protobuf;
 
 mod channel;
@@ -891,8 +891,6 @@ pub mod pallet {
 
 			log::info!("result: {:?}", result);
 
-			use ibc::events::IbcEvent;
-
 			for event in result {
 				log::info!("Event: {:?}", event);
 				Self::deposit_event(event.clone().into());
@@ -931,7 +929,7 @@ pub mod pallet {
 
 	impl<T: Config> Pallet<T> {
 		/// get key-value vector of (height, consensus_state) according by client_identifier
-		pub fn get_consensus_state_with_height(client_id: Vec<u8>) -> Vec<(Vec<u8>, Vec<u8>)> {
+		pub fn get_consensus_state_with_height(_client_id: Vec<u8>) -> Vec<(Vec<u8>, Vec<u8>)> {
 			todo!()
 		}
 
@@ -969,12 +967,12 @@ pub mod pallet {
 		}
 
 		/// get connection_identifier vector according by client_identifier
-		pub fn get_client_connections(client_id: Vec<u8>) -> Vec<Vec<u8>> {
+		pub fn get_client_connections(_client_id: Vec<u8>) -> Vec<Vec<u8>> {
 			todo!()
 		}
 
 		/// get port_identifier, channel_identifier, channel_end according by connection_id
-		pub fn get_connection_channels(connection_id: Vec<u8>) -> Vec<(Vec<u8>, Vec<u8>, Vec<u8>)> {
+		pub fn get_connection_channels(_connection_id: Vec<u8>) -> Vec<(Vec<u8>, Vec<u8>, Vec<u8>)> {
 			todo!()
 		}
 
@@ -1007,7 +1005,7 @@ pub mod pallet {
 
 		fn store_latest_height(ibc_event: IbcEvent) {
 			match ibc_event {
-				IbcEvent::Empty(value) => {
+				IbcEvent::Empty(_value) => {
 					log::info!("ibc event: {}", "Empty");
 				},
 				IbcEvent::NewBlock(value) => {
@@ -1094,7 +1092,7 @@ pub mod pallet {
 					let height = value.height().encode_vec().unwrap();
 					<LatestHeight<T>>::set(height);
 				},
-				IbcEvent::ChainError(value) => {
+				IbcEvent::ChainError(_value) => {
 					log::info!("Ibc event: {}", "chainError");
 				},
 			}
