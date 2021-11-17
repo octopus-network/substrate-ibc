@@ -3,7 +3,9 @@ use sp_runtime::RuntimeDebug;
 
 
 pub mod primitive {
-    use std::io::Read;
+    use crate::alloc::string::ToString;
+    use sp_std::vec::Vec;
+    use alloc::string::String;
     use sp_std::str::FromStr;
     use ibc::ics02_client::client_type::ClientType as IbcClientType;
     use ibc::ics02_client::height::Height as IbcHeight;
@@ -13,20 +15,12 @@ pub mod primitive {
     use ibc::ics24_host::identifier::ChannelId as IbcChannelId;
     use ibc::ics04_channel::packet::{Packet as IbcPacket, Sequence as IbcSequence};
     use ibc::timestamp::Timestamp as IbcTimestamp;
-    // use alloc::string::String;
-
 
     use codec::{Decode, Encode};
     use sp_runtime::RuntimeDebug;
 
     #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
     pub struct PortId(pub Vec<u8>);
-
-    impl PortId {
-        // fn as_str(&self) -> &str {
-        //     &self.0
-        // }
-    }
 
     impl From<IbcPortId> for PortId {
         fn from(value : IbcPortId) -> Self {
@@ -44,12 +38,6 @@ pub mod primitive {
 
     #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
     pub struct ChannelId(pub Vec<u8>);
-
-    impl ChannelId {
-        // fn as_str(&self) -> &str {
-        //     &self.0
-        // }
-    }
     
     impl From<IbcChannelId> for ChannelId {
         fn from(value : IbcChannelId) -> Self {
@@ -127,11 +115,6 @@ pub mod primitive {
     #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
     pub struct ClientId(pub Vec<u8>);
 
-    impl ClientId {
-        // pub fn as_str(&self) -> &str {
-        //     &self.0
-        // }
-    }
 
     impl From<IbcClientId> for ClientId {
         fn from(value: IbcClientId) -> Self {
@@ -150,11 +133,6 @@ pub mod primitive {
     #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
     pub struct ConnectionId(pub Vec<u8>);
 
-    impl ConnectionId {
-        // pub fn as_str(&self) -> &str {
-        //     &self.0
-        // }
-    }
 
     impl From<IbcConnectionId> for ConnectionId {
         fn from(value: IbcConnectionId) -> Self {
@@ -247,7 +225,6 @@ pub mod primitive {
                 destination_channel: self.destination_channel.to_ibc_channel_id(),
                 data: self.data,
                 timeout_height: self.timeout_height.to_ibc_height(),
-                // timeout_timestamp: IbcTimestamp::none(),
                 timeout_timestamp: self.timeout_timestamp.to_ibc_timestamp(),
             }
         }

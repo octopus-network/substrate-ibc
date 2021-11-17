@@ -1,4 +1,5 @@
 use super::*;
+use core::str::FromStr;
 
 use crate::routing::Context;
 use ibc::ics02_client::client_consensus::AnyConsensusState;
@@ -19,7 +20,7 @@ impl<T: Config> ClientReader for Context<T> {
 			let mut data: &[u8] = &data;
 			let data = Vec::<u8>::decode(&mut data).unwrap();
 			let data = String::from_utf8(data).unwrap();
-			log::info!("In client: [client_type] >> date: {} ", data);
+			// log::info!("In client: [client_type] >> date: {} ", data);
 			match ClientType::from_str(&data) {
 				Err(_err) => {
 					todo!()

@@ -1,4 +1,4 @@
-// #![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(not(feature = "std"), no_std)]
 
 //! # IBC Module
 //!
@@ -54,6 +54,7 @@ extern crate alloc;
 pub use pallet::*;
 
 use alloc::format;
+use alloc::string::String;
 use codec::{Decode, Encode};
 use core::marker::PhantomData;
 use frame_system::ensure_signed;
@@ -62,7 +63,8 @@ pub use routing::ModuleCallbacks;
 use sp_core::H256;
 use sp_runtime::RuntimeDebug;
 use sp_std::prelude::*;
-use std::str::FromStr;
+use sp_std::str::FromStr;
+use tendermint_proto::Protobuf;
 
 mod channel;
 mod client;
@@ -214,10 +216,25 @@ pub mod pallet {
 	StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>, u64), Vec<u8>, ValueQuery>;
 
 	#[pallet::type_value]
-	pub fn DefaultOldHeight() -> u64 { 0u64 }
+	pub fn DefaultlatestHeight() -> Vec<u8> {
+		let height = ibc::Height::default();
+
+		let result = height.encode_vec().unwrap();
+
+		result
+	}
 
 	#[pallet::storage]
-	// store oldest height
+	// store latest height
+	pub type LatestHeight<T: Config> = StorageValue<_, Vec<u8>, ValueQuery, DefaultlatestHeight>;
+
+	#[pallet::type_value]
+	pub fn DefaultOldHeight() -> u64 {
+		0
+	}
+
+	#[pallet::storage]
+	// store latest height
 	pub type OldHeight<T: Config> = StorageValue<_, u64, ValueQuery, DefaultOldHeight>;
 
     #[pallet::event]
@@ -937,6 +954,7 @@ pub mod pallet {
 			for event in result {
 				log::info!("Event: {:?}", event);
 				Self::deposit_event(event.clone().into());
+				Self::store_latest_height(event.clone());
 
 				match event {
 					ibc::events::IbcEvent::SendPacket(value) => {
@@ -1046,6 +1064,103 @@ pub mod pallet {
 			});
 			result
 		}
+
+
+		fn store_latest_height(ibc_event: IbcEvent) {
+			match ibc_event {
+				IbcEvent::Empty(value) => {
+					log::info!("ibc event: {}", "Empty");
+				}
+				IbcEvent::NewBlock(value) => {
+					let height = value.height().encode_vec().unwrap();
+					<LatestHeight<T>>::set(height);
+				}
+				IbcEvent::SendPacket(value) => {
+					let height = value.height().encode_vec().unwrap();
+					<LatestHeight<T>>::set(height);
+				}
+				IbcEvent::WriteAcknowledgement(value) => {
+					let height = value.height().encode_vec().unwrap();
+					<LatestHeight<T>>::set(height);
+				}
+				IbcEvent::UpdateClient(value) => {
+					let height = value.height().encode_vec().unwrap();
+					<LatestHeight<T>>::set(height);
+				}
+				IbcEvent::ReceivePacket(value) => {
+					let height = value.height().encode_vec().unwrap();
+					<LatestHeight<T>>::set(height);
+				}
+				IbcEvent::CloseConfirmChannel(value) => {
+					let height = value.height().encode_vec().unwrap();
+					<LatestHeight<T>>::set(height);
+				}
+				IbcEvent::CreateClient(value ) => {
+					let height = value.height().encode_vec().unwrap();
+					<LatestHeight<T>>::set(height);
+				}
+				IbcEvent::UpgradeClient(value ) => {
+					let height = value.0.height.clone().encode_vec().unwrap();
+					<LatestHeight<T>>::set(height);
+				}
+				IbcEvent::ClientMisbehaviour(value ) => {
+					let height = value.height().encode_vec().unwrap();
+					<LatestHeight<T>>::set(height);
+				}
+				IbcEvent::OpenInitConnection(value ) => {
+					let height = value.height().encode_vec().unwrap();
+					<LatestHeight<T>>::set(height);
+				}
+				IbcEvent::OpenTryConnection(value ) => {
+					let height = value.height().encode_vec().unwrap();
+					<LatestHeight<T>>::set(height);
+				}
+				IbcEvent::OpenAckConnection(value ) => {
+					let height = value.height().encode_vec().unwrap();
+					<LatestHeight<T>>::set(height);
+				}
+				IbcEvent::OpenConfirmConnection(value ) => {
+					let height = value.height().encode_vec().unwrap();
+					<LatestHeight<T>>::set(height);
+				}
+				IbcEvent::OpenInitChannel(value ) => {
+					let height = value.height().encode_vec().unwrap();
+					<LatestHeight<T>>::set(height);
+				}
+				IbcEvent::OpenTryChannel(value ) => {
+					let height = value.height().encode_vec().unwrap();
+					<LatestHeight<T>>::set(height);
+				}
+				IbcEvent::OpenAckChannel(value ) => {
+					let height = value.height().encode_vec().unwrap();
+					<LatestHeight<T>>::set(height);
+				}
+				IbcEvent::OpenConfirmChannel(value ) => {
+					let height = value.height().encode_vec().unwrap();
+					<LatestHeight<T>>::set(height);
+				}
+				IbcEvent::CloseInitChannel(value ) => {
+					let height = value.height().encode_vec().unwrap();
+					<LatestHeight<T>>::set(height);
+				}
+				IbcEvent::AcknowledgePacket(value ) => {
+					let height = value.height().encode_vec().unwrap();
+					<LatestHeight<T>>::set(height);
+				}
+				IbcEvent::TimeoutPacket(value ) => {
+					let height = value.height().encode_vec().unwrap();
+					<LatestHeight<T>>::set(height);
+				}
+				IbcEvent::TimeoutOnClosePacket(value ) => {
+					let height = value.height().encode_vec().unwrap();
+					<LatestHeight<T>>::set(height);
+				}
+				IbcEvent::ChainError(value ) => {
+					log::info!("Ibc event: {}", "chainError");
+				}
+			}
+		}
+
 	}
 }
 

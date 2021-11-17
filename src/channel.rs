@@ -1,4 +1,5 @@
 use super::*;
+use core::str::FromStr;
 
 use crate::routing::Context;
 use ibc::ics02_client::client_consensus::AnyConsensusState;
@@ -283,7 +284,7 @@ impl<T: Config> ChannelReader for Context<T> {
 	fn hash(&self, value: String) -> String {
 		log::info!("in channel: [hash]");
 
-		let r = sp_core::hashing::sha2_256(value.as_bytes());
+		let r = sp_io::hashing::sha2_256(value.as_bytes());
 
 		let mut tmp = String::new();
 		for item in r.iter() {
