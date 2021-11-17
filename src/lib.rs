@@ -972,7 +972,9 @@ pub mod pallet {
 		}
 
 		/// get port_identifier, channel_identifier, channel_end according by connection_id
-		pub fn get_connection_channels(_connection_id: Vec<u8>) -> Vec<(Vec<u8>, Vec<u8>, Vec<u8>)> {
+		pub fn get_connection_channels(
+			_connection_id: Vec<u8>,
+		) -> Vec<(Vec<u8>, Vec<u8>, Vec<u8>)> {
 			todo!()
 		}
 
