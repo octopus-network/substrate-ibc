@@ -1,17 +1,21 @@
 use super::*;
 
 use crate::routing::Context;
-use ibc::ics02_client::client_consensus::AnyConsensusState;
-use ibc::ics02_client::client_state::AnyClientState;
-use ibc::ics02_client::context::ClientReader;
-use ibc::ics03_connection::connection::ConnectionEnd;
-use ibc::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
-use ibc::ics03_connection::error::Error as ICS03Error;
-use ibc::ics02_client::error::Error as ICS02Error;
-use ibc::ics23_commitment::commitment::{CommitmentPrefix, CommitmentRoot};
-use ibc::ics24_host::identifier::{ClientId, ConnectionId};
-use ibc::ics10_grandpa::consensus_state::ConsensusState as GPConsensusState;
-use ibc::Height;
+use ibc::{
+	ics02_client::{
+		client_consensus::AnyConsensusState, client_state::AnyClientState, context::ClientReader,
+		error::Error as ICS02Error,
+	},
+	ics03_connection::{
+		connection::ConnectionEnd,
+		context::{ConnectionKeeper, ConnectionReader},
+		error::Error as ICS03Error,
+	},
+	ics10_grandpa::consensus_state::ConsensusState as GPConsensusState,
+	ics23_commitment::commitment::{CommitmentPrefix, CommitmentRoot},
+	ics24_host::identifier::{ClientId, ConnectionId},
+	Height,
+};
 use tendermint_proto::Protobuf;
 
 impl<T: Config> ConnectionReader for Context<T> {
@@ -36,7 +40,10 @@ impl<T: Config> ConnectionReader for Context<T> {
 		// ClientReader::client_state(self, client_id)
 		if <ClientStates<T>>::contains_key(client_id.as_bytes()) {
 			let data = <ClientStates<T>>::get(client_id.as_bytes());
-			log::info!("In client: [client_state] >> client_state: {:?}", AnyClientState::decode_vec(&*data).unwrap());
+			log::info!(
+				"In client: [client_state] >> client_state: {:?}",
+				AnyClientState::decode_vec(&*data).unwrap()
+			);
 			Ok(AnyClientState::decode_vec(&*data).unwrap())
 		} else {
 			log::info!("In client: [client_state] >> read client_state is None");
@@ -48,8 +55,8 @@ impl<T: Config> ConnectionReader for Context<T> {
 	fn host_current_height(&self) -> Height {
 		log::info!("in connection: [host_current_height]");
 
-		let block_number  = format!("{:?}",<frame_system::Pallet<T>>::block_number());
-		let current_height : u64 = block_number.parse().unwrap_or_default();
+		let block_number = format!("{:?}", <frame_system::Pallet<T>>::block_number());
+		let current_height: u64 = block_number.parse().unwrap_or_default();
 		// let current_height = block_number;
 
 		<OldHeight<T>>::put(current_height);
@@ -91,7 +98,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 		for item in value.iter() {
 			if item.0 == height {
 				let any_consensus_state = AnyConsensusState::decode_vec(&*item.1).unwrap();
-				return Ok(any_consensus_state);
+				return Ok(any_consensus_state)
 			}
 		}
 		todo!()
@@ -112,7 +119,7 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 			*val = new;
 			Ok(())
 		})
-			.expect("increase connection counter error");
+		.expect("increase connection counter error");
 	}
 
 	fn store_connection(
@@ -121,7 +128,11 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		connection_end: &ConnectionEnd,
 	) -> Result<(), ICS03Error> {
 		log::info!("in connection: [store_connection]");
-		log::info!("in connection: [store_connection] >> connection_id: {:?}, connection_end: {:?}", connection_id.clone(), connection_end.clone());
+		log::info!(
+			"in connection: [store_connection] >> connection_id: {:?}, connection_end: {:?}",
+			connection_id.clone(),
+			connection_end.clone()
+		);
 
 		let data = connection_end.encode_vec().unwrap();
 		<Connections<T>>::insert(connection_id.as_bytes(), data);
@@ -137,10 +148,7 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 	) -> Result<(), ICS03Error> {
 		log::info!("in connection: [store_connection_to_client]");
 
-		<ConnectionClient<T>>::insert(
-			client_id.as_bytes(),
-			connection_id.as_bytes(),
-		);
+		<ConnectionClient<T>>::insert(client_id.as_bytes(), connection_id.as_bytes());
 		Ok(())
 	}
 }

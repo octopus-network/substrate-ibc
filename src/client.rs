@@ -2,13 +2,17 @@ use super::*;
 use core::str::FromStr;
 
 use crate::routing::Context;
-use ibc::ics02_client::client_consensus::AnyConsensusState;
-use ibc::ics02_client::client_state::AnyClientState;
-use ibc::ics02_client::client_type::ClientType;
-use ibc::ics02_client::context::{ClientKeeper, ClientReader};
-use ibc::ics02_client::error::Error as ICS02Error;
-use ibc::ics24_host::identifier::ClientId;
-use ibc::Height;
+use ibc::{
+	ics02_client::{
+		client_consensus::AnyConsensusState,
+		client_state::AnyClientState,
+		client_type::ClientType,
+		context::{ClientKeeper, ClientReader},
+		error::Error as ICS02Error,
+	},
+	ics24_host::identifier::ClientId,
+	Height,
+};
 use tendermint_proto::Protobuf;
 
 impl<T: Config> ClientReader for Context<T> {
@@ -41,7 +45,10 @@ impl<T: Config> ClientReader for Context<T> {
 
 		if <ClientStates<T>>::contains_key(client_id.as_bytes()) {
 			let data = <ClientStates<T>>::get(client_id.as_bytes());
-			log::info!("In client: [client_state] >> client_state: {:?}", AnyClientState::decode_vec(&*data).unwrap());
+			log::info!(
+				"In client: [client_state] >> client_state: {:?}",
+				AnyClientState::decode_vec(&*data).unwrap()
+			);
 			Ok(AnyClientState::decode_vec(&*data).unwrap())
 		} else {
 			log::info!("In client: [client_state] >> read client_state is None");
@@ -50,7 +57,11 @@ impl<T: Config> ClientReader for Context<T> {
 		}
 	}
 
-	fn consensus_state(&self, client_id: &ClientId, height: Height) -> Result<AnyConsensusState, ICS02Error> {
+	fn consensus_state(
+		&self,
+		client_id: &ClientId,
+		height: Height,
+	) -> Result<AnyConsensusState, ICS02Error> {
 		log::info!("In client: [consensus_state]");
 
 		let height = height.encode_vec().unwrap();
@@ -59,14 +70,17 @@ impl<T: Config> ClientReader for Context<T> {
 		for item in value.iter() {
 			if item.0 == height {
 				let any_consensus_state = AnyConsensusState::decode_vec(&*item.1).unwrap();
-				return Ok(any_consensus_state);
+				return Ok(any_consensus_state)
 			}
 		}
 		todo!()
 	}
-	fn client_counter(&self) -> Result<u64,ICS02Error> {
+	fn client_counter(&self) -> Result<u64, ICS02Error> {
 		log::info!("In client: [client_counter]");
-		log::info!("In client: [client_counter] >> client_counter: {:?}", <ClientCounter<T>>::get());
+		log::info!(
+			"In client: [client_counter] >> client_counter: {:?}",
+			<ClientCounter<T>>::get()
+		);
 
 		Ok(<ClientCounter<T>>::get())
 	}
@@ -124,17 +138,18 @@ impl<T: Config> ClientKeeper for Context<T> {
 		log::info!("In client: [store_consensus_state] >> height: {:?}", height);
 		log::info!("In client: [store_consensus_state] >> consensus_state: {:?}", consensus_state);
 
-
-
 		let height = height.encode_vec().unwrap();
 		let data = consensus_state.encode_vec().unwrap();
 		if <ConsensusStates<T>>::contains_key(client_id.as_bytes()) {
 			// if consensus_state is no empty use push insert an exist ConsensusStates
-			<ConsensusStates<T>>::try_mutate(client_id.as_bytes(),|val| -> Result<(), &'static str> {
-				val.push((height, data));
-				Ok(())
-			}).expect("store consensus state error");
-
+			<ConsensusStates<T>>::try_mutate(
+				client_id.as_bytes(),
+				|val| -> Result<(), &'static str> {
+					val.push((height, data));
+					Ok(())
+				},
+			)
+			.expect("store consensus state error");
 		} else {
 			// if consensus state is empty insert a new item.
 			<ConsensusStates<T>>::insert(client_id.as_bytes(), vec![(height, data)]);
