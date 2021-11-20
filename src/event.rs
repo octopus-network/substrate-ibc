@@ -13,10 +13,30 @@ pub mod primitive {
 	use sp_std::{str::FromStr, vec::Vec};
 
 	use codec::{Decode, Encode};
+	use scale_info::{
+		build::*,
+		MetaType,
+		Path,
+		Type,
+		TypeInfo,
+		prelude::vec,
+	};
 	use sp_runtime::RuntimeDebug;
 
 	#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
 	pub struct PortId(pub Vec<u8>);
+
+
+	impl TypeInfo for PortId {
+		type Identity = Self;
+
+		fn type_info() -> Type {
+			Type::builder()
+				.path(Path::new("PortId", module_path!()))
+				.composite(Fields::unnamed()
+					.field(|f| f.ty::<Vec<u8>>().type_name("Vec<u8>")))
+		}
+	}
 
 	impl From<IbcPortId> for PortId {
 		fn from(value: IbcPortId) -> Self {
@@ -34,6 +54,18 @@ pub mod primitive {
 
 	#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
 	pub struct ChannelId(pub Vec<u8>);
+
+	impl TypeInfo for ChannelId {
+		type Identity = Self;
+
+		fn type_info() -> Type {
+			Type::builder()
+				.path(Path::new("ChannelId", module_path!()))
+				.composite(Fields::unnamed()
+					.field(|f| f.ty::<Vec<u8>>().type_name("Vec<u8>")))
+		}
+	}
+
 
 	impl From<IbcChannelId> for ChannelId {
 		fn from(value: IbcChannelId) -> Self {
@@ -58,6 +90,18 @@ pub mod primitive {
 		pub revision_height: u64,
 	}
 
+	impl TypeInfo for Height {
+		type Identity = Self;
+
+		fn type_info() -> Type {
+			Type::builder()
+				.path(Path::new("Height", module_path!()))
+				.composite(Fields::named()
+					.field(|f| f.ty::<u64>().name("revision_number").type_name("u64"))
+					.field(|f| f.ty::<u64>().name("revision_height").type_name("u64")))
+		}
+	}
+
 	impl From<IbcHeight> for Height {
 		fn from(IbcHeight { revision_number, revision_height }: IbcHeight) -> Self {
 			Height { revision_number, revision_height }
@@ -77,6 +121,20 @@ pub mod primitive {
 	pub enum ClientType {
 		Tendermint,
 		Grandpa,
+	}
+
+	impl TypeInfo for ClientType {
+		type Identity = Self;
+
+		fn type_info() -> Type {
+			Type::builder()
+				.path(Path::new("ClientTy", module_path!()))
+				.variant(
+					Variants::new()
+						.variant("Tendermint", |v| v.index(1))
+						.variant("Grandpa", |v| v.index(2))
+				)
+		}
 	}
 
 	impl From<IbcClientType> for ClientType {
@@ -102,6 +160,17 @@ pub mod primitive {
 	#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
 	pub struct ClientId(pub Vec<u8>);
 
+	impl TypeInfo for ClientId {
+		type Identity = Self;
+
+		fn type_info() -> Type {
+			Type::builder()
+				.path(Path::new("ClientId", module_path!()))
+				.composite(Fields::unnamed()
+					.field(|f| f.ty::<Vec<u8>>().type_name("Vec<u8>")))
+		}
+	}
+
 	impl From<IbcClientId> for ClientId {
 		fn from(value: IbcClientId) -> Self {
 			let value = value.0.as_bytes().to_vec();
@@ -118,6 +187,18 @@ pub mod primitive {
 
 	#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
 	pub struct ConnectionId(pub Vec<u8>);
+
+	impl TypeInfo for ConnectionId {
+		type Identity = Self;
+
+		fn type_info() -> Type {
+			Type::builder()
+				.path(Path::new("ConnectionId", module_path!()))
+				.composite(Fields::unnamed()
+					.field(|f| f.ty::<Vec<u8>>().type_name("Vec<u8>")))
+		}
+	}
+
 
 	impl From<IbcConnectionId> for ConnectionId {
 		fn from(value: IbcConnectionId) -> Self {
@@ -138,6 +219,17 @@ pub mod primitive {
 		pub time: Vec<u8>,
 	}
 
+	impl TypeInfo for Timestamp {
+		type Identity = Self;
+
+		fn type_info() -> Type {
+			Type::builder()
+				.path(Path::new("Timestamp", module_path!()))
+				.composite(Fields::unnamed()
+					.field(|f| f.ty::<Vec<u8>>().type_name("Vec<u8>")))
+		}
+	}
+
 	impl From<IbcTimestamp> for Timestamp {
 		fn from(val: IbcTimestamp) -> Self {
 			Self { time: val.as_nanoseconds().to_string().as_bytes().to_vec() }
@@ -154,6 +246,17 @@ pub mod primitive {
 
 	#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
 	pub struct Sequence(u64);
+
+	impl TypeInfo for Sequence {
+		type Identity = Self;
+
+		fn type_info() -> Type {
+			Type::builder()
+				.path(Path::new("Sequence", module_path!()))
+				.composite(Fields::unnamed()
+					.field(|f| f.ty::<u64>().type_name("u64")))
+		}
+	}
 
 	impl From<IbcSequence> for Sequence {
 		fn from(val: IbcSequence) -> Self {
@@ -177,6 +280,27 @@ pub mod primitive {
 		pub data: Vec<u8>,
 		pub timeout_height: Height,
 		pub timeout_timestamp: Timestamp,
+	}
+
+
+	impl TypeInfo for Packet {
+		type Identity = Self;
+
+		fn type_info() -> Type {
+			Type::builder()
+				.path(Path::new("Packet", module_path!()))
+				.composite(Fields::named()
+					.field(|f| f.ty::<Sequence>().name("sequence").type_name("Sequence"))
+					.field(|f| f.ty::<PortId>().name("source_port").type_name("PortId"))
+					.field(|f| f.ty::<ChannelId>().name("source_channel").type_name("ChannelId"))
+					.field(|f| f.ty::<PortId>().name("destination_port").type_name("PortId"))
+					.field(|f| f.ty::<ChannelId>().name("destination_channel").type_name("ChannelId"))
+					.field(|f| f.ty::<Vec<u8>>().name("data").type_name("Vec<u8>"))
+					.field(|f| f.ty::<Height>().name("timeout_height").type_name("Height"))
+					.field(|f| f.ty::<Timestamp>().name("timeout_timestamp").type_name("Timestamp"))
+				)
+
+		}
 	}
 
 	impl From<IbcPacket> for Packet {

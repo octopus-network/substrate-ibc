@@ -67,6 +67,14 @@ pub use routing::ModuleCallbacks;
 use sp_runtime::RuntimeDebug;
 use sp_std::prelude::*;
 use tendermint_proto::Protobuf;
+use scale_info::{
+	build::*,
+	MetaType,
+	Path,
+	Type,
+	TypeInfo,
+	prelude::vec,
+};
 
 mod channel;
 mod client;
@@ -79,6 +87,18 @@ mod routing;
 pub struct Any {
 	pub type_url: Vec<u8>,
 	pub value: Vec<u8>,
+}
+
+impl TypeInfo for Any {
+	type Identity = Self;
+
+	fn type_info() -> Type {
+		Type::builder()
+			.path(Path::new("Any", module_path!()))
+			.composite(Fields::named()
+				.field(|f| f.ty::<Vec<u8>>().name("type_url").type_name("Vec<u8>"))
+				.field(|f| f.ty::<Vec<u8>>().name("value").type_name("Vec<u8>")))
+	}
 }
 
 impl From<prost_types::Any> for Any {
