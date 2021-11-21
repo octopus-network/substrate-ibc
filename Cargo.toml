@@ -64,21 +64,22 @@ std = [
 runtime-benchmarks = ["frame-benchmarking"]
 try-runtime = ["frame-support/try-runtime"]
 
-#[patch."https://github.com/paritytech/substrate"]
-#frame-support = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
-#frame-system = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
-#sp-core = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
-#sp-runtime = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
-#sp-std = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
-#frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
+[patch."https://github.com/paritytech/substrate"]
+frame-support = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+frame-system = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-core = {git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-runtime = {git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-std = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+frame-benchmarking = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
 
 [patch.crates-io]
-frame-support = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
-frame-system = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
-sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
-sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
-sp-std = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
-frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
+frame-support = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+frame-system = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-core = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-runtime = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-std = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+sp-io = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+frame-benchmarking = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
 
 # for tendermint
 tendermint              = { git = "https://github.com/informalsystems/tendermint-rs", branch = "soares/activate-no-std" }
