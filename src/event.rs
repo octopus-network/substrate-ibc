@@ -11,11 +11,12 @@ pub mod primitive {
 		timestamp::Timestamp as IbcTimestamp,
 	};
 	use sp_std::{str::FromStr, vec::Vec};
+	use scale_info::TypeInfo;
 
 	use codec::{Decode, Encode};
 	use sp_runtime::RuntimeDebug;
 
-	#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
+	#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 	pub struct PortId(pub Vec<u8>);
 
 	impl From<IbcPortId> for PortId {
@@ -32,7 +33,7 @@ pub mod primitive {
 		}
 	}
 
-	#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
+	#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 	pub struct ChannelId(pub Vec<u8>);
 
 	impl From<IbcChannelId> for ChannelId {
@@ -49,7 +50,7 @@ pub mod primitive {
 		}
 	}
 
-	#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
+	#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 	pub struct Height {
 		/// Previously known as "epoch"
 		pub revision_number: u64,
@@ -73,7 +74,7 @@ pub mod primitive {
 		}
 	}
 
-	#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
+	#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 	pub enum ClientType {
 		Tendermint,
 		Grandpa,
@@ -99,7 +100,7 @@ pub mod primitive {
 		}
 	}
 
-	#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
+	#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 	pub struct ClientId(pub Vec<u8>);
 
 	impl From<IbcClientId> for ClientId {
@@ -116,7 +117,7 @@ pub mod primitive {
 		}
 	}
 
-	#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
+	#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 	pub struct ConnectionId(pub Vec<u8>);
 
 	impl From<IbcConnectionId> for ConnectionId {
@@ -133,7 +134,7 @@ pub mod primitive {
 		}
 	}
 
-	#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
+	#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 	pub struct Timestamp {
 		pub time: Vec<u8>,
 	}
@@ -152,7 +153,7 @@ pub mod primitive {
 		}
 	}
 
-	#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
+	#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 	pub struct Sequence(u64);
 
 	impl From<IbcSequence> for Sequence {
@@ -167,7 +168,7 @@ pub mod primitive {
 		}
 	}
 
-	#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
+	#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 	pub struct Packet {
 		pub sequence: Sequence,
 		pub source_port: PortId,

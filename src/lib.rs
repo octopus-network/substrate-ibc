@@ -67,6 +67,7 @@ pub use routing::ModuleCallbacks;
 use sp_runtime::RuntimeDebug;
 use sp_std::prelude::*;
 use tendermint_proto::Protobuf;
+use scale_info::TypeInfo;
 
 mod channel;
 mod client;
@@ -75,7 +76,7 @@ pub mod event;
 mod port;
 mod routing;
 
-#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug)]
+#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub struct Any {
 	pub type_url: Vec<u8>,
 	pub value: Vec<u8>,
