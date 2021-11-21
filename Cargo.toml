@@ -63,22 +63,27 @@ runtime-benchmarks = ["frame-benchmarking"]
 try-runtime = ["frame-support/try-runtime"]
 
 [patch."https://github.com/paritytech/substrate"]
-frame-support = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
-frame-system = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
-sp-core = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
-sp-runtime = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
-sp-std = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
-frame-benchmarking = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+frame-support = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.11" }
+frame-system = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.11" }
+sp-core = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.11" }
+sp-runtime = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.11" }
+sp-std = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.11" }
+frame-benchmarking = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.11" }
 
 [patch.crates-io]
-frame-support = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
-frame-system = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
-sp-core = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
-sp-runtime = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
-sp-std = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
-frame-benchmarking = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.8" }
+frame-support = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.11" }
+frame-system = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.11" }
+sp-core = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.11" }
+sp-runtime = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.11" }
+sp-std = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.11" }
+frame-benchmarking = { git = "https://github.com/octopus-network/substrate", branch = "polkadot-v0.9.11" }
 
 # for tendermint
+tendermint              = { git = "https://github.com/informalsystems/tendermint-rs", branch = "soares/activate-no-std" }
+tendermint-rpc          = { git = "https://github.com/informalsystems/tendermint-rs", branch = "soares/activate-no-std" }
+tendermint-proto        = { git = "https://github.com/informalsystems/tendermint-rs", branch = "soares/activate-no-std" }
+tendermint-light-client = { git = "https://github.com/informalsystems/tendermint-rs", branch = "soares/activate-no-std" }
+tendermint-testgen      = { git = "https://github.com/informalsystems/tendermint-rs", branch = "soares/activate-no-std" }
 ics23                   = { git = "https://github.com/informalsystems/ics23.git", branch = "master" }
 safe-regex          = { git = "https://github.com/informalsystems/safe-regex.git", branch = "main" }
 safe-regex-macro    = { git = "https://github.com/informalsystems/safe-regex.git", branch = "main" }
