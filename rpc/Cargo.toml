@@ -13,10 +13,10 @@ jsonrpc-derive = "15.0"
 serde = { version = "1.0", features = ["derive"], optional = true }
 
 # Substrate packages
-sp-api = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.11"}
-sp-blockchain = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.11"  }
-sp-rpc = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.11" }
-sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.11" }
+sp-api = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12"}
+sp-blockchain = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12"  }
+sp-rpc = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
+sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
 
 # local packages
 pallet-ibc-runtime-api = { path  = "../runtime-api" }
