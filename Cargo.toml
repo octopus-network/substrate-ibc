@@ -26,7 +26,7 @@ sp-std = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v
 sp-io = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12", default-features = false }
 scale-info = { version = "1.0.0", default-features = false }
 
-ibc = { git = "https://github.com/octopus-network/ibc-rs.git", rev = "ba1baf9c", default-features = false }
+ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "dv-octopus-relayer", default-features = false }
 #ibc = { path = "../../../../../ibc-rs/modules", default-features = false }
 
 prost = { package = "informalsystems-prost", version = "0.8.1", default-features = false }
