@@ -26,7 +26,7 @@ sp-std = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v
 sp-io = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12", default-features = false }
 scale-info = { version = "1.0.0", default-features = false }
 
-ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "dv-octopus-relayer", default-features = false }
+ibc = { git = "https://github.com/octopus-network/ibc-rs.git", rev = "ba1baf9c", default-features = false }
 #ibc = { path = "../../../../../ibc-rs/modules", default-features = false }
 
 prost = { package = "informalsystems-prost", version = "0.8.1", default-features = false }
@@ -83,15 +83,21 @@ frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch =
 
 # for tendermint
 # for tendermint
-tendermint              = { git = "https://github.com/informalsystems/tendermint-rs", branch = "soares/activate-no-std" }
-tendermint-rpc          = { git = "https://github.com/informalsystems/tendermint-rs", branch = "soares/activate-no-std" }
-tendermint-proto        = { git = "https://github.com/informalsystems/tendermint-rs", branch = "soares/activate-no-std" }
-tendermint-light-client = { git = "https://github.com/informalsystems/tendermint-rs", branch = "soares/activate-no-std" }
-tendermint-testgen      = { git = "https://github.com/informalsystems/tendermint-rs", branch = "soares/activate-no-std" }
-ics23                   = { git = "https://github.com/informalsystems/ics23.git", branch = "master" }
-safe-regex          = { git = "https://github.com/informalsystems/safe-regex.git", branch = "main" }
-safe-regex-macro    = { git = "https://github.com/informalsystems/safe-regex.git", branch = "main" }
-safe-regex-compiler = { git = "https://github.com/informalsystems/safe-regex.git", branch = "main" }
-safe-quote          = { git = "https://github.com/informalsystems/safe-regex.git", branch = "main" }
-safe-proc-macro2    = { git = "https://github.com/informalsystems/safe-regex.git", branch = "main" }
-tonic = { package = "informalsystems-tonic", git = "https://github.com/informalsystems/tonic.git", branch = "thane/informal-0.5.2" }
+#tendermint              = { git = "https://github.com/informalsystems/tendermint-rs", branch = "soares/activate-no-std" }
+#tendermint-rpc          = { git = "https://github.com/informalsystems/tendermint-rs", branch = "soares/activate-no-std" }
+#tendermint-proto        = { git = "https://github.com/informalsystems/tendermint-rs", branch = "soares/activate-no-std" }
+#tendermint-light-client = { git = "https://github.com/informalsystems/tendermint-rs", branch = "soares/activate-no-std" }
+#tendermint-testgen      = { git = "https://github.com/informalsystems/tendermint-rs", branch = "soares/activate-no-std" }
+tendermint              = { git = "https://github.com/informalsystems/tendermint-rs", rev = "4f6ef3d6" }
+tendermint-rpc          = { git = "https://github.com/informalsystems/tendermint-rs", rev = "4f6ef3d6" }
+tendermint-proto        = { git = "https://github.com/informalsystems/tendermint-rs", rev = "4f6ef3d6" }
+tendermint-light-client = { git = "https://github.com/informalsystems/tendermint-rs", rev = "4f6ef3d6" }
+tendermint-testgen      = { git = "https://github.com/informalsystems/tendermint-rs", rev = "4f6ef3d6" }
+#ics23                   = { git = "https://github.com/informalsystems/ics23.git", branch = "master" }
+ics23                   = { git = "https://github.com/informalsystems/ics23.git", rev = "4461b673" }
+safe-regex          = { git = "https://github.com/informalsystems/safe-regex.git", rev = "842d31f5" }
+safe-regex-macro    = { git = "https://github.com/informalsystems/safe-regex.git", rev = "842d31f5" }
+safe-regex-compiler = { git = "https://github.com/informalsystems/safe-regex.git", rev = "842d31f5" }
+safe-quote          = { git = "https://github.com/informalsystems/safe-regex.git", rev = "842d31f5" }
+safe-proc-macro2    = { git = "https://github.com/informalsystems/safe-regex.git", rev = "842d31f5" }
+tonic = { package = "informalsystems-tonic", git = "https://github.com/informalsystems/tonic.git", rev = "99edfe23" }
