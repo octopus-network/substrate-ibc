@@ -290,7 +290,10 @@ impl<T: Config> ChannelReader for Context<T> {
 	fn host_height(&self) -> Height {
 		log::info!("in channel: [host_height]");
 
-		Height::zero()
+		let block_number = format!("{:?}", <frame_system::Pallet<T>>::block_number());
+		let current_height = block_number.parse()
+			.map_err(|e| panic!("{:?}, caused by {:?} from frame_system::Pallet", e, block_number));;
+		Height::new(0, current_height.unwrap())
 	}
 
 	/// Returns the current timestamp of the local chain.
