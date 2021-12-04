@@ -299,8 +299,12 @@ impl<T: Config> ChannelReader for Context<T> {
 	/// Returns the current timestamp of the local chain.
 	fn host_timestamp(&self) -> Timestamp {
 		log::info!("in channel: [host_timestamp]");
-
-		Timestamp::none()
+		use log::error;
+		use frame_support::traits::UnixTime;
+		let time = T::TimeProvider::now();
+		let ts = Timestamp::from_nanoseconds(time.as_nanos() as u64)
+			.map_err(|e| panic!("{:?}, caused by {:?} from pallet timestamp_pallet", e, time));
+		ts.unwrap()
 	}
 
 	/// Returns a counter on the number of channel ids have been created thus far.
