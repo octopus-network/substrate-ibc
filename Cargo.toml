@@ -18,13 +18,13 @@ codec = { package = "parity-scale-codec", version = "2.0.0", default-features = 
 frame-support = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12", default-features = false }
 frame-system = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12", default-features = false }
 frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12", default-features = false, optional = true }
+scale-info = { version = "1.0.0", default-features = false, features = ["derive"] }
 
 log = { version = "0.4.0", default-features = false }
 sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12", default-features = false }
 sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12", default-features = false }
 sp-std = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12", default-features = false }
 sp-io = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12", default-features = false }
-scale-info = { version = "1.0.0", default-features = false }
 
 ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "dv-update-subxt", default-features = false }
 #ibc = { path = "../../../../../ibc-rs/modules", default-features = false }
@@ -57,6 +57,7 @@ std = [
 	'log/std',
 	'ibc/std',
 	'prost/std',
+	"scale-info/std",
 	'prost-types/std',
 	'tendermint-proto/std',
 ]
