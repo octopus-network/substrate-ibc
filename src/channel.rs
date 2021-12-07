@@ -439,6 +439,8 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		channel_end: &ChannelEnd,
 	) -> Result<(), ICS04Error> {
 		log::info!("in channel: [store_channel]");
+		log::info!("in channel: [store_channel], port_and_channel_id: ({:?}, {:?})", port_channel_id.clone().0, port_channel_id.clone().1);
+		log::info!("in channel: [store_channel], channel_end: {:?}", channel_end.clone());
 
 		let channel_end = channel_end.encode_vec().unwrap();
 
