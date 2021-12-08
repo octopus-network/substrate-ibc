@@ -13,6 +13,8 @@ sp_api::decl_runtime_apis! {
 
 		fn get_idenfitied_channel_end() -> Vec<(Vec<u8>, Vec<u8>, Vec<u8>)>;
 
+		fn get_channel_end(port_id: Vec<u8>, channel_id: Vec<u8>) -> Vec<u8>;
+
 		fn get_packet_commitment_state() -> Vec<(Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>)>;
 
 		fn get_packet_acknowledge_state() -> Vec<(Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>)>;

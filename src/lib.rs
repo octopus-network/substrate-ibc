@@ -978,6 +978,26 @@ pub mod pallet {
 			result
 		}
 
+		// get (port_id, channel_id) -> channel_end
+		pub fn get_channel_end(port_id: Vec<u8>, channel_id: Vec<u8>) -> Vec<u8> {
+			log::info!("in substrate-ibc [lib.rs]: [get_channel_end]");
+
+			use ibc::ics04_channel::channel::ChannelEnd;
+			use tendermint_proto::Protobuf;
+
+			if <Channels<T>>::contains_key((port_id.clone(), channel_id.clone()))
+			{
+				let data =
+					<Channels<T>>::get((port_id, channel_id));
+				let channel_end = ChannelEnd::decode_vec(&*data).unwrap();
+				log::info!("in substrate-ibc [lib.rs]: [get_channel_end] >> channel_end : {:?}", channel_end.clone());
+				return data;
+			} else {
+				log::error!("in substrate-ibc [lib.rs]: read channel_end return None");
+				panic!("in substrate-ibc [lib.rs]: Read channel_end return None");
+			}
+		}
+
 		/// get connection_identifier vector according by client_identifier
 		pub fn get_client_connections(_client_id: Vec<u8>) -> Vec<Vec<u8>> {
 			todo!()
