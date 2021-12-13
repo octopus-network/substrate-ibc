@@ -291,7 +291,8 @@ impl<T: Config> ChannelReader for Context<T> {
 		log::info!("in channel: [host_height]");
 
 		let block_number = format!("{:?}", <frame_system::Pallet<T>>::block_number());
-		let current_height = block_number.parse()
+		let current_height = block_number
+			.parse()
 			.map_err(|e| panic!("{:?}, caused by {:?} from frame_system::Pallet", e, block_number));
 		Height::new(0, current_height.unwrap())
 	}
@@ -439,7 +440,11 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		channel_end: &ChannelEnd,
 	) -> Result<(), ICS04Error> {
 		log::info!("in channel: [store_channel]");
-		log::info!("in channel: [store_channel], port_and_channel_id: ({:?}, {:?})", port_channel_id.clone().0, port_channel_id.clone().1);
+		log::info!(
+			"in channel: [store_channel], port_and_channel_id: ({:?}, {:?})",
+			port_channel_id.clone().0,
+			port_channel_id.clone().1
+		);
 		log::info!("in channel: [store_channel], channel_end: {:?}", channel_end.clone());
 
 		let channel_end = channel_end.encode_vec().unwrap();

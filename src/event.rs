@@ -14,12 +14,11 @@ pub mod primitive {
 
 	use codec::{Decode, Encode};
 	use scale_info::TypeInfo;
-	
+
 	use sp_runtime::RuntimeDebug;
 
 	#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 	pub struct PortId(pub Vec<u8>);
-
 
 	impl From<IbcPortId> for PortId {
 		fn from(value: IbcPortId) -> Self {
@@ -37,8 +36,6 @@ pub mod primitive {
 
 	#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 	pub struct ChannelId(pub Vec<u8>);
-
-
 
 	impl From<IbcChannelId> for ChannelId {
 		fn from(value: IbcChannelId) -> Self {
@@ -63,7 +60,6 @@ pub mod primitive {
 		pub revision_height: u64,
 	}
 
-
 	impl From<IbcHeight> for Height {
 		fn from(IbcHeight { revision_number, revision_height }: IbcHeight) -> Self {
 			Height { revision_number, revision_height }
@@ -84,7 +80,6 @@ pub mod primitive {
 		Tendermint,
 		Grandpa,
 	}
-
 
 	impl From<IbcClientType> for ClientType {
 		fn from(value: IbcClientType) -> Self {
@@ -109,7 +104,6 @@ pub mod primitive {
 	#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 	pub struct ClientId(pub Vec<u8>);
 
-
 	impl From<IbcClientId> for ClientId {
 		fn from(value: IbcClientId) -> Self {
 			let value = value.0.as_bytes().to_vec();
@@ -126,7 +120,6 @@ pub mod primitive {
 
 	#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 	pub struct ConnectionId(pub Vec<u8>);
-
 
 	impl From<IbcConnectionId> for ConnectionId {
 		fn from(value: IbcConnectionId) -> Self {
@@ -147,7 +140,6 @@ pub mod primitive {
 		pub time: Vec<u8>,
 	}
 
-
 	impl From<IbcTimestamp> for Timestamp {
 		fn from(val: IbcTimestamp) -> Self {
 			Self { time: val.as_nanoseconds().to_string().as_bytes().to_vec() }
@@ -164,7 +156,6 @@ pub mod primitive {
 
 	#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 	pub struct Sequence(u64);
-
 
 	impl From<IbcSequence> for Sequence {
 		fn from(val: IbcSequence) -> Self {
@@ -189,7 +180,6 @@ pub mod primitive {
 		pub timeout_height: Height,
 		pub timeout_timestamp: Timestamp,
 	}
-
 
 	impl From<IbcPacket> for Packet {
 		fn from(val: IbcPacket) -> Self {

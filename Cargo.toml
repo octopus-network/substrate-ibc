@@ -1,15 +1,15 @@
 [package]
-authors = ['Octopus Network <hi@oct.network>']
-edition = '2021'
-name = 'pallet-ibc'
-version = "3.0.0-pre.0"
-license = "Apache-2.0"
-homepage = "https://oct.network"
-repository = "https://github.com/octopus-network/substrate-ibc/"
-description = "An IBC implementation on Substrate."
-readme = "README.md"
-build       = 'build.rs'
-documentation = "https://docs.rs/pallet-ibc"
+authors 		= ['Octopus Network <hi@oct.network>']
+edition 		= '2021'
+name 			= 'pallet-ibc'
+version 		= "3.0.0-pre.0"
+license 		= "Apache-2.0"
+homepage 		= "https://oct.network"
+repository 		= "https://github.com/octopus-network/substrate-ibc/"
+description 	= "An IBC implementation on Substrate."
+readme 			= "README.md"
+build       	= 'build.rs'
+documentation 	= "https://docs.rs/pallet-ibc"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
@@ -32,8 +32,6 @@ sp-std 					= { git = "https://github.com/paritytech/substrate.git", branch = "p
 sp-io 					= { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12", default-features = false }
 
 ibc 					= { git = "https://github.com/octopus-network/ibc-rs.git", branch = "dv-update-subxt", default-features = false }
-#ibc = { path = "../ibc-rs/modules", default-features = false }
-
 prost-types 			= { package = "informalsystems-prost-types", version = "0.8.1", default-features = false }
 tendermint-proto 		= { version = "0.22.0", default-features = false }
 

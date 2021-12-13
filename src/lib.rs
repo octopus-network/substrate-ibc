@@ -64,13 +64,10 @@ use core::marker::PhantomData;
 use frame_system::ensure_signed;
 use ibc;
 pub use routing::ModuleCallbacks;
+use scale_info::{prelude::vec, TypeInfo};
 use sp_runtime::RuntimeDebug;
 use sp_std::prelude::*;
 use tendermint_proto::Protobuf;
-use scale_info::{
-	TypeInfo,
-	prelude::vec,
-};
 
 mod channel;
 mod client;
@@ -107,10 +104,9 @@ pub mod pallet {
 	use event::primitive::{
 		ChannelId, ClientId, ClientType, ConnectionId, Height, Packet, PortId, Timestamp,
 	};
-	use frame_support::{dispatch::DispatchResult, pallet_prelude::*};
+	use frame_support::{dispatch::DispatchResult, pallet_prelude::*, traits::UnixTime};
 	use frame_system::pallet_prelude::*;
 	use ibc::events::IbcEvent;
-	use frame_support::traits::UnixTime;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -484,7 +480,7 @@ pub mod pallet {
 						client_type.into(),
 						consensus_height.into(),
 					)
-				}
+				},
 				// UpdateClient(
 				// 	height: Height,
 				// 	client_id: ClientId,
@@ -502,7 +498,7 @@ pub mod pallet {
 						client_type.into(),
 						consensus_height.into(),
 					)
-				}
+				},
 				// TODO! Upgrade client events are not currently being used
 				// UpgradeClient(
 				// 	height: Height,
@@ -521,7 +517,7 @@ pub mod pallet {
 						client_type.into(),
 						consensus_height.into(),
 					)
-				}
+				},
 				ibc::events::IbcEvent::ClientMisbehaviour(value) => {
 					let height = value.0.height;
 					let client_id = value.0.client_id;
@@ -533,7 +529,7 @@ pub mod pallet {
 						client_type.into(),
 						consensus_height.into(),
 					)
-				}
+				},
 				// OpenInitConnection(
 				// 	height: Height,
 				// 	connection_id: Option<ConnectionId>,
@@ -557,7 +553,7 @@ pub mod pallet {
 						counterparty_connection_id,
 						counterparty_client_id.into(),
 					)
-				}
+				},
 
 				// OpenTryConnection(
 				// 	height: Height,
@@ -582,7 +578,7 @@ pub mod pallet {
 						counterparty_connection_id,
 						counterparty_client_id.into(),
 					)
-				}
+				},
 				// OpenAckConnection(
 				// 	height: Height,
 				// 	connection_id: Option<ConnectionId>,
@@ -606,7 +602,7 @@ pub mod pallet {
 						counterparty_connection_id,
 						counterparty_client_id.into(),
 					)
-				}
+				},
 				// OpenConfirmConnection(
 				// 	height: Height,
 				// 	connection_id: Option<ConnectionId>,
@@ -630,7 +626,7 @@ pub mod pallet {
 						counterparty_connection_id,
 						counterparty_client_id.into(),
 					)
-				}
+				},
 				// OpenInitChannel(
 				// 	height: Height,
 				// 	port_id: PortId,
@@ -656,7 +652,7 @@ pub mod pallet {
 						counterparty_port_id.into(),
 						counterparty_channel_id,
 					)
-				}
+				},
 				// OpenTryChannel(
 				// 	height: Height,
 				// 	port_id: PortId,
@@ -682,7 +678,7 @@ pub mod pallet {
 						counterparty_port_id.into(),
 						counterparty_channel_id,
 					)
-				}
+				},
 				// OpenAckChannel(
 				// 	height: Height,
 				// 	port_id: PortId,
@@ -708,7 +704,7 @@ pub mod pallet {
 						counterparty_port_id.into(),
 						counterparty_channel_id,
 					)
-				}
+				},
 				// OpenConfirmChannel(
 				// 	height: Height,
 				// 	port_id: PortId,
@@ -734,7 +730,7 @@ pub mod pallet {
 						counterparty_port_id.into(),
 						counterparty_channel_id,
 					)
-				}
+				},
 				// CloseInitChannel(
 				// 	height: Height,
 				// 	port_id: PortId,
@@ -760,7 +756,7 @@ pub mod pallet {
 						counterparty_port_id.into(),
 						counterparty_channel_id,
 					)
-				}
+				},
 				// CloseConfirmChannel(
 				// 	height: Height,
 				// 	port_id: PortId,
@@ -786,7 +782,7 @@ pub mod pallet {
 						counterparty_port_id.into(),
 						counterparty_channel_id,
 					)
-				}
+				},
 				// SendPacket {
 				//     pub height: Height,
 				//     pub packet: Packet,
@@ -795,7 +791,7 @@ pub mod pallet {
 					let height = value.height;
 					let packet = value.packet;
 					Event::SendPacket(height.into(), packet.into())
-				}
+				},
 				// ReceivePacket {
 				//     pub height: Height,
 				//     pub packet: Packet,
@@ -804,7 +800,7 @@ pub mod pallet {
 					let height = value.height;
 					let packet = value.packet;
 					Event::ReceivePacket(height.into(), packet.into())
-				}
+				},
 				// WriteAcknowledgement {
 				//     pub height: Height,
 				//     pub packet: Packet,
@@ -815,7 +811,7 @@ pub mod pallet {
 					let packet = value.packet;
 					let ack = value.ack;
 					Event::WriteAcknowledgement(height.into(), packet.into(), ack)
-				}
+				},
 				// AcknowledgePacket {
 				//     pub height: Height,
 				//     pub packet: Packet,
@@ -824,7 +820,7 @@ pub mod pallet {
 					let height = value.height;
 					let packet = value.packet;
 					Event::AcknowledgePacket(height.into(), packet.into())
-				}
+				},
 				// TimeoutPacket {
 				//     pub height: Height,
 				//     pub packet: Packet,
@@ -833,7 +829,7 @@ pub mod pallet {
 					let height = value.height;
 					let packet = value.packet;
 					Event::TimeoutPacket(height.into(), packet.into())
-				}
+				},
 				// TimeoutOnClosePacket {
 				//     pub height: Height,
 				//     pub packet: Packet,
@@ -842,13 +838,12 @@ pub mod pallet {
 					let height = value.height;
 					let packet = value.packet;
 					Event::TimeoutOnClosePacket(height.into(), packet.into())
-				}
+				},
 				// Empty(String)
 				ibc::events::IbcEvent::Empty(value) => Event::Empty(value.as_bytes().to_vec()),
 				// ChainError(String)
-				ibc::events::IbcEvent::ChainError(value) => {
-					Event::ChainError(value.as_bytes().to_vec())
-				}
+				ibc::events::IbcEvent::ChainError(value) =>
+					Event::ChainError(value.as_bytes().to_vec()),
 				_ => unimplemented!(),
 			}
 		}
@@ -907,32 +902,6 @@ pub mod pallet {
 				log::info!("Event: {:?}", event);
 				Self::deposit_event(event.clone().into());
 				Self::store_latest_height(event.clone());
-
-				// match event {
-				// 	ibc::events::IbcEvent::SendPacket(value) => {
-				// 		let _value = value.clone();
-				// 		let packet = Packet {
-				// 			sequence: Sequence::from(_value.packet.sequence),
-				// 			source_channel: ChannelId::from(_value.packet.source_channel),
-				// 			source_port: PortId::from(_value.packet.source_port),
-				// 			destination_channel: ChannelId::from(_value.packet.destination_channel),
-				// 			destination_port: PortId::from(_value.packet.destination_port),
-				// 			data: _value.packet.data,
-				// 			timeout_timestamp: Timestamp::from(_value.packet.timeout_timestamp),
-				// 			timeout_height: Height::from(_value.packet.timeout_height),
-				// 		};
-				// 		let packet = packet.encode();
-
-				// 		let port_id = value.packet.source_port.as_bytes().to_vec();
-				// 		let channel_id = value.packet.source_channel.as_bytes().to_vec();
-
-				// 		<SendPacketEvent<T>>::insert(
-				// 			(port_id, channel_id, u64::from(value.packet.sequence)),
-				// 			packet,
-				// 		);
-				// 	},
-				// 	_ => {},
-				// }
 			}
 
 			Ok(())
@@ -985,13 +954,14 @@ pub mod pallet {
 			use ibc::ics04_channel::channel::ChannelEnd;
 			use tendermint_proto::Protobuf;
 
-			if <Channels<T>>::contains_key((port_id.clone(), channel_id.clone()))
-			{
-				let data =
-					<Channels<T>>::get((port_id, channel_id));
+			if <Channels<T>>::contains_key((port_id.clone(), channel_id.clone())) {
+				let data = <Channels<T>>::get((port_id, channel_id));
 				let channel_end = ChannelEnd::decode_vec(&*data).unwrap();
-				log::info!("in substrate-ibc [lib.rs]: [get_channel_end] >> channel_end : {:?}", channel_end.clone());
-				return data;
+				log::info!(
+					"in substrate-ibc [lib.rs]: [get_channel_end] >> channel_end : {:?}",
+					channel_end.clone()
+				);
+				return data
 			} else {
 				log::error!("in substrate-ibc [lib.rs]: read channel_end return None");
 				panic!("in substrate-ibc [lib.rs]: Read channel_end return None");
@@ -1041,11 +1011,11 @@ pub mod pallet {
 			match ibc_event {
 				IbcEvent::Empty(_value) => {
 					log::info!("ibc event: {}", "Empty");
-				}
+				},
 				IbcEvent::NewBlock(value) => {
 					let height = value.height().encode_vec().unwrap();
 					<LatestHeight<T>>::set(height);
-				}
+				},
 				IbcEvent::SendPacket(value) => {
 					// store height
 					let height = value.height().encode_vec().unwrap();
@@ -1072,7 +1042,7 @@ pub mod pallet {
 						(port_id, channel_id, u64::from(value.packet.sequence)),
 						packet,
 					);
-				}
+				},
 				IbcEvent::WriteAcknowledgement(value) => {
 					// store height
 					let height = value.height().encode_vec().unwrap();
@@ -1085,82 +1055,82 @@ pub mod pallet {
 					let ack = value.ack;
 					// store.Set((portID, channelID, sequence), ackHash)
 					<WriteAckPacketEvent<T>>::insert((port_id, channel_id, sequence), ack)
-				}
+				},
 				IbcEvent::UpdateClient(value) => {
 					let height = value.height().encode_vec().unwrap();
 					<LatestHeight<T>>::set(height);
-				}
+				},
 				IbcEvent::ReceivePacket(value) => {
 					let height = value.height().encode_vec().unwrap();
 					<LatestHeight<T>>::set(height);
-				}
+				},
 				IbcEvent::CloseConfirmChannel(value) => {
 					let height = value.height().encode_vec().unwrap();
 					<LatestHeight<T>>::set(height);
-				}
+				},
 				IbcEvent::CreateClient(value) => {
 					let height = value.height().encode_vec().unwrap();
 					<LatestHeight<T>>::set(height);
-				}
+				},
 				IbcEvent::UpgradeClient(value) => {
 					let height = value.0.height.clone().encode_vec().unwrap();
 					<LatestHeight<T>>::set(height);
-				}
+				},
 				IbcEvent::ClientMisbehaviour(value) => {
 					let height = value.height().encode_vec().unwrap();
 					<LatestHeight<T>>::set(height);
-				}
+				},
 				IbcEvent::OpenInitConnection(value) => {
 					let height = value.height().encode_vec().unwrap();
 					<LatestHeight<T>>::set(height);
-				}
+				},
 				IbcEvent::OpenTryConnection(value) => {
 					let height = value.height().encode_vec().unwrap();
 					<LatestHeight<T>>::set(height);
-				}
+				},
 				IbcEvent::OpenAckConnection(value) => {
 					let height = value.height().encode_vec().unwrap();
 					<LatestHeight<T>>::set(height);
-				}
+				},
 				IbcEvent::OpenConfirmConnection(value) => {
 					let height = value.height().encode_vec().unwrap();
 					<LatestHeight<T>>::set(height);
-				}
+				},
 				IbcEvent::OpenInitChannel(value) => {
 					let height = value.height().encode_vec().unwrap();
 					<LatestHeight<T>>::set(height);
-				}
+				},
 				IbcEvent::OpenTryChannel(value) => {
 					let height = value.height().encode_vec().unwrap();
 					<LatestHeight<T>>::set(height);
-				}
+				},
 				IbcEvent::OpenAckChannel(value) => {
 					let height = value.height().encode_vec().unwrap();
 					<LatestHeight<T>>::set(height);
-				}
+				},
 				IbcEvent::OpenConfirmChannel(value) => {
 					let height = value.height().encode_vec().unwrap();
 					<LatestHeight<T>>::set(height);
-				}
+				},
 				IbcEvent::CloseInitChannel(value) => {
 					let height = value.height().encode_vec().unwrap();
 					<LatestHeight<T>>::set(height);
-				}
+				},
 				IbcEvent::AcknowledgePacket(value) => {
 					let height = value.height().encode_vec().unwrap();
 					<LatestHeight<T>>::set(height);
-				}
+				},
 				IbcEvent::TimeoutPacket(value) => {
 					let height = value.height().encode_vec().unwrap();
 					<LatestHeight<T>>::set(height);
-				}
+				},
 				IbcEvent::TimeoutOnClosePacket(value) => {
 					let height = value.height().encode_vec().unwrap();
 					<LatestHeight<T>>::set(height);
-				}
+				},
 				IbcEvent::ChainError(_value) => {
 					log::info!("Ibc event: {}", "chainError");
-				}
+				},
 			}
 		}
 	}
