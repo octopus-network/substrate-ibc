@@ -1,6 +1,6 @@
 [package]
 authors = ['Octopus Network <hi@oct.network>']
-edition = '2018'
+edition = '2021'
 name = 'pallet-ibc'
 version = "3.0.0-pre.0"
 license = "Apache-2.0"
@@ -8,56 +8,57 @@ homepage = "https://oct.network"
 repository = "https://github.com/octopus-network/substrate-ibc/"
 description = "An IBC implementation on Substrate."
 readme = "README.md"
+build       = 'build.rs'
 documentation = "https://docs.rs/pallet-ibc"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 
+[build-dependencies.substrate-wasm-builder]
+branch = 'polkadot-v0.9.12'
+git    = 'https://github.com/paritytech/substrate.git'
+
 [dependencies]
-codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"] }
-frame-support = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12", default-features = false }
-frame-system = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12", default-features = false }
-frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12", default-features = false, optional = true }
-scale-info = { version = "1.0.0", default-features = false, features = ["derive"] }
+codec 					= { package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"] }
+log 					= { version = "0.4.0", default-features = false }
+scale-info 				= { version = "1.0", default-features = false, features = ["derive"] }
 
-log = { version = "0.4.0", default-features = false }
-sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12", default-features = false }
-sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12", default-features = false }
-sp-std = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12", default-features = false }
-sp-io = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12", default-features = false }
+frame-benchmarking 		= { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12", default-features = false, optional = true }
+frame-support 			= { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12", default-features = false }
+frame-system 			= { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12", default-features = false }
+sp-core 				= { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12", default-features = false }
+sp-runtime 				= { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12", default-features = false }
+sp-std 					= { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12", default-features = false }
+sp-io 					= { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12", default-features = false }
 
-ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "dv-update-subxt", default-features = false }
-#ibc = { path = "../../../../../ibc-rs/modules", default-features = false }
+ibc 					= { git = "https://github.com/octopus-network/ibc-rs.git", branch = "dv-update-subxt", default-features = false }
+#ibc = { path = "../ibc-rs/modules", default-features = false }
 
-prost = { package = "informalsystems-prost", version = "0.8.1", default-features = false }
-prost-types = { package = "informalsystems-prost-types", version = "0.8.1", default-features = false }
-tendermint-proto = { version = "=0.22.0", default-features = false }
+prost-types 			= { package = "informalsystems-prost-types", version = "0.8.1", default-features = false }
+tendermint-proto 		= { version = "0.22.0", default-features = false }
 
 [dev-dependencies]
 hex = '0.4.0'
 sha2 = '0.9.3'
-serde = { version = "1.0.119" }
-sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12", default-features = false }
-sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12", default-features = false }
-sp-std = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12", default-features = false }
-sp-io = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12", default-features = false }
+serde = { version = "1.0" }
+sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12"}
+sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12" }
+sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12" }
 
 [features]
 default = ['std']
 std = [
 	'codec/std',
+	'log/std',
 	"scale-info/std",
+	'frame-benchmarking/std',
 	'frame-support/std',
 	'frame-system/std',
-	'frame-benchmarking/std',
 	'sp-core/std',
 	'sp-runtime/std',
+	'sp-core/std',
 	'sp-std/std',
-	'sp-io/std',
-	'log/std',
 	'ibc/std',
-	'prost/std',
-	"scale-info/std",
 	'prost-types/std',
 	'tendermint-proto/std',
 ]
@@ -65,36 +66,14 @@ std = [
 runtime-benchmarks = ["frame-benchmarking"]
 try-runtime = ["frame-support/try-runtime"]
 
-#[patch."https://github.com/paritytech/substrate"]
-#frame-support = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
-#frame-system = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
-#sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
-#sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
-#sp-std = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
-#frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
-
 [patch.crates-io]
-frame-support = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
-frame-system = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
-sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
-sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
-sp-std = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
-sp-io = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
-frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
 
 # for tendermint
-# for tendermint
-#tendermint              = { git = "https://github.com/informalsystems/tendermint-rs", branch = "soares/activate-no-std" }
-#tendermint-rpc          = { git = "https://github.com/informalsystems/tendermint-rs", branch = "soares/activate-no-std" }
-#tendermint-proto        = { git = "https://github.com/informalsystems/tendermint-rs", branch = "soares/activate-no-std" }
-#tendermint-light-client = { git = "https://github.com/informalsystems/tendermint-rs", branch = "soares/activate-no-std" }
-#tendermint-testgen      = { git = "https://github.com/informalsystems/tendermint-rs", branch = "soares/activate-no-std" }
 tendermint              = { git = "https://github.com/informalsystems/tendermint-rs", rev = "4f6ef3d6" }
 tendermint-rpc          = { git = "https://github.com/informalsystems/tendermint-rs", rev = "4f6ef3d6" }
 tendermint-proto        = { git = "https://github.com/informalsystems/tendermint-rs", rev = "4f6ef3d6" }
 tendermint-light-client = { git = "https://github.com/informalsystems/tendermint-rs", rev = "4f6ef3d6" }
 tendermint-testgen      = { git = "https://github.com/informalsystems/tendermint-rs", rev = "4f6ef3d6" }
-#ics23                   = { git = "https://github.com/informalsystems/ics23.git", branch = "master" }
 ics23                   = { git = "https://github.com/informalsystems/ics23.git", rev = "4461b673" }
 safe-regex          = { git = "https://github.com/informalsystems/safe-regex.git", rev = "842d31f5" }
 safe-regex-macro    = { git = "https://github.com/informalsystems/safe-regex.git", rev = "842d31f5" }

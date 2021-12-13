@@ -50,7 +50,7 @@ fn test_hashing() {
 
 	let r = sha2::Sha256::digest(hello.as_bytes());
 
-	let l = sp_core::hashing::sha2_256(hello.as_bytes());
+	let l = sp_io::hashing::sha2_256(hello.as_bytes());
 	assert_eq!(format!("{:?}", r), format!("{:?}", l));
 
 	let mut tmp = String::new();
