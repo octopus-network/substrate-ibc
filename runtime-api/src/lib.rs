@@ -4,7 +4,7 @@
 use sp_std::vec::Vec;
 
 // Here we declare the runtime API. It is implemented it the `impl` block in
-// runtime amalgamator file (the `runtime/src/lib.rs`)
+// runtime amalgamate file (the `runtime/src/lib.rs`)
 sp_api::decl_runtime_apis! {
 	pub trait IbcApi {
 		fn get_identified_any_client_state() -> Vec<(Vec<u8>, Vec<u8>)>;

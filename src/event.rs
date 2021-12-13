@@ -149,8 +149,7 @@ pub mod primitive {
 	impl Timestamp {
 		pub fn to_ibc_timestamp(self) -> IbcTimestamp {
 			let value = String::from_utf8(self.time).unwrap();
-			let timestamp = IbcTimestamp::from_str(&value).unwrap();
-			timestamp
+			IbcTimestamp::from_str(&value).unwrap()
 		}
 	}
 

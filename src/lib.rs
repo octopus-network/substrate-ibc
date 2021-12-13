@@ -1,5 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(unreachable_patterns)]
+#![allow(clippy::type_complexity)]
 
 //! # IBC Module
 //!
@@ -8,7 +9,7 @@
 //! ## Overview
 //!
 //! The goal of this pallet is to allow the blockchains built on Substrate to gain the ability to
-//! interact with other chains in a trustless way via IBC protocol, no matter what consensus the
+//! interact with other chains in a trustees way via IBC protocol, no matter what consensus the
 //! counterparty chains use.
 //!
 //! This project is currently in an early stage and will eventually be submitted to upstream.
@@ -62,12 +63,13 @@ use alloc::{format, string::String};
 use codec::{Decode, Encode};
 use core::marker::PhantomData;
 use frame_system::ensure_signed;
-use ibc;
 pub use routing::ModuleCallbacks;
 use scale_info::{prelude::vec, TypeInfo};
 use sp_runtime::RuntimeDebug;
 use sp_std::prelude::*;
 use tendermint_proto::Protobuf;
+use ibc::ics04_channel::channel::ChannelEnd;
+
 
 mod channel;
 mod client;
@@ -172,17 +174,17 @@ pub mod pallet {
 	pub type Clients<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::type_value]
-	pub fn DefaultClientCounter() -> u64 {
+	pub fn default_client_counter() -> u64 {
 		0u64
 	}
 
 	#[pallet::storage]
 	#[pallet::getter(fn client_counter)]
 	// client counter
-	pub type ClientCounter<T: Config> = StorageValue<_, u64, ValueQuery, DefaultClientCounter>;
+	pub type ClientCounter<T: Config> = StorageValue<_, u64, ValueQuery, default_client_counter>;
 
 	#[pallet::type_value]
-	pub fn DefaultConnectionCounter() -> u64 {
+	pub fn default_connection_counter() -> u64 {
 		0u64
 	}
 
@@ -190,16 +192,16 @@ pub mod pallet {
 	#[pallet::getter(fn connection_counter)]
 	// connection counter
 	pub type ConnectionCounter<T: Config> =
-		StorageValue<_, u64, ValueQuery, DefaultConnectionCounter>;
+		StorageValue<_, u64, ValueQuery, default_connection_counter>;
 
 	#[pallet::type_value]
-	pub fn DefaultChannelCounter() -> u64 {
+	pub fn default_channel_counter() -> u64 {
 		0u64
 	}
 
 	#[pallet::storage]
 	// channel counter
-	pub type ChannelCounter<T: Config> = StorageValue<_, u64, ValueQuery, DefaultChannelCounter>;
+	pub type ChannelCounter<T: Config> = StorageValue<_, u64, ValueQuery, default_channel_counter>;
 
 	#[pallet::storage]
 	// client_id => Connection id
@@ -207,46 +209,44 @@ pub mod pallet {
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
-	// (portid, channelid, sequence) => receipt
+	// (port_id, channel_id, sequence) => receipt
 	pub type PacketReceipt<T: Config> =
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
-	// (portid, channelid, sequence) => hash
+	// (port_id, channel_id, sequence) => hash
 	pub type PacketCommitment<T: Config> =
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
-	// (height, port_id, channelid, sequence) => event
+	// (height, port_id, channel_id, sequence) => event
 	pub type SendPacketEvent<T: Config> =
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>, u64), Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
-	// (portID, channelID, sequence), ackHash)
+	// (port_id, channel_id, sequence), ackHash)
 	pub type WriteAckPacketEvent<T: Config> =
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>, u64), Vec<u8>, ValueQuery>;
 
 	#[pallet::type_value]
-	pub fn DefaultlatestHeight() -> Vec<u8> {
+	pub fn defaultlatest_height() -> Vec<u8> {
 		let height = ibc::Height::default();
 
-		let result = height.encode_vec().unwrap();
-
-		result
+		height.encode_vec().unwrap()
 	}
 
 	#[pallet::storage]
 	// store latest height
-	pub type LatestHeight<T: Config> = StorageValue<_, Vec<u8>, ValueQuery, DefaultlatestHeight>;
+	pub type LatestHeight<T: Config> = StorageValue<_, Vec<u8>, ValueQuery, defaultlatest_height>;
 
 	#[pallet::type_value]
-	pub fn DefaultOldHeight() -> u64 {
+	pub fn default_old_height() -> u64 {
 		0
 	}
 
 	#[pallet::storage]
 	// store latest height
-	pub type OldHeight<T: Config> = StorageValue<_, u64, ValueQuery, DefaultOldHeight>;
+	pub type OldHeight<T: Config> = StorageValue<_, u64, ValueQuery, default_old_height>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -643,7 +643,7 @@ pub mod pallet {
 					let connection_id = value.0.connection_id;
 					let counterparty_port_id = value.0.counterparty_port_id;
 					let counterparty_channel_id: Option<ChannelId> =
-						value.0.channel_id.clone().map(|val| val.into());
+						value.0.channel_id.map(|val| val.into());
 					Event::OpenInitChannel(
 						height.into(),
 						port_id.into(),
@@ -669,7 +669,7 @@ pub mod pallet {
 					let connection_id = value.0.connection_id;
 					let counterparty_port_id = value.0.counterparty_port_id;
 					let counterparty_channel_id: Option<ChannelId> =
-						value.0.channel_id.clone().map(|val| val.into());
+						value.0.channel_id.map(|val| val.into());
 					Event::OpenTryChannel(
 						height.into(),
 						port_id.into(),
@@ -695,7 +695,7 @@ pub mod pallet {
 					let connection_id = value.0.connection_id;
 					let counterparty_port_id = value.0.counterparty_port_id;
 					let counterparty_channel_id: Option<ChannelId> =
-						value.0.channel_id.clone().map(|val| val.into());
+						value.0.channel_id.map(|val| val.into());
 					Event::OpenAckChannel(
 						height.into(),
 						port_id.into(),
@@ -721,7 +721,7 @@ pub mod pallet {
 					let connection_id = value.0.connection_id;
 					let counterparty_port_id = value.0.counterparty_port_id;
 					let counterparty_channel_id: Option<ChannelId> =
-						value.0.channel_id.clone().map(|val| val.into());
+						value.0.channel_id.map(|val| val.into());
 					Event::OpenConfirmChannel(
 						height.into(),
 						port_id.into(),
@@ -747,7 +747,7 @@ pub mod pallet {
 					let connection_id = value.0.connection_id;
 					let counterparty_port_id = value.0.counterparty_port_id;
 					let counterparty_channel_id: Option<ChannelId> =
-						value.0.channel_id.clone().map(|val| val.into());
+						value.0.channel_id.map(|val| val.into());
 					Event::CloseInitChannel(
 						height.into(),
 						port_id.into(),
@@ -773,7 +773,7 @@ pub mod pallet {
 					let connection_id = value.0.connection_id;
 					let counterparty_port_id = value.0.counterparty_port_id;
 					let counterparty_channel_id: Option<ChannelId> =
-						value.0.channel_id.clone().map(|val| val.into());
+						value.0.channel_id.map(|val| val.into());
 					Event::CloseConfirmChannel(
 						height.into(),
 						port_id.into(),
@@ -851,34 +851,11 @@ pub mod pallet {
 
 	// Errors inform users that something went wrong.
 	#[pallet::error]
-	pub enum Error<T> {
-		// /// The IBC client identifier already exists.
-	// ClientIdExist,
-	// /// The IBC client identifier doesn't exist.
-	// ClientIdNotExist,
-	// /// The IBC port identifier is already binded.
-	// PortIdBinded,
-	// /// The IBC connection identifier already exists.
-	// ConnectionIdExist,
-	// /// The IBC connection identifier doesn't exist.
-	// ConnectionIdNotExist,
-	// /// The IBC channel identifier already exists.
-	// ChannelIdExist,
-	// /// The IBC port identifier doesn't match.
-	// PortIdNotMatch,
-	// /// The IBC connection is closed.
-	// ConnectionClosed,
-	// /// Only allow 1 hop for v1 of the IBC protocol.
-	// OnlyOneHopAllowedV1,
-	// /// The sequence sending packet not match
-	// PackedSequenceNotMatch,
-	// /// The destination channel identifier doesn't match
-	// DestChannelIdNotMatch,
-	}
+	pub enum Error<T> {}
 
-	// Dispatchable functions allows users to interact with the pallet and invoke state changes.
-	// These functions materialize as "extrinsics", which are often compared to transactions.
-	// Dispatchable functions must be annotated with a weight and must return a DispatchResult.
+	// Dispatch able functions allows users to interact with the pallet and invoke state changes.
+	// These functions materialize as "extrinsic", which are often compared to transactions.
+	// Dispatch able functions must be annotated with a weight and must return a DispatchResult.
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 		#[pallet::weight(0)]
@@ -951,17 +928,15 @@ pub mod pallet {
 		pub fn get_channel_end(port_id: Vec<u8>, channel_id: Vec<u8>) -> Vec<u8> {
 			log::info!("in substrate-ibc [lib.rs]: [get_channel_end]");
 
-			use ibc::ics04_channel::channel::ChannelEnd;
-			use tendermint_proto::Protobuf;
 
 			if <Channels<T>>::contains_key((port_id.clone(), channel_id.clone())) {
 				let data = <Channels<T>>::get((port_id, channel_id));
 				let channel_end = ChannelEnd::decode_vec(&*data).unwrap();
 				log::info!(
 					"in substrate-ibc [lib.rs]: [get_channel_end] >> channel_end : {:?}",
-					channel_end.clone()
+					channel_end
 				);
-				return data
+				data
 			} else {
 				log::error!("in substrate-ibc [lib.rs]: read channel_end return None");
 				panic!("in substrate-ibc [lib.rs]: Read channel_end return None");
@@ -1021,7 +996,7 @@ pub mod pallet {
 					let height = value.height().encode_vec().unwrap();
 					<LatestHeight<T>>::set(height);
 
-					// store sendpacket
+					// store send-packet
 					let _value = value.clone();
 					let packet = Packet {
 						sequence: Sequence::from(_value.packet.sequence),

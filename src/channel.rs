@@ -29,7 +29,7 @@ impl<T: Config> ChannelReader for Context<T> {
 			let data =
 				<Channels<T>>::get((port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes()));
 			let channel_end = ChannelEnd::decode_vec(&*data).unwrap();
-			log::info!("in channel: [channel_end] >> channel_end : {:?}", channel_end.clone());
+			log::info!("in channel: [channel_end] >> channel_end : {:?}", channel_end);
 			Ok(channel_end)
 		} else {
 			log::info!("read channel_end return None");
@@ -44,7 +44,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		if <Connections<T>>::contains_key(connection_id.as_bytes()) {
 			let data = <Connections<T>>::get(connection_id.as_bytes());
 			let ret = ConnectionEnd::decode_vec(&*data).unwrap();
-			log::info!("In connection: [connection_end] >>  {:?}", ret.clone());
+			log::info!("In connection: [connection_end] >>  {:?}", ret);
 			Ok(ret)
 		} else {
 			log::info!("read connection end returns None");
@@ -425,8 +425,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		} else {
 			// if connection_identifier no exist
 			log::info!("in channel: [store_connection_channels] >> init ChannelsConnection");
-			let mut temp_connection_channels = vec![];
-			temp_connection_channels.push(port_channel_id);
+			let temp_connection_channels = vec![port_channel_id];
 			<ChannelsConnection<T>>::insert(conn_id, temp_connection_channels);
 		}
 
@@ -443,9 +442,9 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		log::info!(
 			"in channel: [store_channel], port_and_channel_id: ({:?}, {:?})",
 			port_channel_id.clone().0,
-			port_channel_id.clone().1
+			port_channel_id.1
 		);
-		log::info!("in channel: [store_channel], channel_end: {:?}", channel_end.clone());
+		log::info!("in channel: [store_channel], channel_end: {:?}", channel_end);
 
 		let channel_end = channel_end.encode_vec().unwrap();
 

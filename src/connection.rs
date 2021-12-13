@@ -22,7 +22,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 		if <Connections<T>>::contains_key(conn_id.as_bytes()) {
 			let data = <Connections<T>>::get(conn_id.as_bytes());
 			let ret = ConnectionEnd::decode_vec(&*data).unwrap();
-			log::info!("In connection: [connection_end] >>  {:?}", ret.clone());
+			log::info!("In connection: [connection_end] >>  {:?}", ret);
 			Ok(ret)
 		} else {
 			log::info!("read connection end returns None");
@@ -127,7 +127,7 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		log::info!("in connection: [store_connection]");
 		log::info!(
 			"in connection: [store_connection] >> connection_id: {:?}, connection_end: {:?}",
-			connection_id.clone(),
+			connection_id,
 			connection_end.clone()
 		);
 
