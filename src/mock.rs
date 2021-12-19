@@ -53,8 +53,8 @@ impl system::Config for Test {
 	type OnSetCode = ();
 }
 
-// The ModuleCallbacksImpl creates a static mapping of module index and callback functions of other modules.
-// The module index is determined at the time of construct_runtime. For example,
+// The ModuleCallbacksImpl creates a static mapping of module index and callback functions of other
+// modules. The module index is determined at the time of construct_runtime. For example,
 // the index of TemplateModule is 8 in the current runtime.
 // In the future, we should find a more dynamic way to create this mapping.
 pub struct ModuleCallbacksImpl;

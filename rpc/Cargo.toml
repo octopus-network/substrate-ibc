@@ -7,25 +7,16 @@ edition = "2018"
 
 [dependencies]
 codec = { package = "parity-scale-codec", version = "1.3.0" }
-jsonrpc-core = "15.0"
-jsonrpc-core-client = "15.0"
-jsonrpc-derive = "15.0"
+jsonrpc-core = "18.0.0"
+jsonrpc-core-client = "18.0.0"
+jsonrpc-derive = "18.0.0"
 serde = { version = "1.0", features = ["derive"], optional = true }
 
 # Substrate packages
-sp-api = { version = '3.0', default-features = false, path = "../../../../../primitives/api" }
-sp-blockchain = { version = '3.0', default-features = false, path = "../../../../../primitives/blockchain" }
-sp-rpc = { version = '3.0', default-features = false, path = "../../../../../primitives/rpc" }
-sp-runtime = { version = '3.0', default-features = false, path = "../../../../../primitives/runtime" }
+sp-api = {git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12"}
+sp-blockchain = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12"  }
+sp-rpc = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
+sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.12" }
 
 # local packages
 pallet-ibc-runtime-api = { path  = "../runtime-api" }
-
-[features]
-default = ["std"]
-std = [
-    "serde",
-    "sp-api/std",
-    "sp-runtime/std",
-    "pallet-ibc-runtime-api/std",
-]

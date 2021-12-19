@@ -1,6 +1,8 @@
 use super::*;
-use ibc::application::ics20_fungible_token_transfer::context::Ics20Context;
-use ibc::ics26_routing::context::Ics26Context;
+use ibc::{
+	application::ics20_fungible_token_transfer::context::Ics20Context,
+	ics26_routing::context::Ics26Context,
+};
 
 #[derive(Clone)]
 pub struct Context<T: Config> {
