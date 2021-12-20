@@ -36,7 +36,7 @@ impl<T: Config> ClientReader for Context<T> {
 			}
 		} else {
 			log::info!("In client : [client_type] >> read client_type is None");
-			todo!()
+			Err(ICS02Error::client_not_found(client_id.clone()))
 		}
 	}
 
