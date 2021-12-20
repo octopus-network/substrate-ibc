@@ -25,9 +25,7 @@ impl<T: Config> ClientReader for Context<T> {
 			let data = Vec::<u8>::decode(&mut data).unwrap();
 			let data = String::from_utf8(data).unwrap();
 			match ClientType::from_str(&data) {
-				Err(_err) => {
-					Err(ICS02Error::unknown_client_type(format!("{}", data)))
-				},
+				Err(_err) => Err(ICS02Error::unknown_client_type(format!("{}", data))),
 				Ok(val) => {
 					log::info!("In client: [client_type] >> client_type : {}", val);
 					Ok(val)
@@ -61,7 +59,7 @@ impl<T: Config> ClientReader for Context<T> {
 		height: Height,
 	) -> Result<AnyConsensusState, ICS02Error> {
 		log::info!("In client: [consensus_state]");
-		
+
 		let native_height = height.clone();
 		let height = height.encode_vec().unwrap();
 		let value = <ConsensusStates<T>>::get(client_id.as_bytes());
@@ -89,7 +87,7 @@ impl<T: Config> ClientReader for Context<T> {
 			}
 		}
 
-		Err(ICS02Error::consensus_state_not_found(client_id.clone(),  native_height))
+		Err(ICS02Error::consensus_state_not_found(client_id.clone(), native_height))
 	}
 	fn client_counter(&self) -> Result<u64, ICS02Error> {
 		log::info!("In client: [client_counter]");

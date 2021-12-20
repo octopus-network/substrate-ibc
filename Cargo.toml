@@ -46,6 +46,7 @@ sp-std 		= { git = "https://github.com/paritytech/substrate.git", branch = "polk
 sp-keyring 	= { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12" }
 frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12" }
 chrono = "0.4.19"
+tendermint-proto 		= { version = "0.22.0", default-features = false }
 
 [features]
 default = ['std']
