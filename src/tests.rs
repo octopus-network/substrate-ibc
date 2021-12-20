@@ -1,5 +1,6 @@
 use super::{pallet::ConsensusStates, Any, *};
 use crate::{mock::*, routing::Context, Error};
+use core::str::FromStr;
 use frame_support::{assert_noop, assert_ok};
 use ibc::ics02_client::{
 	context::{ClientKeeper, ClientReader},
@@ -7,7 +8,6 @@ use ibc::ics02_client::{
 };
 use sp_keyring::{sr25519::Keyring, AccountKeyring};
 use tendermint_proto::Protobuf;
-use core::str::FromStr;
 
 use ibc::{
 	events::IbcEvent,
@@ -89,19 +89,28 @@ fn test_read_client_type_failed_by_supply_error_client_id() {
 	})
 }
 
-
 // test store client_state
 #[test]
 fn test_store_client_state_ok() {
 	let gp_client_id = ClientId::new(ClientType::Grandpa, 0).unwrap();
 
-	let gp_client_state = GPClientState::new(ChainId::new("ibc".to_string(), 0), Height::default(), Height::default()).unwrap();
+	let gp_client_state = GPClientState::new(
+		ChainId::new("ibc".to_string(), 0),
+		Height::default(),
+		Height::default(),
+	)
+	.unwrap();
 	let gp_client_state = AnyClientState::Grandpa(gp_client_state);
 
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		assert_eq!(context.store_client_state(gp_client_id.clone(), gp_client_state.clone()).is_ok(), true);
+		assert_eq!(
+			context
+				.store_client_state(gp_client_id.clone(), gp_client_state.clone())
+				.is_ok(),
+			true
+		);
 
 		let ret = context.client_state(&gp_client_id).unwrap();
 
@@ -113,13 +122,23 @@ fn test_store_client_state_ok() {
 fn test_read_client_state_failed_by_supply_error_client_id() {
 	let gp_client_id = ClientId::new(ClientType::Grandpa, 0).unwrap();
 	let gp_client_id_failed = ClientId::new(ClientType::Grandpa, 1).unwrap();
-	let gp_client_state = GPClientState::new(ChainId::new("ibc".to_string(), 0), Height::default(), Height::default()).unwrap();
+	let gp_client_state = GPClientState::new(
+		ChainId::new("ibc".to_string(), 0),
+		Height::default(),
+		Height::default(),
+	)
+	.unwrap();
 	let gp_client_state = AnyClientState::Grandpa(gp_client_state);
 
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		assert_eq!(context.store_client_state(gp_client_id.clone(), gp_client_state.clone()).is_ok(), true);
+		assert_eq!(
+			context
+				.store_client_state(gp_client_id.clone(), gp_client_state.clone())
+				.is_ok(),
+			true
+		);
 
 		let ret = context.client_state(&gp_client_id_failed).unwrap_err().to_string();
 
@@ -133,11 +152,16 @@ fn test_store_consensus_state_ok() {
 	let height = Height::default();
 	let gp_consensus_state = GPConsensusState::new(CommitmentRoot::from_bytes(&[1, 2, 3]));
 	let consensus_state = AnyConsensusState::Grandpa(gp_consensus_state);
-	
+
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		assert_eq!(context.store_consensus_state(gp_client_id.clone(), height, consensus_state.clone()).is_ok(), true);
+		assert_eq!(
+			context
+				.store_consensus_state(gp_client_id.clone(), height, consensus_state.clone())
+				.is_ok(),
+			true
+		);
 
 		let ret = context.consensus_state(&gp_client_id, height).unwrap();
 
@@ -153,44 +177,61 @@ fn test_read_consensus_state_failed_by_supply_error_client_id() {
 	let height = Height::default();
 	let gp_consensus_state = GPConsensusState::new(CommitmentRoot::from_bytes(&[1, 2, 3]));
 	let consensus_state = AnyConsensusState::Grandpa(gp_consensus_state);
-	
+
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		assert_eq!(context.store_consensus_state(gp_client_id.clone(), height, consensus_state.clone()).is_ok(), true);
+		assert_eq!(
+			context
+				.store_consensus_state(gp_client_id.clone(), height, consensus_state.clone())
+				.is_ok(),
+			true
+		);
 
 		let ret = context.consensus_state(&gp_client_id_failed, height).unwrap_err().to_string();
 
-		assert_eq!(ret, ICS02Error::consensus_state_not_found(gp_client_id_failed.clone(),  height.clone()).to_string());
+		assert_eq!(
+			ret,
+			ICS02Error::consensus_state_not_found(gp_client_id_failed.clone(), height.clone())
+				.to_string()
+		);
 	})
 }
 
-
 #[test]
 fn test_get_identified_any_client_state() {
-	
 	let range = (0..10).into_iter().collect::<Vec<u8>>();
-
 
 	let mut client_state_vec = vec![];
 	let mut gp_client_id_vec = vec![];
 
 	for index in range.clone() {
 		let gp_client_id = ClientId::new(ClientType::Grandpa, index as u64).unwrap();
-		let gp_client_state = GPClientState::new(ChainId::new("ibc".to_string(), 0), Height::new(0, index as u64), Height::new(0, index as u64)).unwrap();
+		let gp_client_state = GPClientState::new(
+			ChainId::new("ibc".to_string(), 0),
+			Height::new(0, index as u64),
+			Height::new(0, index as u64),
+		)
+		.unwrap();
 		let client_state = AnyClientState::Grandpa(gp_client_state);
-	
+
 		gp_client_id_vec.push(gp_client_id);
 		client_state_vec.push(client_state);
-	
 	}
 
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
 		for index in 0..range.len() {
-			
-			assert_eq!(context.store_client_state(gp_client_id_vec[index].clone(), client_state_vec[index].clone()).is_ok(), true);
+			assert_eq!(
+				context
+					.store_client_state(
+						gp_client_id_vec[index].clone(),
+						client_state_vec[index].clone()
+					)
+					.is_ok(),
+				true
+			);
 		}
 
 		let result = Pallet::<Test>::get_identified_any_client_state();
@@ -199,7 +240,8 @@ fn test_get_identified_any_client_state() {
 
 		for index in range {
 			let (client_id, client_state) = result[index as usize].clone();
-			let client_id = ClientId::from_str(String::from_utf8(client_id).unwrap().as_str()).unwrap();
+			let client_id =
+				ClientId::from_str(String::from_utf8(client_id).unwrap().as_str()).unwrap();
 			// println!("client_id: {:}", client_id);
 			let client_state = AnyClientState::decode_vec(&*client_state).unwrap();
 			// println!("client_state: {:?}", client_state);
@@ -207,8 +249,5 @@ fn test_get_identified_any_client_state() {
 			assert_eq!(gp_client_id_vec.iter().find(|&val| val == &client_id).is_some(), true);
 			assert_eq!(client_state_vec.iter().find(|&val| val == &client_state).is_some(), true);
 		}
-
-		
-
 	})
 }
