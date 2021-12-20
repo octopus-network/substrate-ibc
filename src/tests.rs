@@ -72,7 +72,7 @@ fn test_store_client_type_ok() {
 }
 
 #[test]
-fn test_read_client_type_failed() {
+fn test_read_client_type_failed_by_supply_error_client_id() {
 	let gp_client_type = ClientType::Grandpa;
 	let gp_client_id = ClientId::new(gp_client_type, 0).unwrap();
 	let gp_client_id_failed = ClientId::new(gp_client_type, 1).unwrap();
@@ -108,7 +108,7 @@ fn test_store_client_state_ok() {
 }
 
 #[test]
-fn test_read_client_state_failed() {
+fn test_read_client_state_failed_by_supply_error_client_id() {
 	let gp_client_id = ClientId::new(ClientType::Grandpa, 0).unwrap();
 	let gp_client_id_failed = ClientId::new(ClientType::Grandpa, 1).unwrap();
 	let gp_client_state = GPClientState::new(ChainId::new("ibc".to_string(), 0), Height::default(), Height::default()).unwrap();
