@@ -124,3 +124,41 @@ fn test_read_client_state_failed() {
 		assert_eq!(ret, ICS02Error::client_not_found(gp_client_id_failed).to_string());
 	})
 }
+
+#[test]
+fn test_store_consensus_state_ok() {
+	let gp_client_id = ClientId::new(ClientType::Grandpa, 0).unwrap();
+	let height = Height::default();
+	let gp_consensus_state = GPConsensusState::new(CommitmentRoot::from_bytes(&[1, 2, 3]));
+	let consensus_state = AnyConsensusState::Grandpa(gp_consensus_state);
+	
+	let mut context: Context<Test> = Context::new();
+
+	new_test_ext().execute_with(|| {
+		assert_eq!(context.store_consensus_state(gp_client_id.clone(), height, consensus_state.clone()).is_ok(), true);
+
+		let ret = context.consensus_state(&gp_client_id, height).unwrap();
+
+		assert_eq!(ret, consensus_state);
+	})
+}
+
+#[test]
+fn test_read_consensus_state_failed_by_supply_error_client_id() {
+	let gp_client_id = ClientId::new(ClientType::Grandpa, 0).unwrap();
+	let gp_client_id_failed = ClientId::new(ClientType::Grandpa, 1).unwrap();
+
+	let height = Height::default();
+	let gp_consensus_state = GPConsensusState::new(CommitmentRoot::from_bytes(&[1, 2, 3]));
+	let consensus_state = AnyConsensusState::Grandpa(gp_consensus_state);
+	
+	let mut context: Context<Test> = Context::new();
+
+	new_test_ext().execute_with(|| {
+		assert_eq!(context.store_consensus_state(gp_client_id.clone(), height, consensus_state.clone()).is_ok(), true);
+
+		let ret = context.consensus_state(&gp_client_id_failed, height).unwrap_err().to_string();
+
+		assert_eq!(ret, ICS02Error::consensus_state_not_found(gp_client_id_failed.clone(),  height.clone()).to_string());
+	})
+}

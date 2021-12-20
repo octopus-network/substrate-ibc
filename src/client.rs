@@ -61,7 +61,8 @@ impl<T: Config> ClientReader for Context<T> {
 		height: Height,
 	) -> Result<AnyConsensusState, ICS02Error> {
 		log::info!("In client: [consensus_state]");
-
+		
+		let native_height = height.clone();
 		let height = height.encode_vec().unwrap();
 		let value = <ConsensusStates<T>>::get(client_id.as_bytes());
 
@@ -87,7 +88,8 @@ impl<T: Config> ClientReader for Context<T> {
 				return Ok(any_consensus_state)
 			}
 		}
-		todo!()
+
+		Err(ICS02Error::consensus_state_not_found(client_id.clone(),  native_height))
 	}
 	fn client_counter(&self) -> Result<u64, ICS02Error> {
 		log::info!("In client: [client_counter]");
