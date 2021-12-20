@@ -56,7 +56,7 @@ use ibc::{
 
 // test store and read client-type
 #[test]
-fn test_client_type_store_ok() {
+fn test_store_client_type_ok() {
 	let gp_client_type = ClientType::Grandpa;
 	let gp_client_id = ClientId::new(gp_client_type, 0).unwrap();
 
@@ -72,7 +72,7 @@ fn test_client_type_store_ok() {
 }
 
 #[test]
-fn test_client_type_store_failed() {
+fn test_read_client_type_failed() {
 	let gp_client_type = ClientType::Grandpa;
 	let gp_client_id = ClientId::new(gp_client_type, 0).unwrap();
 	let gp_client_id_failed = ClientId::new(gp_client_type, 1).unwrap();
@@ -82,6 +82,44 @@ fn test_client_type_store_failed() {
 		assert_eq!(context.store_client_type(gp_client_id.clone(), gp_client_type).is_ok(), true);
 
 		let ret = context.client_type(&gp_client_id_failed).unwrap_err().to_string();
+
+		assert_eq!(ret, ICS02Error::client_not_found(gp_client_id_failed).to_string());
+	})
+}
+
+
+// test store client_state
+#[test]
+fn test_store_client_state_ok() {
+	let gp_client_id = ClientId::new(ClientType::Grandpa, 0).unwrap();
+
+	let gp_client_state = GPClientState::new(ChainId::new("ibc".to_string(), 0), Height::default(), Height::default()).unwrap();
+	let gp_client_state = AnyClientState::Grandpa(gp_client_state);
+
+	let mut context: Context<Test> = Context::new();
+
+	new_test_ext().execute_with(|| {
+		assert_eq!(context.store_client_state(gp_client_id.clone(), gp_client_state.clone()).is_ok(), true);
+
+		let ret = context.client_state(&gp_client_id).unwrap();
+
+		assert_eq!(ret, gp_client_state);
+	})
+}
+
+#[test]
+fn test_read_client_state_failed() {
+	let gp_client_id = ClientId::new(ClientType::Grandpa, 0).unwrap();
+	let gp_client_id_failed = ClientId::new(ClientType::Grandpa, 1).unwrap();
+	let gp_client_state = GPClientState::new(ChainId::new("ibc".to_string(), 0), Height::default(), Height::default()).unwrap();
+	let gp_client_state = AnyClientState::Grandpa(gp_client_state);
+
+	let mut context: Context<Test> = Context::new();
+
+	new_test_ext().execute_with(|| {
+		assert_eq!(context.store_client_state(gp_client_id.clone(), gp_client_state.clone()).is_ok(), true);
+
+		let ret = context.client_state(&gp_client_id_failed).unwrap_err().to_string();
 
 		assert_eq!(ret, ICS02Error::client_not_found(gp_client_id_failed).to_string());
 	})

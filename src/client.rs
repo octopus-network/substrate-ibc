@@ -24,10 +24,9 @@ impl<T: Config> ClientReader for Context<T> {
 			let mut data: &[u8] = &data;
 			let data = Vec::<u8>::decode(&mut data).unwrap();
 			let data = String::from_utf8(data).unwrap();
-			// log::info!("In client: [client_type] >> date: {} ", data);
 			match ClientType::from_str(&data) {
 				Err(_err) => {
-					todo!()
+					Err(ICS02Error::unknown_client_type(format!("{}", data)))
 				},
 				Ok(val) => {
 					log::info!("In client: [client_type] >> client_type : {}", val);
@@ -52,8 +51,7 @@ impl<T: Config> ClientReader for Context<T> {
 			Ok(AnyClientState::decode_vec(&*data).unwrap())
 		} else {
 			log::info!("In client: [client_state] >> read client_state is None");
-
-			todo!()
+			Err(ICS02Error::client_not_found(client_id.clone()))
 		}
 	}
 
