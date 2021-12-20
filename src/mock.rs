@@ -1,18 +1,17 @@
-use std::time::{Duration, Instant};
 use crate as pallet_ibc;
+use chrono::{DateTime, Local, TimeZone};
 use frame_support::parameter_types;
 use frame_system as system;
 use sp_core::H256;
 use sp_runtime::{
 	testing::Header,
-	traits::{BlakeTwo256, IdentityLookup, AccountIdLookup, Verify, IdentifyAccount},
+	traits::{AccountIdLookup, BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 	MultiSignature,
 };
-use chrono::{Local, DateTime, TimeZone};
+use std::time::{Duration, Instant};
 
 pub type Signature = MultiSignature;
 pub(crate) type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
-
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;

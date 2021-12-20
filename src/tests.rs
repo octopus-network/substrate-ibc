@@ -1,9 +1,28 @@
-use super::pallet::ConsensusStates;
+use super::{pallet::ConsensusStates, Any, *};
 use crate::{mock::*, Error};
 use frame_support::{assert_noop, assert_ok};
-use super::Any;
 use sp_keyring::{sr25519::Keyring, AccountKeyring};
-use super::*;
+
+use ibc::{
+	events::IbcEvent,
+	handler::HandlerOutput,
+	ics02_client::{
+		client_consensus::AnyConsensusState,
+		client_state::AnyClientState,
+		client_type::ClientType,
+		handler::{dispatch as ics02_dispatch, ClientResult},
+		msgs::{create_client::MsgCreateAnyClient, ClientMsg},
+	},
+	ics10_grandpa::{
+		client_state::ClientState as GPClientState,
+		consensus_state::ConsensusState as GPConsensusState,
+	},
+	ics23_commitment::commitment::CommitmentRoot,
+	ics24_host::identifier::{ChainId, ChannelId, ClientId},
+	test_utils::get_dummy_account_id,
+	tx_msg::Msg,
+	Height,
+};
 
 // for substrate-ibc
 // 1. create single grandpa client
@@ -31,16 +50,91 @@ use super::*;
 
 // 20. routing_module_and_keepers
 
-
-
-
 #[test]
-fn test_deliver() {
+fn test_deliver_failed() {
 	let alice: AccountId = AccountKeyring::Alice.into();
 	let origin = Origin::signed(alice);
-	let any: Any = Any { type_url: vec![1,2,3], value: vec![1,2,3] };
+	let any: Any = Any { type_url: vec![1, 2, 3], value: vec![1, 2, 3] };
 	let tmp: u8 = 0;
 	new_test_ext().execute_with(|| {
 		assert_ok!(Ibc::deliver(origin, vec![any], tmp));
+	})
+}
+
+// create single grandpa client
+#[test]
+fn test_gp_create_client_ok() {
+	new_test_ext().execute_with(|| {
+		let signer = get_dummy_account_id();
+
+		let chain_id = ChainId::new("ibc".to_string(), 0);
+		let latest_height = Height::default();
+		let frozen_height = Height::default();
+
+		let gp_client_state = AnyClientState::Grandpa(
+			GPClientState::new(chain_id, latest_height, frozen_height).unwrap(),
+		);
+
+		let gp_consensus_state = GPConsensusState::new(CommitmentRoot::from_bytes(&[1, 2, 3]));
+		let msg = MsgCreateAnyClient::new(
+			gp_client_state,
+			AnyConsensusState::Grandpa(gp_consensus_state),
+			signer,
+		)
+		.unwrap();
+
+		let alice: AccountId = AccountKeyring::Alice.into();
+		let origin = Origin::signed(alice);
+
+		let msg = vec![msg.to_any()]
+			.iter()
+			.map(|message| Any {
+				type_url: message.type_url.clone().as_bytes().to_vec(),
+				value: message.value.clone(),
+			})
+			.collect();
+
+		let output = Ibc::deliver(origin, msg, 0);
+
+		println!("Output: {:?}", output);
+	})
+}
+
+// create multi grandpa client
+#[test]
+fn test_multi_gp_create_client_ok() {
+	new_test_ext().execute_with(|| {
+		let signer = get_dummy_account_id();
+
+		let chain_id = ChainId::new("ibc".to_string(), 0);
+		let latest_height = Height::default();
+		let frozen_height = Height::default();
+
+		let gp_client_state = AnyClientState::Grandpa(
+			GPClientState::new(chain_id, latest_height, frozen_height).unwrap(),
+		);
+
+		let gp_consensus_state = GPConsensusState::new(CommitmentRoot::from_bytes(&[1, 2, 3]));
+		let msg = MsgCreateAnyClient::new(
+			gp_client_state,
+			AnyConsensusState::Grandpa(gp_consensus_state),
+			signer,
+		)
+		.unwrap();
+
+		let alice: AccountId = AccountKeyring::Alice.into();
+		let origin = Origin::signed(alice);
+
+		let msg = vec![msg.clone().to_any(), msg.clone().to_any(), msg.clone().to_any()]
+			.iter()
+			.map(|message| Any {
+				type_url: message.type_url.clone().as_bytes().to_vec(),
+				value: message.value.clone(),
+			})
+			.collect();
+
+		let output = Ibc::deliver(origin, msg, 0);
+
+		println!("Output: {:?}", output);
 	})
 }

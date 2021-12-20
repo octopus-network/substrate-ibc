@@ -19,7 +19,7 @@ benchmarks! {
 		}
 		let any = Any {type_url: v1, value: v2};
 		let caller = whitelisted_caller();
-	}: deliver(RawOrigin::Signed(caller), vec![any], b))
+	}: deliver(RawOrigin::Signed(caller), vec![any], b)
 }
 
 impl_benchmark_test_suite!(Template, crate::mock::new_test_ext(), crate::mock::Test,);
