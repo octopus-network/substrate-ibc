@@ -1,38 +1,42 @@
 use super::{pallet::ConsensusStates, Any, *};
 use crate::{mock::*, routing::Context, Error};
+use codec::alloc::collections::HashMap;
 use core::str::FromStr;
 use frame_support::{assert_noop, assert_ok};
-use sp_keyring::{sr25519::Keyring, AccountKeyring};
-use tendermint_proto::Protobuf;
-
 use ibc::{
 	events::IbcEvent,
 	handler::HandlerOutput,
 	ics02_client::{
-		context::{ClientKeeper, ClientReader},
 		client_consensus::AnyConsensusState,
 		client_state::AnyClientState,
 		client_type::ClientType,
+		context::{ClientKeeper, ClientReader},
 		error::Error as ICS02Error,
 		handler::{dispatch as ics02_dispatch, ClientResult},
 		msgs::{create_client::MsgCreateAnyClient, ClientMsg},
 	},
+	ics03_connection::{
+		connection::{ConnectionEnd, State},
+		context::{ConnectionKeeper, ConnectionReader},
+	},
 	ics04_channel::{
 		context::{ChannelKeeper, ChannelReader},
-		packet::{Sequence, Receipt},
 		error::Error as ICS04Error,
+		packet::{Receipt, Sequence},
 	},
 	ics10_grandpa::{
 		client_state::ClientState as GPClientState,
 		consensus_state::ConsensusState as GPConsensusState,
 	},
 	ics23_commitment::commitment::CommitmentRoot,
-	ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId},
+	ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
 	test_utils::get_dummy_account_id,
 	timestamp::Timestamp,
 	tx_msg::Msg,
 	Height,
 };
+use sp_keyring::{sr25519::Keyring, AccountKeyring};
+use tendermint_proto::Protobuf;
 
 // test store and read client-type
 #[test]
@@ -291,12 +295,15 @@ fn test_get_packet_commitment_state_ok() {
 
 		assert_eq!(result.len(), range.len());
 
-		for (port_id_1, channel_id_1, sequence_1, value_1) in result  {
-			let port_id_2 = PortId::from_str(String::from_utf8(port_id_1).unwrap().as_str()).unwrap();
-			let channel_id_2 = ChannelId::from_str(String::from_utf8(channel_id_1).unwrap().as_str()).unwrap();
+		for (port_id_1, channel_id_1, sequence_1, value_1) in result {
+			let port_id_2 =
+				PortId::from_str(String::from_utf8(port_id_1).unwrap().as_str()).unwrap();
+			let channel_id_2 =
+				ChannelId::from_str(String::from_utf8(channel_id_1).unwrap().as_str()).unwrap();
 			let sequence_2 = u64::decode(&mut sequence_1.as_slice()).unwrap();
 			let sequence_2 = Sequence::from(sequence_2);
-			// let sequence_2 =  Sequence::from_str(String::from_utf8(sequence_1).unwrap().as_str()).unwrap();
+			// let sequence_2 =
+			// Sequence::from_str(String::from_utf8(sequence_1).unwrap().as_str()).unwrap();
 
 			// assert key
 			assert_eq!(port_id_vec.iter().find(|&val| val == &port_id_2).is_some(), true);
@@ -311,15 +318,6 @@ fn test_get_packet_commitment_state_ok() {
 
 #[test]
 fn test_connection_ok() {
-	use ibc::{
-		ics03_connection::{
-			context::{ConnectionKeeper, ConnectionReader}, connection::ConnectionEnd,
-		},
-		ics24_host::identifier::ConnectionId,
-	};
-	use ibc::ics03_connection::connection::State;
-	use codec::alloc::collections::HashMap;
-
 	let mut input: HashMap<ConnectionId, ConnectionEnd> = HashMap::new();
 
 	let connection_id0 = ConnectionId::new(0);
@@ -339,29 +337,45 @@ fn test_connection_ok() {
 
 	let mut context: Context<Test> = Context::new();
 	new_test_ext().execute_with(|| {
-		assert_eq!(ConnectionKeeper::store_connection(&mut context,
-													  connection_id0.clone(),
-													  input.get(&connection_id0.clone()).unwrap()
-					).is_ok(), true);
+		assert_eq!(
+			ConnectionKeeper::store_connection(
+				&mut context,
+				connection_id0.clone(),
+				input.get(&connection_id0.clone()).unwrap()
+			)
+			.is_ok(),
+			true
+		);
 
 		let ret = ConnectionReader::connection_end(&mut context, &connection_id0).unwrap();
 		assert_eq!(ret, *input.get(&connection_id0.clone()).unwrap());
 
-		assert_eq!(ConnectionKeeper::store_connection(&mut context,
-													  connection_id1.clone(),
-													  input.get(&connection_id1.clone()).unwrap()
-					).is_ok(), true);
+		assert_eq!(
+			ConnectionKeeper::store_connection(
+				&mut context,
+				connection_id1.clone(),
+				input.get(&connection_id1.clone()).unwrap()
+			)
+			.is_ok(),
+			true
+		);
 
-		assert_eq!(ConnectionKeeper::store_connection(&mut context,
-													  connection_id2.clone(),
-													  input.get(&connection_id2.clone()).unwrap()
-					).is_ok(), true);
+		assert_eq!(
+			ConnectionKeeper::store_connection(
+				&mut context,
+				connection_id2.clone(),
+				input.get(&connection_id2.clone()).unwrap()
+			)
+			.is_ok(),
+			true
+		);
 
 		let result = Pallet::<Test>::get_idenfitied_connection_end();
 		assert_eq!(result.len(), input.len());
 
 		for (connection_id, connection_end) in result {
-			let connection_id = ConnectionId::from_str(String::from_utf8(connection_id).unwrap().as_str()).unwrap();
+			let connection_id =
+				ConnectionId::from_str(String::from_utf8(connection_id).unwrap().as_str()).unwrap();
 			let connection_end = ConnectionEnd::decode_vec(&connection_end).unwrap();
 			assert_eq!(*input.get(&connection_id).unwrap(), connection_end);
 		}
@@ -372,7 +386,9 @@ fn test_connection_ok() {
 fn test_connection_fail() {
 	use ibc::{
 		ics03_connection::{
-			context::{ConnectionKeeper, ConnectionReader}, connection::ConnectionEnd, error::Error as ICS03Error,
+			connection::ConnectionEnd,
+			context::{ConnectionKeeper, ConnectionReader},
+			error::Error as ICS03Error,
 		},
 		ics24_host::identifier::ConnectionId,
 	};
@@ -380,7 +396,9 @@ fn test_connection_fail() {
 	let connection_id0 = ConnectionId::new(0);
 	let mut context: Context<Test> = Context::new();
 	new_test_ext().execute_with(|| {
-		let ret = ConnectionReader::connection_end(&mut context, &connection_id0.clone()).unwrap_err().to_string();
+		let ret = ConnectionReader::connection_end(&mut context, &connection_id0.clone())
+			.unwrap_err()
+			.to_string();
 		assert_eq!(ret, ICS03Error::connection_mismatch(connection_id0).to_string());
 	})
 }
@@ -408,23 +426,38 @@ fn test_delete_packet_acknowledgement_ok() {
 	let sequence = Sequence::from(0);
 	let ack = vec![1, 2, 3];
 
-	
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
 		assert_eq!(
-			context.store_packet_acknowledgement((port_id.clone(), channel_id.clone(), sequence.clone()), ack.clone()).is_ok(),
+			context
+				.store_packet_acknowledgement(
+					(port_id.clone(), channel_id.clone(), sequence.clone()),
+					ack.clone()
+				)
+				.is_ok(),
 			true
 		);
 
-		assert_eq!(context.delete_packet_acknowledgement((port_id.clone(), channel_id.clone(), sequence.clone())).is_ok(), true);
+		assert_eq!(
+			context
+				.delete_packet_acknowledgement((
+					port_id.clone(),
+					channel_id.clone(),
+					sequence.clone()
+				))
+				.is_ok(),
+			true
+		);
 
-		let result = context.get_packet_acknowledgement(&(port_id, channel_id, sequence)).unwrap_err().to_string();
+		let result = context
+			.get_packet_acknowledgement(&(port_id, channel_id, sequence))
+			.unwrap_err()
+			.to_string();
 
 		assert_eq!(result, ICS04Error::packet_acknowledgement_not_found(sequence).to_string());
 	})
 }
-
 
 #[test]
 fn test_get_acknowledge_state() {
@@ -439,7 +472,6 @@ fn test_get_acknowledge_state() {
 
 	let mut context: Context<Test> = Context::new();
 
-
 	for index in 0..range.len() {
 		let port_id = PortId::from_str(&format!("transfer-{}", index)).unwrap();
 		port_id_vec.push(port_id);
@@ -450,21 +482,33 @@ fn test_get_acknowledge_state() {
 		ack_vec.push(vec![index as u8]);
 
 		value_vec.push(ChannelReader::hash(&context, format!("{:?}", vec![index as u8])).encode());
-
 	}
 
-	
-	new_test_ext().execute_with(|| { 
-		for index in 0..range.len() { 
-			assert_eq!(context.store_packet_acknowledgement((port_id_vec[index].clone(), channel_id_vec[index].clone(), sequence_vec[index].clone()), ack_vec[index].clone()).is_ok(), true);
+	new_test_ext().execute_with(|| {
+		for index in 0..range.len() {
+			assert_eq!(
+				context
+					.store_packet_acknowledgement(
+						(
+							port_id_vec[index].clone(),
+							channel_id_vec[index].clone(),
+							sequence_vec[index].clone()
+						),
+						ack_vec[index].clone()
+					)
+					.is_ok(),
+				true
+			);
 		}
-		
+
 		let result = Pallet::<Test>::get_packet_acknowledge_state();
 		assert_eq!(result.len(), range.len());
 
 		for (port_id_1, channel_id_1, sequence_1, value_1) in result {
-			let port_id_2 = PortId::from_str(String::from_utf8(port_id_1).unwrap().as_str()).unwrap();
-			let channel_id_2 = ChannelId::from_str(String::from_utf8(channel_id_1).unwrap().as_str()).unwrap();
+			let port_id_2 =
+				PortId::from_str(String::from_utf8(port_id_1).unwrap().as_str()).unwrap();
+			let channel_id_2 =
+				ChannelId::from_str(String::from_utf8(channel_id_1).unwrap().as_str()).unwrap();
 			let sequence_2 = u64::decode(&mut sequence_1.as_slice()).unwrap();
 			let sequence_2 = Sequence::from(sequence_2);
 
