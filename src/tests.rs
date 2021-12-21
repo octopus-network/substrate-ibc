@@ -19,7 +19,7 @@ use ibc::{
 	},
 	ics04_channel::{
 		context::{ChannelKeeper, ChannelReader},
-		packet::Sequence,
+		packet::{Sequence, Receipt},
 		error::Error as ICS04Error,
 	},
 	ics10_grandpa::{
@@ -411,4 +411,48 @@ fn test_delete_packet_commitment_ok() {
 		// assert error
 		assert_eq!(result, ICS04Error::packet_commitment_not_found(sequence).to_string());
 	})
+}
+
+
+#[test]
+fn test_store_packet_receipt_ok() {
+	let port_id = PortId::from_str("transfer").unwrap();
+	let channel_id = ChannelId::from_str("channel-0").unwrap();
+	let sequence = Sequence::from(0);
+	let receipt = Receipt::Ok;
+
+	let mut context: Context<Test> = Context::new();
+
+	new_test_ext().execute_with(|| {
+		assert_eq!(context.store_packet_receipt((port_id.clone(), channel_id.clone(), sequence.clone()), receipt.clone()).is_ok(), true);
+
+		let result = context.get_packet_receipt(&(port_id, channel_id, sequence)).unwrap();
+
+		let result = match result {
+			Receipt::Ok => "Ok",
+			_ => unreachable!(),
+		};
+
+		assert_eq!(result, "Ok")
+	})
+}
+
+
+#[test]
+fn test_read_packet_receipt_failed_supply_error_sequence() {
+	let port_id = PortId::from_str("transfer").unwrap();
+	let channel_id = ChannelId::from_str("channel-0").unwrap();
+	let sequence = Sequence::from(0);
+	let sequence_failed = Sequence::from(1);
+	let receipt = Receipt::Ok;
+
+	let mut context: Context<Test> = Context::new();
+
+	new_test_ext().execute_with(|| {
+		assert_eq!(context.store_packet_receipt((port_id.clone(), channel_id.clone(), sequence.clone()), receipt.clone()).is_ok(), true);
+
+		let result = context.get_packet_receipt(&(port_id, channel_id, sequence_failed)).unwrap_err().to_string();
+
+		assert_eq!(result, ICS04Error::packet_receipt_not_found(sequence_failed).to_string());
+	})	
 }
