@@ -456,3 +456,52 @@ fn test_read_packet_receipt_failed_supply_error_sequence() {
 		assert_eq!(result, ICS04Error::packet_receipt_not_found(sequence_failed).to_string());
 	})	
 }
+
+
+#[test]
+fn test_packet_acknowledgement_ok() {
+	let port_id = PortId::from_str("transfer").unwrap();
+	let channel_id = ChannelId::from_str("channel-0").unwrap();
+	let sequence = Sequence::from(0);
+	let ack = vec![1, 2, 3];
+
+	
+	let mut context: Context<Test> = Context::new();
+	let value = ChannelReader::hash(&context, format!("{:?}", ack)).encode();
+
+	new_test_ext().execute_with(|| {
+		assert_eq!(
+			context.store_packet_acknowledgement((port_id.clone(), channel_id.clone(), sequence.clone()), ack.clone()).is_ok(),
+			true
+		);
+
+		let result = context.get_packet_acknowledgement(&(port_id, channel_id, sequence)).unwrap();
+
+		let result = result.as_bytes().to_vec().encode();
+		assert_eq!(result, value);
+	})
+}
+
+
+#[test]
+fn test_packet_acknowledgement_failed_supply_error_sequence() {
+	let port_id = PortId::from_str("transfer").unwrap();
+	let channel_id = ChannelId::from_str("channel-0").unwrap();
+	let sequence = Sequence::from(0);
+	let sequence_failed = Sequence::from(1);
+	let ack = vec![1, 2, 3];
+
+	
+	let mut context: Context<Test> = Context::new();
+	
+	new_test_ext().execute_with(|| {
+		assert_eq!(
+			context.store_packet_acknowledgement((port_id.clone(), channel_id.clone(), sequence.clone()), ack.clone()).is_ok(),
+			true
+		);
+
+		let result = context.get_packet_acknowledgement(&(port_id, channel_id, sequence_failed)).unwrap_err().to_string();
+
+		assert_eq!(result, ICS04Error::packet_acknowledgement_not_found(sequence_failed).to_string());
+	})
+}
