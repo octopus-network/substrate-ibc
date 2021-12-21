@@ -26,8 +26,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 			Ok(ret)
 		} else {
 			log::info!("read connection end returns None");
-
-			todo!()
+			Err(ICS03Error::connection_mismatch(conn_id.clone()))
 		}
 	}
 

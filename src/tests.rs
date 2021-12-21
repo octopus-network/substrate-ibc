@@ -35,32 +35,6 @@ use ibc::{
 	Height,
 };
 
-// for substrate-ibc
-// 1. create single grandpa client
-// 2. create multi grandpa client
-// 3. update multi grandpa client
-// 4. upgrade grandpa client
-
-// for ibc-rs
-// 5. client_type need tests
-// 6. conn_open_init_msg_processing
-// 7. conn_open_try_msg_processing
-// 8. conn_open_confirm_msg_processing
-// 9. conn_open_ack_msg_processing
-
-// 10. ack_packet_processing
-// 11. chan_open_ack_msg_processing
-// 12. chan_open_confirm_msg_processing
-// 13. chan_open_init_msg_processing
-// 14. chan_open_try_msg_processing
-// 15. send_packet_processing
-// 16. recv_packet_processing
-// 17. timeout_packet_processing
-// 18. timeout_on_close_packet_processing
-// 19. write_ack_packet_processing
-
-// 20. routing_module_and_keepers
-
 // test store and read client-type
 #[test]
 fn test_store_client_type_ok() {
@@ -333,5 +307,97 @@ fn test_get_packet_commitment_state_ok() {
 			// assert value
 			assert_eq!(value_vec.iter().find(|&val| val == &value_1).is_some(), true);
 		}
+	})
+}
+
+#[test]
+fn test_connection_ok() {
+	use ibc::{
+		ics03_connection::{
+			context::{ConnectionKeeper, ConnectionReader}, connection::ConnectionEnd,
+		},
+		ics24_host::identifier::ConnectionId,
+	};
+	use ibc::ics03_connection::connection::State;
+	use codec::alloc::collections::HashMap;
+
+	let mut input: HashMap<ConnectionId, ConnectionEnd> = HashMap::new();
+
+	let connection_id0 = ConnectionId::new(0);
+	let connection_end0 = ConnectionEnd::default();
+
+	let connection_id1 = ConnectionId::new(1);
+	let mut connection_end1 = ConnectionEnd::default();
+	connection_end1.set_state(State::from_i32(1).unwrap());
+
+	let connection_id2 = ConnectionId::new(2);
+	let mut connection_end2 = ConnectionEnd::default();
+	connection_end2.set_state(State::from_i32(2).unwrap());
+
+	input.insert(connection_id0.clone(), connection_end0.clone());
+	input.insert(connection_id1.clone(), connection_end1.clone());
+	input.insert(connection_id2.clone(), connection_end2.clone());
+
+	let mut context: Context<Test> = Context::new();
+	new_test_ext().execute_with(|| {
+		assert_eq!(ConnectionKeeper::store_connection(&mut context,
+													  connection_id0.clone(),
+													  input.get(&connection_id0.clone()).unwrap()
+					).is_ok(), true);
+
+		let ret = ConnectionReader::connection_end(&mut context, &connection_id0).unwrap();
+		assert_eq!(ret, *input.get(&connection_id0.clone()).unwrap());
+
+		assert_eq!(ConnectionKeeper::store_connection(&mut context,
+													  connection_id1.clone(),
+													  input.get(&connection_id1.clone()).unwrap()
+					).is_ok(), true);
+
+		assert_eq!(ConnectionKeeper::store_connection(&mut context,
+													  connection_id2.clone(),
+													  input.get(&connection_id2.clone()).unwrap()
+					).is_ok(), true);
+
+		let result = Pallet::<Test>::get_idenfitied_connection_end();
+		assert_eq!(result.len(), input.len());
+
+		for (connection_id, connection_end) in result {
+			let connection_id = ConnectionId::from_str(String::from_utf8(connection_id).unwrap().as_str()).unwrap();
+			let connection_end = ConnectionEnd::decode_vec(&connection_end).unwrap();
+			assert_eq!(*input.get(&connection_id).unwrap(), connection_end);
+		}
+	})
+}
+
+#[test]
+fn test_connection_fail() {
+	use ibc::{
+		ics03_connection::{
+			context::{ConnectionKeeper, ConnectionReader}, connection::ConnectionEnd, error::Error as ICS03Error,
+		},
+		ics24_host::identifier::ConnectionId,
+	};
+
+	let connection_id0 = ConnectionId::new(0);
+	let mut context: Context<Test> = Context::new();
+	new_test_ext().execute_with(|| {
+		let ret = ConnectionReader::connection_end(&mut context, &connection_id0.clone()).unwrap_err().to_string();
+		assert_eq!(ret, ICS03Error::connection_mismatch(connection_id0).to_string());
+	})
+}
+
+#[test]
+fn test_connection_client_ok() {
+	use ibc::{
+		ics03_connection::context::ConnectionKeeper,
+		ics24_host::identifier::{ClientId, ConnectionId},
+	};
+
+	let gp_client_id = ClientId::new(ClientType::Grandpa, 0).unwrap();
+	let connection_id = ConnectionId::new(0);
+	let mut context: Context<Test> = Context::new();
+
+	new_test_ext().execute_with(|| {
+		assert_eq!(context.store_connection_to_client(connection_id, &gp_client_id).is_ok(), true);
 	})
 }
