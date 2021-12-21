@@ -2,10 +2,6 @@ use super::{pallet::ConsensusStates, Any, *};
 use crate::{mock::*, routing::Context, Error};
 use core::str::FromStr;
 use frame_support::{assert_noop, assert_ok};
-use ibc::ics02_client::{
-	context::{ClientKeeper, ClientReader},
-	error::Error as ICS02Error,
-};
 use sp_keyring::{sr25519::Keyring, AccountKeyring};
 use tendermint_proto::Protobuf;
 
@@ -13,15 +9,18 @@ use ibc::{
 	events::IbcEvent,
 	handler::HandlerOutput,
 	ics02_client::{
+		context::{ClientKeeper, ClientReader},
 		client_consensus::AnyConsensusState,
 		client_state::AnyClientState,
 		client_type::ClientType,
+		error::Error as ICS02Error,
 		handler::{dispatch as ics02_dispatch, ClientResult},
 		msgs::{create_client::MsgCreateAnyClient, ClientMsg},
 	},
 	ics04_channel::{
 		context::{ChannelKeeper, ChannelReader},
 		packet::Sequence,
+		error::Error as ICS04Error,
 	},
 	ics10_grandpa::{
 		client_state::ClientState as GPClientState,
@@ -333,5 +332,83 @@ fn test_get_packet_commitment_state_ok() {
 			// assert value
 			assert_eq!(value_vec.iter().find(|&val| val == &value_1).is_some(), true);
 		}
+	})
+}
+
+
+#[test]
+fn test_store_packet_commitent_ok() {
+	let port_id = PortId::from_str("transfer").unwrap();
+	let channel_id = ChannelId::from_str("channel-0").unwrap();
+	let sequence = Sequence::from(0);
+	let timestamp = Timestamp::from_nanoseconds(0).unwrap();
+	let height = Height::default();
+	let data = vec![1, 2, 3];
+	
+	let mut context: Context<Test> = Context::new();
+
+	let value = ChannelReader::hash(&context, format!("{:?},{:?},{:?}", timestamp, height, data));
+
+	new_test_ext().execute_with(|| {
+		
+		assert_eq!(context.store_packet_commitment((port_id.clone(), channel_id.clone(), sequence.clone()), timestamp, height, data).is_ok(), true);
+
+		let result = context.get_packet_commitment(&(port_id, channel_id, sequence)).unwrap();
+		
+		assert_eq!(result, value);
+	})
+}
+
+#[test]
+fn test_read_packet_commit_failed_by_supply_error_sequence() {
+	let port_id = PortId::from_str("transfer").unwrap();
+	let channel_id = ChannelId::from_str("channel-0").unwrap();
+	let sequence = Sequence::from(0);
+	let sequence_failed = Sequence::from(1);
+
+	let timestamp = Timestamp::from_nanoseconds(0).unwrap();
+	let height = Height::default();
+	let data = vec![1, 2, 3];
+	
+
+	let mut context: Context<Test> = Context::new();
+
+	new_test_ext().execute_with(|| {
+		
+		// store packet commitment
+		assert_eq!(context.store_packet_commitment((port_id.clone(), channel_id.clone(), sequence.clone()), timestamp, height, data).is_ok(), true);
+
+		// read packet commitment
+		let result = context.get_packet_commitment(&(port_id, channel_id, sequence_failed)).unwrap_err().to_string();
+		
+		// assert error
+		assert_eq!(result, ICS04Error::packet_commitment_not_found(sequence_failed).to_string());
+	})
+}
+
+#[test]
+fn test_delete_packet_commitment_ok() {
+	let port_id = PortId::from_str("transfer").unwrap();
+	let channel_id = ChannelId::from_str("channel-0").unwrap();
+	let sequence = Sequence::from(0);
+	let timestamp = Timestamp::from_nanoseconds(0).unwrap();
+	let height = Height::default();
+	let data = vec![1, 2, 3];
+	
+	let mut context: Context<Test> = Context::new();
+
+	new_test_ext().execute_with(|| {
+		
+		// store packet commitment
+		assert_eq!(context.store_packet_commitment((port_id.clone(), channel_id.clone(), sequence.clone()), timestamp, height, data).is_ok(), true);
+
+		// delete packet commitment
+		assert_eq!(context.delete_packet_commitment((port_id.clone(), channel_id.clone(), sequence.clone())).is_ok(), true);
+
+		// read packet commitment
+		let result = context.get_packet_commitment(&(port_id, channel_id, sequence.clone())).unwrap_err().to_string();
+		
+		// assert error
+		assert_eq!(result, ICS04Error::packet_commitment_not_found(sequence).to_string());
 	})
 }
