@@ -19,13 +19,18 @@ use ibc::{
 		handler::{dispatch as ics02_dispatch, ClientResult},
 		msgs::{create_client::MsgCreateAnyClient, ClientMsg},
 	},
+	ics04_channel::{
+		context::{ChannelKeeper, ChannelReader},
+		packet::Sequence,
+	},
 	ics10_grandpa::{
 		client_state::ClientState as GPClientState,
 		consensus_state::ConsensusState as GPConsensusState,
 	},
 	ics23_commitment::commitment::CommitmentRoot,
-	ics24_host::identifier::{ChainId, ChannelId, ClientId},
+	ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId},
 	test_utils::get_dummy_account_id,
+	timestamp::Timestamp,
 	tx_msg::Msg,
 	Height,
 };
@@ -112,7 +117,7 @@ fn test_store_client_state_ok() {
 			true
 		);
 
-		let ret = context.client_state(&gp_client_id).unwrap();
+		let ret = ClientReader::client_state(&context, &gp_client_id).unwrap();
 
 		assert_eq!(ret, gp_client_state);
 	})
@@ -140,7 +145,9 @@ fn test_read_client_state_failed_by_supply_error_client_id() {
 			true
 		);
 
-		let ret = context.client_state(&gp_client_id_failed).unwrap_err().to_string();
+		let ret = ClientReader::client_state(&context, &gp_client_id_failed)
+			.unwrap_err()
+			.to_string();
 
 		assert_eq!(ret, ICS02Error::client_not_found(gp_client_id_failed).to_string());
 	})
@@ -199,7 +206,7 @@ fn test_read_consensus_state_failed_by_supply_error_client_id() {
 }
 
 #[test]
-fn test_get_identified_any_client_state() {
+fn test_get_identified_any_client_state_ok() {
 	let range = (0..10).into_iter().collect::<Vec<u8>>();
 
 	let mut client_state_vec = vec![];
@@ -248,6 +255,83 @@ fn test_get_identified_any_client_state() {
 
 			assert_eq!(gp_client_id_vec.iter().find(|&val| val == &client_id).is_some(), true);
 			assert_eq!(client_state_vec.iter().find(|&val| val == &client_state).is_some(), true);
+		}
+	})
+}
+
+#[test]
+fn test_get_packet_commitment_state_ok() {
+	let mut context: Context<Test> = Context::new();
+
+	let range = (0..10).into_iter().collect::<Vec<u8>>();
+
+	let mut port_id_vec = vec![];
+	let mut channel_id_vec = vec![];
+	let mut sequence_vec = vec![];
+
+	let mut timestamp_vec = vec![];
+	let mut height_vec = vec![];
+	let mut data_vec = vec![];
+
+	let mut value_vec = vec![];
+
+	for index in range.clone() {
+		let port_id = PortId::from_str(&format!("port-{}", index)).unwrap();
+		port_id_vec.push(port_id);
+		let channel_id = ChannelId::from_str(&format!("channel-{}", index)).unwrap();
+		channel_id_vec.push(channel_id);
+		let sequence = Sequence::from(index as u64);
+		sequence_vec.push(sequence);
+
+		let timestamp = Timestamp::from_nanoseconds(index as u64).unwrap();
+		timestamp_vec.push(timestamp);
+		let height = Height::new(0, index as u64);
+		height_vec.push(height);
+		let data = vec![index];
+		data_vec.push(data.clone());
+
+		let input = format!("{:?},{:?},{:?}", timestamp, height, data);
+		let value = ChannelReader::hash(&context, input).encode();
+		value_vec.push(value);
+	}
+
+	new_test_ext().execute_with(|| {
+		for index in 0..range.len() {
+			assert_eq!(
+				context
+					.store_packet_commitment(
+						(
+							port_id_vec[index].clone(),
+							channel_id_vec[index].clone(),
+							sequence_vec[index].clone()
+						),
+						timestamp_vec[index].clone(),
+						height_vec[index].clone(),
+						data_vec[index].clone(),
+					)
+					.is_ok(),
+				true
+			);
+		}
+
+		let result = Pallet::<Test>::get_packet_commitment_state();
+
+		assert_eq!(result.len(), range.len());
+
+		for (port_id_1, channel_id_1, sequence_1, value_1) in result  {
+			let port_id_2 = PortId::from_str(String::from_utf8(port_id_1).unwrap().as_str()).unwrap();
+			let channel_id_2 = ChannelId::from_str(String::from_utf8(channel_id_1).unwrap().as_str()).unwrap();
+			let sequence_2 = u64::decode(&mut sequence_1.as_slice()).unwrap();
+			let sequence_2 = Sequence::from(sequence_2);
+			// let sequence_2 =  Sequence::from_str(String::from_utf8(sequence_1).unwrap().as_str()).unwrap();
+
+			// assert key
+			assert_eq!(port_id_vec.iter().find(|&val| val == &port_id_2).is_some(), true);
+			assert_eq!(channel_id_vec.iter().find(|&val| val == &channel_id_2).is_some(), true);
+			assert_eq!(sequence_vec.iter().find(|&val| val == &sequence_2).is_some(), true);
+
+			// assert value
+			assert_eq!(value_vec.iter().find(|&val| val == &value_1).is_some(), true);
 		}
 	})
 }
