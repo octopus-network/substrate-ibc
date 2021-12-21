@@ -459,7 +459,7 @@ fn test_read_packet_receipt_failed_supply_error_sequence() {
 
 
 #[test]
-fn test_packet_acknowledgement_ok() {
+fn test_stpre_packet_acknowledgement_ok() {
 	let port_id = PortId::from_str("transfer").unwrap();
 	let channel_id = ChannelId::from_str("channel-0").unwrap();
 	let sequence = Sequence::from(0);
@@ -484,7 +484,7 @@ fn test_packet_acknowledgement_ok() {
 
 
 #[test]
-fn test_packet_acknowledgement_failed_supply_error_sequence() {
+fn test_read_packet_acknowledgement_failed_supply_error_sequence() {
 	let port_id = PortId::from_str("transfer").unwrap();
 	let channel_id = ChannelId::from_str("channel-0").unwrap();
 	let sequence = Sequence::from(0);
@@ -493,7 +493,7 @@ fn test_packet_acknowledgement_failed_supply_error_sequence() {
 
 	
 	let mut context: Context<Test> = Context::new();
-	
+
 	new_test_ext().execute_with(|| {
 		assert_eq!(
 			context.store_packet_acknowledgement((port_id.clone(), channel_id.clone(), sequence.clone()), ack.clone()).is_ok(),
@@ -503,5 +503,83 @@ fn test_packet_acknowledgement_failed_supply_error_sequence() {
 		let result = context.get_packet_acknowledgement(&(port_id, channel_id, sequence_failed)).unwrap_err().to_string();
 
 		assert_eq!(result, ICS04Error::packet_acknowledgement_not_found(sequence_failed).to_string());
+	})
+}
+
+#[test]
+fn test_delete_packet_acknowledgement_ok() {
+	let port_id = PortId::from_str("transfer").unwrap();
+	let channel_id = ChannelId::from_str("channel-0").unwrap();
+	let sequence = Sequence::from(0);
+	let ack = vec![1, 2, 3];
+
+	
+	let mut context: Context<Test> = Context::new();
+
+	new_test_ext().execute_with(|| {
+		assert_eq!(
+			context.store_packet_acknowledgement((port_id.clone(), channel_id.clone(), sequence.clone()), ack.clone()).is_ok(),
+			true
+		);
+
+		assert_eq!(context.delete_packet_acknowledgement((port_id.clone(), channel_id.clone(), sequence.clone())).is_ok(), true);
+
+		let result = context.get_packet_acknowledgement(&(port_id, channel_id, sequence)).unwrap_err().to_string();
+
+		assert_eq!(result, ICS04Error::packet_acknowledgement_not_found(sequence).to_string());
+	})
+}
+
+
+#[test]
+fn test_get_acknowledge_state() {
+	let range = (0..10).into_iter().collect::<Vec<u8>>();
+
+	let mut port_id_vec = vec![];
+	let mut channel_id_vec = vec![];
+	let mut sequence_vec = vec![];
+	let mut ack_vec = vec![];
+
+	let mut value_vec = vec![];
+
+	let mut context: Context<Test> = Context::new();
+
+
+	for index in 0..range.len() {
+		let port_id = PortId::from_str(&format!("transfer-{}", index)).unwrap();
+		port_id_vec.push(port_id);
+		let channel_id = ChannelId::from_str(&format!("channel-{}", index)).unwrap();
+		channel_id_vec.push(channel_id);
+		let sequence = Sequence::from(index as u64);
+		sequence_vec.push(sequence);
+		ack_vec.push(vec![index as u8]);
+
+		value_vec.push(ChannelReader::hash(&context, format!("{:?}", vec![index as u8])).encode());
+
+	}
+
+	
+	new_test_ext().execute_with(|| { 
+		for index in 0..range.len() { 
+			assert_eq!(context.store_packet_acknowledgement((port_id_vec[index].clone(), channel_id_vec[index].clone(), sequence_vec[index].clone()), ack_vec[index].clone()).is_ok(), true);
+		}
+		
+		let result = Pallet::<Test>::get_packet_acknowledge_state();
+		assert_eq!(result.len(), range.len());
+
+		for (port_id_1, channel_id_1, sequence_1, value_1) in result {
+			let port_id_2 = PortId::from_str(String::from_utf8(port_id_1).unwrap().as_str()).unwrap();
+			let channel_id_2 = ChannelId::from_str(String::from_utf8(channel_id_1).unwrap().as_str()).unwrap();
+			let sequence_2 = u64::decode(&mut sequence_1.as_slice()).unwrap();
+			let sequence_2 = Sequence::from(sequence_2);
+
+			// assert key
+			assert_eq!(port_id_vec.iter().find(|&val| val == &port_id_2).is_some(), true);
+			assert_eq!(channel_id_vec.iter().find(|&val| val == &channel_id_2).is_some(), true);
+			assert_eq!(sequence_vec.iter().find(|&val| val == &sequence_2).is_some(), true);
+
+			// assert value
+			assert_eq!(value_vec.iter().find(|&val| val == &value_1).is_some(), true);
+		}
 	})
 }
