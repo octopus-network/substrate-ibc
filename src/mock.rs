@@ -1,11 +1,10 @@
 use crate as pallet_ibc;
-use chrono::{DateTime, Local, TimeZone};
 use frame_support::parameter_types;
 use frame_system as system;
 use sp_core::H256;
 use sp_runtime::{
 	testing::Header,
-	traits::{AccountIdLookup, BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
+	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
 	MultiSignature,
 };
 use std::time::{Duration, Instant};

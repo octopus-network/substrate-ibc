@@ -1,19 +1,14 @@
-use super::{pallet::ConsensusStates, Any, *};
-use crate::{mock::*, routing::Context, Error};
+use super::*;
+use crate::{mock::*, routing::Context};
 use codec::alloc::collections::HashMap;
 use core::str::FromStr;
-use frame_support::{assert_noop, assert_ok};
 use ibc::{
-	events::IbcEvent,
-	handler::HandlerOutput,
 	ics02_client::{
 		client_consensus::AnyConsensusState,
 		client_state::AnyClientState,
 		client_type::ClientType,
 		context::{ClientKeeper, ClientReader},
 		error::Error as ICS02Error,
-		handler::{dispatch as ics02_dispatch, ClientResult},
-		msgs::{create_client::MsgCreateAnyClient, ClientMsg},
 	},
 	ics03_connection::{
 		connection::{ConnectionEnd, State},
@@ -23,7 +18,7 @@ use ibc::{
 	ics04_channel::{
 		context::{ChannelKeeper, ChannelReader},
 		error::Error as ICS04Error,
-		packet::{Receipt, Sequence},
+		packet::Sequence,
 	},
 	ics10_grandpa::{
 		client_state::ClientState as GPClientState,
@@ -31,12 +26,9 @@ use ibc::{
 	},
 	ics23_commitment::commitment::CommitmentRoot,
 	ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
-	test_utils::get_dummy_account_id,
 	timestamp::Timestamp,
-	tx_msg::Msg,
 	Height,
 };
-use sp_keyring::{sr25519::Keyring, AccountKeyring};
 use tendermint_proto::Protobuf;
 
 // test store and read client-type
@@ -607,7 +599,7 @@ fn test_store_channel_ok() {
 
 fn test_next_sequence_send_fail() {
 	let port_channel = (PortId::default(), ChannelId::new(0));
-	let mut context: Context<Test> = Context::new();
+	let context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
 		let result = context.get_next_sequence_send(&port_channel.clone()).unwrap_err().to_string();
@@ -736,7 +728,7 @@ fn test_get_identified_channel_end() {
 #[test]
 fn test_next_sequence_recv_fail() {
 	let port_channel = (PortId::default(), ChannelId::new(0));
-	let mut context: Context<Test> = Context::new();
+	let context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
 		let result = context.get_next_sequence_recv(&port_channel.clone()).unwrap_err().to_string();
@@ -763,7 +755,7 @@ fn test_next_sequence_ack_ok() {
 #[test]
 fn test_next_sequence_ack_fail() {
 	let port_channel = (PortId::default(), ChannelId::new(0));
-	let mut context: Context<Test> = Context::new();
+	let context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
 		let result = context.get_next_sequence_ack(&port_channel.clone()).unwrap_err().to_string();

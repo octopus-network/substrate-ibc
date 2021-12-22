@@ -1,6 +1,9 @@
 #![cfg_attr(not(feature = "std"), no_std)]
+// TODO to remove
 #![allow(unreachable_patterns)]
 #![allow(clippy::type_complexity)]
+#![allow(non_camel_case_types)]
+#![allow(dead_code)]
 
 //! # IBC Module
 //!
