@@ -18,6 +18,7 @@ use ibc::{
 	ics03_connection::{
 		connection::{ConnectionEnd, State},
 		context::{ConnectionKeeper, ConnectionReader},
+		error::Error as ICS03Error,
 	},
 	ics04_channel::{
 		context::{ChannelKeeper, ChannelReader},
@@ -384,15 +385,6 @@ fn test_connection_ok() {
 
 #[test]
 fn test_connection_fail() {
-	use ibc::{
-		ics03_connection::{
-			connection::ConnectionEnd,
-			context::{ConnectionKeeper, ConnectionReader},
-			error::Error as ICS03Error,
-		},
-		ics24_host::identifier::ConnectionId,
-	};
-
 	let connection_id0 = ConnectionId::new(0);
 	let mut context: Context<Test> = Context::new();
 	new_test_ext().execute_with(|| {
@@ -405,11 +397,6 @@ fn test_connection_fail() {
 
 #[test]
 fn test_connection_client_ok() {
-	use ibc::{
-		ics03_connection::context::ConnectionKeeper,
-		ics24_host::identifier::{ClientId, ConnectionId},
-	};
-
 	let gp_client_id = ClientId::new(ClientType::Grandpa, 0).unwrap();
 	let connection_id = ConnectionId::new(0);
 	let mut context: Context<Test> = Context::new();
@@ -523,16 +510,23 @@ fn test_get_acknowledge_state() {
 	})
 }
 
-
 #[test]
 fn test_store_connection_channles_ok() {
 	let connection_id = ConnectionId::new(0);
 	let port_id = PortId::from_str(String::from_str("port-0").unwrap().as_str()).unwrap();
 	let channel_id = ChannelId::from_str(String::from_str("channel-0").unwrap().as_str()).unwrap();
 
-	let mut context: Context<Test> = Context::new(); 
-	new_test_ext().execute_with(|| { 
-		assert_eq!(context.store_connection_channels(connection_id.clone(), &(port_id.clone(), channel_id.clone())).is_ok(), true);
+	let mut context: Context<Test> = Context::new();
+	new_test_ext().execute_with(|| {
+		assert_eq!(
+			context
+				.store_connection_channels(
+					connection_id.clone(),
+					&(port_id.clone(), channel_id.clone())
+				)
+				.is_ok(),
+			true
+		);
 
 		let result = context.connection_channels(&connection_id).unwrap();
 
@@ -544,22 +538,48 @@ fn test_store_connection_channles_ok() {
 }
 
 #[test]
+fn test_next_sequence_send_ok() {
+	let sequence_id = Sequence::from(0);
+	let port_channel = (PortId::default(), ChannelId::new(0));
+	let mut context: Context<Test> = Context::new();
+
+	new_test_ext().execute_with(|| {
+		assert_eq!(
+			context.store_next_sequence_send(port_channel.clone(), sequence_id).is_ok(),
+			true
+		);
+		let result = context.get_next_sequence_send(&port_channel).unwrap();
+		assert_eq!(result, sequence_id);
+	})
+}
+
+#[test]
 fn test_read_conection_channels_failed_by_suppley_error_conneciton_id() {
 	let connection_id = ConnectionId::new(0);
 	let connection_id_failed = ConnectionId::new(1);
 	let port_id = PortId::from_str(String::from_str("port-0").unwrap().as_str()).unwrap();
 	let channel_id = ChannelId::from_str(String::from_str("channel-0").unwrap().as_str()).unwrap();
 
-	let mut context: Context<Test> = Context::new(); 
-	new_test_ext().execute_with(|| { 
-		assert_eq!(context.store_connection_channels(connection_id.clone(), &(port_id.clone(), channel_id.clone())).is_ok(), true);
+	let mut context: Context<Test> = Context::new();
+	new_test_ext().execute_with(|| {
+		assert_eq!(
+			context
+				.store_connection_channels(
+					connection_id.clone(),
+					&(port_id.clone(), channel_id.clone())
+				)
+				.is_ok(),
+			true
+		);
 
 		let result = context.connection_channels(&connection_id_failed).unwrap_err().to_string();
 
-		assert_eq!(result, ICS04Error::connection_not_open(connection_id_failed.clone()).to_string());
+		assert_eq!(
+			result,
+			ICS04Error::connection_not_open(connection_id_failed.clone()).to_string()
+		);
 	})
 }
-
 
 #[test]
 fn test_store_channel_ok() {
@@ -567,14 +587,47 @@ fn test_store_channel_ok() {
 	let channel_id = ChannelId::from_str(String::from_str("channel-0").unwrap().as_str()).unwrap();
 	let channel_end = ChannelEnd::default();
 
-	let mut context: Context<Test> = Context::new(); 
-	
+	let mut context: Context<Test> = Context::new();
+
 	new_test_ext().execute_with(|| {
-		assert_eq!(context.store_channel((port_id.clone(), channel_id.clone()), &channel_end).is_ok(), true);
+		assert_eq!(
+			context
+				.store_channel((port_id.clone(), channel_id.clone()), &channel_end)
+				.is_ok(),
+			true
+		);
 
 		let result = context.channel_end(&(port_id.clone(), channel_id.clone())).unwrap();
-		
+
 		assert_eq!(result, channel_end);
+	})
+}
+
+#[test]
+
+fn test_next_sequence_send_fail() {
+	let port_channel = (PortId::default(), ChannelId::new(0));
+	let mut context: Context<Test> = Context::new();
+
+	new_test_ext().execute_with(|| {
+		let result = context.get_next_sequence_send(&port_channel.clone()).unwrap_err().to_string();
+		assert_eq!(result, ICS04Error::missing_next_send_seq(port_channel).to_string());
+	})
+}
+
+#[test]
+fn test_next_sequence_recv_ok() {
+	let sequence_id = Sequence::from(0);
+	let port_channel = (PortId::default(), ChannelId::new(0));
+	let mut context: Context<Test> = Context::new();
+
+	new_test_ext().execute_with(|| {
+		assert_eq!(
+			context.store_next_sequence_recv(port_channel.clone(), sequence_id).is_ok(),
+			true
+		);
+		let result = context.get_next_sequence_recv(&port_channel).unwrap();
+		assert_eq!(result, sequence_id);
 	})
 }
 
@@ -583,30 +636,52 @@ fn test_read_channel_end_failed_by_supply_error_channel_id_port_id() {
 	let port_id = PortId::from_str(String::from_str("port-0").unwrap().as_str()).unwrap();
 	let channel_id = ChannelId::from_str(String::from_str("channel-0").unwrap().as_str()).unwrap();
 	let port_id_1 = PortId::from_str(String::from_str("port-1").unwrap().as_str()).unwrap();
-	let channel_id_1 = ChannelId::from_str(String::from_str("channel-1").unwrap().as_str()).unwrap();
+	let channel_id_1 =
+		ChannelId::from_str(String::from_str("channel-1").unwrap().as_str()).unwrap();
 
 	let channel_end = ChannelEnd::default();
 
-	let mut context: Context<Test> = Context::new(); 
-	
+	let mut context: Context<Test> = Context::new();
+
 	new_test_ext().execute_with(|| {
-		assert_eq!(context.store_channel((port_id.clone(), channel_id.clone()), &channel_end).is_ok(), true);
+		assert_eq!(
+			context
+				.store_channel((port_id.clone(), channel_id.clone()), &channel_end)
+				.is_ok(),
+			true
+		);
 
-		let result = context.channel_end(&(port_id_1.clone(), channel_id.clone())).unwrap_err().to_string();
+		let result = context
+			.channel_end(&(port_id_1.clone(), channel_id.clone()))
+			.unwrap_err()
+			.to_string();
 
-		assert_eq!(result, ICS04Error::channel_not_found(port_id_1.clone(), channel_id.clone()).to_string());
+		assert_eq!(
+			result,
+			ICS04Error::channel_not_found(port_id_1.clone(), channel_id.clone()).to_string()
+		);
 
-		let result = context.channel_end(&(port_id.clone(), channel_id_1.clone())).unwrap_err().to_string();
+		let result = context
+			.channel_end(&(port_id.clone(), channel_id_1.clone()))
+			.unwrap_err()
+			.to_string();
 
-		assert_eq!(result, ICS04Error::channel_not_found(port_id.clone(), channel_id_1.clone()).to_string());
-		
-		let result = context.channel_end(&(port_id_1.clone(), channel_id_1.clone())).unwrap_err().to_string();
+		assert_eq!(
+			result,
+			ICS04Error::channel_not_found(port_id.clone(), channel_id_1.clone()).to_string()
+		);
 
-		assert_eq!(result, ICS04Error::channel_not_found(port_id_1.clone(), channel_id_1.clone()).to_string());
+		let result = context
+			.channel_end(&(port_id_1.clone(), channel_id_1.clone()))
+			.unwrap_err()
+			.to_string();
+
+		assert_eq!(
+			result,
+			ICS04Error::channel_not_found(port_id_1.clone(), channel_id_1.clone()).to_string()
+		);
 	})
-	
 }
-
 
 #[test]
 fn test_get_identified_channel_end() {
@@ -617,16 +692,28 @@ fn test_get_identified_channel_end() {
 	let channel_end_vec = vec![ChannelEnd::default(); range.len()];
 
 	for index in 0..range.len() {
-		let port_id = PortId::from_str(String::from_str(&format!("prot-{}",index)).unwrap().as_str()).unwrap();
+		let port_id =
+			PortId::from_str(String::from_str(&format!("prot-{}", index)).unwrap().as_str())
+				.unwrap();
 		port_id_vec.push(port_id);
-		let channel_id = ChannelId::from_str(String::from_str(&format!("channel-{}", index)).unwrap().as_str()).unwrap();
-		channel_id_vec.push(channel_id);	
+		let channel_id =
+			ChannelId::from_str(String::from_str(&format!("channel-{}", index)).unwrap().as_str())
+				.unwrap();
+		channel_id_vec.push(channel_id);
 	}
 
 	let mut context: Context<Test> = Context::new();
-	new_test_ext().execute_with(|| { 
+	new_test_ext().execute_with(|| {
 		for index in 0..range.len() {
-			assert_eq!(context.store_channel((port_id_vec[index].clone(), channel_id_vec[index].clone()), &channel_end_vec[index].clone()).is_ok(), true);
+			assert_eq!(
+				context
+					.store_channel(
+						(port_id_vec[index].clone(), channel_id_vec[index].clone()),
+						&channel_end_vec[index].clone()
+					)
+					.is_ok(),
+				true
+			);
 		}
 
 		let result = Pallet::<Test>::get_idenfitied_channel_end();
@@ -635,12 +722,51 @@ fn test_get_identified_channel_end() {
 
 		for (port_id_1, channel_id_1, channel_end_1) in result {
 			let port_id = PortId::from_str(String::from_utf8(port_id_1).unwrap().as_str()).unwrap();
-			let channel_id = ChannelId::from_str(String::from_utf8(channel_id_1).unwrap().as_str()).unwrap();
+			let channel_id =
+				ChannelId::from_str(String::from_utf8(channel_id_1).unwrap().as_str()).unwrap();
 			let channel_end = ChannelEnd::decode_vec(&channel_end_1).unwrap();
 
 			assert_eq!(port_id_vec.iter().find(|&val| val == &port_id).is_some(), true);
 			assert_eq!(channel_id_vec.iter().find(|&val| val == &channel_id).is_some(), true);
 			assert_eq!(channel_end_vec.iter().find(|&val| val == &channel_end).is_some(), true);
 		}
+	})
+}
+
+#[test]
+fn test_next_sequence_recv_fail() {
+	let port_channel = (PortId::default(), ChannelId::new(0));
+	let mut context: Context<Test> = Context::new();
+
+	new_test_ext().execute_with(|| {
+		let result = context.get_next_sequence_recv(&port_channel.clone()).unwrap_err().to_string();
+		assert_eq!(result, ICS04Error::missing_next_recv_seq(port_channel).to_string());
+	})
+}
+
+#[test]
+fn test_next_sequence_ack_ok() {
+	let sequence_id = Sequence::from(0);
+	let port_channel = (PortId::default(), ChannelId::new(0));
+	let mut context: Context<Test> = Context::new();
+
+	new_test_ext().execute_with(|| {
+		assert_eq!(
+			context.store_next_sequence_ack(port_channel.clone(), sequence_id).is_ok(),
+			true
+		);
+		let result = context.get_next_sequence_ack(&port_channel).unwrap();
+		assert_eq!(result, sequence_id);
+	})
+}
+
+#[test]
+fn test_next_sequence_ack_fail() {
+	let port_channel = (PortId::default(), ChannelId::new(0));
+	let mut context: Context<Test> = Context::new();
+
+	new_test_ext().execute_with(|| {
+		let result = context.get_next_sequence_ack(&port_channel.clone()).unwrap_err().to_string();
+		assert_eq!(result, ICS04Error::missing_next_ack_seq(port_channel).to_string());
 	})
 }

@@ -156,7 +156,7 @@ impl<T: Config> ChannelReader for Context<T> {
 			Ok(Sequence::from(seq))
 		} else {
 			log::info!("read get next sequence send return None");
-			Err(ICS04Error::missing_next_recv_seq(port_channel_id.clone()))
+			Err(ICS04Error::missing_next_send_seq(port_channel_id.clone()))
 		}
 	}
 
@@ -202,7 +202,7 @@ impl<T: Config> ChannelReader for Context<T> {
 			Ok(Sequence::from(seq))
 		} else {
 			log::info!("read get next sequence ack return None");
-			Err(ICS04Error::missing_next_recv_seq(port_channel_id.clone()))
+			Err(ICS04Error::missing_next_ack_seq(port_channel_id.clone()))
 		}
 	}
 
