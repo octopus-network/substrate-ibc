@@ -522,3 +522,125 @@ fn test_get_acknowledge_state() {
 		}
 	})
 }
+
+
+#[test]
+fn test_store_connection_channles_ok() {
+	let connection_id = ConnectionId::new(0);
+	let port_id = PortId::from_str(String::from_str("port-0").unwrap().as_str()).unwrap();
+	let channel_id = ChannelId::from_str(String::from_str("channel-0").unwrap().as_str()).unwrap();
+
+	let mut context: Context<Test> = Context::new(); 
+	new_test_ext().execute_with(|| { 
+		assert_eq!(context.store_connection_channels(connection_id.clone(), &(port_id.clone(), channel_id.clone())).is_ok(), true);
+
+		let result = context.connection_channels(&connection_id).unwrap();
+
+		assert_eq!(result.len(), 1);
+
+		assert_eq!(result[0].0, port_id);
+		assert_eq!(result[0].1, channel_id);
+	})
+}
+
+#[test]
+fn test_read_conection_channels_failed_by_suppley_error_conneciton_id() {
+	let connection_id = ConnectionId::new(0);
+	let connection_id_failed = ConnectionId::new(1);
+	let port_id = PortId::from_str(String::from_str("port-0").unwrap().as_str()).unwrap();
+	let channel_id = ChannelId::from_str(String::from_str("channel-0").unwrap().as_str()).unwrap();
+
+	let mut context: Context<Test> = Context::new(); 
+	new_test_ext().execute_with(|| { 
+		assert_eq!(context.store_connection_channels(connection_id.clone(), &(port_id.clone(), channel_id.clone())).is_ok(), true);
+
+		let result = context.connection_channels(&connection_id_failed).unwrap_err().to_string();
+
+		assert_eq!(result, ICS04Error::connection_not_open(connection_id_failed.clone()).to_string());
+	})
+}
+
+
+#[test]
+fn test_store_channel_ok() {
+	let port_id = PortId::from_str(String::from_str("port-0").unwrap().as_str()).unwrap();
+	let channel_id = ChannelId::from_str(String::from_str("channel-0").unwrap().as_str()).unwrap();
+	let channel_end = ChannelEnd::default();
+
+	let mut context: Context<Test> = Context::new(); 
+	
+	new_test_ext().execute_with(|| {
+		assert_eq!(context.store_channel((port_id.clone(), channel_id.clone()), &channel_end).is_ok(), true);
+
+		let result = context.channel_end(&(port_id.clone(), channel_id.clone())).unwrap();
+		
+		assert_eq!(result, channel_end);
+	})
+}
+
+#[test]
+fn test_read_channel_end_failed_by_supply_error_channel_id_port_id() {
+	let port_id = PortId::from_str(String::from_str("port-0").unwrap().as_str()).unwrap();
+	let channel_id = ChannelId::from_str(String::from_str("channel-0").unwrap().as_str()).unwrap();
+	let port_id_1 = PortId::from_str(String::from_str("port-1").unwrap().as_str()).unwrap();
+	let channel_id_1 = ChannelId::from_str(String::from_str("channel-1").unwrap().as_str()).unwrap();
+
+	let channel_end = ChannelEnd::default();
+
+	let mut context: Context<Test> = Context::new(); 
+	
+	new_test_ext().execute_with(|| {
+		assert_eq!(context.store_channel((port_id.clone(), channel_id.clone()), &channel_end).is_ok(), true);
+
+		let result = context.channel_end(&(port_id_1.clone(), channel_id.clone())).unwrap_err().to_string();
+
+		assert_eq!(result, ICS04Error::channel_not_found(port_id_1.clone(), channel_id.clone()).to_string());
+
+		let result = context.channel_end(&(port_id.clone(), channel_id_1.clone())).unwrap_err().to_string();
+
+		assert_eq!(result, ICS04Error::channel_not_found(port_id.clone(), channel_id_1.clone()).to_string());
+		
+		let result = context.channel_end(&(port_id_1.clone(), channel_id_1.clone())).unwrap_err().to_string();
+
+		assert_eq!(result, ICS04Error::channel_not_found(port_id_1.clone(), channel_id_1.clone()).to_string());
+	})
+	
+}
+
+
+#[test]
+fn test_get_identified_channel_end() {
+	let range = (0..10).into_iter().collect::<Vec<u8>>();
+
+	let mut port_id_vec = vec![];
+	let mut channel_id_vec = vec![];
+	let channel_end_vec = vec![ChannelEnd::default(); range.len()];
+
+	for index in 0..range.len() {
+		let port_id = PortId::from_str(String::from_str(&format!("prot-{}",index)).unwrap().as_str()).unwrap();
+		port_id_vec.push(port_id);
+		let channel_id = ChannelId::from_str(String::from_str(&format!("channel-{}", index)).unwrap().as_str()).unwrap();
+		channel_id_vec.push(channel_id);	
+	}
+
+	let mut context: Context<Test> = Context::new();
+	new_test_ext().execute_with(|| { 
+		for index in 0..range.len() {
+			assert_eq!(context.store_channel((port_id_vec[index].clone(), channel_id_vec[index].clone()), &channel_end_vec[index].clone()).is_ok(), true);
+		}
+
+		let result = Pallet::<Test>::get_idenfitied_channel_end();
+
+		assert_eq!(result.len(), range.len());
+
+		for (port_id_1, channel_id_1, channel_end_1) in result {
+			let port_id = PortId::from_str(String::from_utf8(port_id_1).unwrap().as_str()).unwrap();
+			let channel_id = ChannelId::from_str(String::from_utf8(channel_id_1).unwrap().as_str()).unwrap();
+			let channel_end = ChannelEnd::decode_vec(&channel_end_1).unwrap();
+
+			assert_eq!(port_id_vec.iter().find(|&val| val == &port_id).is_some(), true);
+			assert_eq!(channel_id_vec.iter().find(|&val| val == &channel_id).is_some(), true);
+			assert_eq!(channel_end_vec.iter().find(|&val| val == &channel_end).is_some(), true);
+		}
+	})
+}
