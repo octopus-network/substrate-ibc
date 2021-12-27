@@ -3,7 +3,10 @@ use core::str::FromStr;
 
 use crate::routing::Context;
 use ibc::{
-	ics02_client::{client_consensus::AnyConsensusState, client_state::AnyClientState},
+	ics02_client::{
+		client_consensus::AnyConsensusState, 
+		client_state::AnyClientState
+	},
 	ics03_connection::connection::ConnectionEnd,
 	ics04_channel::{
 		channel::ChannelEnd,
@@ -86,7 +89,6 @@ impl<T: Config> ChannelReader for Context<T> {
 	fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, ICS04Error> {
 		log::info!("in channel: [client_state]");
 
-		// ClientReader::client_state(self, client_id)
 		if <ClientStates<T>>::contains_key(client_id.as_bytes()) {
 			let data = <ClientStates<T>>::get(client_id.as_bytes());
 			log::info!(
@@ -118,7 +120,6 @@ impl<T: Config> ChannelReader for Context<T> {
 			}
 		}
 		Err(ICS04Error::frozen_client(client_id.clone()))
-		// ClientReader::consensus_state(self, client_id, height)
 	}
 
 	fn authenticated_capability(&self, port_id: &PortId) -> Result<Capability, ICS04Error> {

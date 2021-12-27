@@ -51,9 +51,9 @@ impl<C, M> IbcStorage<C, M> {
 impl<C, Block> IbcApi<<Block as BlockT>::Hash> for IbcStorage<C, Block>
     where
         Block: BlockT,
-        C: Send + Sync + 'static,
-        C: ProvideRuntimeApi<Block>,
-        C: HeaderBackend<Block>,
+        C: HeaderBackend<Block> 
+            + ProvideRuntimeApi<Block> 
+            + Send + Sync + 'static,
         C::Api: IbcRuntimeApi<Block>,
 {
     fn get_identified_any_client_state(&self, at: Option<<Block as BlockT>::Hash>)
