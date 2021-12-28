@@ -12,12 +12,13 @@
 //! ## Overview
 //!
 //! The goal of this pallet is to allow the blockchains built on Substrate to gain the ability to
-//! interact with other chains in a trustees way via IBC protocol, no matter what consensus the
-//! counterparty chains use.
+//! interact with other chains in a trustees way via IBC protocol
 //!
 //! This project is currently in an early stage and will eventually be submitted to upstream.
 //!
-//! Some components in [IBC spec](https://github.com/cosmos/ics/tree/master/spec) are implemented to support a working demo (https://github.com/cdot-network/ibc-demo), but not fully implemented as the spec yet:
+//! The pallet implements the chain specific logic of [ICS spec](https://github.com/cosmos/ibc/tree/ee71d0640c23ec4e05e924f52f557b5e06c1d82f),  and is integrated with [ibc-rs](https://github.com/informalsystems/ibc-rs), which implements the generic cross-chain logic in [ICS spec](https://github.com/cosmos/ibc/tree/ee71d0640c23ec4e05e924f52f557b5e06c1d82f).
+//!
+//! The chain specific logic of the modules in ICS spec implemented::
 //! * ics-002-client-semantics
 //! * ics-003-connection-semantics
 //! * ics-004-channel-and-packet-semantics
@@ -29,31 +30,18 @@
 //!
 //! ### Terminology
 //!
-//! Please refer to [IBC Terminology](https://github.com/cosmos/ics/blob/master/ibc/1_IBC_TERMINOLOGY.md#1-ibc-terminology).
+//! Please refer to [IBC Terminology](https://github.com/cosmos/ibc/blob/a983dd86815175969099d041906f6a14643e51ef/ibc/1_IBC_TERMINOLOGY.md).
 //!
 //! ### Goals
 //!
 //! This IBC module handles authentication, transport, and ordering of structured data packets
 //! relayed between modules on separate machines.
 //!
-//! Example applications include cross-chain asset transfer, atomic swaps, multi-chain smart
-//! contracts (with or without mutually comprehensible VMs), and data & code sharding of various
-//! kinds.
-//!
 //! ## Interface
 //!
 //! ###  Public Functions
 //!
-//! * `handle_datagram` - Receives datagram transmitted from relayers, and implements the following:
-//!   + Synchronizing block headers from other chains. + Process connection opening handshakes after
-//!   its initialization - ICS-003. + Process channel opening handshakes after its initialization -
-//!   ICS-004. + Handling packet flow after its initialization - ICS-004.
-//!
-//! ### Dispatchable Functions
-//!
-//! * `conn_open_init` - Connection opening handshake initialization.
-//! * `chan_open_init` - Channel opening handshake initialization.
-//! * `send_packet` - Packet flow initialization.
+//! * `deliver` - `ibc::ics26_routing::handler::deliver` Receives datagram transmitted from relayers/users, and pass to ICS26 router to look for the correct handler.
 //!
 //! ## Usage
 //! Please refer to section "How to Interact with the Pallet" in the repository's README.md

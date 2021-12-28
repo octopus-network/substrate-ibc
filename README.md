@@ -8,11 +8,13 @@ This project is [funded by Interchain Foundation](https://interchain-io.medium.c
 
 This pallet implements the standard [IBC protocol](https://github.com/cosmos/ics).
 
-The goal of this pallet is to allow the blockchains built on Substrate to gain the ability to interact with other chains in a trustless way via IBC protocol, no matter what consensus the counterparty chains use.
+The goal of this pallet is to allow the blockchains built on Substrate to gain the ability to interact with other chains in a trustless way via IBC protocol.
 
 This project is currently in an early stage and will eventually be submitted to upstream.
 
-Some components in [ICS spec](https://github.com/cosmos/ics/tree/master/spec) are implemented to support a working demo (https://github.com/cdot-network/ibc-demo), but not fully implemented as the spec:  
+The pallet implements the chain specific logic of [ICS spec](https://github.com/cosmos/ibc/tree/ee71d0640c23ec4e05e924f52f557b5e06c1d82f),  and is integrated with [ibc-rs](https://github.com/informalsystems/ibc-rs), which implements the generic cross-chain logic in [ICS spec](https://github.com/cosmos/ibc/tree/ee71d0640c23ec4e05e924f52f557b5e06c1d82f).
+
+The chain specific logic of the modules in ICS spec implemented:
 * ics-002-client-semantics
 * ics-003-connection-semantics
 * ics-004-channel-and-packet-semantics
@@ -22,28 +24,54 @@ Some components in [ICS spec](https://github.com/cosmos/ics/tree/master/spec) ar
 * ics-025-handler-interface
 * ics-026-routing-module
 
-Here is a [demo](https://github.com/cdot-network/ibc-demo) for showing how to utilize this pallet, which initializes a series of steps for cross-chain communication, from client creation to sending packet data.
+Here is a [demo](~~https://github.com/cdot-network/ibc-demo~~) for showing how to utilize this pallet, which initializes a series of steps for cross-chain communication, from client creation to sending packet data.
 
-## Dependencies
+## Design Overview
+The ibc pallet is integrated with the [modules in ibc-rs](https://github.com/octopus-network/ibc-rs/tree/b98094a57620d0b3d9f8d2caced09abfc14ab00f/modules), which implements the [ibc spec](https://github.com/cosmos/ibc/tree/7046202b645c65b1a2b7f293312bca5d651a13a4/spec) and leave the chain specific logics, which are named `???Readers` and `???Keepers`, to the ibc pallet.
 
-### Traits
+List of `???Readers` and `???Keepers`:
+* [ClientReader](https://github.com/octopus-network/ibc-rs/blob/b98094a57620d0b3d9f8d2caced09abfc14ab00f/modules/src/ics02_client/context.rs?_pjax=%23js-repo-pjax-container%2C%20div%5Bitemtype%3D%22http%3A%2F%2Fschema.org%2FSoftwareSourceCode%22%5D%20main%2C%20%5Bdata-pjax-container%5D#L14) & [ClientKeeper](https://github.com/octopus-network/ibc-rs/blob/b98094a57620d0b3d9f8d2caced09abfc14ab00f/modules/src/ics02_client/context.rs?_pjax=%23js-repo-pjax-container%2C%20div%5Bitemtype%3D%22http%3A%2F%2Fschema.org%2FSoftwareSourceCode%22%5D%20main%2C%20%5Bdata-pjax-container%5D#L29)
+* [ConnectionReader](https://github.com/octopus-network/ibc-rs/blob/b98094a57620d0b3d9f8d2caced09abfc14ab00f/modules/src/ics03_connection/context.rs?_pjax=%23js-repo-pjax-container%2C%20div%5Bitemtype%3D%22http%3A%2F%2Fschema.org%2FSoftwareSourceCode%22%5D%20main%2C%20%5Bdata-pjax-container%5D#L17) & [ConnectionKeeper](https://github.com/octopus-network/ibc-rs/blob/b98094a57620d0b3d9f8d2caced09abfc14ab00f/modules/src/ics03_connection/context.rs?_pjax=%23js-repo-pjax-container%2C%20div%5Bitemtype%3D%22http%3A%2F%2Fschema.org%2FSoftwareSourceCode%22%5D%20main%2C%20%5Bdata-pjax-container%5D#L67)
+* [ChannelReader](https://github.com/octopus-network/ibc-rs/blob/b98094a57620d0b3d9f8d2caced09abfc14ab00f/modules/src/ics04_channel/context.rs?_pjax=%23js-repo-pjax-container%2C%20div%5Bitemtype%3D%22http%3A%2F%2Fschema.org%2FSoftwareSourceCode%22%5D%20main%2C%20%5Bdata-pjax-container%5D#L20) & [ChannelKeeper](https://github.com/octopus-network/ibc-rs/blob/b98094a57620d0b3d9f8d2caced09abfc14ab00f/modules/src/ics04_channel/context.rs?_pjax=%23js-repo-pjax-container%2C%20div%5Bitemtype%3D%22http%3A%2F%2Fschema.org%2FSoftwareSourceCode%22%5D%20main%2C%20%5Bdata-pjax-container%5D#L82)
 
-This pallet does not depend on any externally defined traits.
 
-### Pallets
-
-This pallet does not depend on any other FRAME pallet or externally developed modules.
 
 ## Installation
+Thie section describe the modification of your substrate chain needed to integrate pallet ibc.
 
-### Runtime `Cargo.toml`
+### `Cargo.toml`
+Specify some versions of ibc relevant crate
+```toml
+[patch.crates-io]
+# for tendermint
+tendermint              = { git = "https://github.com/informalsystems/tendermint-rs", rev = "4f6ef3d6" }
+tendermint-rpc          = { git = "https://github.com/informalsystems/tendermint-rs", rev = "4f6ef3d6" }
+tendermint-proto        = { git = "https://github.com/informalsystems/tendermint-rs", rev = "4f6ef3d6" }
+tendermint-light-client = { git = "https://github.com/informalsystems/tendermint-rs", rev = "4f6ef3d6" }
+tendermint-testgen      = { git = "https://github.com/informalsystems/tendermint-rs", rev = "4f6ef3d6" }
+#ics23                   = { git = "https://github.com/informalsystems/ics23.git", branch = "master" }
+ics23                   = { git = "https://github.com/informalsystems/ics23.git", rev = "4461b673" }
+safe-regex          = { git = "https://github.com/informalsystems/safe-regex.git", rev = "842d31f5" }
+safe-regex-macro    = { git = "https://github.com/informalsystems/safe-regex.git", rev = "842d31f5" }
+safe-regex-compiler = { git = "https://github.com/informalsystems/safe-regex.git", rev = "842d31f5" }
+safe-quote          = { git = "https://github.com/informalsystems/safe-regex.git", rev = "842d31f5" }
+safe-proc-macro2    = { git = "https://github.com/informalsystems/safe-regex.git", rev = "842d31f5" }
+tonic = { package = "informalsystems-tonic", git = "https://github.com/informalsystems/tonic.git", rev = "99edfe23" }
+```
 
-To add this pallet to your runtime, simply include the following to your runtime's `Cargo.toml` file:
+#### `bin`'s `Cargo.toml`
+And include the following to your `bin`'s `Cargo.toml` file:
+```TOML
+pallet-ibc-rpc = { git = "https://github.com/octopus-network/substrate-ibc", branch = "dv-ibc-dev-0.9.12-tag", default-features = false}
+pallet-ibc-runtime-api = { git = "https://github.com/octopus-network/substrate-ibc", branch = "dv-ibc-dev-0.9.12-tag", default-features = false}
+```
+
+#### Runtime's `Cargo.toml`
+To add this pallet to your runtime, include the following to your runtime's `Cargo.toml` file:
 
 ```TOML
-[dependencies.pallet-ibc]
-default_features = false
-git = 'https://github.com/cdot-network/substrate-ibc.git'
+pallet-ibc-rpc = { git = "https://github.com/octopus-network/substrate-ibc", branch = "dv-ibc-dev-0.9.12-tag", default-features = false}
+pallet-ibc-runtime-api = { git = "https://github.com/octopus-network/substrate-ibc", branch = "dv-ibc-dev-0.9.12-tag", default-features = false}
 ```
 
 and update your runtime's `std` feature to include this pallet:
@@ -51,7 +79,8 @@ and update your runtime's `std` feature to include this pallet:
 ```TOML
 std = [
     # --snip--
-        'pallet-ibc/std',
+    "pallet-ibc/std",
+    "pallet-ibc-runtime-api/std",
 	]
 ```
 
@@ -60,25 +89,47 @@ A custom structure that implements the pallet_ibc::ModuleCallbacks must be defin
 ```rust
 pub struct ModuleCallbacksImpl;
 
-impl pallet_ibc::ModuleCallbacks for ModuleCallbacksImpl {
-    # --snip--
+impl pallet_ibc::ModuleCallbacks for ModuleCallbacksImpl {}
+
+impl pallet_ibc::Config for Runtime {
+    type Event = Event;
+    type ModuleCallbacks = ModuleCallbacksImpl;
+    type TimeProvider = pallet_timestamp::Pallet<Runtime>;
 }
 ```
 
 You should implement it's trait like so:
 
 ```rust
-/// Used for test_module
-impl pallet_ibc::Trait for Runtime {
-	type Event = Event;
-	type ModuleCallbacks = ModuleCallbacksImpl;
+    // Here we implement our custom runtime API.
+impl  pallet_ibc_runtime_api::IbcApi<Block> for Runtime {
+    // --snip--
 }
 ```
 
 and include it in your `construct_runtime!` macro:
 
 ```rust
-Ibc: pallet_ibc::{Module, Call, Storage, Event<T>},
+Ibc: pallet_ibc::{Pallet, Call, Storage, Event<T>} = 110,
+```
+
+#### `bin`'s `service.rs`
+Add below for the type interface of `RuntimeApi::RuntimeApi` in `async fn start_node_impl`, which starts a node with the given `Configuration`.
+
+```rust
++ pallet_ibc_runtime_api::IbcApi<Block>,
+```
+
+#### `bin`'s `rpc.rs`
+When instantiating all RPC extensions, add pallet ibc's
+```rust
+C::Api: pallet_ibc_runtime_api::IbcApi<Block>,
+```
+
+```rust
+io.extend_with(pallet_ibc_rpc::IbcApi::to_delegate(
+    pallet_ibc_rpc::IbcStorage::new(client.clone()),
+));
 ```
 
 ### Genesis Configuration
@@ -86,242 +137,8 @@ Ibc: pallet_ibc::{Module, Call, Storage, Event<T>},
 This pallet does not have any genesis configuration.
 
 ## How to Interact with the Pallet
-### At Runtime
-In the ibc-demo repo, substrate-subxt invokes the pallet's callable functions by the macro ```substrate_subxt_proc_macro::Call```.
-
-Let's take the function ```test_create_client``` as an example. [Client](https://docs.rs/substrate-subxt/0.12.0/substrate_subxt/struct.Client.html) extends the function 
-```rust
-// in https://github.com/cdot-network/ibc-demo/blob/master/pallets/template/src/lib.rs
-pub fn test_create_client(
-    origin,
-    identifier: H256,
-    height: u32,
-    set_id: SetId,
-    authorities: AuthorityList,
-    root: H256
-) -> dispatch::DispatchResult {
-...
-}
-``` 
-by 
-```rust
-// https://github.com/cdot-network/ibc-demo/blob/master/calls/src/template.rs
-#[derive(Encode, Call)]
-pub struct TestCreateClientCall<T: TemplateModule> {
-    pub _runtime: PhantomData<T>,
-    pub identifier: H256,
-    pub height: u32,
-    pub set_id: SetId,
-    pub authority_list: AuthorityList,
-    pub root: H256,
-}
-```
-
-Therefore, 
-```rust
-//  https://github.com/cdot-network/ibc-demo/blob/master/cli/src/main.rs
-client
-.test_create_client(...)
-```
-can invoke the ```test_create_client``` function. 
-
-Please refer to document [substrate_subxt_proc_macro::Call](https://docs.rs/substrate-subxt-proc-macro/0.12.0/substrate_subxt_proc_macro/derive.Call.html) for details.
-
-### At Unit Test
-In unit test, we comply with the substrate's document [Runtime Tests](https://substrate.dev/docs/en/knowledgebase/runtime/tests). 
-
-The mock enviroment is built in [mock.rs](src/mock.rs); In [tests.rs](src/tests.rs), the pallet's callable functions are tested.
-
-## Implementation Logic in Source Code
-
-### Synchronizing Block Headers of Other Chains
-* Relayers send latest block headers of other chains to ibc pallet by invoking the ```Datagram::ClientUpdate``` arm:
-```rust
-// https://github.com/cdot-network/substrate-ibc/blob/master/src/lib.rs
-pub fn handle_datagram(datagram: Datagram) -> dispatch::DispatchResult {
-    match datagram {
-        Datagram::ClientUpdate { identifier, header } => {   // <--- "Datagram::ClientUpdate" will be matached
-```
-* If verified, the incoming block header's commitment_root and block height is inserted to storage ```ConsensusStates```.
-```rust
-// https://github.com/cdot-network/substrate-ibc/blob/master/src/lib.rs
-ConsensusStates::insert((identifier, header.height), new_consensus_state);
-```  
-
-### Connection Opening Handshakes - ICS-003
-As the table in [Opening Handshake](https://github.com/cosmos/ics/tree/master/spec/ics-003-connection-semantics#opening-handshake), the handshakes between 2 chains(A & B) comprises 4 steps.
-
-| Initiator | Datagram          | Chain acted upon | Prior state (A, B) | Posterior state (A, B) |
-| --------- | ----------------- | ---------------- | ------------------ | ---------------------- |
-| Actor     | `ConnOpenInit`    | A                | (none, none)       | (INIT, none)           |
-| Relayer   | `ConnOpenTry`     | B                | (INIT, none)       | (INIT, TRYOPEN)        |
-| Relayer   | `ConnOpenAck`     | A                | (INIT, TRYOPEN)    | (OPEN, TRYOPEN)        |
-| Relayer   | `ConnOpenConfirm` | B                | (OPEN, TRYOPEN)    | (OPEN, OPEN)           |
-
-#### (none, none) -> (INIT, none)
-It's done by an actor, who invokes the function ```conn_open_init``` in Chain A.
-```rust
-// https://github.com/cdot-network/substrate-ibc/blob/master/src/lib.rs
-pub fn conn_open_init(
-    identifier: H256,
-    desired_counterparty_connection_identifier: H256,
-    client_id: H256,
-    counterparty_client_id: H256,
-) -> dispatch::DispatchResult {
-...
-}
-```
-
-#### (INIT, none) -> (INIT, TRYOPEN)
-The relayer detects the ```INIT``` state of chain A's connection, then try to set chain B's connection's state to ```TRYOPEN``` by invoking the chain B's function ```pub fn handle_datagram(datagram: Datagram)```, 
-whose arm ```Datagram::ConnOpenTry``` will be matached.
-```rust
-// https://github.com/cdot-network/substrate-ibc/blob/master/src/lib.rs
-pub fn handle_datagram(datagram: Datagram) -> dispatch::DispatchResult {
-    match datagram {
-        ...
-        Datagram::ConnOpenTry {
-            ...
-        }
-```
-
-#### (INIT, TRYOPEN) -> (OPEN, TRYOPEN)
-The relayer detects the ```TRYOPEN``` of chain B's connection, then try to set chain A's connection's state to ```OPEN``` by invoking the chain A's function ```pub fn handle_datagram(datagram: Datagram)```, 
-whose arm ```Datagram::ConnOpenAck``` will be matached.
-```rust
-// https://github.com/cdot-network/substrate-ibc/blob/master/src/lib.rs
-pub fn handle_datagram(datagram: Datagram) -> dispatch::DispatchResult {
-    match datagram {
-        ...
-        Datagram::ConnOpenAck {
-            ...
-        }
-```
-
-#### (OPEN, TRYOPEN) -> (OPEN, OPEN)
-The relayer detects the ```OPEN``` of chain A's connection, then try to set chain B's connection's state to ```OPEN``` by invoking the chain B's function ```pub fn handle_datagram(datagram: Datagram)```, 
-whose arm ```Datagram::ConnOpenConfirm``` will be matached.
-```rust
-// https://github.com/cdot-network/substrate-ibc/blob/master/src/lib.rs
-pub fn handle_datagram(datagram: Datagram) -> dispatch::DispatchResult {
-    match datagram {
-        ...
-        Datagram::ConnOpenConfirm {
-            ...
-        }
-```
-
-### Channel Opening Handshakes - ICS-004
-After the 2 chains(A & B) finish connection handshakes, they are able to build a channel by handshakes on the connection.
-
-As the table in [Channel lifecycle management](https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics#channel-lifecycle-management), the handshakes between 2 chains(A & B) comprises 4 steps.
-
-| Initiator | Datagram         | Chain acted upon | Prior state (A, B) | Posterior state (A, B) |
-| --------- | ---------------- | ---------------- | ------------------ | ---------------------- |
-| Actor     | ChanOpenInit     | A                | (none, none)       | (INIT, none)           |
-| Relayer   | ChanOpenTry      | B                | (INIT, none)       | (INIT, TRYOPEN)        |
-| Relayer   | ChanOpenAck      | A                | (INIT, TRYOPEN)    | (OPEN, TRYOPEN)        |
-| Relayer   | ChanOpenConfirm  | B                | (OPEN, TRYOPEN)    | (OPEN, OPEN)           |
-
-#### (none, none) -> (INIT, none)
-It's done by an actor, who invokes the function ```chan_open_init``` in Chain A.
-```rust
-// https://github.com/cdot-network/substrate-ibc/blob/master/src/lib.rs
-pub fn chan_open_init(
-    ...
-) -> dispatch::DispatchResult {
-...
-}
-```
-
-#### (INIT, none) -> (INIT, TRYOPEN)
-The relayer detects the ```INIT``` state of chain A's channel, then try to set chain B's channel's state to ```TRYOPEN``` by invoking the chain B's function ```pub fn handle_datagram(datagram: Datagram)```, 
-whose arm ```Datagram::ChanOpenTry``` will be matached.
-```rust
-// https://github.com/cdot-network/substrate-ibc/blob/master/src/lib.rs
-pub fn handle_datagram(datagram: Datagram) -> dispatch::DispatchResult {
-    match datagram {
-        ...
-        Datagram::ChanOpenTry {
-            ...
-        }
-```
-
-#### (INIT, TRYOPEN) -> (OPEN, TRYOPEN)
-The relayer detects the ```TRYOPEN``` of chain B's channel, then try to set chain A's channel's state to ```OPEN``` by invoking the chain A's function ```pub fn handle_datagram(datagram: Datagram)```, 
-whose arm ```Datagram::ChanOpenAck``` will be matached.
-```rust
-// https://github.com/cdot-network/substrate-ibc/blob/master/src/lib.rs
-pub fn handle_datagram(datagram: Datagram) -> dispatch::DispatchResult {
-    match datagram {
-        ...
-        Datagram::ChanOpenAck {
-            ...
-        }
-```
-
-#### (OPEN, TRYOPEN) -> (OPEN, OPEN)
-The relayer detects the ```OPEN``` of chain A's channel, then try to set chain B's channel's state to ```OPEN``` by invoking the chain B's function ```pub fn handle_datagram(datagram: Datagram)```, 
-whose arm ```Datagram::ChanOpenConfirm``` will be matached.
-```rust
-// https://github.com/cdot-network/substrate-ibc/blob/master/src/lib.rs
-pub fn handle_datagram(datagram: Datagram) -> dispatch::DispatchResult {
-    match datagram {
-        ...
-        Datagram::ChanOpenConfirm {
-            ...
-        }
-```
-
-### Packet Flow & Handling - ICS-004
-After the 2 chains(A & B) finish channel handshakes, they are able to send packets to each other on the channel.
-
-As the flowchart in [Packet flow & handling](https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics#packet-flow--handling), the standard flow of sending a packet from chain A to chain B comprises 3 steps.
-
-#### Sending a Packet
-The callable function ```send_packet``` in Chain A's ibc pallet sends a packet by depositing an ```RawEvent::SendPacket``` event.
-```rust
-// https://github.com/cdot-network/substrate-ibc/blob/master/src/lib.rs
-pub fn send_packet(packet: Packet) -> dispatch::DispatchResult {
-    ...
-    Self::deposit_event(RawEvent::SendPacket(
-        ...
-    ));
-}
-```
-
-#### Receiving a Packet and Writing an Acknowledgement
-The relayer detects chain A's ```RawEvent::SendPacket``` event, then try to call chain B's function ```pub fn handle_datagram(datagram: Datagram)```, 
-and match its arm ```Datagram::PacketRecv```, for chain B to receive the packet.
-
-After receiving the packet, chain B deposits an event ```RawEvent::RecvPacket``` as acknowledgement.
-
-```rust
-// https://github.com/cdot-network/substrate-ibc/blob/master/src/lib.rs
-pub fn handle_datagram(datagram: Datagram) -> dispatch::DispatchResult {
-    match datagram {
-        ...
-        Datagram::PacketRecv {
-            ...
-
-            Self::deposit_event(RawEvent::RecvPacket(
-                ...
-            ));
-        }
-```
-
-#### Processing an Acknowledgement
-The relayer detects chain B's ```RawEvent::RecvPacket``` event, then try to call chain A's function ```pub fn handle_datagram(datagram: Datagram)```, 
-and match its arm ```Datagram::PacketAcknowledgement```, for chain A to process the acknowledgement.
-```rust
-// https://github.com/cdot-network/substrate-ibc/blob/master/src/lib.rs
-pub fn handle_datagram(datagram: Datagram) -> dispatch::DispatchResult {
-    match datagram {
-        ...
-        Datagram::PacketAcknowledgement {
-            ...
-        }
-```
+The Hermes (IBC Relayer CLI) offers commands to send reqeusts to pallet ibc to trigger the standard ibc communications defined in [ibc spce](https://github.com/cosmos/ibc/tree/ee71d0640c23ec4e05e924f52f557b5e06c1d82f/spec). 
+[Hermes Command List](https://hermes.informal.systems/commands/raw/index.html).
 
 ## Reference Docs
 
