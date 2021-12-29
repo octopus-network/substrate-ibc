@@ -132,6 +132,12 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 
 		let data = connection_end.encode_vec().unwrap();
 		<Connections<T>>::insert(connection_id.as_bytes(), data);
+
+		<ConnectionsKeys<T>>::try_mutate(|val| -> Result<(), &'static str> {
+			val.push(connection_id.as_bytes().to_vec());
+			Ok(())
+		}).expect("store connections keys error");
+
 		let temp = ConnectionReader::connection_end(self, &connection_id);
 		log::info!("in connection: [store_connection] >> read store after: {:?}", temp);
 		Ok(())

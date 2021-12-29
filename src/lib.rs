@@ -118,6 +118,15 @@ pub mod pallet {
 	pub type ClientStates<T: Config> =
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
+	#[pallet::type_value]
+	pub fn default_client_state_keys() ->  Vec<Vec<u8>> {
+		vec![]
+	}
+
+	#[pallet::storage]
+	// vector client_id
+	pub type ClientStatesKeys<T: Config> = StorageValue<_, Vec<Vec<u8>>, ValueQuery, default_client_state_keys>;
+
 	#[pallet::storage]
 	// fix before : (client_id, height) => ConsensusState
 	// fix after: client_id => (Height, ConsensusState)
@@ -128,10 +137,28 @@ pub mod pallet {
 	// connection_id => ConnectionEnd
 	pub type Connections<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
+	#[pallet::type_value]
+	pub fn default_connection_keys() ->  Vec<Vec<u8>> {
+		vec![]
+	}
+
+	#[pallet::storage]
+	// vector connection_id
+	pub type ConnectionsKeys<T: Config> = StorageValue<_, Vec<Vec<u8>>, ValueQuery, default_connection_keys>;
+
 	#[pallet::storage]
 	// (port_identifier, channel_identifier) => ChannelEnd
 	pub type Channels<T: Config> =
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
+
+	#[pallet::type_value]
+	pub fn default_channels_keys() ->  Vec<(Vec<u8>, Vec<u8>)> {
+		vec![]
+	}
+
+	#[pallet::storage]
+	// vector (port_identifier, channel_identifier)
+	pub type ChannelsKeys<T: Config> = StorageValue<_, Vec<(Vec<u8>, Vec<u8>)>, ValueQuery, default_channels_keys>;
 
 	// store_connection_channels
 	#[pallet::storage]
@@ -158,6 +185,15 @@ pub mod pallet {
 	// (port_identifier, channel_identifier, sequence) => Hash
 	pub type Acknowledgements<T: Config> =
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
+	
+	#[pallet::type_value]
+	pub fn default_acknowledgements_keys() ->  Vec<(Vec<u8>, Vec<u8>, Vec<u8>)> {
+		vec![]
+	}
+
+	#[pallet::storage]
+	// vector (port_identifier, channel_identifier, sequence)
+	pub type AcknowledgementsKeys<T: Config> = StorageValue<_, Vec<(Vec<u8>, Vec<u8>, Vec<u8>)>, ValueQuery, default_acknowledgements_keys>;
 
 	#[pallet::storage]
 	// clientId => ClientType
@@ -207,6 +243,15 @@ pub mod pallet {
 	// (port_id, channel_id, sequence) => hash
 	pub type PacketCommitment<T: Config> =
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
+
+	#[pallet::type_value]
+	pub fn default_packet_commitment_keys() ->  Vec<(Vec<u8>, Vec<u8>, Vec<u8>)> {
+		vec![]
+	}
+	
+	#[pallet::storage]
+	// vector (port_identifier, channel_identifier, sequence)
+	pub type PacketCommitmentKeys<T: Config>  = StorageValue<_, Vec<(Vec<u8>, Vec<u8>, Vec<u8>)>, ValueQuery, default_packet_commitment_keys>;
 
 	#[pallet::storage]
 	// (height, port_id, channel_id, sequence) => event
@@ -876,101 +921,6 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		/// get key-value vector of (height, consensus_state) according by client_identifier
-		pub fn get_consensus_state_with_height(_client_id: Vec<u8>) -> Vec<(Vec<u8>, Vec<u8>)> {
-			todo!()
-		}
-
-		/// get key-value pair (client_identifier, client_state)
-		pub fn get_identified_any_client_state() -> Vec<(Vec<u8>, Vec<u8>)> {
-			let mut result = vec![];
-
-			<ClientStates<T>>::iter().for_each(|val| {
-				result.push((val.0, val.1));
-			});
-
-			result
-		}
-
-		/// get key-value pair(connection_id, connectionEnd)
-		pub fn get_idenfitied_connection_end() -> Vec<(Vec<u8>, Vec<u8>)> {
-			let mut result = vec![];
-
-			<Connections<T>>::iter().for_each(|val| {
-				result.push((val.0, val.1));
-			});
-
-			result
-		}
-
-		/// get (port_id, channel_id, channel_end)
-		pub fn get_idenfitied_channel_end() -> Vec<(Vec<u8>, Vec<u8>, Vec<u8>)> {
-			let mut result = vec![];
-
-			<Channels<T>>::iter().for_each(|(key, value)| {
-				result.push((key.0, key.1, value));
-			});
-
-			result
-		}
-
-		// get (port_id, channel_id) -> channel_end
-		pub fn get_channel_end(port_id: Vec<u8>, channel_id: Vec<u8>) -> Vec<u8> {
-			log::info!("in substrate-ibc [lib.rs]: [get_channel_end]");
-
-			if <Channels<T>>::contains_key((port_id.clone(), channel_id.clone())) {
-				let data = <Channels<T>>::get((port_id, channel_id));
-				let channel_end = ChannelEnd::decode_vec(&*data).unwrap();
-				log::info!(
-					"in substrate-ibc [lib.rs]: [get_channel_end] >> channel_end : {:?}",
-					channel_end
-				);
-				data
-			} else {
-				log::error!("in substrate-ibc [lib.rs]: read channel_end return None");
-				panic!("in substrate-ibc [lib.rs]: Read channel_end return None");
-			}
-		}
-
-		/// get connection_identifier vector according by client_identifier
-		pub fn get_client_connections(_client_id: Vec<u8>) -> Vec<Vec<u8>> {
-			todo!()
-		}
-
-		/// get port_identifier, channel_identifier, channel_end according by connection_id
-		pub fn get_connection_channels(
-			_connection_id: Vec<u8>,
-		) -> Vec<(Vec<u8>, Vec<u8>, Vec<u8>)> {
-			todo!()
-		}
-
-		// get PacketCommitment PacketState(port_id, channel_id, sequence, data)
-		pub fn get_packet_commitment_state() -> Vec<(Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>)> {
-			let mut result = vec![];
-
-			<PacketCommitment<T>>::iter().for_each(|(key, value)| {
-				let port_id = key.0;
-				let channel_id = key.1;
-				let sequence = key.2;
-				let data = value;
-				result.push((port_id, channel_id, sequence, data));
-			});
-			result
-		}
-
-		pub fn get_packet_acknowledge_state() -> Vec<(Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>)> {
-			let mut result = vec![];
-
-			<Acknowledgements<T>>::iter().for_each(|(key, value)| {
-				let port_id = key.0;
-				let channel_id = key.1;
-				let sequence = key.2;
-				let data = value;
-				result.push((port_id, channel_id, sequence, data));
-			});
-			result
-		}
-
 		fn store_latest_height(ibc_event: IbcEvent) {
 			match ibc_event {
 				IbcEvent::Empty(_value) => {

@@ -331,11 +331,18 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		let input = format!("{:?},{:?},{:?}", timestamp, heigh, data);
 		let seq = u64::from(key.2);
 		let seq = seq.encode();
-
+		
+		// inser packet commitment key-value
 		<PacketCommitment<T>>::insert(
-			(key.0.as_bytes(), key.1.as_bytes(), seq),
+			(key.0.as_bytes(), key.1.as_bytes(), seq.clone()),
 			ChannelReader::hash(self, input).encode(),
 		);
+
+		// insert packet commitment keys
+		<PacketCommitmentKeys<T>>::try_mutate(|val| -> Result<(), &'static str> {
+			val.push((key.0.as_bytes().to_vec(), key.1.as_bytes().to_vec(), seq.clone()));
+			Ok(())
+		}).expect("store packet commitment keys error");
 		Ok(())
 	}
 
@@ -347,8 +354,17 @@ impl<T: Config> ChannelKeeper for Context<T> {
 
 		let seq = u64::from(key.2);
 		let seq = seq.encode();
-		<PacketCommitment<T>>::remove((key.0.as_bytes(), key.1.as_bytes(), seq));
+		
+		// delete packet commitment
+		<PacketCommitment<T>>::remove((key.0.as_bytes(), key.1.as_bytes(), seq.clone()));
 
+		// delete packet commitment keys
+		<PacketCommitmentKeys<T>>::try_mutate(|val| -> Result<(), &'static str> {
+			let index  = val.iter().position(|value| value == &(key.0.as_bytes().to_vec(), key.1.as_bytes().to_vec(), seq.clone())).unwrap();
+			let ret = val.remove(index);
+			assert_eq!(ret,(key.0.as_bytes().to_vec(), key.1.as_bytes().to_vec(), seq.clone()));
+			Ok(())
+		}).expect("delete packet commitment keys error");
 		Ok(())
 	}
 
@@ -382,10 +398,18 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		let seq = u64::from(key.2);
 		let seq = seq.encode();
 
+		// store packet acknowledgement key-value
 		<Acknowledgements<T>>::insert(
-			(key.0.as_bytes(), key.1.as_bytes(), seq),
+			(key.0.as_bytes(), key.1.as_bytes(), seq.clone()),
 			ChannelReader::hash(self, ack).encode(),
 		);
+		
+		// store packet acknowledgement keys
+		<AcknowledgementsKeys<T>>::try_mutate(|val| -> Result<(), &'static str> {
+			val.push((key.0.as_bytes().to_vec(), key.1.as_bytes().to_vec(), seq));
+			Ok(())
+		}).expect("store acknowledgement keys error");
+
 		Ok(())
 	}
 
@@ -398,7 +422,16 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		let seq = u64::from(key.2);
 		let seq = seq.encode();
 
-		<Acknowledgements<T>>::remove((key.0.as_bytes(), key.1.as_bytes(), seq));
+		// remove acknowledgements 
+		<Acknowledgements<T>>::remove((key.0.as_bytes(), key.1.as_bytes(), seq.clone()));
+
+		// remove acknowledgement keys 
+		<AcknowledgementsKeys<T>>::try_mutate(|val| -> Result<(), &'static str> {
+			let index = val.iter().position(|value| value == &(key.0.as_bytes().to_vec(), key.1.as_bytes().to_vec(), seq.clone())).unwrap();
+			let ret = val.remove(index);
+			assert_eq!(&ret, &(key.0.as_bytes().to_vec(), key.1.as_bytes().to_vec(), seq.clone()));
+			Ok(())
+		}).expect("delete packet acknowledgement keys error");
 
 		Ok(())
 	}
@@ -449,10 +482,19 @@ impl<T: Config> ChannelKeeper for Context<T> {
 
 		let channel_end = channel_end.encode_vec().unwrap();
 
+		// store channels key-value
 		<Channels<T>>::insert(
 			(port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes()),
 			channel_end,
 		);
+
+		// store channels keys
+		<ChannelsKeys<T>>::try_mutate(|val| -> Result<(), &'static str> {
+			val.push((port_channel_id.0.as_bytes().to_vec(), port_channel_id.1.as_bytes().to_vec()));
+			
+			Ok(())
+		}).expect("store channels keys error");
+
 		Ok(())
 	}
 
