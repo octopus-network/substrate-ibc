@@ -27,10 +27,10 @@ impl<T: Config> ChannelReader for Context<T> {
 		// Todo: Confirm if all the errors are accurate
 		log::info!("in channel: [channel_end]");
 
-		if <Channels<T>>::contains_key((port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes()))
+		if <Channels<T>>::contains_key(port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes())
 		{
 			let data =
-				<Channels<T>>::get((port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes()));
+				<Channels<T>>::get(port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes());
 			let channel_end = ChannelEnd::decode_vec(&*data).unwrap();
 			log::info!("in channel: [channel_end] >> channel_end : {:?}", channel_end);
 			Ok(channel_end)
@@ -144,14 +144,14 @@ impl<T: Config> ChannelReader for Context<T> {
 	) -> Result<Sequence, ICS04Error> {
 		log::info!("in channel: [get_next_sequence]");
 
-		if <NextSequenceSend<T>>::contains_key((
+		if <NextSequenceSend<T>>::contains_key(
 			port_channel_id.0.as_bytes(),
 			port_channel_id.1.as_bytes(),
-		)) {
-			let data = <NextSequenceSend<T>>::get((
+		) {
+			let data = <NextSequenceSend<T>>::get(
 				port_channel_id.0.as_bytes(),
 				port_channel_id.1.as_bytes(),
-			));
+			);
 			let mut data: &[u8] = &data;
 			let seq = u64::decode(&mut data).unwrap();
 			Ok(Sequence::from(seq))
@@ -167,14 +167,14 @@ impl<T: Config> ChannelReader for Context<T> {
 	) -> Result<Sequence, ICS04Error> {
 		log::info!("in channel: [get_next_sequence_recv]");
 
-		if <NextSequenceRecv<T>>::contains_key((
+		if <NextSequenceRecv<T>>::contains_key(
 			port_channel_id.0.as_bytes(),
 			port_channel_id.1.as_bytes(),
-		)) {
-			let data = <NextSequenceRecv<T>>::get((
+		) {
+			let data = <NextSequenceRecv<T>>::get(
 				port_channel_id.0.as_bytes(),
 				port_channel_id.1.as_bytes(),
-			));
+			);
 			let mut data: &[u8] = &data;
 			let seq = u64::decode(&mut data).unwrap();
 			Ok(Sequence::from(seq))
@@ -190,14 +190,14 @@ impl<T: Config> ChannelReader for Context<T> {
 	) -> Result<Sequence, ICS04Error> {
 		log::info!("in channel: [get_next_sequence_ack]");
 
-		if <NextSequenceAck<T>>::contains_key((
+		if <NextSequenceAck<T>>::contains_key(
 			port_channel_id.0.as_bytes(),
 			port_channel_id.1.as_bytes(),
-		)) {
-			let data = <NextSequenceAck<T>>::get((
+		) {
+			let data = <NextSequenceAck<T>>::get(
 				port_channel_id.0.as_bytes(),
 				port_channel_id.1.as_bytes(),
-			));
+			);
 			let mut data: &[u8] = &data;
 			let seq = u64::decode(&mut data).unwrap();
 			Ok(Sequence::from(seq))
@@ -334,7 +334,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		
 		// inser packet commitment key-value
 		<PacketCommitment<T>>::insert(
-			(key.0.as_bytes(), key.1.as_bytes(), seq.clone()),
+			(key.0.as_bytes().to_vec(), key.1.as_bytes().to_vec(), seq.clone()),
 			ChannelReader::hash(self, input).encode(),
 		);
 
@@ -356,7 +356,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		let seq = seq.encode();
 		
 		// delete packet commitment
-		<PacketCommitment<T>>::remove((key.0.as_bytes(), key.1.as_bytes(), seq.clone()));
+		<PacketCommitment<T>>::remove((key.0.as_bytes().to_vec(), key.1.as_bytes().to_vec(), seq.clone()));
 
 		// delete packet commitment keys
 		<PacketCommitmentKeys<T>>::try_mutate(|val| -> Result<(), &'static str> {
@@ -382,7 +382,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		let seq = u64::from(key.2);
 		let seq = seq.encode();
 
-		<PacketReceipt<T>>::insert((key.0.as_bytes(), key.1.as_bytes(), seq), receipt);
+		<PacketReceipt<T>>::insert((key.0.as_bytes().to_vec(), key.1.as_bytes().to_vec(), seq), receipt);
 
 		Ok(())
 	}
@@ -400,7 +400,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 
 		// store packet acknowledgement key-value
 		<Acknowledgements<T>>::insert(
-			(key.0.as_bytes(), key.1.as_bytes(), seq.clone()),
+			(key.0.as_bytes().to_vec(), key.1.as_bytes().to_vec(), seq.clone()),
 			ChannelReader::hash(self, ack).encode(),
 		);
 		
@@ -423,7 +423,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		let seq = seq.encode();
 
 		// remove acknowledgements 
-		<Acknowledgements<T>>::remove((key.0.as_bytes(), key.1.as_bytes(), seq.clone()));
+		<Acknowledgements<T>>::remove((key.0.as_bytes().to_vec(), key.1.as_bytes().to_vec(), seq.clone()));
 
 		// remove acknowledgement keys 
 		<AcknowledgementsKeys<T>>::try_mutate(|val| -> Result<(), &'static str> {
@@ -484,7 +484,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 
 		// store channels key-value
 		<Channels<T>>::insert(
-			(port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes()),
+			port_channel_id.0.as_bytes().to_vec(), port_channel_id.1.as_bytes().to_vec(),
 			channel_end,
 		);
 
@@ -509,7 +509,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		let seq = seq.encode();
 
 		<NextSequenceSend<T>>::insert(
-			(port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes()),
+			port_channel_id.0.as_bytes().to_vec(), port_channel_id.1.as_bytes().to_vec(),
 			seq,
 		);
 
@@ -527,7 +527,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		let seq = seq.encode();
 
 		<NextSequenceRecv<T>>::insert(
-			(port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes()),
+			port_channel_id.0.as_bytes().to_vec(), port_channel_id.1.as_bytes().to_vec(),
 			seq,
 		);
 
@@ -545,7 +545,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		let seq = seq.encode();
 
 		<NextSequenceAck<T>>::insert(
-			(port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes()),
+			port_channel_id.0.as_bytes().to_vec(), port_channel_id.1.as_bytes().to_vec(),
 			seq,
 		);
 

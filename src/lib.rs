@@ -149,7 +149,7 @@ pub mod pallet {
 	#[pallet::storage]
 	// (port_identifier, channel_identifier) => ChannelEnd
 	pub type Channels<T: Config> =
-		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
+		StorageDoubleMap<_, Blake2_128Concat, Vec<u8>, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::type_value]
 	pub fn default_channels_keys() ->  Vec<(Vec<u8>, Vec<u8>)> {
@@ -169,17 +169,17 @@ pub mod pallet {
 	#[pallet::storage]
 	// (port_identifier, channel_identifier) => Sequence
 	pub type NextSequenceSend<T: Config> =
-		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
+		StorageDoubleMap<_, Blake2_128Concat, Vec<u8>, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
 	// (port_identifier, channel_identifier) => Sequence
 	pub type NextSequenceRecv<T: Config> =
-		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
+		StorageDoubleMap<_, Blake2_128Concat, Vec<u8>, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
 	// (port_identifier, channel_identifier) = Sequence
 	pub type NextSequenceAck<T: Config> =
-		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
+		StorageDoubleMap<_, Blake2_128Concat, Vec<u8>, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
 	// (port_identifier, channel_identifier, sequence) => Hash
@@ -192,6 +192,7 @@ pub mod pallet {
 	}
 
 	#[pallet::storage]
+	// TODO
 	// vector (port_identifier, channel_identifier, sequence)
 	pub type AcknowledgementsKeys<T: Config> = StorageValue<_, Vec<(Vec<u8>, Vec<u8>, Vec<u8>)>, ValueQuery, default_acknowledgements_keys>;
 
@@ -235,11 +236,13 @@ pub mod pallet {
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
+	// TODO
 	// (port_id, channel_id, sequence) => receipt
 	pub type PacketReceipt<T: Config> =
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
+	// TODO
 	// (port_id, channel_id, sequence) => hash
 	pub type PacketCommitment<T: Config> =
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
@@ -254,11 +257,13 @@ pub mod pallet {
 	pub type PacketCommitmentKeys<T: Config>  = StorageValue<_, Vec<(Vec<u8>, Vec<u8>, Vec<u8>)>, ValueQuery, default_packet_commitment_keys>;
 
 	#[pallet::storage]
+	// TODO
 	// (height, port_id, channel_id, sequence) => event
 	pub type SendPacketEvent<T: Config> =
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>, u64), Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
+	//TODO
 	// (port_id, channel_id, sequence), ackHash)
 	pub type WriteAckPacketEvent<T: Config> =
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>, u64), Vec<u8>, ValueQuery>;

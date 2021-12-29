@@ -138,7 +138,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 
 		let data = client_state.encode_vec().unwrap();
 		// store client states key-value
-		<ClientStates<T>>::insert(client_id.as_bytes(), data);
+		<ClientStates<T>>::insert(client_id.as_bytes().to_vec(), data);
 
 		// store client states keys
 		<ClientStatesKeys<T>>::try_mutate(|val| -> Result<(), &'static str> {
