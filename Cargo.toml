@@ -36,12 +36,17 @@ prost-types 			= { package = "informalsystems-prost-types", version = "0.8.1", d
 tendermint-proto 		= { version = "0.22.0", default-features = false }
 
 [dev-dependencies]
-hex = '0.4.0'
-sha2 = '0.9.3'
-serde = { version = "1.0" }
-sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12"}
-sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12" }
-sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12" }
+hex 		= '0.4.0'
+sha2 		= '0.9.3'
+serde 	    = { version = "1.0" }
+ibc 		= { git = "https://github.com/octopus-network/ibc-rs.git", branch = "dv-update-subxt", features = ["mocks"]}
+sp-io 		= { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12"}
+sp-runtime 	= { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12" }
+sp-std 		= { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12" }
+sp-keyring 	= { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12" }
+frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12" }
+chrono = "0.4.19"
+tendermint-proto 		= { version = "0.22.0", default-features = false }
 
 [features]
 default = ['std']

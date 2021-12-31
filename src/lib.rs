@@ -1,6 +1,9 @@
 #![cfg_attr(not(feature = "std"), no_std)]
+// TODO to remove
 #![allow(unreachable_patterns)]
 #![allow(clippy::type_complexity)]
+#![allow(non_camel_case_types)]
+#![allow(dead_code)]
 
 //! # IBC Module
 //!
@@ -63,13 +66,12 @@ use alloc::{format, string::String};
 use codec::{Decode, Encode};
 use core::marker::PhantomData;
 use frame_system::ensure_signed;
+use ibc::ics04_channel::channel::ChannelEnd;
 pub use routing::ModuleCallbacks;
 use scale_info::{prelude::vec, TypeInfo};
 use sp_runtime::RuntimeDebug;
 use sp_std::prelude::*;
 use tendermint_proto::Protobuf;
-use ibc::ics04_channel::channel::ChannelEnd;
-
 
 mod channel;
 mod client;
@@ -927,7 +929,6 @@ pub mod pallet {
 		// get (port_id, channel_id) -> channel_end
 		pub fn get_channel_end(port_id: Vec<u8>, channel_id: Vec<u8>) -> Vec<u8> {
 			log::info!("in substrate-ibc [lib.rs]: [get_channel_end]");
-
 
 			if <Channels<T>>::contains_key((port_id.clone(), channel_id.clone())) {
 				let data = <Channels<T>>::get((port_id, channel_id));

@@ -4,8 +4,13 @@ use frame_system as system;
 use sp_core::H256;
 use sp_runtime::{
 	testing::Header,
-	traits::{BlakeTwo256, IdentityLookup},
+	traits::{BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
+	MultiSignature,
 };
+use std::time::{Duration, Instant};
+
+pub type Signature = MultiSignature;
+pub(crate) type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -28,7 +33,7 @@ parameter_types! {
 }
 
 impl system::Config for Test {
-	type BaseCallFilter = ();
+	type BaseCallFilter = frame_support::traits::Everything;
 	type BlockWeights = ();
 	type BlockLength = ();
 	type DbWeight = ();
@@ -38,7 +43,7 @@ impl system::Config for Test {
 	type BlockNumber = u64;
 	type Hash = H256;
 	type Hashing = BlakeTwo256;
-	type AccountId = u64;
+	type AccountId = AccountId;
 	type Lookup = IdentityLookup<Self::AccountId>;
 	type Header = Header;
 	type Event = Event;
@@ -58,12 +63,22 @@ impl system::Config for Test {
 // the index of TemplateModule is 8 in the current runtime.
 // In the future, we should find a more dynamic way to create this mapping.
 pub struct ModuleCallbacksImpl;
-
 impl pallet_ibc::ModuleCallbacks for ModuleCallbacksImpl {}
 
-impl pallet_ibc::Config for Test {
+pub struct MockUnixTime;
+
+// maybe future to fix
+impl frame_support::traits::UnixTime for MockUnixTime {
+	fn now() -> Duration {
+		let now_time = Instant::now().elapsed();
+		now_time
+	}
+}
+
+impl super::pallet::Config for Test {
 	type Event = Event;
 	type ModuleCallbacks = ModuleCallbacksImpl;
+	type TimeProvider = MockUnixTime;
 }
 
 // Build genesis storage according to the mock runtime.
