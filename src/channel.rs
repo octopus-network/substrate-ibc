@@ -3,7 +3,10 @@ use core::str::FromStr;
 
 use crate::routing::Context;
 use ibc::{
-	ics02_client::{client_consensus::AnyConsensusState, client_state::AnyClientState},
+	ics02_client::{
+		client_consensus::AnyConsensusState, 
+		client_state::AnyClientState
+	},
 	ics03_connection::connection::ConnectionEnd,
 	ics04_channel::{
 		channel::ChannelEnd,
@@ -24,10 +27,10 @@ impl<T: Config> ChannelReader for Context<T> {
 		// Todo: Confirm if all the errors are accurate
 		log::info!("in channel: [channel_end]");
 
-		if <Channels<T>>::contains_key((port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes()))
+		if <Channels<T>>::contains_key(port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes())
 		{
 			let data =
-				<Channels<T>>::get((port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes()));
+				<Channels<T>>::get(port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes());
 			let channel_end = ChannelEnd::decode_vec(&*data).unwrap();
 			log::info!("in channel: [channel_end] >> channel_end : {:?}", channel_end);
 			Ok(channel_end)
@@ -86,7 +89,6 @@ impl<T: Config> ChannelReader for Context<T> {
 	fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, ICS04Error> {
 		log::info!("in channel: [client_state]");
 
-		// ClientReader::client_state(self, client_id)
 		if <ClientStates<T>>::contains_key(client_id.as_bytes()) {
 			let data = <ClientStates<T>>::get(client_id.as_bytes());
 			log::info!(
@@ -118,7 +120,6 @@ impl<T: Config> ChannelReader for Context<T> {
 			}
 		}
 		Err(ICS04Error::frozen_client(client_id.clone()))
-		// ClientReader::consensus_state(self, client_id, height)
 	}
 
 	fn authenticated_capability(&self, port_id: &PortId) -> Result<Capability, ICS04Error> {
@@ -143,14 +144,14 @@ impl<T: Config> ChannelReader for Context<T> {
 	) -> Result<Sequence, ICS04Error> {
 		log::info!("in channel: [get_next_sequence]");
 
-		if <NextSequenceSend<T>>::contains_key((
+		if <NextSequenceSend<T>>::contains_key(
 			port_channel_id.0.as_bytes(),
 			port_channel_id.1.as_bytes(),
-		)) {
-			let data = <NextSequenceSend<T>>::get((
+		) {
+			let data = <NextSequenceSend<T>>::get(
 				port_channel_id.0.as_bytes(),
 				port_channel_id.1.as_bytes(),
-			));
+			);
 			let mut data: &[u8] = &data;
 			let seq = u64::decode(&mut data).unwrap();
 			Ok(Sequence::from(seq))
@@ -166,14 +167,14 @@ impl<T: Config> ChannelReader for Context<T> {
 	) -> Result<Sequence, ICS04Error> {
 		log::info!("in channel: [get_next_sequence_recv]");
 
-		if <NextSequenceRecv<T>>::contains_key((
+		if <NextSequenceRecv<T>>::contains_key(
 			port_channel_id.0.as_bytes(),
 			port_channel_id.1.as_bytes(),
-		)) {
-			let data = <NextSequenceRecv<T>>::get((
+		) {
+			let data = <NextSequenceRecv<T>>::get(
 				port_channel_id.0.as_bytes(),
 				port_channel_id.1.as_bytes(),
-			));
+			);
 			let mut data: &[u8] = &data;
 			let seq = u64::decode(&mut data).unwrap();
 			Ok(Sequence::from(seq))
@@ -189,14 +190,14 @@ impl<T: Config> ChannelReader for Context<T> {
 	) -> Result<Sequence, ICS04Error> {
 		log::info!("in channel: [get_next_sequence_ack]");
 
-		if <NextSequenceAck<T>>::contains_key((
+		if <NextSequenceAck<T>>::contains_key(
 			port_channel_id.0.as_bytes(),
 			port_channel_id.1.as_bytes(),
-		)) {
-			let data = <NextSequenceAck<T>>::get((
+		) {
+			let data = <NextSequenceAck<T>>::get(
 				port_channel_id.0.as_bytes(),
 				port_channel_id.1.as_bytes(),
-			));
+			);
 			let mut data: &[u8] = &data;
 			let seq = u64::decode(&mut data).unwrap();
 			Ok(Sequence::from(seq))
@@ -330,11 +331,18 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		let input = format!("{:?},{:?},{:?}", timestamp, heigh, data);
 		let seq = u64::from(key.2);
 		let seq = seq.encode();
-
+		
+		// inser packet commitment key-value
 		<PacketCommitment<T>>::insert(
-			(key.0.as_bytes(), key.1.as_bytes(), seq),
+			(key.0.as_bytes().to_vec(), key.1.as_bytes().to_vec(), seq.clone()),
 			ChannelReader::hash(self, input).encode(),
 		);
+
+		// insert packet commitment keys
+		<PacketCommitmentKeys<T>>::try_mutate(|val| -> Result<(), &'static str> {
+			val.push((key.0.as_bytes().to_vec(), key.1.as_bytes().to_vec(), seq.clone()));
+			Ok(())
+		}).expect("store packet commitment keys error");
 		Ok(())
 	}
 
@@ -346,8 +354,17 @@ impl<T: Config> ChannelKeeper for Context<T> {
 
 		let seq = u64::from(key.2);
 		let seq = seq.encode();
-		<PacketCommitment<T>>::remove((key.0.as_bytes(), key.1.as_bytes(), seq));
+		
+		// delete packet commitment
+		<PacketCommitment<T>>::remove((key.0.as_bytes().to_vec(), key.1.as_bytes().to_vec(), seq.clone()));
 
+		// delete packet commitment keys
+		<PacketCommitmentKeys<T>>::try_mutate(|val| -> Result<(), &'static str> {
+			let index  = val.iter().position(|value| value == &(key.0.as_bytes().to_vec(), key.1.as_bytes().to_vec(), seq.clone())).unwrap();
+			let ret = val.remove(index);
+			assert_eq!(ret,(key.0.as_bytes().to_vec(), key.1.as_bytes().to_vec(), seq.clone()));
+			Ok(())
+		}).expect("delete packet commitment keys error");
 		Ok(())
 	}
 
@@ -365,7 +382,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		let seq = u64::from(key.2);
 		let seq = seq.encode();
 
-		<PacketReceipt<T>>::insert((key.0.as_bytes(), key.1.as_bytes(), seq), receipt);
+		<PacketReceipt<T>>::insert((key.0.as_bytes().to_vec(), key.1.as_bytes().to_vec(), seq), receipt);
 
 		Ok(())
 	}
@@ -381,10 +398,18 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		let seq = u64::from(key.2);
 		let seq = seq.encode();
 
+		// store packet acknowledgement key-value
 		<Acknowledgements<T>>::insert(
-			(key.0.as_bytes(), key.1.as_bytes(), seq),
+			(key.0.as_bytes().to_vec(), key.1.as_bytes().to_vec(), seq.clone()),
 			ChannelReader::hash(self, ack).encode(),
 		);
+		
+		// store packet acknowledgement keys
+		<AcknowledgementsKeys<T>>::try_mutate(|val| -> Result<(), &'static str> {
+			val.push((key.0.as_bytes().to_vec(), key.1.as_bytes().to_vec(), seq));
+			Ok(())
+		}).expect("store acknowledgement keys error");
+
 		Ok(())
 	}
 
@@ -397,7 +422,16 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		let seq = u64::from(key.2);
 		let seq = seq.encode();
 
-		<Acknowledgements<T>>::remove((key.0.as_bytes(), key.1.as_bytes(), seq));
+		// remove acknowledgements 
+		<Acknowledgements<T>>::remove((key.0.as_bytes().to_vec(), key.1.as_bytes().to_vec(), seq.clone()));
+
+		// remove acknowledgement keys 
+		<AcknowledgementsKeys<T>>::try_mutate(|val| -> Result<(), &'static str> {
+			let index = val.iter().position(|value| value == &(key.0.as_bytes().to_vec(), key.1.as_bytes().to_vec(), seq.clone())).unwrap();
+			let ret = val.remove(index);
+			assert_eq!(&ret, &(key.0.as_bytes().to_vec(), key.1.as_bytes().to_vec(), seq.clone()));
+			Ok(())
+		}).expect("delete packet acknowledgement keys error");
 
 		Ok(())
 	}
@@ -448,10 +482,19 @@ impl<T: Config> ChannelKeeper for Context<T> {
 
 		let channel_end = channel_end.encode_vec().unwrap();
 
+		// store channels key-value
 		<Channels<T>>::insert(
-			(port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes()),
+			port_channel_id.0.as_bytes().to_vec(), port_channel_id.1.as_bytes().to_vec(),
 			channel_end,
 		);
+
+		// store channels keys
+		<ChannelsKeys<T>>::try_mutate(|val| -> Result<(), &'static str> {
+			val.push((port_channel_id.0.as_bytes().to_vec(), port_channel_id.1.as_bytes().to_vec()));
+			
+			Ok(())
+		}).expect("store channels keys error");
+
 		Ok(())
 	}
 
@@ -466,7 +509,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		let seq = seq.encode();
 
 		<NextSequenceSend<T>>::insert(
-			(port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes()),
+			port_channel_id.0.as_bytes().to_vec(), port_channel_id.1.as_bytes().to_vec(),
 			seq,
 		);
 
@@ -484,7 +527,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		let seq = seq.encode();
 
 		<NextSequenceRecv<T>>::insert(
-			(port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes()),
+			port_channel_id.0.as_bytes().to_vec(), port_channel_id.1.as_bytes().to_vec(),
 			seq,
 		);
 
@@ -502,7 +545,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		let seq = seq.encode();
 
 		<NextSequenceAck<T>>::insert(
-			(port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes()),
+			port_channel_id.0.as_bytes().to_vec(), port_channel_id.1.as_bytes().to_vec(),
 			seq,
 		);
 

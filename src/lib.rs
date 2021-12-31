@@ -12,12 +12,13 @@
 //! ## Overview
 //!
 //! The goal of this pallet is to allow the blockchains built on Substrate to gain the ability to
-//! interact with other chains in a trustees way via IBC protocol, no matter what consensus the
-//! counterparty chains use.
+//! interact with other chains in a trustees way via IBC protocol
 //!
 //! This project is currently in an early stage and will eventually be submitted to upstream.
 //!
-//! Some components in [IBC spec](https://github.com/cosmos/ics/tree/master/spec) are implemented to support a working demo (https://github.com/cdot-network/ibc-demo), but not fully implemented as the spec yet:
+//! The pallet implements the chain specific logic of [ICS spec](https://github.com/cosmos/ibc/tree/ee71d0640c23ec4e05e924f52f557b5e06c1d82f),  and is integrated with [ibc-rs](https://github.com/informalsystems/ibc-rs), which implements the generic cross-chain logic in [ICS spec](https://github.com/cosmos/ibc/tree/ee71d0640c23ec4e05e924f52f557b5e06c1d82f).
+//!
+//! The chain specific logic of the modules in ICS spec implemented::
 //! * ics-002-client-semantics
 //! * ics-003-connection-semantics
 //! * ics-004-channel-and-packet-semantics
@@ -29,31 +30,18 @@
 //!
 //! ### Terminology
 //!
-//! Please refer to [IBC Terminology](https://github.com/cosmos/ics/blob/master/ibc/1_IBC_TERMINOLOGY.md#1-ibc-terminology).
+//! Please refer to [IBC Terminology](https://github.com/cosmos/ibc/blob/a983dd86815175969099d041906f6a14643e51ef/ibc/1_IBC_TERMINOLOGY.md).
 //!
 //! ### Goals
 //!
 //! This IBC module handles authentication, transport, and ordering of structured data packets
 //! relayed between modules on separate machines.
 //!
-//! Example applications include cross-chain asset transfer, atomic swaps, multi-chain smart
-//! contracts (with or without mutually comprehensible VMs), and data & code sharding of various
-//! kinds.
-//!
 //! ## Interface
 //!
 //! ###  Public Functions
 //!
-//! * `handle_datagram` - Receives datagram transmitted from relayers, and implements the following:
-//!   + Synchronizing block headers from other chains. + Process connection opening handshakes after
-//!   its initialization - ICS-003. + Process channel opening handshakes after its initialization -
-//!   ICS-004. + Handling packet flow after its initialization - ICS-004.
-//!
-//! ### Dispatchable Functions
-//!
-//! * `conn_open_init` - Connection opening handshake initialization.
-//! * `chan_open_init` - Channel opening handshake initialization.
-//! * `send_packet` - Packet flow initialization.
+//! * `deliver` - `ibc::ics26_routing::handler::deliver` Receives datagram transmitted from relayers/users, and pass to ICS26 router to look for the correct handler.
 //!
 //! ## Usage
 //! Please refer to section "How to Interact with the Pallet" in the repository's README.md
@@ -130,6 +118,15 @@ pub mod pallet {
 	pub type ClientStates<T: Config> =
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
+	#[pallet::type_value]
+	pub fn default_client_state_keys() ->  Vec<Vec<u8>> {
+		vec![]
+	}
+
+	#[pallet::storage]
+	// vector client_id
+	pub type ClientStatesKeys<T: Config> = StorageValue<_, Vec<Vec<u8>>, ValueQuery, default_client_state_keys>;
+
 	#[pallet::storage]
 	// fix before : (client_id, height) => ConsensusState
 	// fix after: client_id => (Height, ConsensusState)
@@ -140,10 +137,28 @@ pub mod pallet {
 	// connection_id => ConnectionEnd
 	pub type Connections<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
+	#[pallet::type_value]
+	pub fn default_connection_keys() ->  Vec<Vec<u8>> {
+		vec![]
+	}
+
+	#[pallet::storage]
+	// vector connection_id
+	pub type ConnectionsKeys<T: Config> = StorageValue<_, Vec<Vec<u8>>, ValueQuery, default_connection_keys>;
+
 	#[pallet::storage]
 	// (port_identifier, channel_identifier) => ChannelEnd
 	pub type Channels<T: Config> =
-		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
+		StorageDoubleMap<_, Blake2_128Concat, Vec<u8>, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
+
+	#[pallet::type_value]
+	pub fn default_channels_keys() ->  Vec<(Vec<u8>, Vec<u8>)> {
+		vec![]
+	}
+
+	#[pallet::storage]
+	// vector (port_identifier, channel_identifier)
+	pub type ChannelsKeys<T: Config> = StorageValue<_, Vec<(Vec<u8>, Vec<u8>)>, ValueQuery, default_channels_keys>;
 
 	// store_connection_channels
 	#[pallet::storage]
@@ -154,22 +169,32 @@ pub mod pallet {
 	#[pallet::storage]
 	// (port_identifier, channel_identifier) => Sequence
 	pub type NextSequenceSend<T: Config> =
-		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
+		StorageDoubleMap<_, Blake2_128Concat, Vec<u8>, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
 	// (port_identifier, channel_identifier) => Sequence
 	pub type NextSequenceRecv<T: Config> =
-		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
+		StorageDoubleMap<_, Blake2_128Concat, Vec<u8>, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
 	// (port_identifier, channel_identifier) = Sequence
 	pub type NextSequenceAck<T: Config> =
-		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
+		StorageDoubleMap<_, Blake2_128Concat, Vec<u8>, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
 	// (port_identifier, channel_identifier, sequence) => Hash
 	pub type Acknowledgements<T: Config> =
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
+	
+	#[pallet::type_value]
+	pub fn default_acknowledgements_keys() ->  Vec<(Vec<u8>, Vec<u8>, Vec<u8>)> {
+		vec![]
+	}
+
+	#[pallet::storage]
+	// TODO
+	// vector (port_identifier, channel_identifier, sequence)
+	pub type AcknowledgementsKeys<T: Config> = StorageValue<_, Vec<(Vec<u8>, Vec<u8>, Vec<u8>)>, ValueQuery, default_acknowledgements_keys>;
 
 	#[pallet::storage]
 	// clientId => ClientType
@@ -211,21 +236,34 @@ pub mod pallet {
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
+	// TODO
 	// (port_id, channel_id, sequence) => receipt
 	pub type PacketReceipt<T: Config> =
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
+	// TODO
 	// (port_id, channel_id, sequence) => hash
 	pub type PacketCommitment<T: Config> =
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
 
+	#[pallet::type_value]
+	pub fn default_packet_commitment_keys() ->  Vec<(Vec<u8>, Vec<u8>, Vec<u8>)> {
+		vec![]
+	}
+	
 	#[pallet::storage]
+	// vector (port_identifier, channel_identifier, sequence)
+	pub type PacketCommitmentKeys<T: Config>  = StorageValue<_, Vec<(Vec<u8>, Vec<u8>, Vec<u8>)>, ValueQuery, default_packet_commitment_keys>;
+
+	#[pallet::storage]
+	// TODO
 	// (height, port_id, channel_id, sequence) => event
 	pub type SendPacketEvent<T: Config> =
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>, u64), Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
+	//TODO
 	// (port_id, channel_id, sequence), ackHash)
 	pub type WriteAckPacketEvent<T: Config> =
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>, u64), Vec<u8>, ValueQuery>;
@@ -888,101 +926,6 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		/// get key-value vector of (height, consensus_state) according by client_identifier
-		pub fn get_consensus_state_with_height(_client_id: Vec<u8>) -> Vec<(Vec<u8>, Vec<u8>)> {
-			todo!()
-		}
-
-		/// get key-value pair (client_identifier, client_state)
-		pub fn get_identified_any_client_state() -> Vec<(Vec<u8>, Vec<u8>)> {
-			let mut result = vec![];
-
-			<ClientStates<T>>::iter().for_each(|val| {
-				result.push((val.0, val.1));
-			});
-
-			result
-		}
-
-		/// get key-value pair(connection_id, connectionEnd)
-		pub fn get_idenfitied_connection_end() -> Vec<(Vec<u8>, Vec<u8>)> {
-			let mut result = vec![];
-
-			<Connections<T>>::iter().for_each(|val| {
-				result.push((val.0, val.1));
-			});
-
-			result
-		}
-
-		/// get (port_id, channel_id, channel_end)
-		pub fn get_idenfitied_channel_end() -> Vec<(Vec<u8>, Vec<u8>, Vec<u8>)> {
-			let mut result = vec![];
-
-			<Channels<T>>::iter().for_each(|(key, value)| {
-				result.push((key.0, key.1, value));
-			});
-
-			result
-		}
-
-		// get (port_id, channel_id) -> channel_end
-		pub fn get_channel_end(port_id: Vec<u8>, channel_id: Vec<u8>) -> Vec<u8> {
-			log::info!("in substrate-ibc [lib.rs]: [get_channel_end]");
-
-			if <Channels<T>>::contains_key((port_id.clone(), channel_id.clone())) {
-				let data = <Channels<T>>::get((port_id, channel_id));
-				let channel_end = ChannelEnd::decode_vec(&*data).unwrap();
-				log::info!(
-					"in substrate-ibc [lib.rs]: [get_channel_end] >> channel_end : {:?}",
-					channel_end
-				);
-				data
-			} else {
-				log::error!("in substrate-ibc [lib.rs]: read channel_end return None");
-				panic!("in substrate-ibc [lib.rs]: Read channel_end return None");
-			}
-		}
-
-		/// get connection_identifier vector according by client_identifier
-		pub fn get_client_connections(_client_id: Vec<u8>) -> Vec<Vec<u8>> {
-			todo!()
-		}
-
-		/// get port_identifier, channel_identifier, channel_end according by connection_id
-		pub fn get_connection_channels(
-			_connection_id: Vec<u8>,
-		) -> Vec<(Vec<u8>, Vec<u8>, Vec<u8>)> {
-			todo!()
-		}
-
-		// get PacketCommitment PacketState(port_id, channel_id, sequence, data)
-		pub fn get_packet_commitment_state() -> Vec<(Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>)> {
-			let mut result = vec![];
-
-			<PacketCommitment<T>>::iter().for_each(|(key, value)| {
-				let port_id = key.0;
-				let channel_id = key.1;
-				let sequence = key.2;
-				let data = value;
-				result.push((port_id, channel_id, sequence, data));
-			});
-			result
-		}
-
-		pub fn get_packet_acknowledge_state() -> Vec<(Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>)> {
-			let mut result = vec![];
-
-			<Acknowledgements<T>>::iter().for_each(|(key, value)| {
-				let port_id = key.0;
-				let channel_id = key.1;
-				let sequence = key.2;
-				let data = value;
-				result.push((port_id, channel_id, sequence, data));
-			});
-			result
-		}
-
 		fn store_latest_height(ibc_event: IbcEvent) {
 			match ibc_event {
 				IbcEvent::Empty(_value) => {

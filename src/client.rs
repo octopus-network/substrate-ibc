@@ -137,7 +137,15 @@ impl<T: Config> ClientKeeper for Context<T> {
 		log::info!("In client: [store_client_state] >> client_state: {:?}", client_state);
 
 		let data = client_state.encode_vec().unwrap();
-		<ClientStates<T>>::insert(client_id.as_bytes(), data);
+		// store client states key-value
+		<ClientStates<T>>::insert(client_id.as_bytes().to_vec(), data);
+
+		// store client states keys
+		<ClientStatesKeys<T>>::try_mutate(|val| -> Result<(), &'static str> {
+			val.push(client_id.as_bytes().to_vec());
+			Ok(())
+		}).expect("store client_state keys error");
+
 		Ok(())
 	}
 
