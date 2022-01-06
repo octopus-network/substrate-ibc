@@ -59,19 +59,11 @@ safe-proc-macro2    = { git = "https://github.com/informalsystems/safe-regex.git
 tonic = { package = "informalsystems-tonic", git = "https://github.com/informalsystems/tonic.git", rev = "99edfe23" }
 ```
 
-#### `bin`'s `Cargo.toml`
-And include the following to your `bin`'s `Cargo.toml` file:
-```TOML
-pallet-ibc-rpc = { git = "https://github.com/octopus-network/substrate-ibc", branch = "dv-ibc-dev-0.9.12-tag", default-features = false}
-pallet-ibc-runtime-api = { git = "https://github.com/octopus-network/substrate-ibc", branch = "dv-ibc-dev-0.9.12-tag", default-features = false}
-```
-
 #### Runtime's `Cargo.toml`
 To add this pallet to your runtime, include the following to your runtime's `Cargo.toml` file:
 
 ```TOML
-pallet-ibc-rpc = { git = "https://github.com/octopus-network/substrate-ibc", branch = "dv-ibc-dev-0.9.12-tag", default-features = false}
-pallet-ibc-runtime-api = { git = "https://github.com/octopus-network/substrate-ibc", branch = "dv-ibc-dev-0.9.12-tag", default-features = false}
+pallet-ibc = { git = "https://github.com/octopus-network/substrate-ibc", branch = "master", default-features = false}
 ```
 
 and update your runtime's `std` feature to include this pallet:
@@ -80,8 +72,7 @@ and update your runtime's `std` feature to include this pallet:
 std = [
     # --snip--
     "pallet-ibc/std",
-    "pallet-ibc-runtime-api/std",
-	]
+]
 ```
 
 ### Runtime `lib.rs`
@@ -98,38 +89,10 @@ impl pallet_ibc::Config for Runtime {
 }
 ```
 
-You should implement it's trait like so:
-
-```rust
-    // Here we implement our custom runtime API.
-impl  pallet_ibc_runtime_api::IbcApi<Block> for Runtime {
-    // --snip--
-}
-```
-
-and include it in your `construct_runtime!` macro:
+You should include it in your `construct_runtime!` macro:
 
 ```rust
 Ibc: pallet_ibc::{Pallet, Call, Storage, Event<T>},
-```
-
-#### `bin`'s `service.rs`
-If you are installing this IBC pallet to a parachain, add below for the type interface of `RuntimeApi::RuntimeApi` in `async fn start_node_impl`, which starts a node with the given `Configuration`.
-
-```rust
-+ pallet_ibc_runtime_api::IbcApi<Block>,
-```
-
-#### `bin`'s `rpc.rs`
-When instantiating all RPC extensions, add pallet ibc's
-```rust
-C::Api: pallet_ibc_runtime_api::IbcApi<Block>,
-```
-
-```rust
-io.extend_with(pallet_ibc_rpc::IbcApi::to_delegate(
-    pallet_ibc_rpc::IbcStorage::new(client.clone()),
-));
 ```
 
 ### Genesis Configuration
