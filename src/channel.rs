@@ -99,7 +99,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		} else {
 			log::info!("In client: [client_state] >> read client_state is None");
 
-			todo!()
+			Err(ICS04Error::frozen_client(client_id.clone()))
 		}
 	}
 

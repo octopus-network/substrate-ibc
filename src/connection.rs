@@ -44,7 +44,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 		} else {
 			log::info!("In client: [client_state] >> read client_state is None");
 
-			todo!()
+			Err(ICS03Error::frozen_client(client_id.clone()))
 		}
 	}
 
@@ -97,7 +97,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 				return Ok(any_consensus_state)
 			}
 		}
-		todo!()
+		Err(ICS03Error::missing_consensus_height())
 	}
 
 	fn host_consensus_state(&self, _height: Height) -> Result<AnyConsensusState, ICS03Error> {

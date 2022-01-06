@@ -64,22 +64,6 @@ impl<T: Config> ClientReader for Context<T> {
 		let height = height.encode_vec().unwrap();
 		let value = <ConsensusStates<T>>::get(client_id.as_bytes());
 
-		// Another way get consensus_state
-		// let result = loop {
-		// 	let mut value_iter = value.iter();
-
-		// 	if let Some(item) = value_iter.next() {
-		// 		if item.0 == height {
-		// 			let any_consensus_state = AnyConsensusState::decode_vec(&*item.1).unwrap();
-		// 			break any_consensus_state
-		// 		}
-		// 	} else {
-		// 		continue
-		// 	}
-		// };
-
-		// Ok(result)
-
 		for item in value.iter() {
 			if item.0 == height {
 				let any_consensus_state = AnyConsensusState::decode_vec(&*item.1).unwrap();
