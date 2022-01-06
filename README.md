@@ -110,11 +110,11 @@ impl  pallet_ibc_runtime_api::IbcApi<Block> for Runtime {
 and include it in your `construct_runtime!` macro:
 
 ```rust
-Ibc: pallet_ibc::{Pallet, Call, Storage, Event<T>} = 110,
+Ibc: pallet_ibc::{Pallet, Call, Storage, Event<T>},
 ```
 
 #### `bin`'s `service.rs`
-Add below for the type interface of `RuntimeApi::RuntimeApi` in `async fn start_node_impl`, which starts a node with the given `Configuration`.
+If you are installing this IBC pallet to a parachain, add below for the type interface of `RuntimeApi::RuntimeApi` in `async fn start_node_impl`, which starts a node with the given `Configuration`.
 
 ```rust
 + pallet_ibc_runtime_api::IbcApi<Block>,
