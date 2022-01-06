@@ -901,6 +901,9 @@ pub mod pallet {
 		#[pallet::weight(0)]
 		pub fn deliver(origin: OriginFor<T>, messages: Vec<Any>, tmp: u8) -> DispatchResult {
 			log::info!("in deliver");
+			for item in messages.iter() {
+				log::info!("Message type: {:?}", String::from_utf8(item.type_url.clone()).unwrap());
+			}
 
 			let _sender = ensure_signed(origin)?;
 			let mut ctx = routing::Context { _pd: PhantomData::<T>, tmp };
