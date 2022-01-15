@@ -13,6 +13,7 @@ use ibc::{
 	ics24_host::identifier::{ClientId, ConnectionId},
 	Height,
 };
+use ibc::ics10_grandpa::header::Header;
 use tendermint_proto::Protobuf;
 
 impl<T: Config> ConnectionReader for Context<T> {
@@ -111,7 +112,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 	fn host_consensus_state(&self, _height: Height) -> Result<AnyConsensusState, ICS03Error> {
 		log::info!("in connection : [host_consensus_state]");
 		log::info!("in connection : [host_consensus_state] >> _height = {:?}", _height);
-		let result = AnyConsensusState::Grandpa(GPConsensusState::new(CommitmentRoot::from(vec![1, 2, 3])));
+		let result = AnyConsensusState::Grandpa(GPConsensusState::from(Header::default()));
 
 		log::info!("in connection : [host_consensus_state] >> any_consensus_state = {:?}", result.clone());
 		Ok(result)
