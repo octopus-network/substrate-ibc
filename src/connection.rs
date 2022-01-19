@@ -117,6 +117,15 @@ impl<T: Config> ConnectionReader for Context<T> {
 		log::info!("in connection : [host_consensus_state] >> any_consensus_state = {:?}", result.clone());
 		Ok(result)
 	}
+
+	fn connection_storage_key(&self, conn_id: &ConnectionId) -> Result<Vec<u8>, ICS03Error> {
+		log::info!("in connection : [connection_storage_key]");
+		log::info!("in connection : [connection_storage_key] >> conn_id = {:?}", conn_id.clone());
+		let connection_storage_key = <Connections<T>>::hashed_key_for( (conn_id.as_bytes()) );
+
+		log::info!("in connection : [connection_storage_key] >> connection_storage_key = {:?}", connection_storage_key.clone());
+		Ok(connection_storage_key)
+	}
 }
 
 impl<T: Config> ConnectionKeeper for Context<T> {
