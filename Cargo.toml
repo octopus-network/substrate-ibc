@@ -49,6 +49,8 @@ sp-keyring 	= { git = "https://github.com/paritytech/substrate.git", branch = "p
 frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12" }
 chrono = "0.4.19"
 tendermint-proto 		= { version = "0.22.0", default-features = false }
+beefy-light-client = { git = "https://github.com/octopus-network/beefy-light-client.git", default-features = false }
+
 
 [features]
 default = ['std']

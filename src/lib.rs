@@ -51,10 +51,12 @@ extern crate alloc;
 pub use pallet::*;
 
 use alloc::{format, string::String};
+// use beefy_light_client::commitment;
 use codec::{Decode, Encode};
 use core::marker::PhantomData;
 use frame_system::ensure_signed;
 use ibc::ics04_channel::channel::ChannelEnd;
+use ibc::ics10_grandpa::help;
 pub use routing::ModuleCallbacks;
 use scale_info::{prelude::vec, TypeInfo};
 use sp_runtime::RuntimeDebug;
@@ -79,6 +81,9 @@ impl From<prost_types::Any> for Any {
 		Self { type_url: any.type_url.as_bytes().to_vec(), value: any.value }
 	}
 }
+
+// #[derive( Clone, PartialEq, Deserialize, Serialize,Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
+// pub struct SignedCommitment(pub sp_core::Bytes);
 
 #[cfg(test)]
 mod mock;
@@ -119,13 +124,14 @@ pub mod pallet {
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::type_value]
-	pub fn default_client_state_keys() ->  Vec<Vec<u8>> {
+	pub fn default_client_state_keys() -> Vec<Vec<u8>> {
 		vec![]
 	}
 
 	#[pallet::storage]
 	// vector client_id
-	pub type ClientStatesKeys<T: Config> = StorageValue<_, Vec<Vec<u8>>, ValueQuery, default_client_state_keys>;
+	pub type ClientStatesKeys<T: Config> =
+		StorageValue<_, Vec<Vec<u8>>, ValueQuery, default_client_state_keys>;
 
 	#[pallet::storage]
 	// fix before : (client_id, height) => ConsensusState
@@ -138,27 +144,36 @@ pub mod pallet {
 	pub type Connections<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::type_value]
-	pub fn default_connection_keys() ->  Vec<Vec<u8>> {
+	pub fn default_connection_keys() -> Vec<Vec<u8>> {
 		vec![]
 	}
 
 	#[pallet::storage]
 	// vector connection_id
-	pub type ConnectionsKeys<T: Config> = StorageValue<_, Vec<Vec<u8>>, ValueQuery, default_connection_keys>;
+	pub type ConnectionsKeys<T: Config> =
+		StorageValue<_, Vec<Vec<u8>>, ValueQuery, default_connection_keys>;
 
 	#[pallet::storage]
 	// (port_identifier, channel_identifier) => ChannelEnd
-	pub type Channels<T: Config> =
-		StorageDoubleMap<_, Blake2_128Concat, Vec<u8>, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
+	pub type Channels<T: Config> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		Vec<u8>,
+		Blake2_128Concat,
+		Vec<u8>,
+		Vec<u8>,
+		ValueQuery,
+	>;
 
 	#[pallet::type_value]
-	pub fn default_channels_keys() ->  Vec<(Vec<u8>, Vec<u8>)> {
+	pub fn default_channels_keys() -> Vec<(Vec<u8>, Vec<u8>)> {
 		vec![]
 	}
 
 	#[pallet::storage]
 	// vector (port_identifier, channel_identifier)
-	pub type ChannelsKeys<T: Config> = StorageValue<_, Vec<(Vec<u8>, Vec<u8>)>, ValueQuery, default_channels_keys>;
+	pub type ChannelsKeys<T: Config> =
+		StorageValue<_, Vec<(Vec<u8>, Vec<u8>)>, ValueQuery, default_channels_keys>;
 
 	// store_connection_channels
 	#[pallet::storage]
@@ -168,33 +183,59 @@ pub mod pallet {
 
 	#[pallet::storage]
 	// (port_identifier, channel_identifier) => Sequence
-	pub type NextSequenceSend<T: Config> =
-		StorageDoubleMap<_, Blake2_128Concat, Vec<u8>, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
+	pub type NextSequenceSend<T: Config> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		Vec<u8>,
+		Blake2_128Concat,
+		Vec<u8>,
+		Vec<u8>,
+		ValueQuery,
+	>;
 
 	#[pallet::storage]
 	// (port_identifier, channel_identifier) => Sequence
-	pub type NextSequenceRecv<T: Config> =
-		StorageDoubleMap<_, Blake2_128Concat, Vec<u8>, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
+	pub type NextSequenceRecv<T: Config> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		Vec<u8>,
+		Blake2_128Concat,
+		Vec<u8>,
+		Vec<u8>,
+		ValueQuery,
+	>;
 
 	#[pallet::storage]
 	// (port_identifier, channel_identifier) = Sequence
-	pub type NextSequenceAck<T: Config> =
-		StorageDoubleMap<_, Blake2_128Concat, Vec<u8>, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
+	pub type NextSequenceAck<T: Config> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		Vec<u8>,
+		Blake2_128Concat,
+		Vec<u8>,
+		Vec<u8>,
+		ValueQuery,
+	>;
 
 	#[pallet::storage]
 	// (port_identifier, channel_identifier, sequence) => Hash
 	pub type Acknowledgements<T: Config> =
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
-	
+
 	#[pallet::type_value]
-	pub fn default_acknowledgements_keys() ->  Vec<(Vec<u8>, Vec<u8>, Vec<u8>)> {
+	pub fn default_acknowledgements_keys() -> Vec<(Vec<u8>, Vec<u8>, Vec<u8>)> {
 		vec![]
 	}
 
 	#[pallet::storage]
 	// TODO
 	// vector (port_identifier, channel_identifier, sequence)
-	pub type AcknowledgementsKeys<T: Config> = StorageValue<_, Vec<(Vec<u8>, Vec<u8>, Vec<u8>)>, ValueQuery, default_acknowledgements_keys>;
+	pub type AcknowledgementsKeys<T: Config> = StorageValue<
+		_,
+		Vec<(Vec<u8>, Vec<u8>, Vec<u8>)>,
+		ValueQuery,
+		default_acknowledgements_keys,
+	>;
 
 	#[pallet::storage]
 	// clientId => ClientType
@@ -248,13 +289,18 @@ pub mod pallet {
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
 
 	#[pallet::type_value]
-	pub fn default_packet_commitment_keys() ->  Vec<(Vec<u8>, Vec<u8>, Vec<u8>)> {
+	pub fn default_packet_commitment_keys() -> Vec<(Vec<u8>, Vec<u8>, Vec<u8>)> {
 		vec![]
 	}
-	
+
 	#[pallet::storage]
 	// vector (port_identifier, channel_identifier, sequence)
-	pub type PacketCommitmentKeys<T: Config>  = StorageValue<_, Vec<(Vec<u8>, Vec<u8>, Vec<u8>)>, ValueQuery, default_packet_commitment_keys>;
+	pub type PacketCommitmentKeys<T: Config> = StorageValue<
+		_,
+		Vec<(Vec<u8>, Vec<u8>, Vec<u8>)>,
+		ValueQuery,
+		default_packet_commitment_keys,
+	>;
 
 	#[pallet::storage]
 	// TODO
@@ -882,8 +928,9 @@ pub mod pallet {
 				// Empty(String)
 				ibc::events::IbcEvent::Empty(value) => Event::Empty(value.as_bytes().to_vec()),
 				// ChainError(String)
-				ibc::events::IbcEvent::ChainError(value) =>
-					Event::ChainError(value.as_bytes().to_vec()),
+				ibc::events::IbcEvent::ChainError(value) => {
+					Event::ChainError(value.as_bytes().to_vec())
+				},
 				_ => unimplemented!(),
 			}
 		}
@@ -923,6 +970,152 @@ pub mod pallet {
 				Self::deposit_event(event.clone().into());
 				Self::store_latest_height(event.clone());
 			}
+
+			Ok(())
+		}
+
+		#[pallet::weight(0)]
+		pub fn update_client_state(
+			origin: OriginFor<T>,
+			client_id: Vec<u8>,
+			mmr_root: Vec<u8>,
+		) -> DispatchResult {
+			log::info!("received update_client_state request.");
+			let _who = ensure_signed(origin)?;
+
+			// let client_id = string::from(client_id);
+			
+			log::info!("received client id is {:?}", client_id);
+
+			let received_mmr_root = mmr_root.clone();
+			let received_mmr_root = help::MmrRoot::decode(&mut &received_mmr_root[..]).unwrap();
+			log::info!("receive mmr root is {:?}", received_mmr_root);
+			
+
+			// TODO: check exist the target client id ?
+			//let client_state = <Clients<T>>::get(client_id);
+			// if client_state.chain_id.as_str() != chain_id.as_str() {
+			//     println!("client is not existing!");
+			// 	   Self::deposit_event(Event::ClientNotExist(client_id));
+			//     return Ok();
+			//
+			// }
+			// let block_header = received_mmr_root.block_header;
+			// let validator_proofs = received_mmr_root.validator_merkle_proofs;
+			// let mmr_leaf = received_mmr_root.mmr_leaf;
+			// let mmr_leaf_proof = received_mmr_root.mmr_leaf_proof;
+			// let signed_commitment =
+			// 	commitment::SignedCommitment::from(received_mmr_root.signed_commitment);
+
+			// // 第一次更新，直接保存,这个地方有个逻辑错误，最好是校验一下签名，需要跟元超沟通？
+			// if client_state.latest_commitment.block_number == 0 {
+			// 	let latest_commitment = signed_commitment.commitment;
+			// 	// Decode::decode(&mut &*mmr_leaf).unwrap();
+			// 	let mmr_leaf = mmr::MmrLeaf::decode(&mut &*mmr_leaf).unwrap();
+			// 	let validator_set = mmr_leaf.beefy_next_authority_set;
+			// 	client_state.block_number = latest_commitment.block_number;
+			// 	client_state.latest_commitment = help::Commitment::from(latest_commitment);
+			// 	client_state.validator_set = help::ValidatorSet::from(validator_set);
+			// 	client_state.block_header = block_header;
+			// 	println!("first to update the client state {:?}", client_state);
+			// 	// TODO: 新建保存，触发事件
+			// 	<Clients<T>>::insert(client_id);
+			// 	Self::deposit_event(Event::UpdateMmrRoot(
+			// 		client_state.block_number,
+			// 		ClientId,
+			// 		ClientType,
+			// 		Height,
+			// 	));
+			// 	return Ok();
+			// }
+
+			// // 检查高度，如果接收到的高度小于等于链上已存在高度，就无需更新了，直接返回
+			// let rev_block_number = signed_commitment.clone().commitment.block_number;
+			// if rev_block_number <= client_state.latest_commitment.block_number {
+			// 	println!("receive mmr root block number({}) less than client_state.latest_commitment.block_number({})",
+			// 	   rev_block_number,client_state.latest_commitment.block_number
+			//    );
+
+			// 	Self::deposit_event(Event::MmrHeightError(
+			// 		client_state.block_number,
+			// 		ClientId,
+			// 		ClientType,
+			// 		Height,
+			// 	));
+			// 	return Ok();
+			// }
+
+			// // covert the grandpa validator proofs to beefy_light_client::ValidatorMerkleProof
+			// let validator_proofs: Vec<beefy_light_client::ValidatorMerkleProof> = validator_proofs
+			// 	.into_iter()
+			// 	.map(|validator_proof| validator_proof.into())
+			// 	.collect();
+
+			// // encode signed_commitment
+			// let encoded_signed_commitment =
+			// 	commitment::SignedCommitment::encode(&signed_commitment);
+			// // let encoded_mmr_leaf = mmr::MmrLeaf::encode(&mmr_leaf.into());
+			// // let encoded_mmr_proof = mmr::MmrLeafProof::encode(&mmr_leaf_proof.into());
+
+			// // 利用client_state.latest_commitment，client_state.validator_set，构造新的beefy_light_client
+			// let mut lc = beefy_light_client::LightClient {
+			// 	latest_commitment: Some(client_state.latest_commitment.into()),
+			// 	validator_set: client_state.validator_set.into(),
+			// 	in_process_state: None,
+			// };
+			// println!(" beefy_light_client state :{:?}", lc);
+
+			// // TODO:调用beefy_light_client.update_state验签并更新beefy_light_client中的latest_commitment和validator_set
+			// let result = lc.update_state(
+			// 	&encoded_signed_commitment,
+			// 	&validator_proofs,
+			// 	&mmr_leaf,
+			// 	&mmr_leaf_proof,
+			// );
+
+			// match result {
+			// 	Ok(_) => {
+			// 		println!("update the beefy light client sucesse! ");
+			// 		println!("after update,the beefy light client is : {:?}", lc);
+
+			// 		// 利用beefy_light_client中的状态更新ClientState
+			// 		// let latest_commitment = lc.latest_commitment.unwrap();
+			// 		let latest_commitment = signed_commitment.commitment;
+			// 		client_state.block_number = latest_commitment.block_number;
+			// 		client_state.latest_commitment = help::Commitment::from(latest_commitment);
+
+			// 		// update validator_set
+			// 		let mmr_leaf = mmr::MmrLeaf::decode(&mut &mmr_leaf[..]).unwrap();
+			// 		if mmr_leaf.beefy_next_authority_set.id > lc.validator_set.id {
+			// 			lc.validator_set = mmr_leaf.beefy_next_authority_set;
+			// 		}
+			// 		client_state.validator_set = help::ValidatorSet::from(lc.validator_set.clone());
+			// 		client_state.block_header = block_header;
+
+			// 		// TODO: 保存更新
+			// 		<Clients<T>>::set(client_id);
+			// 		// TODO: 发出更新成功事件
+			// 		Self::deposit_event(Event::UpdateMmrRoot(
+			// 			client_state.block_number,
+			// 			ClientId,
+			// 			ClientType,
+			// 			Height,
+			// 		));
+			// 		//ClientKeeper::store_client_state(client_state)
+			// 		println!("the updated client state is : {:?}", client_state);
+			// 	},
+			// 	Err(e) => {
+			// 		println!("update the beefy light client failure! : {:?}", e);
+			// 		println!("the beefy light client state is : {:?}", lc);
+			// 		// TODO: 发出交易失败事件
+			// 		Self::deposit_event(Event::VerifyFailure(
+			// 			client_state.block_number,
+			// 			ClientId,
+			// 			ClientType,
+			// 			Height,
+			// 		));
+			// 	},
+			// }
 
 			Ok(())
 		}
