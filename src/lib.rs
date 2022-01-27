@@ -51,12 +51,20 @@ extern crate alloc;
 pub use pallet::*;
 
 use alloc::{format, string::String};
-// use beefy_light_client::commitment;
+use beefy_light_client::commitment;
 use codec::{Decode, Encode};
 use core::marker::PhantomData;
+use core::str::FromStr;
 use frame_system::ensure_signed;
-use ibc::ics04_channel::channel::ChannelEnd;
+use ibc::ics02_client::client_state::AnyClientState;
+use ibc::ics02_client::error::Error as ICS02Error;
+use ibc::ics02_client::height;
+// use ibc::ics04_channel::channel::ChannelEnd;
+use ibc::ics10_grandpa::client_state::ClientState;
 use ibc::ics10_grandpa::help;
+use ibc::ics10_grandpa::help::{BlockHeader, Commitment};
+use ibc::ics24_host::identifier::ChainId as ICS24ChainId;
+use ibc::ics24_host::identifier::ClientId as ICS24ClientId;
 pub use routing::ModuleCallbacks;
 use scale_info::{prelude::vec, TypeInfo};
 use sp_runtime::RuntimeDebug;
@@ -940,6 +948,32 @@ pub mod pallet {
 	#[pallet::error]
 	pub enum Error<T> {}
 
+	fn mock_client_state() -> ClientState {
+		// //mock light client
+		let public_keys = vec![
+			String::from("0x020a1091341fe5664bfa1782d5e04779689068c916b04cb365ec3153755684d9a1"), // Alice
+		];
+		let lc = beefy_light_client::new(public_keys);
+		log::info!("mock beefy light client: {:?}", lc);
+
+		//mock client state
+		let epoch_number = 10;
+		// let chain_id = ICS24ChainId::new(String::from("chainA"), epoch_number);
+		let chain_id = ICS24ChainId::new(String::from("chainA"), epoch_number);
+		let client_state = ClientState {
+			chain_id: chain_id.clone(),
+			block_number: u32::default(),
+			frozen_height: height::Height::default(),
+			block_header: BlockHeader::default(),
+			// latest_commitment: lc.latest_commitment.unwrap().into(),
+			latest_commitment: Commitment::default(),
+			validator_set: lc.validator_set.clone().into(),
+		};
+		log::info!("mock client_state : {:?}", client_state);
+
+		client_state
+	}
+
 	// Dispatch able functions allows users to interact with the pallet and invoke state changes.
 	// These functions materialize as "extrinsic", which are often compared to transactions.
 	// Dispatch able functions must be annotated with a weight and must return a DispatchResult.
@@ -983,139 +1017,143 @@ pub mod pallet {
 			log::info!("received update_client_state request.");
 			let _who = ensure_signed(origin)?;
 
-			// let client_id = string::from(client_id);
-			
-			log::info!("received client id is {:?}", client_id);
+			// check the client id exist?
+			let client_id_str = String::from_utf8(client_id.clone()).unwrap();
+			log::info!("received client id is {:?}", client_id_str);
+			// let client_id = ICS24ClientId::from_str(&client_id_str).unwrap();
+
+			let mut client_state = ClientState::default();
+
+			if !<ClientStates<T>>::contains_key(client_id.clone()) {
+				log::info!("in update_client_state: {:?} client_state not found !", client_id);
+				// TODO: emit event
+				// Self::deposit_event(Event::ClientNotExist(client_id));
+
+				// TODO: return error info
+				// let err: = "client not found: " + client_id.as_str();
+				// return core::result::Result::Err(DispatchError::Other("client not found"));
+
+				// mock client_state
+				client_state = mock_client_state();
+			} else {
+				// get client state from chain storage
+				let data = <ClientStates<T>>::get(client_id.clone());
+				client_state = ClientState::decode_vec(&*data).unwrap();
+
+				log::info!(
+					"in update_client_state : get client_state from chain storage: {:?}",
+					client_state
+				);
+			}
 
 			let received_mmr_root = mmr_root.clone();
-			let received_mmr_root = help::MmrRoot::decode(&mut &received_mmr_root[..]).unwrap();
-			log::info!("receive mmr root is {:?}", received_mmr_root);
-			
+			let decode_received_mmr_root =
+				help::MmrRoot::decode(&mut &received_mmr_root[..]).unwrap();
+			log::info!("receive mmr root is {:?}", decode_received_mmr_root);
 
-			// TODO: check exist the target client id ?
-			//let client_state = <Clients<T>>::get(client_id);
-			// if client_state.chain_id.as_str() != chain_id.as_str() {
-			//     println!("client is not existing!");
-			// 	   Self::deposit_event(Event::ClientNotExist(client_id));
-			//     return Ok();
-			//
-			// }
-			// let block_header = received_mmr_root.block_header;
-			// let validator_proofs = received_mmr_root.validator_merkle_proofs;
-			// let mmr_leaf = received_mmr_root.mmr_leaf;
-			// let mmr_leaf_proof = received_mmr_root.mmr_leaf_proof;
-			// let signed_commitment =
-			// 	commitment::SignedCommitment::from(received_mmr_root.signed_commitment);
+			// confirm: receiv block number < client_state.latest_commitment.block_number
+			let signed_commitment =
+				commitment::SignedCommitment::from(decode_received_mmr_root.signed_commitment);
+			let rev_block_number = signed_commitment.clone().commitment.block_number;
+			if rev_block_number <= client_state.latest_commitment.block_number {
+				log::info!("receive mmr root block number({}) less than client_state.latest_commitment.block_number({})",
+				rev_block_number,client_state.latest_commitment.block_number);
+				// TODO: emit event
+				// 	Self::deposit_event(Event::MmrHeightError(
+				// 		client_state.block_number,
+				// 		ClientId,
+				// 		ClientType,
+				// 		Height,
+				// 	));
+				return core::result::Result::Err(DispatchError::Other("receive mmr root block number less than client_state.latest_commitment.block_number !"));
+			}
 
-			// // 第一次更新，直接保存,这个地方有个逻辑错误，最好是校验一下签名，需要跟元超沟通？
-			// if client_state.latest_commitment.block_number == 0 {
-			// 	let latest_commitment = signed_commitment.commitment;
-			// 	// Decode::decode(&mut &*mmr_leaf).unwrap();
-			// 	let mmr_leaf = mmr::MmrLeaf::decode(&mut &*mmr_leaf).unwrap();
-			// 	let validator_set = mmr_leaf.beefy_next_authority_set;
-			// 	client_state.block_number = latest_commitment.block_number;
-			// 	client_state.latest_commitment = help::Commitment::from(latest_commitment);
-			// 	client_state.validator_set = help::ValidatorSet::from(validator_set);
-			// 	client_state.block_header = block_header;
-			// 	println!("first to update the client state {:?}", client_state);
-			// 	// TODO: 新建保存，触发事件
-			// 	<Clients<T>>::insert(client_id);
-			// 	Self::deposit_event(Event::UpdateMmrRoot(
-			// 		client_state.block_number,
-			// 		ClientId,
-			// 		ClientType,
-			// 		Height,
-			// 	));
-			// 	return Ok();
-			// }
+			// build new beefy light client by client_state
+			let mut light_client = beefy_light_client::LightClient {
+				latest_commitment: Some(client_state.latest_commitment.clone().into()),
+				validator_set: client_state.validator_set.clone().into(),
+				in_process_state: None,
+			};
+			log::info!(
+				"build new beefy_light_client from client_state store in chain \n {:?}",
+				light_client
+			);
 
-			// // 检查高度，如果接收到的高度小于等于链上已存在高度，就无需更新了，直接返回
-			// let rev_block_number = signed_commitment.clone().commitment.block_number;
-			// if rev_block_number <= client_state.latest_commitment.block_number {
-			// 	println!("receive mmr root block number({}) less than client_state.latest_commitment.block_number({})",
-			// 	   rev_block_number,client_state.latest_commitment.block_number
-			//    );
+			// covert the grandpa validator proofs to beefy_light_client::ValidatorMerkleProof
+			let validator_proofs = decode_received_mmr_root.validator_merkle_proofs;
+			// covert the grandpa validator proofs to beefy_light_client::ValidatorMerkleProof
+			let validator_proofs: Vec<beefy_light_client::ValidatorMerkleProof> = validator_proofs
+				.into_iter()
+				.map(|validator_proof| validator_proof.into())
+				.collect();
 
-			// 	Self::deposit_event(Event::MmrHeightError(
-			// 		client_state.block_number,
-			// 		ClientId,
-			// 		ClientType,
-			// 		Height,
-			// 	));
-			// 	return Ok();
-			// }
+			// encode signed_commitment
+			let encoded_signed_commitment =
+				commitment::SignedCommitment::encode(&signed_commitment);
 
-			// // covert the grandpa validator proofs to beefy_light_client::ValidatorMerkleProof
-			// let validator_proofs: Vec<beefy_light_client::ValidatorMerkleProof> = validator_proofs
-			// 	.into_iter()
-			// 	.map(|validator_proof| validator_proof.into())
-			// 	.collect();
+			let mmr_leaf = decode_received_mmr_root.mmr_leaf;
+			let mmr_leaf_proof = decode_received_mmr_root.mmr_leaf_proof;
 
-			// // encode signed_commitment
-			// let encoded_signed_commitment =
-			// 	commitment::SignedCommitment::encode(&signed_commitment);
-			// // let encoded_mmr_leaf = mmr::MmrLeaf::encode(&mmr_leaf.into());
-			// // let encoded_mmr_proof = mmr::MmrLeafProof::encode(&mmr_leaf_proof.into());
+			// verfiy mmr proof and update lc state
+			let result = light_client.update_state(
+				&encoded_signed_commitment,
+				&validator_proofs,
+				&mmr_leaf,
+				&mmr_leaf_proof,
+			);
 
-			// // 利用client_state.latest_commitment，client_state.validator_set，构造新的beefy_light_client
-			// let mut lc = beefy_light_client::LightClient {
-			// 	latest_commitment: Some(client_state.latest_commitment.into()),
-			// 	validator_set: client_state.validator_set.into(),
-			// 	in_process_state: None,
-			// };
-			// println!(" beefy_light_client state :{:?}", lc);
+			match result {
+				Ok(_) => {
+					log::info!("update the beefy light client sucesse! and the beefy light client state is : {:?} \n",light_client);
 
-			// // TODO:调用beefy_light_client.update_state验签并更新beefy_light_client中的latest_commitment和validator_set
-			// let result = lc.update_state(
-			// 	&encoded_signed_commitment,
-			// 	&validator_proofs,
-			// 	&mmr_leaf,
-			// 	&mmr_leaf_proof,
-			// );
+					// update client_client block number and latest commitment
+					let latest_commitment = light_client.latest_commitment.unwrap();
+					client_state.block_number = latest_commitment.block_number;
+					client_state.latest_commitment = help::Commitment::from(latest_commitment);
 
-			// match result {
-			// 	Ok(_) => {
-			// 		println!("update the beefy light client sucesse! ");
-			// 		println!("after update,the beefy light client is : {:?}", lc);
+					// update validator_set
+					client_state.validator_set =
+						help::ValidatorSet::from(light_client.validator_set.clone());
 
-			// 		// 利用beefy_light_client中的状态更新ClientState
-			// 		// let latest_commitment = lc.latest_commitment.unwrap();
-			// 		let latest_commitment = signed_commitment.commitment;
-			// 		client_state.block_number = latest_commitment.block_number;
-			// 		client_state.latest_commitment = help::Commitment::from(latest_commitment);
+					// update block header
+					client_state.block_header = decode_received_mmr_root.block_header;
 
-			// 		// update validator_set
-			// 		let mmr_leaf = mmr::MmrLeaf::decode(&mut &mmr_leaf[..]).unwrap();
-			// 		if mmr_leaf.beefy_next_authority_set.id > lc.validator_set.id {
-			// 			lc.validator_set = mmr_leaf.beefy_next_authority_set;
-			// 		}
-			// 		client_state.validator_set = help::ValidatorSet::from(lc.validator_set.clone());
-			// 		client_state.block_header = block_header;
+					// save to chain
+					let data = client_state.encode_vec().unwrap();
+					// store client states key-value
+					<ClientStates<T>>::insert(client_id.clone(), data);
 
-			// 		// TODO: 保存更新
-			// 		<Clients<T>>::set(client_id);
-			// 		// TODO: 发出更新成功事件
-			// 		Self::deposit_event(Event::UpdateMmrRoot(
-			// 			client_state.block_number,
-			// 			ClientId,
-			// 			ClientType,
-			// 			Height,
-			// 		));
-			// 		//ClientKeeper::store_client_state(client_state)
-			// 		println!("the updated client state is : {:?}", client_state);
-			// 	},
-			// 	Err(e) => {
-			// 		println!("update the beefy light client failure! : {:?}", e);
-			// 		println!("the beefy light client state is : {:?}", lc);
-			// 		// TODO: 发出交易失败事件
-			// 		Self::deposit_event(Event::VerifyFailure(
-			// 			client_state.block_number,
-			// 			ClientId,
-			// 			ClientType,
-			// 			Height,
-			// 		));
-			// 	},
-			// }
+					// store client states keys
+					<ClientStatesKeys<T>>::try_mutate(|val| -> Result<(), &'static str> {
+						val.push(client_id.clone());
+						Ok(())
+					})
+					.expect("store client_state keys error");
+
+					log::info!("the updated client state is : {:?}", client_state);
+
+					// TODO: emit update state sucesse event
+					// Self::deposit_event(Event::UpdateMmrRoot(
+					// 	client_state.block_number,
+					// 	ClientId,
+					// 	ClientType,
+					// 	Height,
+					// ));
+				},
+				Err(e) => {
+					log::info!("update the beefy light client failure! : {:?}", e);
+					// TODO: emit verify failure event
+					// 		Self::deposit_event(Event::VerifyFailure(
+					// 			client_state.block_number,
+					// 			ClientId,
+					// 			ClientType,
+					// 			Height,
+					// 		));
+					return core::result::Result::Err(DispatchError::Other(
+						"update the beefy light client failure!",
+					));
+				},
+			}
 
 			Ok(())
 		}

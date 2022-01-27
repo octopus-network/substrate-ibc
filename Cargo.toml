@@ -30,11 +30,12 @@ sp-core 				= { git = "https://github.com/paritytech/substrate.git", branch = "p
 sp-runtime 				= { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12", default-features = false }
 sp-std 					= { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12", default-features = false }
 sp-io 					= { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12", default-features = false }
+prost-types 			= { package = "informalsystems-prost-types", version = "0.8.1", default-features = false }
+tendermint-proto 		= { version = "0.22.0", default-features = false }
 
 ibc 					= { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/beefy", default-features = false }
 # ibc 					= { path = "../ibc-rs/modules", default-features = false}
-prost-types 			= { package = "informalsystems-prost-types", version = "0.8.1", default-features = false }
-tendermint-proto 		= { version = "0.22.0", default-features = false }
+beefy-light-client = { git = "https://github.com/octopus-network/beefy-light-client.git", default-features = false }
 
 [dev-dependencies]
 hex 		= '0.4.0'
@@ -49,7 +50,7 @@ sp-keyring 	= { git = "https://github.com/paritytech/substrate.git", branch = "p
 frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12" }
 chrono = "0.4.19"
 tendermint-proto 		= { version = "0.22.0", default-features = false }
-beefy-light-client = { git = "https://github.com/octopus-network/beefy-light-client.git", default-features = false }
+
 
 
 [features]
