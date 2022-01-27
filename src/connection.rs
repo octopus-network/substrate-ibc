@@ -146,7 +146,15 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		let data = connection_end.encode_vec().unwrap();
 		<Connections<T>>::insert(connection_id.as_bytes().to_vec(), data);
 
-		<ConnectionsKeys<T>>::insert(connection_id.as_bytes().to_vec(), ());
+		<ConnectionsKeys<T>>::try_mutate(|val| -> Result<(), &'static str> {
+			if let Some(_value) = val.iter().find(|&x| x == connection_id.as_bytes()) {
+
+			} else {
+				val.push(connection_id.as_bytes().to_vec());
+			}
+
+			Ok(())
+		}).expect("store connections keys error");
 
 		let temp = ConnectionReader::connection_end(self, &connection_id);
 		log::info!("in connection : [store_connection] >> read store after: {:?}", temp);
