@@ -131,15 +131,10 @@ pub mod pallet {
 	pub type ClientStates<T: Config> =
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
-	#[pallet::type_value]
-	pub fn default_client_state_keys() -> Vec<Vec<u8>> {
-		vec![]
-	}
-
 	#[pallet::storage]
 	// vector client_id
 	pub type ClientStatesKeys<T: Config> =
-		StorageValue<_, Vec<Vec<u8>>, ValueQuery, default_client_state_keys>;
+		StorageMap<_, Blake2_128Concat, Vec<u8>, (), ValueQuery>;
 
 	#[pallet::storage]
 	// fix before : (client_id, height) => ConsensusState
@@ -1124,11 +1119,7 @@ pub mod pallet {
 					<ClientStates<T>>::insert(client_id.clone(), data);
 
 					// store client states keys
-					<ClientStatesKeys<T>>::try_mutate(|val| -> Result<(), &'static str> {
-						val.push(client_id.clone());
-						Ok(())
-					})
-					.expect("store client_state keys error");
+					<ClientStatesKeys<T>>::insert(client_id.clone(), ());
 
 					log::info!("the updated client state is : {:?}", client_state);
 
