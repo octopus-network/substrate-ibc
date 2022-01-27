@@ -530,11 +530,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		);
 
 		// store channels keys
-		<ChannelsKeys<T>>::try_mutate(|val| -> Result<(), &'static str> {
-			val.push((port_channel_id.0.as_bytes().to_vec(), port_channel_id.1.as_bytes().to_vec()));
-			
-			Ok(())
-		}).expect("store channels keys error");
+		<ChannelsKeys<T>>::insert((port_channel_id.0.as_bytes().to_vec(), port_channel_id.1.as_bytes().to_vec()), ());
 
 		Ok(())
 	}
