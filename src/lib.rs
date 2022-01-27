@@ -107,7 +107,8 @@ pub mod pallet {
 	use super::*;
 	use crate::event::primitive::Sequence;
 	use event::primitive::{
-		ChannelId, ClientId, ClientType, ConnectionId, Height, Packet, PortId, Timestamp,
+		ChannelId, ClientId, ClientState as EventClientState, ClientType, ConnectionId, Height,
+		Packet, PortId, Timestamp,
 	};
 	use frame_support::{dispatch::DispatchResult, pallet_prelude::*, traits::UnixTime};
 	use frame_system::pallet_prelude::*;
@@ -368,6 +369,11 @@ pub mod pallet {
 		// 	consensus_height: Height,
 		// )
 		UpdateClient(Height, ClientId, ClientType, Height),
+		// UpdateMmrRoot(
+		// 	height: Height,
+		// 	client_state:ClientState
+		// )
+		UpdateClientState(Height, EventClientState),
 		// UpgradeClient Event
 		//
 		// UpgradeClient(
@@ -1026,8 +1032,6 @@ pub mod pallet {
 
 			if !<ClientStates<T>>::contains_key(client_id.clone()) {
 				log::info!("in update_client_state: {:?} client_state not found !", client_id);
-				// TODO: emit event
-				// Self::deposit_event(Event::ClientNotExist(client_id));
 
 				// TODO: return error info
 				// let err: = "client not found: " + client_id.as_str();
@@ -1038,7 +1042,11 @@ pub mod pallet {
 			} else {
 				// get client state from chain storage
 				let data = <ClientStates<T>>::get(client_id.clone());
-				client_state = ClientState::decode_vec(&*data).unwrap();
+				let any_client_state = AnyClientState::decode_vec(&*data).unwrap();
+				let grandpa_client_state = match any_client_state {
+					AnyClientState::Grandpa(value) => client_state = value,
+					_ => unimplemented!(),
+				};
 
 				log::info!(
 					"in update_client_state : get client_state from chain storage: {:?}",
@@ -1058,13 +1066,7 @@ pub mod pallet {
 			if rev_block_number <= client_state.latest_commitment.block_number {
 				log::info!("receive mmr root block number({}) less than client_state.latest_commitment.block_number({})",
 				rev_block_number,client_state.latest_commitment.block_number);
-				// TODO: emit event
-				// 	Self::deposit_event(Event::MmrHeightError(
-				// 		client_state.block_number,
-				// 		ClientId,
-				// 		ClientType,
-				// 		Height,
-				// 	));
+
 				return core::result::Result::Err(DispatchError::Other("receive mmr root block number less than client_state.latest_commitment.block_number !"));
 			}
 
@@ -1119,7 +1121,8 @@ pub mod pallet {
 					client_state.block_header = decode_received_mmr_root.block_header;
 
 					// save to chain
-					let data = client_state.encode_vec().unwrap();
+					let any_client_state = AnyClientState::Grandpa(client_state.clone());
+					let data = any_client_state.encode_vec().unwrap();
 					// store client states key-value
 					<ClientStates<T>>::insert(client_id.clone(), data);
 
@@ -1132,23 +1135,17 @@ pub mod pallet {
 
 					log::info!("the updated client state is : {:?}", client_state);
 
-					// TODO: emit update state sucesse event
-					// Self::deposit_event(Event::UpdateMmrRoot(
-					// 	client_state.block_number,
-					// 	ClientId,
-					// 	ClientType,
-					// 	Height,
-					// ));
+					// emit update state sucesse event
+					let event_height = Height {
+						revision_number: 0,
+						revision_height: client_state.block_number as u64,
+					};
+					let event_client_state = EventClientState::from(client_state);
+					Self::deposit_event(Event::<T>::UpdateClientState(event_height, event_client_state));
 				},
 				Err(e) => {
 					log::info!("update the beefy light client failure! : {:?}", e);
-					// TODO: emit verify failure event
-					// 		Self::deposit_event(Event::VerifyFailure(
-					// 			client_state.block_number,
-					// 			ClientId,
-					// 			ClientType,
-					// 			Height,
-					// 		));
+
 					return core::result::Result::Err(DispatchError::Other(
 						"update the beefy light client failure!",
 					));
