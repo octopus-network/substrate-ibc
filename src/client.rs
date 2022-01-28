@@ -127,7 +127,14 @@ impl<T: Config> ClientKeeper for Context<T> {
 		<ClientStates<T>>::insert(client_id.as_bytes().to_vec(), data);
 
 		// store client states keys
-		<ClientStatesKeys<T>>::insert(client_id.as_bytes().to_vec(), ());
+		<ClientStatesKeys<T>>::try_mutate(|val| -> Result<(), &'static str> {
+			if let Some(_value) = val.iter().find(|&x| x == client_id.as_bytes()) {
+
+			} else {
+				val.push(client_id.as_bytes().to_vec());
+			}
+			Ok(())
+		}).expect("store client_state keys error");
 
 		Ok(())
 	}
