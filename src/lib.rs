@@ -134,8 +134,7 @@ pub mod pallet {
 
 	#[pallet::storage]
 	// vector client_id
-	pub type ClientStatesKeys<T: Config> =
-		StorageMap<_, Blake2_128Concat, Vec<u8>, (), ValueQuery>;
+	pub type ClientStatesKeys<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, (), ValueQuery>;
 
 	#[pallet::storage]
 	// fix before : (client_id, height) => ConsensusState
@@ -149,8 +148,7 @@ pub mod pallet {
 
 	#[pallet::storage]
 	// vector connection_id
-	pub type ConnectionsKeys<T: Config> =
-		StorageMap<_, Blake2_128Concat, Vec<u8>, (), ValueQuery>;
+	pub type ConnectionsKeys<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, (), ValueQuery>;
 
 	#[pallet::storage]
 	// (port_identifier, channel_identifier) => ChannelEnd
@@ -937,7 +935,13 @@ pub mod pallet {
 
 	// Errors inform users that something went wrong.
 	#[pallet::error]
-	pub enum Error<T> {}
+	pub enum Error<T> {
+		///receive mmr root block number less than client_state.latest_commitment.block_number !
+		NotLaststCommitment,
+		///verify mmr root failure
+		///update the beefy light client failure!
+		VerifyMmrRootFailure,
+	}
 
 	fn mock_client_state() -> ClientState {
 		// //mock light client
@@ -1028,8 +1032,8 @@ pub mod pallet {
 				// get client state from chain storage
 				let data = <ClientStates<T>>::get(client_id.clone());
 				let any_client_state = AnyClientState::decode_vec(&*data).unwrap();
-				let grandpa_client_state = match any_client_state {
-					AnyClientState::Grandpa(value) => client_state = value,
+				client_state = match any_client_state {
+					AnyClientState::Grandpa(value) => value,
 					_ => unimplemented!(),
 				};
 
@@ -1054,7 +1058,6 @@ pub mod pallet {
 
 				return core::result::Result::Err(DispatchError::Other("receive mmr root block number less than client_state.latest_commitment.block_number !"));
 			}
-
 			// build new beefy light client by client_state
 			let mut light_client = beefy_light_client::LightClient {
 				latest_commitment: Some(client_state.latest_commitment.clone().into()),
@@ -1122,7 +1125,10 @@ pub mod pallet {
 						revision_height: client_state.block_number as u64,
 					};
 					let event_client_state = EventClientState::from(client_state);
-					Self::deposit_event(Event::<T>::UpdateClientState(event_height, event_client_state));
+					Self::deposit_event(Event::<T>::UpdateClientState(
+						event_height,
+						event_client_state,
+					));
 				},
 				Err(e) => {
 					log::info!("update the beefy light client failure! : {:?}", e);
