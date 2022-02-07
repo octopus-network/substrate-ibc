@@ -142,7 +142,6 @@ pub mod pallet {
 	pub type ClientStatesKeys<T: Config> =
 		StorageValue<_, Vec<Vec<u8>>, ValueQuery, default_client_state_keys>;
 
-
 	#[pallet::storage]
 	// fix before : (client_id, height) => ConsensusState
 	// fix after: client_id => (Height, ConsensusState)
@@ -961,6 +960,7 @@ pub mod pallet {
 		VerifyMmrRootFailure,
 	}
 
+	// cock client state
 	fn mock_client_state() -> ClientState {
 		// //mock light client
 		let public_keys = vec![
@@ -1033,12 +1033,15 @@ pub mod pallet {
 			// check the client id exist?
 			let client_id_str = String::from_utf8(client_id.clone()).unwrap();
 			log::info!("received client id is {:?}", client_id_str);
-			// let client_id = ICS24ClientId::from_str(&client_id_str).unwrap();
+
+			// log::info!("receive encode mmr root is {:?}", mmr_root);
+			let decode_received_mmr_root = help::MmrRoot::decode(&mut &mmr_root[..]).unwrap();
+			log::info!("receive decode mmr root is {:?}", decode_received_mmr_root);
 
 			let mut client_state = ClientState::default();
 
 			if !<ClientStates<T>>::contains_key(client_id.clone()) {
-				log::info!("in update_client_state: {:?} client_state not found !", client_id);
+				log::info!("in update_client_state: {:?} client_state not found !", client_id_str);
 
 				// TODO: return error info
 				// let err: = "client not found: " + client_id.as_str();
@@ -1061,15 +1064,10 @@ pub mod pallet {
 				);
 			}
 
-			let received_mmr_root = mmr_root.clone();
-			let decode_received_mmr_root =
-				help::MmrRoot::decode(&mut &received_mmr_root[..]).unwrap();
-			log::info!("receive mmr root is {:?}", decode_received_mmr_root);
-
-			// confirm: receiv block number < client_state.latest_commitment.block_number
 			let signed_commitment =
 				commitment::SignedCommitment::from(decode_received_mmr_root.signed_commitment);
 			let rev_block_number = signed_commitment.clone().commitment.block_number;
+			// confirm: receiv block number < client_state.latest_commitment.block_number
 			if rev_block_number <= client_state.latest_commitment.block_number {
 				log::info!("receive mmr root block number({}) less than client_state.latest_commitment.block_number({})",
 				rev_block_number,client_state.latest_commitment.block_number);
@@ -1135,12 +1133,12 @@ pub mod pallet {
 					// store client states keys
 					<ClientStatesKeys<T>>::try_mutate(|val| -> Result<(), &'static str> {
 						if let Some(_value) = val.iter().find(|&x| x == &client_id.clone()) {
-
 						} else {
 							val.push(client_id.clone());
 						}
 						Ok(())
-					}).expect("store client_state keys error");
+					})
+					.expect("store client_state keys error");
 
 					log::info!("the updated client state is : {:?}", client_state);
 
