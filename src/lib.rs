@@ -1045,10 +1045,10 @@ pub mod pallet {
 
 				// TODO: return error info
 				// let err: = "client not found: " + client_id.as_str();
-				// return core::result::Result::Err(DispatchError::Other("client not found"));
+				return core::result::Result::Err(DispatchError::Other("client id not found"));
 
 				// mock client_state
-				client_state = mock_client_state();
+				// client_state = mock_client_state();
 			} else {
 				// get client state from chain storage
 				let data = <ClientStates<T>>::get(client_id.clone());
