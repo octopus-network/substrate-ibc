@@ -113,6 +113,8 @@ pub mod pallet {
 	use frame_support::{dispatch::DispatchResult, pallet_prelude::*, traits::UnixTime};
 	use frame_system::pallet_prelude::*;
 	use ibc::events::IbcEvent;
+	use ibc::ics02_client::client_consensus::AnyConsensusState;
+	use ibc::ics10_grandpa::header::Header;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -1115,20 +1117,44 @@ pub mod pallet {
 					// update client_client block number and latest commitment
 					let latest_commitment = light_client.latest_commitment.unwrap();
 					client_state.block_number = latest_commitment.block_number;
-					client_state.latest_commitment = help::Commitment::from(latest_commitment);
+					client_state.latest_commitment = help::Commitment::from(latest_commitment.clone());
 
 					// update validator_set
 					client_state.validator_set =
 						help::ValidatorSet::from(light_client.validator_set.clone());
 
 					// update block header
-					client_state.block_header = decode_received_mmr_root.block_header;
+					client_state.block_header = decode_received_mmr_root.block_header.clone();
 
 					// save to chain
 					let any_client_state = AnyClientState::Grandpa(client_state.clone());
 					let data = any_client_state.encode_vec().unwrap();
 					// store client states key-value
 					<ClientStates<T>>::insert(client_id.clone(), data);
+					//
+					// let grandpa_consensus_state = ibc::ics10_grandpa::consensus_state::ConsensusState::from(Header {
+					// 	block_header: decode_received_mmr_root.block_header,
+					// 	mmr_leaf: Default::default(),
+					// 	mmr_leaf_proof: Default::default()
+					// });
+					//
+					// let consensus_stata_date = AnyConsensusState::Grandpa(grandpa_consensus_state).encode_vec().unwrap();
+					//
+					// let consensus_state_height = ibc::Height::new(0, latest_commitment.block_number as u64).encode_vec().unwrap();
+					// if <ConsensusStates<T>>::contains_key(client_id.clone()) {
+					// 	// if consensus_state is no empty use push insert an exist ConsensusStates
+					// 	<ConsensusStates<T>>::try_mutate(
+					// 		client_id.clone(),
+					// 		|val| -> Result<(), &'static str> {
+					// 			val.push((consensus_state_height, consensus_stata_date));
+					// 			Ok(())
+					// 		},
+					// 	)
+					// 		.expect("store consensus state error");
+					// } else {
+					// 	// if consensus state is empty insert a new item.
+					// 	<ConsensusStates<T>>::insert(client_id.clone(), vec![(consensus_state_height, consensus_stata_date)]);
+					// }
 
 					// store client states keys
 					<ClientStatesKeys<T>>::try_mutate(|val| -> Result<(), &'static str> {

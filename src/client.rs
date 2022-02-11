@@ -75,7 +75,9 @@ impl<T: Config> ClientReader for Context<T> {
 			}
 		}
 
-		Err(ICS02Error::consensus_state_not_found(client_id.clone(), native_height))
+		// Err(ICS02Error::consensus_state_not_found(client_id.clone(), native_height))
+		// TODO if not find any_consensus_state at height will be return an default value consensus state
+		Ok(AnyConsensusState::Grandpa(ibc::ics10_grandpa::consensus_state::ConsensusState::default()))
 	}
 	fn client_counter(&self) -> Result<u64, ICS02Error> {
 		log::info!("in client : [client_counter]");
