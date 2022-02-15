@@ -30,7 +30,7 @@ impl<T: Config> ClientReader for Context<T> {
 				Ok(val) => {
 					log::info!("in client : [client_type] >> client_type : {:?}", val);
 					Ok(val)
-				},
+				}
 			}
 		} else {
 			log::info!("in client : [client_type] >> read client_type is None");
@@ -61,7 +61,11 @@ impl<T: Config> ClientReader for Context<T> {
 		height: Height,
 	) -> Result<AnyConsensusState, ICS02Error> {
 		log::info!("in client : [consensus_state]");
-		log::info!("in client : [consensus_state] >> client_id = {:?}, height = {:?}", client_id, height);
+		log::info!(
+			"in client : [consensus_state] >> client_id = {:?}, height = {:?}",
+			client_id,
+			height
+		);
 
 		let native_height = height.clone();
 		let height = height.encode_vec().unwrap();
@@ -70,15 +74,20 @@ impl<T: Config> ClientReader for Context<T> {
 		for item in value.iter() {
 			if item.0 == height {
 				let any_consensus_state = AnyConsensusState::decode_vec(&*item.1).unwrap();
-				log::info!("in client : [consensus_state] >> any consensus state = {:?}", any_consensus_state);
-				return Ok(any_consensus_state)
+				log::info!(
+					"in client : [consensus_state] >> any consensus state = {:?}",
+					any_consensus_state
+				);
+				return Ok(any_consensus_state);
 			}
 		}
 
 		// TODO
 		// Err(ICS02Error::consensus_state_not_found(client_id.clone(), native_height))
 		// if not find any_consensus_state at height will be return an default value consensus state
-		Ok(AnyConsensusState::Grandpa(ibc::ics10_grandpa::consensus_state::ConsensusState::default()))
+		Ok(AnyConsensusState::Grandpa(
+			ibc::ics10_grandpa::consensus_state::ConsensusState::default(),
+		))
 	}
 	fn client_counter(&self) -> Result<u64, ICS02Error> {
 		log::info!("in client : [client_counter]");
@@ -98,7 +107,11 @@ impl<T: Config> ClientKeeper for Context<T> {
 		client_type: ClientType,
 	) -> Result<(), ICS02Error> {
 		log::info!("in client : [store_client_type]");
-		log::info!("in client : [store_client_type] >> client id = {:?}, client_type = {:?}", client_id, client_type);
+		log::info!(
+			"in client : [store_client_type] >> client id = {:?}, client_type = {:?}",
+			client_id,
+			client_type
+		);
 
 		let client_id = client_id.as_bytes().to_vec();
 		let client_type = client_type.as_str().encode();
@@ -123,7 +136,11 @@ impl<T: Config> ClientKeeper for Context<T> {
 		client_state: AnyClientState,
 	) -> Result<(), ICS02Error> {
 		log::info!("in client : [store_client_state]");
-		log::info!("in client : [store_client_state] >> client_id: {:?}, client_state = {:?}", client_id, client_state);
+		log::info!(
+			"in client : [store_client_state] >> client_id: {:?}, client_state = {:?}",
+			client_id,
+			client_state
+		);
 
 		let data = client_state.encode_vec().unwrap();
 		// store client states key-value
@@ -132,12 +149,12 @@ impl<T: Config> ClientKeeper for Context<T> {
 		// store client states keys
 		<ClientStatesKeys<T>>::try_mutate(|val| -> Result<(), &'static str> {
 			if let Some(_value) = val.iter().find(|&x| x == client_id.as_bytes()) {
-
 			} else {
 				val.push(client_id.as_bytes().to_vec());
 			}
 			Ok(())
-		}).expect("store client_state keys error");
+		})
+		.expect("store client_state keys error");
 
 		Ok(())
 	}
@@ -151,7 +168,6 @@ impl<T: Config> ClientKeeper for Context<T> {
 		log::info!("in client : [store_consensus_state]");
 		log::info!("in client : [store_consensus_state] >> client_id: {:?}, height = {:?}, consensus_state = {:?}",
 			client_id, height, consensus_state);
-
 
 		let height = height.encode_vec().unwrap();
 		let data = consensus_state.encode_vec().unwrap();
