@@ -125,7 +125,10 @@ impl<T: Config> ChannelReader for Context<T> {
 			}
 		}
 		log::info!("in channel : [client_consensus_state] >> read about client_id consensus_state error");
-		Err(ICS04Error::frozen_client(client_id.clone()))
+
+		// TODO
+		// Err(ICS04Error::frozen_client(client_id.clone()))
+		Ok(AnyConsensusState::Grandpa(ibc::ics10_grandpa::consensus_state::ConsensusState::default()))
 	}
 
 	fn authenticated_capability(&self, port_id: &PortId) -> Result<Capability, ICS04Error> {

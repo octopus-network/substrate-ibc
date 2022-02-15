@@ -106,7 +106,9 @@ impl<T: Config> ConnectionReader for Context<T> {
 				return Ok(any_consensus_state)
 			}
 		}
-		Err(ICS03Error::missing_consensus_height())
+		// TODO
+		// Err(ICS03Error::missing_consensus_height())
+		Ok(AnyConsensusState::Grandpa(ibc::ics10_grandpa::consensus_state::ConsensusState::default()))
 	}
 
 	fn host_consensus_state(&self, _height: Height) -> Result<AnyConsensusState, ICS03Error> {
