@@ -54,17 +54,13 @@ use alloc::{format, string::String};
 use beefy_light_client::commitment;
 use codec::{Decode, Encode};
 use core::marker::PhantomData;
-use core::str::FromStr;
 use frame_system::ensure_signed;
 use ibc::ics02_client::client_state::AnyClientState;
-use ibc::ics02_client::error::Error as ICS02Error;
 use ibc::ics02_client::height;
-// use ibc::ics04_channel::channel::ChannelEnd;
 use ibc::ics10_grandpa::client_state::ClientState;
 use ibc::ics10_grandpa::help;
 use ibc::ics10_grandpa::help::{BlockHeader, Commitment};
 use ibc::ics24_host::identifier::ChainId as ICS24ChainId;
-use ibc::ics24_host::identifier::ClientId as ICS24ClientId;
 pub use routing::ModuleCallbacks;
 use scale_info::{prelude::vec, TypeInfo};
 use sp_runtime::RuntimeDebug;
@@ -90,8 +86,6 @@ impl From<prost_types::Any> for Any {
 	}
 }
 
-// #[derive( Clone, PartialEq, Deserialize, Serialize,Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
-// pub struct SignedCommitment(pub sp_core::Bytes);
 
 #[cfg(test)]
 mod mock;
@@ -113,8 +107,7 @@ pub mod pallet {
 	use frame_support::{dispatch::DispatchResult, pallet_prelude::*, traits::UnixTime};
 	use frame_system::pallet_prelude::*;
 	use ibc::events::IbcEvent;
-	use ibc::ics02_client::client_consensus::AnyConsensusState;
-	use ibc::ics10_grandpa::header::Header;
+
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -1165,30 +1158,6 @@ pub mod pallet {
 					let data = any_client_state.encode_vec().unwrap();
 					// store client states key-value
 					<ClientStates<T>>::insert(client_id.clone(), data);
-					//
-					// let grandpa_consensus_state = ibc::ics10_grandpa::consensus_state::ConsensusState::from(Header {
-					// 	block_header: decode_received_mmr_root.block_header,
-					// 	mmr_leaf: Default::default(),
-					// 	mmr_leaf_proof: Default::default()
-					// });
-					//
-					// let consensus_stata_date = AnyConsensusState::Grandpa(grandpa_consensus_state).encode_vec().unwrap();
-					//
-					// let consensus_state_height = ibc::Height::new(0, latest_commitment.block_number as u64).encode_vec().unwrap();
-					// if <ConsensusStates<T>>::contains_key(client_id.clone()) {
-					// 	// if consensus_state is no empty use push insert an exist ConsensusStates
-					// 	<ConsensusStates<T>>::try_mutate(
-					// 		client_id.clone(),
-					// 		|val| -> Result<(), &'static str> {
-					// 			val.push((consensus_state_height, consensus_stata_date));
-					// 			Ok(())
-					// 		},
-					// 	)
-					// 		.expect("store consensus state error");
-					// } else {
-					// 	// if consensus state is empty insert a new item.
-					// 	<ConsensusStates<T>>::insert(client_id.clone(), vec![(consensus_state_height, consensus_stata_date)]);
-					// }
 
 					// store client states keys
 					<ClientStatesKeys<T>>::try_mutate(|val| -> Result<(), &'static str> {
