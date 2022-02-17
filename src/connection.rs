@@ -162,7 +162,11 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 			connection_end
 		);
 
+		let temp = ConnectionReader::connection_end(self, &connection_id);
+		log::info!("in connection : [store_connection] >> read store before: {:?}", temp);
+
 		let data = connection_end.encode_vec().unwrap();
+
 		<Connections<T>>::insert(connection_id.as_bytes().to_vec(), data);
 
 		<ConnectionsKeys<T>>::try_mutate(|val| -> Result<(), &'static str> {
