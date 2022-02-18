@@ -1,7 +1,7 @@
 use super::*;
 use ibc::{
-	application::ics20_fungible_token_transfer::context::Ics20Context,
-	ics26_routing::context::Ics26Context,
+	applications::ics20_fungible_token_transfer::context::Ics20Context,
+	core::ics26_routing::context::Ics26Context,
 };
 
 #[derive(Clone)]

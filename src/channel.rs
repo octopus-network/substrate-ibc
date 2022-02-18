@@ -1,22 +1,22 @@
 use super::*;
 use core::str::FromStr;
+use core::time::Duration;
 
 use crate::routing::Context;
 use ibc::{
-	ics02_client::{client_consensus::AnyConsensusState, client_state::AnyClientState},
-	ics03_connection::connection::ConnectionEnd,
-	ics04_channel::{
+	core::ics02_client::{client_consensus::AnyConsensusState, client_state::AnyClientState},
+	core::ics03_connection::connection::ConnectionEnd,
+	core::ics04_channel::{
 		channel::ChannelEnd,
 		context::{ChannelKeeper, ChannelReader},
 		error::Error as ICS04Error,
 		packet::{Receipt, Sequence},
 	},
-	ics05_port::{capabilities::Capability, context::PortReader, error::Error as Ics05Error},
-	ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
+	core::ics05_port::{capabilities::Capability, context::PortReader, error::Error as Ics05Error},
+	core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
 	timestamp::Timestamp,
 	Height,
 };
-use tendermint_proto::Protobuf;
 
 impl<T: Config> ChannelReader for Context<T> {
 	/// Returns the ChannelEnd for the given `port_id` and `chan_id`.
@@ -141,7 +141,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		// TODO
 		// Err(ICS04Error::frozen_client(client_id.clone()))
 		Ok(AnyConsensusState::Grandpa(
-			ibc::ics10_grandpa::consensus_state::ConsensusState::default(),
+			ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
 		))
 	}
 
@@ -149,19 +149,20 @@ impl<T: Config> ChannelReader for Context<T> {
 		log::info!("in channel : [authenticated_capability]");
 		log::info!("in channel : [authenticated_capability] >> port_id: {:?}", port_id);
 
-		match PortReader::lookup_module_by_port(self, port_id) {
-			Ok(key) => {
-				if !PortReader::authenticate(self, &key, port_id) {
-					Err(ICS04Error::invalid_port_capability())
-				} else {
-					Ok(key)
-				}
-			}
-			Err(e) if e.detail() == Ics05Error::unknown_port(port_id.clone()).detail() => {
-				Err(ICS04Error::no_port_capability(port_id.clone()))
-			}
-			Err(_) => Err(ICS04Error::implementation_specific()),
-		}
+		todo!()
+		// match PortReader::lookup_module_by_port(self, port_id) {
+		// 	Ok(key) => {
+		// 		if !PortReader::authenticate(self, &key, port_id) {
+		// 			Err(ICS04Error::invalid_port_capability())
+		// 		} else {
+		// 			Ok(key)
+		// 		}
+		// 	}
+		// 	Err(e) if e.detail() == Ics05Error::unknown_port(port_id.clone()).detail() => {
+		// 		Err(ICS04Error::no_port_capability(port_id.clone()))
+		// 	}
+		// 	Err(_) => Err(ICS04Error::implementation_specific()),
+		// }
 	}
 
 	fn get_next_sequence_send(
@@ -388,6 +389,22 @@ impl<T: Config> ChannelReader for Context<T> {
 		ts.unwrap()
 	}
 
+	fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, ICS04Error> {
+		todo!()
+	}
+
+	fn pending_host_consensus_state(&self) -> Result<AnyConsensusState, ICS04Error> {
+		todo!()
+	}
+
+	fn client_update_time(&self, client_id: &ClientId, height: Height) -> Result<Timestamp, ICS04Error> {
+		todo!()
+	}
+
+	fn client_update_height(&self, client_id: &ClientId, height: Height) -> Result<Height, ICS04Error> {
+		todo!()
+	}
+
 	/// Returns a counter on the number of channel ids have been created thus far.
 	/// The value of this counter should increase only via method
 	/// `ChannelKeeper::increase_channel_counter`.
@@ -399,6 +416,10 @@ impl<T: Config> ChannelReader for Context<T> {
 			<Pallet<T> as Store>::ChannelCounter::get()
 		);
 		Ok(<Pallet<T> as Store>::ChannelCounter::get())
+	}
+
+	fn max_expected_time_per_block(&self) -> Duration {
+		todo!()
 	}
 }
 

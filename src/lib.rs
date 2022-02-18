@@ -55,12 +55,12 @@ use beefy_light_client::commitment;
 use codec::{Decode, Encode};
 use core::marker::PhantomData;
 use frame_system::ensure_signed;
-use ibc::ics02_client::client_state::AnyClientState;
-use ibc::ics02_client::height;
-use ibc::ics10_grandpa::client_state::ClientState;
-use ibc::ics10_grandpa::help;
-use ibc::ics10_grandpa::help::{BlockHeader, Commitment};
-use ibc::ics24_host::identifier::ChainId as ICS24ChainId;
+use ibc::core::ics02_client::client_state::AnyClientState;
+use ibc::core::ics02_client::height;
+use ibc::clients::ics10_grandpa::client_state::ClientState;
+use ibc::clients::ics10_grandpa::help;
+use ibc::clients::ics10_grandpa::help::{BlockHeader, Commitment};
+use ibc::core::ics24_host::identifier::ChainId as ICS24ChainId;
 pub use routing::ModuleCallbacks;
 use scale_info::{prelude::vec, TypeInfo};
 use sp_runtime::RuntimeDebug;
@@ -665,14 +665,14 @@ pub mod pallet {
 				// 	counterparty_client_id: ClientId,
 				// }
 				ibc::events::IbcEvent::OpenInitConnection(value) => {
-					let height = value.0.height;
+					let height = value.attributes().height;
 					let connection_id: Option<ConnectionId> =
-						value.0.connection_id.map(|val| val.into());
-					let client_id = value.0.client_id;
+						value.attributes().connection_id.clone().map(|val| val.into());
+					let client_id = value.attributes().client_id.clone();
 					let counterparty_connection_id: Option<ConnectionId> =
-						value.0.counterparty_connection_id.map(|val| val.into());
+						value.attributes().counterparty_connection_id.clone().map(|val| val.into());
 
-					let counterparty_client_id = value.0.counterparty_client_id;
+					let counterparty_client_id = value.attributes().counterparty_client_id.clone();
 					Event::OpenInitConnection(
 						height.into(),
 						connection_id,
@@ -690,14 +690,14 @@ pub mod pallet {
 				// 	counterparty_client_id: ClientId,
 				// }
 				ibc::events::IbcEvent::OpenTryConnection(value) => {
-					let height = value.0.height;
+					let height = value.attributes().height;
 					let connection_id: Option<ConnectionId> =
-						value.0.connection_id.map(|val| val.into());
-					let client_id = value.0.client_id;
+						value.attributes().connection_id.clone().map(|val| val.into());
+					let client_id = value.attributes().client_id.clone();
 					let counterparty_connection_id: Option<ConnectionId> =
-						value.0.counterparty_connection_id.map(|val| val.into());
+						value.attributes().counterparty_connection_id.clone().map(|val| val.into());
 
-					let counterparty_client_id = value.0.counterparty_client_id;
+					let counterparty_client_id = value.attributes().counterparty_client_id.clone();
 					Event::OpenTryConnection(
 						height.into(),
 						connection_id,
@@ -714,14 +714,14 @@ pub mod pallet {
 				// 	counterparty_client_id: ClientId,
 				// }
 				ibc::events::IbcEvent::OpenAckConnection(value) => {
-					let height = value.0.height;
+					let height = value.attributes().height;
 					let connection_id: Option<ConnectionId> =
-						value.0.connection_id.map(|val| val.into());
-					let client_id = value.0.client_id;
+						value.attributes().connection_id.clone().map(|val| val.into());
+					let client_id = value.attributes().client_id.clone();
 					let counterparty_connection_id: Option<ConnectionId> =
-						value.0.counterparty_connection_id.map(|val| val.into());
+						value.attributes().counterparty_connection_id.clone().map(|val| val.into());
 
-					let counterparty_client_id = value.0.counterparty_client_id;
+					let counterparty_client_id = value.attributes().counterparty_client_id.clone();
 					Event::OpenAckConnection(
 						height.into(),
 						connection_id,
@@ -738,14 +738,14 @@ pub mod pallet {
 				// 	counterparty_client_id: ClientId,
 				// }
 				ibc::events::IbcEvent::OpenConfirmConnection(value) => {
-					let height = value.0.height;
+					let height = value.attributes().height;
 					let connection_id: Option<ConnectionId> =
-						value.0.connection_id.map(|val| val.into());
-					let client_id = value.0.client_id;
+						value.attributes().connection_id.clone().map(|val| val.into());
+					let client_id = value.attributes().client_id.clone();
 					let counterparty_connection_id: Option<ConnectionId> =
-						value.0.counterparty_connection_id.map(|val| val.into());
+						value.attributes().counterparty_connection_id.clone().map(|val| val.into());
 
-					let counterparty_client_id = value.0.counterparty_client_id;
+					let counterparty_client_id = value.attributes().counterparty_client_id.clone();
 					Event::OpenConfirmConnection(
 						height.into(),
 						connection_id,
@@ -763,14 +763,14 @@ pub mod pallet {
 				// 	counterparty_channel_id: Option<ChannelId>
 				// );
 				ibc::events::IbcEvent::OpenInitChannel(value) => {
-					let height = value.0.height;
-					let port_id = value.0.port_id;
+					let height = value.attributes().height;
+					let port_id = value.attributes().port_id.clone();
 					let channel_id: Option<ChannelId> =
-						value.0.channel_id.clone().map(|val| val.into());
-					let connection_id = value.0.connection_id;
-					let counterparty_port_id = value.0.counterparty_port_id;
+						value.attributes().channel_id.clone().map(|val| val.into());
+					let connection_id = value.attributes().connection_id.clone();
+					let counterparty_port_id = value.attributes().counterparty_port_id.clone();
 					let counterparty_channel_id: Option<ChannelId> =
-						value.0.channel_id.map(|val| val.into());
+						value.attributes().channel_id.clone().map(|val| val.into());
 					Event::OpenInitChannel(
 						height.into(),
 						port_id.into(),
@@ -789,14 +789,14 @@ pub mod pallet {
 				// 	counterparty_channel_id: Option<ChannelId>
 				// );
 				ibc::events::IbcEvent::OpenTryChannel(value) => {
-					let height = value.0.height;
-					let port_id = value.0.port_id;
+					let height = value.attributes().height;
+					let port_id = value.attributes().port_id.clone();
 					let channel_id: Option<ChannelId> =
-						value.0.channel_id.clone().map(|val| val.into());
-					let connection_id = value.0.connection_id;
-					let counterparty_port_id = value.0.counterparty_port_id;
+						value.attributes().channel_id.clone().map(|val| val.into());
+					let connection_id = value.attributes().connection_id.clone();
+					let counterparty_port_id = value.attributes().counterparty_port_id.clone();
 					let counterparty_channel_id: Option<ChannelId> =
-						value.0.channel_id.map(|val| val.into());
+						value.attributes().channel_id.clone().map(|val| val.into());
 					Event::OpenTryChannel(
 						height.into(),
 						port_id.into(),
@@ -815,14 +815,14 @@ pub mod pallet {
 				// 	counterparty_channel_id: Option<ChannelId>
 				// );
 				ibc::events::IbcEvent::OpenAckChannel(value) => {
-					let height = value.0.height;
-					let port_id = value.0.port_id;
+					let height = value.attributes().height;
+					let port_id = value.attributes().port_id.clone();
 					let channel_id: Option<ChannelId> =
-						value.0.channel_id.clone().map(|val| val.into());
-					let connection_id = value.0.connection_id;
-					let counterparty_port_id = value.0.counterparty_port_id;
+						value.attributes().channel_id.clone().map(|val| val.into());
+					let connection_id = value.attributes().connection_id.clone();
+					let counterparty_port_id = value.attributes().counterparty_port_id.clone();
 					let counterparty_channel_id: Option<ChannelId> =
-						value.0.channel_id.map(|val| val.into());
+						value.attributes().channel_id.clone().map(|val| val.into());
 					Event::OpenAckChannel(
 						height.into(),
 						port_id.into(),
@@ -1035,7 +1035,7 @@ pub mod pallet {
 					value: message.value.clone(),
 				})
 				.collect();
-			let result = ibc::ics26_routing::handler::deliver(&mut ctx, messages).unwrap();
+			let result = ibc::core::ics26_routing::handler::deliver(&mut ctx, messages).unwrap();
 
 			log::info!("result: {:?}", result);
 

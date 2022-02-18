@@ -2,18 +2,29 @@ use super::*;
 
 use crate::routing::Context;
 use ibc::{
-	ics05_port::{capabilities::Capability, context::PortReader, error::Error as ICS05Error},
-	ics24_host::identifier::PortId,
+	core::ics05_port::{capabilities::Capability, context::PortReader, error::Error as ICS05Error},
+	core::ics24_host::identifier::PortId,
 };
+use ibc::core::ics05_port::capabilities::CapabilityName;
+use ibc::core::ics05_port::context::CapabilityReader;
+
+impl<T: Config> CapabilityReader for Context<T> {
+	fn get_capability(&self, name: &CapabilityName) -> Result<Capability, ICS05Error> {
+		todo!()
+	}
+
+	fn authenticate_capability(&self, name: &CapabilityName, capability: &Capability) -> Result<(), ICS05Error> {
+		todo!()
+	}
+}
 
 impl<T: Config> PortReader for Context<T> {
-	fn lookup_module_by_port(&self, _port_id: &PortId) -> Result<Capability, ICS05Error> {
-		log::info!("in port: [look_module_by_port]");
+	type ModuleId = ();
 
-		Ok(Capability::default())
-	}
-	fn authenticate(&self, _key: &Capability, _port_id: &PortId) -> bool {
-		log::info!("in port: [authenticate]");
-		true
+	fn lookup_module_by_port(
+		&self,
+		port_id: &PortId,
+	) -> Result<(Self::ModuleId, Capability), ICS05Error> {
+		Ok(((), Capability::default()))
 	}
 }

@@ -2,14 +2,14 @@ pub mod primitive {
 	use crate::alloc::string::ToString;
 	use alloc::string::String;
 	use ibc::{
-		ics02_client::{client_type::ClientType as IbcClientType, height::Height as IbcHeight},
-		ics04_channel::packet::{Packet as IbcPacket, Sequence as IbcSequence},
-		ics10_grandpa::client_state::ClientState as IbcClientState,
-		ics10_grandpa::help::{
+		core::ics02_client::{client_type::ClientType as IbcClientType, height::Height as IbcHeight},
+		core::ics04_channel::packet::{Packet as IbcPacket, Sequence as IbcSequence},
+		clients::ics10_grandpa::client_state::ClientState as IbcClientState,
+		clients::ics10_grandpa::help::{
 			BlockHeader, Commitment, MmrRoot as IbcMmrRoot, SignedCommitment, ValidatorMerkleProof,
 			ValidatorSet,
 		},
-		ics24_host::identifier::{
+		core::ics24_host::identifier::{
 			ChainId as IbcChainId, ChannelId as IbcChannelId, ClientId as IbcClientId,
 			ConnectionId as IbcConnectionId, PortId as IbcPortId,
 		},
@@ -163,13 +163,13 @@ pub mod primitive {
 
 	impl From<IbcSequence> for Sequence {
 		fn from(val: IbcSequence) -> Self {
-			Self(val.0)
+			Self(u64::from(val))
 		}
 	}
 
 	impl Sequence {
 		pub fn to_ibc_sequence(self) -> IbcSequence {
-			IbcSequence(self.0)
+			IbcSequence::from(self.0)
 		}
 	}
 

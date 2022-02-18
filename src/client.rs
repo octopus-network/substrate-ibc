@@ -3,17 +3,17 @@ use core::str::FromStr;
 
 use crate::routing::Context;
 use ibc::{
-	ics02_client::{
+	core::ics02_client::{
 		client_consensus::AnyConsensusState,
 		client_state::AnyClientState,
 		client_type::ClientType,
 		context::{ClientKeeper, ClientReader},
 		error::Error as ICS02Error,
 	},
-	ics24_host::identifier::ClientId,
+	core::ics24_host::identifier::ClientId,
 	Height,
 };
-use tendermint_proto::Protobuf;
+use ibc::timestamp::Timestamp;
 
 impl<T: Config> ClientReader for Context<T> {
 	fn client_type(&self, client_id: &ClientId) -> Result<ClientType, ICS02Error> {
@@ -86,9 +86,30 @@ impl<T: Config> ClientReader for Context<T> {
 		// Err(ICS02Error::consensus_state_not_found(client_id.clone(), native_height))
 		// if not find any_consensus_state at height will be return an default value consensus state
 		Ok(AnyConsensusState::Grandpa(
-			ibc::ics10_grandpa::consensus_state::ConsensusState::default(),
+			ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
 		))
 	}
+
+	fn next_consensus_state(&self, client_id: &ClientId, height: Height) -> Result<Option<AnyConsensusState>, ICS02Error> {
+		todo!()
+	}
+
+	fn prev_consensus_state(&self, client_id: &ClientId, height: Height) -> Result<Option<AnyConsensusState>, ICS02Error> {
+		todo!()
+	}
+
+	fn host_height(&self) -> Height {
+		todo!()
+	}
+
+	fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, ICS02Error> {
+		todo!()
+	}
+
+	fn pending_host_consensus_state(&self) -> Result<AnyConsensusState, ICS02Error> {
+		todo!()
+	}
+
 	fn client_counter(&self) -> Result<u64, ICS02Error> {
 		log::info!("in client : [client_counter]");
 		log::info!(
@@ -186,5 +207,13 @@ impl<T: Config> ClientKeeper for Context<T> {
 			<ConsensusStates<T>>::insert(client_id.as_bytes(), vec![(height, data)]);
 		}
 		Ok(())
+	}
+
+	fn store_update_time(&mut self, client_id: ClientId, height: Height, timestamp: Timestamp) -> Result<(), ICS02Error> {
+		todo!()
+	}
+
+	fn store_update_height(&mut self, client_id: ClientId, height: Height, host_height: Height) -> Result<(), ICS02Error> {
+		todo!()
 	}
 }
