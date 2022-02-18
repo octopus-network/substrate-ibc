@@ -33,16 +33,16 @@ sp-io 					= { git = "https://github.com/paritytech/substrate.git", branch = "po
 prost-types 			= { package = "informalsystems-prost-types", version = "0.8.1", default-features = false }
 tendermint-proto 		= { version = "0.22.0", default-features = false }
 
-#ibc 					= { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/beefy", default-features = false }
- ibc 					= { path = "../ibc-rs/modules", default-features = false}
+ibc 					= { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/beefy", default-features = false }
+# ibc 					= { path = "../ibc-rs/modules", default-features = false}
 beefy-light-client = { git = "https://github.com/octopus-network/beefy-light-client.git", default-features = false }
 
 [dev-dependencies]
 hex 		= '0.4.0'
 sha2 		= '0.9.3'
 serde 	    = { version = "1.0" }
-#ibc 		= { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/beefy", features = ["mocks"]}
- ibc 		= { path = "../ibc-rs/modules" }
+ibc 		= { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/beefy", features = ["mocks"]}
+# ibc 		= { path = "../ibc-rs/modules" }
 sp-io 		= { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12"}
 sp-runtime 	= { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12" }
 sp-std 		= { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12" }
@@ -83,9 +83,4 @@ tendermint-proto        = { git = "https://github.com/informalsystems/tendermint
 tendermint-light-client = { git = "https://github.com/informalsystems/tendermint-rs", rev = "4f6ef3d6" }
 tendermint-testgen      = { git = "https://github.com/informalsystems/tendermint-rs", rev = "4f6ef3d6" }
 ics23                   = { git = "https://github.com/informalsystems/ics23.git", rev = "4461b673" }
-safe-regex          = { git = "https://github.com/informalsystems/safe-regex.git", rev = "842d31f5" }
-safe-regex-macro    = { git = "https://github.com/informalsystems/safe-regex.git", rev = "842d31f5" }
-safe-regex-compiler = { git = "https://github.com/informalsystems/safe-regex.git", rev = "842d31f5" }
-safe-quote          = { git = "https://github.com/informalsystems/safe-regex.git", rev = "842d31f5" }
-safe-proc-macro2    = { git = "https://github.com/informalsystems/safe-regex.git", rev = "842d31f5" }
 tonic = { package = "informalsystems-tonic", git = "https://github.com/informalsystems/tonic.git", rev = "99edfe23" }
