@@ -136,6 +136,16 @@ pub mod pallet {
 		StorageValue<_, Vec<Vec<u8>>, ValueQuery, default_client_state_keys>;
 
 	#[pallet::storage]
+	// (client_id, height) => timestamp
+	pub type ClientProcessedTimes<T: Config> =
+		StorageDoubleMap<_, Blake2_128Concat, Vec<u8>, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
+
+	#[pallet::storage]
+	// (client_id, height) => host_height
+	pub type ClientProcessedHeights<T: Config> =
+		StorageDoubleMap<_, Blake2_128Concat, Vec<u8>, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
+
+	#[pallet::storage]
 	// client_id => Vector<(Height, ConsensusState)>
 	pub type ConsensusStates<T: Config> =
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<(Vec<u8>, Vec<u8>)>, ValueQuery>;
@@ -1003,7 +1013,7 @@ pub mod pallet {
 		let client_state = ClientState {
 			chain_id: chain_id.clone(),
 			block_number: u32::default(),
-			frozen_height: height::Height::default(),
+			frozen_height: None,
 			block_header: BlockHeader::default(),
 			// latest_commitment: lc.latest_commitment.unwrap().into(),
 			latest_commitment: Commitment::default(),

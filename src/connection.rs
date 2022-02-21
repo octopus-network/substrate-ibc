@@ -162,7 +162,11 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		);
 
 		let temp = ConnectionReader::connection_end(self, &connection_id);
-		log::info!("in connection : [store_connection] >> read store before: {:?}", temp);
+		if let Ok(value)  = temp {
+			log::info!("in connection : [store_connection] >> read store before: {:?}", value);
+		} else {
+			log::info!("in connection : [store_connection] >> before read Error");
+		}
 
 		let data = connection_end.encode_vec().unwrap();
 

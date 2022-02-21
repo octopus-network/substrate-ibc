@@ -268,7 +268,7 @@ pub mod primitive {
 		/// block_number is height?
 		pub block_number: u32,
 		/// Block height when the client was frozen due to a misbehaviour
-		pub frozen_height: Height,
+		pub frozen_height: Option<Height>,
 		pub block_header: Vec<u8>,
 		pub latest_commitment: Vec<u8>,
 		pub validator_set: Vec<u8>,
@@ -279,7 +279,7 @@ pub mod primitive {
 				chain_id: val.chain_id.as_str().as_bytes().to_vec(),
 				// chain_id: val.chain_id,
 				block_number: val.block_number,
-				frozen_height: Height::from(val.frozen_height),
+				frozen_height: val.frozen_height.map(|val|val.into()),
 				block_header: BlockHeader::encode(&val.block_header),
 				latest_commitment: Commitment::encode(&val.latest_commitment),
 				validator_set: ValidatorSet::encode(&val.validator_set),
@@ -294,7 +294,7 @@ pub mod primitive {
 				chain_id: IbcChainId::from_str(&chain_id_str).unwrap(),
 				// chain_id: self.chain_id,
 				block_number: self.block_number,
-				frozen_height: self.frozen_height.to_ibc_height(),
+				frozen_height: self.frozen_height.map(|value| value.to_ibc_height()),
 				block_header: BlockHeader::decode(&mut &self.block_header[..]).unwrap(),
 				latest_commitment: Commitment::decode(&mut &self.latest_commitment[..]).unwrap(),
 				validator_set: ValidatorSet::decode(&mut &self.validator_set[..]).unwrap(),

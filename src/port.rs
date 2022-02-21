@@ -14,7 +14,7 @@ impl<T: Config> CapabilityReader for Context<T> {
 	}
 
 	fn authenticate_capability(&self, name: &CapabilityName, capability: &Capability) -> Result<(), ICS05Error> {
-		todo!()
+		Ok(())
 	}
 }
 
