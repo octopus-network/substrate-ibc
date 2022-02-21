@@ -1015,7 +1015,6 @@ pub mod pallet {
 			block_number: u32::default(),
 			frozen_height: None,
 			block_header: BlockHeader::default(),
-			// latest_commitment: lc.latest_commitment.unwrap().into(),
 			latest_commitment: Commitment::default(),
 			validator_set: lc.validator_set.clone().into(),
 		};
