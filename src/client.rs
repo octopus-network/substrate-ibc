@@ -3,17 +3,17 @@ use core::str::FromStr;
 
 use crate::routing::Context;
 use ibc::{
-	ics02_client::{
+	core::ics02_client::{
 		client_consensus::AnyConsensusState,
 		client_state::AnyClientState,
 		client_type::ClientType,
 		context::{ClientKeeper, ClientReader},
 		error::Error as ICS02Error,
 	},
-	ics24_host::identifier::ClientId,
+	core::ics24_host::identifier::ClientId,
 	Height,
 };
-use tendermint_proto::Protobuf;
+use ibc::timestamp::Timestamp;
 
 impl<T: Config> ClientReader for Context<T> {
 	fn client_type(&self, client_id: &ClientId) -> Result<ClientType, ICS02Error> {
@@ -67,12 +67,17 @@ impl<T: Config> ClientReader for Context<T> {
 			height
 		);
 
-		let native_height = height.clone();
-		let height = height.encode_vec().unwrap();
-		let value = <ConsensusStates<T>>::get(client_id.as_bytes());
+		let mut values = <ConsensusStates<T>>::get(client_id.as_bytes()).clone();
+		values.sort_by(|(height_left, _), (height_right, _)| {
+			let height_left = Height::decode(&height_left[..]).unwrap();
+			let height_right = Height::decode(&height_right[..]).unwrap();
+			height_left.cmp(&height_right)
+		});
 
-		for item in value.iter() {
-			if item.0 == height {
+		for item in values.iter() {
+			let item_height = Height::decode(&item.0.clone()[..]).unwrap();
+
+			if item_height == height {
 				let any_consensus_state = AnyConsensusState::decode_vec(&*item.1).unwrap();
 				log::info!(
 					"in client : [consensus_state] >> any consensus state = {:?}",
@@ -86,9 +91,106 @@ impl<T: Config> ClientReader for Context<T> {
 		// Err(ICS02Error::consensus_state_not_found(client_id.clone(), native_height))
 		// if not find any_consensus_state at height will be return an default value consensus state
 		Ok(AnyConsensusState::Grandpa(
-			ibc::ics10_grandpa::consensus_state::ConsensusState::default(),
+			ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
 		))
 	}
+
+	fn next_consensus_state(&self, client_id: &ClientId, height: Height) -> Result<Option<AnyConsensusState>, ICS02Error> {
+		log::info!("in client : [next_consensus_state]");
+		log::info!(
+			"in client : [next_consensus_state] >> client_id = {:?}, height = {:?}",
+			client_id,
+			height
+		);
+
+		let mut values = <ConsensusStates<T>>::get(client_id.as_bytes()).clone();
+		values.sort_by(|(height_left, _), (height_right, _)| {
+			let height_left = Height::decode(&height_left[..]).unwrap();
+			let height_right = Height::decode(&height_right[..]).unwrap();
+			height_left.cmp(&height_right)
+		});
+
+		for item in values.iter() {
+			let item_height = Height::decode(&item.0.clone()[..]).unwrap();
+
+			if item_height < height {
+				let any_consensus_state = AnyConsensusState::decode_vec(&*item.1).unwrap();
+				log::info!(
+					"in client : [consensus_state] >> any consensus state = {:?}",
+					any_consensus_state
+				);
+				return Ok(Some(any_consensus_state));
+			}
+		}
+
+
+		Ok(Some(AnyConsensusState::Grandpa(
+			ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
+		)))
+	}
+
+	fn prev_consensus_state(&self, client_id: &ClientId, height: Height) -> Result<Option<AnyConsensusState>, ICS02Error> {
+		log::info!("in client : [next_consensus_state]");
+		log::info!(
+			"in client : [next_consensus_state] >> client_id = {:?}, height = {:?}",
+			client_id,
+			height
+		);
+
+		let mut values = <ConsensusStates<T>>::get(client_id.as_bytes()).clone();
+		values.sort_by(|(height_left, _), (height_right, _)| {
+			let height_left = Height::decode(&height_left[..]).unwrap();
+			let height_right = Height::decode(&height_right[..]).unwrap();
+			height_left.cmp(&height_right)
+		});
+
+		for item in values.iter() {
+			let item_height = Height::decode(&item.0.clone()[..]).unwrap();
+
+			if item_height > height {
+				let any_consensus_state = AnyConsensusState::decode_vec(&*item.1).unwrap();
+				log::info!(
+					"in client : [consensus_state] >> any consensus state = {:?}",
+					any_consensus_state
+				);
+				return Ok(Some(any_consensus_state));
+			}
+		}
+
+		Ok(Some(AnyConsensusState::Grandpa(
+			ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
+		)))
+	}
+
+	fn host_height(&self) -> Height {
+		let block_number = format!("{:?}", <frame_system::Pallet<T>>::block_number());
+		let current_height = block_number
+			.parse()
+			.map_err(|e| panic!("{:?}, caused by {:?} from frame_system::Pallet", e, block_number));
+		log::info!(
+			"in channel: [host_height] >> host_height = {:?}",
+			Height::new(0, current_height.unwrap())
+		);
+		Height::new(0, current_height.unwrap())
+	}
+
+	fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, ICS02Error> {
+		log::info!("in client : [consensus_state]");
+
+		// TODO
+		Ok(AnyConsensusState::Grandpa(
+			ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
+		))
+	}
+
+	fn pending_host_consensus_state(&self) -> Result<AnyConsensusState, ICS02Error> {
+		log::info!("in client: [pending_host_consensus_state]");
+		// TODO
+		Ok(AnyConsensusState::Grandpa(
+			ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
+		))
+	}
+
 	fn client_counter(&self) -> Result<u64, ICS02Error> {
 		log::info!("in client : [client_counter]");
 		log::info!(
@@ -185,6 +287,25 @@ impl<T: Config> ClientKeeper for Context<T> {
 			// if consensus state is empty insert a new item.
 			<ConsensusStates<T>>::insert(client_id.as_bytes(), vec![(height, data)]);
 		}
+		Ok(())
+	}
+
+	fn store_update_time(&mut self, client_id: ClientId, height: Height, timestamp: Timestamp) -> Result<(), ICS02Error> {
+		log::info!("in client: [store_update_time]");
+		log::info!("in client: [store_update_time] >> client_id: {:?}, height: {:?}, timestamp: {:?}", client_id, height, timestamp);
+
+		let encode_timestamp = serde_json::to_string(&timestamp).unwrap().as_bytes().to_vec();
+		<ClientProcessedTimes<T>>::insert(client_id.as_bytes(), height.encode_vec().unwrap(), encode_timestamp);
+
+		Ok(())
+	}
+
+	fn store_update_height(&mut self, client_id: ClientId, height: Height, host_height: Height) -> Result<(), ICS02Error> {
+		log::info!("in client: [store_update_height]");
+		log::info!("in client: [store_update_height] >> client_id: {:?}, height: {:?}, host_height: {:?}", client_id, height, host_height);
+
+		<ClientProcessedHeights<T>>::insert(client_id.as_bytes(), height.encode_vec().unwrap(), host_height.encode_vec().unwrap());
+
 		Ok(())
 	}
 }

@@ -1,20 +1,19 @@
 use super::*;
 
 use crate::routing::Context;
-use ibc::ics10_grandpa::header::Header;
+use ibc::clients::ics10_grandpa::header::Header;
 use ibc::{
-	ics02_client::{client_consensus::AnyConsensusState, client_state::AnyClientState},
-	ics03_connection::{
+	core::ics02_client::{client_consensus::AnyConsensusState, client_state::AnyClientState},
+	core::ics03_connection::{
 		connection::ConnectionEnd,
 		context::{ConnectionKeeper, ConnectionReader},
 		error::Error as ICS03Error,
 	},
-	ics10_grandpa::consensus_state::ConsensusState as GPConsensusState,
-	ics23_commitment::commitment::{CommitmentPrefix, CommitmentRoot},
-	ics24_host::identifier::{ClientId, ConnectionId},
+	clients::ics10_grandpa::consensus_state::ConsensusState as GPConsensusState,
+	core::ics23_commitment::commitment::{CommitmentPrefix, CommitmentRoot},
+	core::ics24_host::identifier::{ClientId, ConnectionId},
 	Height,
 };
-use tendermint_proto::Protobuf;
 
 impl<T: Config> ConnectionReader for Context<T> {
 	fn connection_end(&self, conn_id: &ConnectionId) -> Result<ConnectionEnd, ICS03Error> {
@@ -93,7 +92,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 		log::info!("in connection : [commitment_prefix]");
 		log::info!("in connection : [commitment_prefix] >> CommitmentPrefix = {:?}", "ibc");
 
-		"ibc".as_bytes().to_vec().into()
+		"ibc".as_bytes().to_vec().try_into().unwrap()
 	}
 
 	fn client_consensus_state(
@@ -121,7 +120,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 		// TODO
 		// Err(ICS03Error::missing_consensus_height())
 		Ok(AnyConsensusState::Grandpa(
-			ibc::ics10_grandpa::consensus_state::ConsensusState::default(),
+			ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
 		))
 	}
 
@@ -163,7 +162,11 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		);
 
 		let temp = ConnectionReader::connection_end(self, &connection_id);
-		log::info!("in connection : [store_connection] >> read store before: {:?}", temp);
+		if let Ok(value)  = temp {
+			log::info!("in connection : [store_connection] >> read store before: {:?}", value);
+		} else {
+			log::info!("in connection : [store_connection] >> before read Error");
+		}
 
 		let data = connection_end.encode_vec().unwrap();
 

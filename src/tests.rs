@@ -3,33 +3,32 @@ use crate::{mock::*, routing::Context};
 use codec::alloc::collections::HashMap;
 use core::str::FromStr;
 use ibc::{
-	ics02_client::{
+	core::ics02_client::{
 		client_consensus::AnyConsensusState,
 		client_state::AnyClientState,
 		client_type::ClientType,
 		context::{ClientKeeper, ClientReader},
 		error::Error as ICS02Error,
 	},
-	ics03_connection::{
+	core::ics03_connection::{
 		connection::{ConnectionEnd, State},
 		context::{ConnectionKeeper, ConnectionReader},
 		error::Error as ICS03Error,
 	},
-	ics04_channel::{
+	core::ics04_channel::{
 		context::{ChannelKeeper, ChannelReader},
 		error::Error as ICS04Error,
 		packet::Sequence,
 	},
-	ics10_grandpa::{
+	core::ics10_grandpa::{
 		client_state::ClientState as GPClientState,
 		consensus_state::ConsensusState as GPConsensusState,
 	},
-	ics23_commitment::commitment::CommitmentRoot,
-	ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
+	core::ics23_commitment::commitment::CommitmentRoot,
+	core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
 	timestamp::Timestamp,
 	Height,
 };
-use tendermint_proto::Protobuf;
 
 // test store and read client-type
 #[test]

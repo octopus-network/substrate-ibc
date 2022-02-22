@@ -1,22 +1,25 @@
 use super::*;
 use core::str::FromStr;
+use core::time::Duration;
 
 use crate::routing::Context;
 use ibc::{
-	ics02_client::{client_consensus::AnyConsensusState, client_state::AnyClientState},
-	ics03_connection::connection::ConnectionEnd,
-	ics04_channel::{
+	core::ics02_client::{client_consensus::AnyConsensusState, client_state::AnyClientState},
+	core::ics03_connection::connection::ConnectionEnd,
+	core::ics03_connection::error::Error as ICS03Error,
+	core::ics04_channel::{
 		channel::ChannelEnd,
 		context::{ChannelKeeper, ChannelReader},
 		error::Error as ICS04Error,
 		packet::{Receipt, Sequence},
 	},
-	ics05_port::{capabilities::Capability, context::PortReader, error::Error as Ics05Error},
-	ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
+	core::ics05_port::{capabilities::Capability, context::PortReader, error::Error as Ics05Error},
+	core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
 	timestamp::Timestamp,
 	Height,
 };
-use tendermint_proto::Protobuf;
+use ibc::core::ics02_client::context::ClientReader;
+use ibc::core::ics03_connection::context::ConnectionReader;
 
 impl<T: Config> ChannelReader for Context<T> {
 	/// Returns the ChannelEnd for the given `port_id` and `chan_id`.
@@ -141,7 +144,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		// TODO
 		// Err(ICS04Error::frozen_client(client_id.clone()))
 		Ok(AnyConsensusState::Grandpa(
-			ibc::ics10_grandpa::consensus_state::ConsensusState::default(),
+			ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
 		))
 	}
 
@@ -150,8 +153,8 @@ impl<T: Config> ChannelReader for Context<T> {
 		log::info!("in channel : [authenticated_capability] >> port_id: {:?}", port_id);
 
 		match PortReader::lookup_module_by_port(self, port_id) {
-			Ok(key) => {
-				if !PortReader::authenticate(self, &key, port_id) {
+			Ok((_, key)) => {
+				if !PortReader::authenticate(self, port_id.clone(), &key) {
 					Err(ICS04Error::invalid_port_capability())
 				} else {
 					Ok(key)
@@ -380,12 +383,54 @@ impl<T: Config> ChannelReader for Context<T> {
 	fn host_timestamp(&self) -> Timestamp {
 		log::info!("in channel: [host_timestamp]");
 
-		use frame_support::traits::UnixTime;
-		let time = T::TimeProvider::now();
-		let ts = Timestamp::from_nanoseconds(time.as_nanos() as u64)
-			.map_err(|e| panic!("{:?}, caused by {:?} from pallet timestamp_pallet", e, time));
-		log::info!("in channel: [host_timestamp] >> host_timestamp = {:?}", ts.clone().unwrap());
-		ts.unwrap()
+		// use frame_support::traits::UnixTime;
+		// let time = T::TimeProvider::now();
+		// let ts = Timestamp::from_nanoseconds(time.as_nanos() as u64)
+		// 	.map_err(|e| panic!("{:?}, caused by {:?} from pallet timestamp_pallet", e, time));
+		// log::info!("in channel: [host_timestamp] >> host_timestamp = {:?}", ts.clone().unwrap());
+		// ts.unwrap()
+		ClientReader::host_timestamp(self)
+	}
+
+	fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, ICS04Error> {
+		log::info!("in channel: [host_consensus_state]");
+		log::info!("in channel: [host_consensus_state] >> height = {:?}", height);
+
+		ConnectionReader::host_consensus_state(self, height).map_err(ICS04Error::ics03_connection)
+	}
+
+	fn pending_host_consensus_state(&self) -> Result<AnyConsensusState, ICS04Error> {
+		log::info!("in channel: [pending_host_consensus_stata]");
+
+		ClientReader::pending_host_consensus_state(self)
+			.map_err(|e| ICS04Error::ics03_connection(ICS03Error::ics02_client(e)))
+	}
+
+	fn client_update_time(&self, client_id: &ClientId, height: Height) -> Result<Timestamp, ICS04Error> {
+		log::info!("in channel: [client_update_time]");
+		log::info!("in channel: [client_update_time] >> client_id = {:?}, height = {:?}", client_id, height);
+
+		if <ClientProcessedTimes<T>>::contains_key(client_id.as_bytes(), height.encode_vec().unwrap()) {
+			let time = <ClientProcessedTimes<T>>::get(client_id.as_bytes(), height.encode_vec().unwrap());
+			let timestamp = String::from_utf8(time).unwrap();
+			let time: Timestamp = serde_json::from_str(&timestamp).unwrap();
+			Ok(time)
+		} else {
+			Err(ICS04Error::processed_time_not_found(client_id.clone(), height))
+		}
+	}
+
+	fn client_update_height(&self, client_id: &ClientId, height: Height) -> Result<Height, ICS04Error> {
+		if <ClientProcessedHeights<T>>::contains_key(client_id.as_bytes(), height.encode_vec().unwrap()) {
+			let host_height = <ClientProcessedHeights<T>>::get(client_id.as_bytes(), height.encode_vec().unwrap());
+			let host_height = Height::decode(&host_height[..]).unwrap();
+			Ok(host_height)
+		} else {
+			Err(ICS04Error::processed_height_not_found(
+				client_id.clone(),
+				height,
+			))
+		}
 	}
 
 	/// Returns a counter on the number of channel ids have been created thus far.
@@ -399,6 +444,10 @@ impl<T: Config> ChannelReader for Context<T> {
 			<Pallet<T> as Store>::ChannelCounter::get()
 		);
 		Ok(<Pallet<T> as Store>::ChannelCounter::get())
+	}
+
+	fn max_expected_time_per_block(&self) -> Duration {
+		todo!()
 	}
 }
 

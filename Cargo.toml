@@ -30,18 +30,22 @@ sp-core 				= { git = "https://github.com/paritytech/substrate.git", branch = "p
 sp-runtime 				= { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12", default-features = false }
 sp-std 					= { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12", default-features = false }
 sp-io 					= { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12", default-features = false }
-prost-types 			= { package = "informalsystems-prost-types", version = "0.8.1", default-features = false }
-tendermint-proto 		= { version = "0.22.0", default-features = false }
+prost-types 			= { version = "0.9.0", default-features = false }
 
-ibc 					= { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/beefy", default-features = false }
-# ibc 					= { path = "../ibc-rs/modules", default-features = false}
-beefy-light-client = { git = "https://github.com/octopus-network/beefy-light-client.git", default-features = false }
+ibc 					= { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/merge-upstream-ibc-rs", default-features = false }
+# ibc 					= { path = "../ibc-rs/modules", default-features = false }
+beefy-light-client = 	{ git = "https://github.com/octopus-network/beefy-light-client.git", default-features = false }
+serde_json 				= { version = "1.0", default-features = false }
+
+[dependencies.tendermint-proto]
+version = "=0.23.5"
+default-features = false
 
 [dev-dependencies]
 hex 		= '0.4.0'
 sha2 		= '0.9.3'
 serde 	    = { version = "1.0" }
-ibc 		= { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/beefy", features = ["mocks"]}
+ibc 		= { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/merge-upstream-ibc-rs", features = ["mocks"]}
 # ibc 		= { path = "../ibc-rs/modules" }
 sp-io 		= { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12"}
 sp-runtime 	= { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12" }
@@ -49,7 +53,6 @@ sp-std 		= { git = "https://github.com/paritytech/substrate.git", branch = "polk
 sp-keyring 	= { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12" }
 frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12" }
 chrono = "0.4.19"
-tendermint-proto 		= { version = "0.22.0", default-features = false }
 
 
 
@@ -68,7 +71,8 @@ std = [
 	'sp-std/std',
 	'ibc/std',
 	'prost-types/std',
-	'tendermint-proto/std',
+	'beefy-light-client/std',
+	'serde_json/std',
 ]
 
 runtime-benchmarks = ["frame-benchmarking"]
@@ -77,10 +81,9 @@ try-runtime = ["frame-support/try-runtime"]
 [patch.crates-io]
 
 # for tendermint
-tendermint              = { git = "https://github.com/informalsystems/tendermint-rs", rev = "4f6ef3d6" }
-tendermint-rpc          = { git = "https://github.com/informalsystems/tendermint-rs", rev = "4f6ef3d6" }
-tendermint-proto        = { git = "https://github.com/informalsystems/tendermint-rs", rev = "4f6ef3d6" }
-tendermint-light-client = { git = "https://github.com/informalsystems/tendermint-rs", rev = "4f6ef3d6" }
-tendermint-testgen      = { git = "https://github.com/informalsystems/tendermint-rs", rev = "4f6ef3d6" }
-ics23                   = { git = "https://github.com/informalsystems/ics23.git", rev = "4461b673" }
-tonic = { package = "informalsystems-tonic", git = "https://github.com/informalsystems/tonic.git", rev = "99edfe23" }
+tendermint              = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
+tendermint-rpc          = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
+tendermint-proto        = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
+tendermint-light-client = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
+tendermint-light-client-verifier = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
+tendermint-testgen      = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
