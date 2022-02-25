@@ -43,20 +43,12 @@ Thie section describe the modification of your substrate chain needed to integra
 Specify some versions of ibc relevant crate
 ```toml
 [patch.crates-io]
-# for tendermint
-tendermint              = { git = "https://github.com/informalsystems/tendermint-rs", rev = "4f6ef3d6" }
-tendermint-rpc          = { git = "https://github.com/informalsystems/tendermint-rs", rev = "4f6ef3d6" }
-tendermint-proto        = { git = "https://github.com/informalsystems/tendermint-rs", rev = "4f6ef3d6" }
-tendermint-light-client = { git = "https://github.com/informalsystems/tendermint-rs", rev = "4f6ef3d6" }
-tendermint-testgen      = { git = "https://github.com/informalsystems/tendermint-rs", rev = "4f6ef3d6" }
-#ics23                   = { git = "https://github.com/informalsystems/ics23.git", branch = "master" }
-ics23                   = { git = "https://github.com/informalsystems/ics23.git", rev = "4461b673" }
-safe-regex          = { git = "https://github.com/informalsystems/safe-regex.git", rev = "842d31f5" }
-safe-regex-macro    = { git = "https://github.com/informalsystems/safe-regex.git", rev = "842d31f5" }
-safe-regex-compiler = { git = "https://github.com/informalsystems/safe-regex.git", rev = "842d31f5" }
-safe-quote          = { git = "https://github.com/informalsystems/safe-regex.git", rev = "842d31f5" }
-safe-proc-macro2    = { git = "https://github.com/informalsystems/safe-regex.git", rev = "842d31f5" }
-tonic = { package = "informalsystems-tonic", git = "https://github.com/informalsystems/tonic.git", rev = "99edfe23" }
+tendermint              = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
+tendermint-rpc          = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
+tendermint-proto        = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
+tendermint-light-client = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
+tendermint-light-client-verifier = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
+tendermint-testgen      = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
 ```
 
 #### Runtime's `Cargo.toml`
