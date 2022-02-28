@@ -74,6 +74,7 @@ pub mod event;
 mod port;
 mod routing;
 
+/// A struct corresponds to `Any` in crate "prost-types", used in ibc-rs.
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub struct Any {
 	pub type_url: Vec<u8>,
@@ -121,7 +122,7 @@ pub mod pallet {
 	pub struct Pallet<T>(_);
 
 	#[pallet::storage]
-	// client_id => ClientState
+	/// client_id => ClientState
 	pub type ClientStates<T: Config> =
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
@@ -131,27 +132,27 @@ pub mod pallet {
 	}
 
 	#[pallet::storage]
-	// vector client_ids
+	/// client_id vector
 	pub type ClientStatesKeys<T: Config> =
 		StorageValue<_, Vec<Vec<u8>>, ValueQuery, default_client_state_keys>;
 
 	#[pallet::storage]
-	// (client_id, height) => timestamp
+	/// (client_id, height) => timestamp
 	pub type ClientProcessedTimes<T: Config> =
 		StorageDoubleMap<_, Blake2_128Concat, Vec<u8>, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
-	// (client_id, height) => host_height
+	/// (client_id, height) => host_height
 	pub type ClientProcessedHeights<T: Config> =
 		StorageDoubleMap<_, Blake2_128Concat, Vec<u8>, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
-	// client_id => Vector<(Height, ConsensusState)>
+	/// client_id => Vector<(Height, ConsensusState)>
 	pub type ConsensusStates<T: Config> =
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<(Vec<u8>, Vec<u8>)>, ValueQuery>;
 
 	#[pallet::storage]
-	// connection_id => ConnectionEnd
+	/// connection_id => ConnectionEnd
 	pub type Connections<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::type_value]
@@ -160,12 +161,12 @@ pub mod pallet {
 	}
 
 	#[pallet::storage]
-	// vector connection_ids
+	/// connection_id vector
 	pub type ConnectionsKeys<T: Config> =
 		StorageValue<_, Vec<Vec<u8>>, ValueQuery, default_connection_keys>;
 
 	#[pallet::storage]
-	// (port_identifier, channel_identifier) => ChannelEnd
+	/// (port_identifier, channel_identifier) => ChannelEnd
 	pub type Channels<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
@@ -182,18 +183,17 @@ pub mod pallet {
 	}
 
 	#[pallet::storage]
-	// vector (port_identifier, channel_identifier)
+	/// vector of (port_id, channel_id)
 	pub type ChannelsKeys<T: Config> =
 		StorageValue<_, Vec<(Vec<u8>, Vec<u8>)>, ValueQuery, default_channels_keys>;
 
-	// store_connection_channels
 	#[pallet::storage]
-	// connection_identifier => Vec<(port_id, channel_id)>
+	/// connection_id => Vec<(port_id, channel_id)>
 	pub type ChannelsConnection<T: Config> =
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<(Vec<u8>, Vec<u8>)>, ValueQuery>;
 
 	#[pallet::storage]
-	// (port_identifier, channel_identifier) => Sequence
+	/// (port_id, channel_id) => sequence
 	pub type NextSequenceSend<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
@@ -205,7 +205,7 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
-	// (port_identifier, channel_identifier) => Sequence
+	/// (port_id, channel_id) => sequence
 	pub type NextSequenceRecv<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
@@ -217,7 +217,7 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
-	// (port_identifier, channel_identifier) = Sequence
+	/// (port_id, channel_id) => sequence
 	pub type NextSequenceAck<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
@@ -229,7 +229,7 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
-	// (port_identifier, channel_identifier, sequence) => Hash
+	/// (port_id, channel_id, sequence) => hash of acknowledgement
 	pub type Acknowledgements<T: Config> = StorageNMap<
 		_,
 		(
@@ -247,7 +247,7 @@ pub mod pallet {
 	}
 
 	#[pallet::storage]
-	// vector (port_identifier, channel_identifier, sequence)
+	/// vector of (port_identifier, channel_identifier, sequence)
 	pub type AcknowledgementsKeys<T: Config> = StorageValue<
 		_,
 		Vec<(Vec<u8>, Vec<u8>, Vec<u8>)>,
@@ -256,7 +256,7 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
-	// clientId => ClientType
+	/// client_id => client_type
 	pub type Clients<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::type_value]
@@ -266,7 +266,7 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn client_counter)]
-	// client counter
+	/// client counter
 	pub type ClientCounter<T: Config> = StorageValue<_, u64, ValueQuery, default_client_counter>;
 
 	#[pallet::type_value]
@@ -276,7 +276,7 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn connection_counter)]
-	// connection counter
+	/// connection counter
 	pub type ConnectionCounter<T: Config> =
 		StorageValue<_, u64, ValueQuery, default_connection_counter>;
 
@@ -286,16 +286,16 @@ pub mod pallet {
 	}
 
 	#[pallet::storage]
-	// channel counter
+	/// channel counter
 	pub type ChannelCounter<T: Config> = StorageValue<_, u64, ValueQuery, default_channel_counter>;
 
 	#[pallet::storage]
-	// client_id => Connection_id
+	/// client_id => connection_id
 	pub type ConnectionClient<T: Config> =
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
-	// (port_id, channel_id, sequence) => receipt
+	/// (port_id, channel_id, sequence) => receipt
 	pub type PacketReceipt<T: Config> = StorageNMap<
 		_,
 		(
@@ -308,7 +308,7 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
-	// (port_id, channel_id, sequence) => hash
+	/// (port_id, channel_id, sequence) => hash of (timestamp, heigh, packet)
 	pub type PacketCommitment<T: Config> = StorageNMap<
 		_,
 		(
@@ -326,7 +326,7 @@ pub mod pallet {
 	}
 
 	#[pallet::storage]
-	// vector (port_identifier, channel_identifier, sequence)
+	/// vector of (port_id, channel_id, sequence)
 	pub type PacketCommitmentKeys<T: Config> = StorageValue<
 		_,
 		Vec<(Vec<u8>, Vec<u8>, Vec<u8>)>,
@@ -335,7 +335,7 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
-	// (height, port_id, channel_id, sequence) => event
+	/// (height, port_id, channel_id, sequence) => sendpacket event
 	pub type SendPacketEvent<T: Config> = StorageNMap<
 		_,
 		(
@@ -348,7 +348,7 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
-	// (port_id, channel_id, sequence), ackHash)
+	/// (port_id, channel_id, sequence) => writeack event
 	pub type WriteAckPacketEvent<T: Config> = StorageNMap<
 		_,
 		(
@@ -368,7 +368,7 @@ pub mod pallet {
 	}
 
 	#[pallet::storage]
-	// store latest height
+	/// store latest height
 	pub type LatestHeight<T: Config> = StorageValue<_, Vec<u8>, ValueQuery, defaultlatest_height>;
 
 	#[pallet::type_value]
@@ -377,103 +377,22 @@ pub mod pallet {
 	}
 
 	#[pallet::storage]
-	// store latest height
 	pub type OldHeight<T: Config> = StorageValue<_, u64, ValueQuery, default_old_height>;
 
+	/// Substrate IBC event list
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		// NewBlock(height: Height)
 		NewBlock(Height),
 
-		// This event for Client
-		//
-		// CreateClient Event
-		//
-		// CreateClient(
-		// 	height: Height,
-		// 	client_id: ClientId,
-		// 	client_type: ClientType,
-		// 	consensus_height: Height,
-		// )
 		CreateClient(Height, ClientId, ClientType, Height),
-		// UpdateClient Event
-		//
-		// UpdateClient(
-		// 	height: Height,
-		// 	client_id: ClientId,
-		// 	client_type: ClientType,
-		// 	consensus_height: Height,
-		// )
 		UpdateClient(Height, ClientId, ClientType, Height),
-		// UpdateMmrRoot(
-		// 	height: Height,
-		// 	client_state:ClientState
-		// )
 		UpdateClientState(Height, EventClientState),
-		// UpgradeClient Event
-		//
-		// UpgradeClient(
-		// 	height: Height,
-		// 	client_id: ClientId,
-		// 	client_type: ClientType,
-		// 	consensus_height: Height,
-		// )
 		UpgradeClient(Height, ClientId, ClientType, Height),
-		// ClientMisbehaviour Event
-		//
-		// ClientMisbehaviour(
-		// 	height: Height,
-		// 	client_id: ClientId,
-		// 	client_type: ClientType,
-		// 	consensus_height: Height,
-		// )
 		ClientMisbehaviour(Height, ClientId, ClientType, Height),
-		// This Event for Connection
-		//
-		// Open Init Connection
-		//
-		// OpenInitConnection(
-		// 	height: Height,
-		// 	port_id: PortId,
-		// 	channel_id: Option<ChannelId>,
-		// 	connection_id: ConnectionId,
-		// 	counterparty_port_id: PortId,
-		// 	counterparty_channel_id: Option<ChannelId>
-		// )
 		OpenInitConnection(Height, Option<ConnectionId>, ClientId, Option<ConnectionId>, ClientId),
-		// Open try Connection
-		//
-		// OpenTryConnection(
-		// 	height: Height,
-		// 	port_id: PortId,
-		// 	channel_id: Option<ChannelId>,
-		// 	connection_id: ConnectionId,
-		// 	counterparty_port_id: PortId,
-		// 	counterparty_channel_id: Option<ChannelId>
-		// )
 		OpenTryConnection(Height, Option<ConnectionId>, ClientId, Option<ConnectionId>, ClientId),
-		// Open ack Connection
-		//
-		// OpenAckConnection(
-		// 	height: Height,
-		// 	port_id: PortId,
-		// 	channel_id: Option<ChannelId>,
-		// 	connection_id: ConnectionId,
-		// 	counterparty_port_id: PortId,
-		// 	counterparty_channel_id: Option<ChannelId>
-		// )
 		OpenAckConnection(Height, Option<ConnectionId>, ClientId, Option<ConnectionId>, ClientId),
-		// Open ack Connection
-		//
-		// OpenConfirmConnection(
-		// 	height: Height,
-		// 	port_id: PortId,
-		// 	channel_id: Option<ChannelId>,
-		// 	connection_id: ConnectionId,
-		// 	counterparty_port_id: PortId,
-		// 	counterparty_channel_id: Option<ChannelId>
-		// )
 		OpenConfirmConnection(
 			Height,
 			Option<ConnectionId>,
@@ -481,43 +400,9 @@ pub mod pallet {
 			Option<ConnectionId>,
 			ClientId,
 		),
-		//  This Event for Channel
-		//
-		// OpenInitChannel(
-		// 	height: Height,
-		// 	port_id: PortId,
-		// 	channel_id: Option<ChannelId>,
-		// 	connection_id: ConnectionId,
-		// 	counterparty_port_id: PortId,
-		// 	counterparty_channel_id: Option<ChannelId>
-		// )
 		OpenInitChannel(Height, PortId, Option<ChannelId>, ConnectionId, PortId, Option<ChannelId>),
-		// OpenTryChannel(
-		// 	height: Height,
-		// 	port_id: PortId,
-		// 	channel_id: Option<ChannelId>,
-		// 	connection_id: ConnectionId,
-		// 	counterparty_port_id: PortId,
-		// 	counterparty_channel_id: Option<ChannelId>
-		// )
 		OpenTryChannel(Height, PortId, Option<ChannelId>, ConnectionId, PortId, Option<ChannelId>),
-		// OpenAckChannel(
-		// 	height: Height,
-		// 	port_id: PortId,
-		// 	channel_id: Option<ChannelId>,
-		// 	connection_id: ConnectionId,
-		// 	counterparty_port_id: PortId,
-		// 	counterparty_channel_id: Option<ChannelId>
-		// )
 		OpenAckChannel(Height, PortId, Option<ChannelId>, ConnectionId, PortId, Option<ChannelId>),
-		// OpenAckChannel(
-		// 	height: Height,
-		// 	port_id: PortId,
-		// 	channel_id: Option<ChannelId>,
-		// 	connection_id: ConnectionId,
-		// 	counterparty_port_id: PortId,
-		// 	counterparty_channel_id: Option<ChannelId>
-		// )
 		OpenConfirmChannel(
 			Height,
 			PortId,
@@ -526,14 +411,6 @@ pub mod pallet {
 			PortId,
 			Option<ChannelId>,
 		),
-		// CloseInitChannel(
-		// 	height: Height,
-		// 	port_id: PortId,
-		// 	channel_id: Option<ChannelId>,
-		// 	connection_id: ConnectionId,
-		// 	counterparty_port_id: PortId,
-		// 	counterparty_channel_id: Option<ChannelId>
-		// )
 		CloseInitChannel(
 			Height,
 			PortId,
@@ -542,14 +419,6 @@ pub mod pallet {
 			PortId,
 			Option<ChannelId>,
 		),
-		// CloseConfirmChannel(
-		// 	height: Height,
-		// 	port_id: PortId,
-		// 	channel_id: Option<ChannelId>,
-		// 	connection_id: ConnectionId,
-		// 	counterparty_port_id: PortId,
-		// 	counterparty_channel_id: Option<ChannelId>
-		// )
 		CloseConfirmChannel(
 			Height,
 			PortId,
@@ -558,54 +427,21 @@ pub mod pallet {
 			PortId,
 			Option<ChannelId>,
 		),
-		// SendPacket {
-		// 	height: Height,
-		// 	packet: Packet,
-		// }
 		SendPacket(Height, Packet),
-		// ReceivePacket {
-		// 	height: Height,
-		// 	packet: Packet,
-		// }
 		ReceivePacket(Height, Packet),
-		// WriteAcknowledgement {
-		// 	height: Height,
-		// 	packet: Packet,
-		//  ack: Vec<u8>,
-		// }
 		WriteAcknowledgement(Height, Packet, Vec<u8>),
-		// AcknowledgePacket {
-		// 	height: Height,
-		// 	packet: Packet,
-		// }
 		AcknowledgePacket(Height, Packet),
-		// TimeoutPacket {
-		// 	height: Height,
-		// 	packet: Packet,
-		// }
 		TimeoutPacket(Height, Packet),
-		// TimeoutOnClosePacket {
-		// 	height: Height,
-		// 	packet: Packet,
-		// }
 		TimeoutOnClosePacket(Height, Packet),
-		// Empty(String) Special event, signifying empty response
 		Empty(Vec<u8>),
-		// ChainError(String) Special event, signifying an error an CheckTx or DeliverTx
 		ChainError(Vec<u8>),
 	}
 
+	/// Convert events of ibc-rs to the corresponding events in substrate-ibc
 	impl<T: Config> From<ibc::events::IbcEvent> for Event<T> {
 		fn from(value: ibc::events::IbcEvent) -> Self {
 			match value {
-				// NewBlock(height: Height)
 				ibc::events::IbcEvent::NewBlock(value) => Event::NewBlock(value.height.into()),
-				// CreateClient(
-				// 	height: Height,
-				// 	client_id: ClientId,
-				// 	client_type: ClientType,
-				// 	consensus_height: Height,
-				// )
 				ibc::events::IbcEvent::CreateClient(value) => {
 					let height = value.0.height;
 					let client_id = value.0.client_id;
@@ -618,12 +454,6 @@ pub mod pallet {
 						consensus_height.into(),
 					)
 				},
-				// UpdateClient(
-				// 	height: Height,
-				// 	client_id: ClientId,
-				// 	client_type: ClientType,
-				// 	consensus_height: Height,
-				// )
 				ibc::events::IbcEvent::UpdateClient(value) => {
 					let height = value.common.height;
 					let client_id = value.common.client_id;
@@ -667,13 +497,6 @@ pub mod pallet {
 						consensus_height.into(),
 					)
 				},
-				// OpenInitConnection(
-				// 	height: Height,
-				// 	connection_id: Option<ConnectionId>,
-				// 	client_id: ClientId,
-				// 	counterparty_connection_id: Option<ConnectionId>,
-				// 	counterparty_client_id: ClientId,
-				// }
 				ibc::events::IbcEvent::OpenInitConnection(value) => {
 					let height = value.attributes().height;
 					let connection_id: Option<ConnectionId> =
@@ -691,14 +514,6 @@ pub mod pallet {
 						counterparty_client_id.into(),
 					)
 				},
-
-				// OpenTryConnection(
-				// 	height: Height,
-				// 	connection_id: Option<ConnectionId>,
-				// 	client_id: ClientId,
-				// 	counterparty_connection_id: Option<ConnectionId>,
-				// 	counterparty_client_id: ClientId,
-				// }
 				ibc::events::IbcEvent::OpenTryConnection(value) => {
 					let height = value.attributes().height;
 					let connection_id: Option<ConnectionId> =
@@ -716,13 +531,6 @@ pub mod pallet {
 						counterparty_client_id.into(),
 					)
 				},
-				// OpenAckConnection(
-				// 	height: Height,
-				// 	connection_id: Option<ConnectionId>,
-				// 	client_id: ClientId,
-				// 	counterparty_connection_id: Option<ConnectionId>,
-				// 	counterparty_client_id: ClientId,
-				// }
 				ibc::events::IbcEvent::OpenAckConnection(value) => {
 					let height = value.attributes().height;
 					let connection_id: Option<ConnectionId> =
@@ -740,13 +548,6 @@ pub mod pallet {
 						counterparty_client_id.into(),
 					)
 				},
-				// OpenConfirmConnection(
-				// 	height: Height,
-				// 	connection_id: Option<ConnectionId>,
-				// 	client_id: ClientId,
-				// 	counterparty_connection_id: Option<ConnectionId>,
-				// 	counterparty_client_id: ClientId,
-				// }
 				ibc::events::IbcEvent::OpenConfirmConnection(value) => {
 					let height = value.attributes().height;
 					let connection_id: Option<ConnectionId> =
@@ -764,14 +565,6 @@ pub mod pallet {
 						counterparty_client_id.into(),
 					)
 				},
-				// OpenInitChannel(
-				// 	height: Height,
-				// 	port_id: PortId,
-				// 	channel_id: Option<ChannelId>,
-				// 	connection_id: ConnectionId,
-				// 	counterparty_port_id: PortId,
-				// 	counterparty_channel_id: Option<ChannelId>
-				// );
 				ibc::events::IbcEvent::OpenInitChannel(value) => {
 					let height = value.attributes().height;
 					let port_id = value.attributes().port_id.clone();
@@ -790,14 +583,6 @@ pub mod pallet {
 						counterparty_channel_id,
 					)
 				},
-				// OpenTryChannel(
-				// 	height: Height,
-				// 	port_id: PortId,
-				// 	channel_id: Option<ChannelId>,
-				// 	connection_id: ConnectionId,
-				// 	counterparty_port_id: PortId,
-				// 	counterparty_channel_id: Option<ChannelId>
-				// );
 				ibc::events::IbcEvent::OpenTryChannel(value) => {
 					let height = value.attributes().height;
 					let port_id = value.attributes().port_id.clone();
@@ -816,14 +601,6 @@ pub mod pallet {
 						counterparty_channel_id,
 					)
 				},
-				// OpenAckChannel(
-				// 	height: Height,
-				// 	port_id: PortId,
-				// 	channel_id: Option<ChannelId>,
-				// 	connection_id: ConnectionId,
-				// 	counterparty_port_id: PortId,
-				// 	counterparty_channel_id: Option<ChannelId>
-				// );
 				ibc::events::IbcEvent::OpenAckChannel(value) => {
 					let height = value.attributes().height;
 					let port_id = value.attributes().port_id.clone();
@@ -842,14 +619,6 @@ pub mod pallet {
 						counterparty_channel_id,
 					)
 				},
-				// OpenConfirmChannel(
-				// 	height: Height,
-				// 	port_id: PortId,
-				// 	channel_id: Option<ChannelId>,
-				// 	connection_id: ConnectionId,
-				// 	counterparty_port_id: PortId,
-				// 	counterparty_channel_id: Option<ChannelId>
-				// );
 				ibc::events::IbcEvent::OpenConfirmChannel(value) => {
 					let height = value.0.height;
 					let port_id = value.0.port_id;
@@ -868,14 +637,6 @@ pub mod pallet {
 						counterparty_channel_id,
 					)
 				},
-				// CloseInitChannel(
-				// 	height: Height,
-				// 	port_id: PortId,
-				// 	channel_id: Option<ChannelId>,
-				// 	connection_id: ConnectionId,
-				// 	counterparty_port_id: PortId,
-				// 	counterparty_channel_id: Option<ChannelId>
-				// );
 				ibc::events::IbcEvent::CloseInitChannel(value) => {
 					let height = value.0.height;
 					let port_id = value.0.port_id;
@@ -894,14 +655,6 @@ pub mod pallet {
 						counterparty_channel_id,
 					)
 				},
-				// CloseConfirmChannel(
-				// 	height: Height,
-				// 	port_id: PortId,
-				// 	channel_id: Option<ChannelId>,
-				// 	connection_id: ConnectionId,
-				// 	counterparty_port_id: PortId,
-				// 	counterparty_channel_id: Option<ChannelId>
-				// );
 				ibc::events::IbcEvent::CloseConfirmChannel(value) => {
 					let height = value.0.height;
 					let port_id = value.0.port_id;
@@ -920,65 +673,38 @@ pub mod pallet {
 						counterparty_channel_id,
 					)
 				},
-				// SendPacket {
-				//     pub height: Height,
-				//     pub packet: Packet,
-				// }
 				ibc::events::IbcEvent::SendPacket(value) => {
 					let height = value.height;
 					let packet = value.packet;
 					Event::SendPacket(height.into(), packet.into())
 				},
-				// ReceivePacket {
-				//     pub height: Height,
-				//     pub packet: Packet,
-				// }
 				ibc::events::IbcEvent::ReceivePacket(value) => {
 					let height = value.height;
 					let packet = value.packet;
 					Event::ReceivePacket(height.into(), packet.into())
 				},
-				// WriteAcknowledgement {
-				//     pub height: Height,
-				//     pub packet: Packet,
-				//     pub ack: Vec<u8>,
-				// }
 				ibc::events::IbcEvent::WriteAcknowledgement(value) => {
 					let height = value.height;
 					let packet = value.packet;
 					let ack = value.ack;
 					Event::WriteAcknowledgement(height.into(), packet.into(), ack)
 				},
-				// AcknowledgePacket {
-				//     pub height: Height,
-				//     pub packet: Packet,
-				// }
 				ibc::events::IbcEvent::AcknowledgePacket(value) => {
 					let height = value.height;
 					let packet = value.packet;
 					Event::AcknowledgePacket(height.into(), packet.into())
 				},
-				// TimeoutPacket {
-				//     pub height: Height,
-				//     pub packet: Packet,
-				// }
 				ibc::events::IbcEvent::TimeoutPacket(value) => {
 					let height = value.height;
 					let packet = value.packet;
 					Event::TimeoutPacket(height.into(), packet.into())
 				},
-				// TimeoutOnClosePacket {
-				//     pub height: Height,
-				//     pub packet: Packet,
-				// }
 				ibc::events::IbcEvent::TimeoutOnClosePacket(value) => {
 					let height = value.height;
 					let packet = value.packet;
 					Event::TimeoutOnClosePacket(height.into(), packet.into())
 				},
-				// Empty(String)
 				ibc::events::IbcEvent::Empty(value) => Event::Empty(value.as_bytes().to_vec()),
-				// ChainError(String)
 				ibc::events::IbcEvent::ChainError(value) => {
 					Event::ChainError(value.as_bytes().to_vec())
 				},
@@ -987,7 +713,7 @@ pub mod pallet {
 		}
 	}
 
-	// Errors inform users that something went wrong.
+	/// Errors in MMR verification informing users that something went wrong.
 	#[pallet::error]
 	pub enum Error<T> {
 		///receive mmr root block number less than client_state.latest_commitment.block_number !
@@ -997,9 +723,9 @@ pub mod pallet {
 		VerifyMmrRootFailure,
 	}
 
-	// cock client state
+	// mock client state
 	fn mock_client_state() -> ClientState {
-		// //mock light client
+		// mock light client
 		let public_keys = vec![
 			String::from("0x020a1091341fe5664bfa1782d5e04779689068c916b04cb365ec3153755684d9a1"), // Alice
 		];
@@ -1023,11 +749,26 @@ pub mod pallet {
 		client_state
 	}
 
-	// Dispatch able functions allows users to interact with the pallet and invoke state changes.
-	// These functions materialize as "extrinsic", which are often compared to transactions.
-	// Dispatch able functions must be annotated with a weight and must return a DispatchResult.
+	/// Dispatchable functions allows users to interact with the pallet and invoke state changes.
+	/// These functions materialize as "extrinsic", which are often compared to transactions.
+	/// Dispatch able functions must be annotated with a weight and must return a DispatchResult.
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
+		/// This function acts as an entry for all of the IBC request(except MMR root update).
+		/// I.e., create clients, update clients, handshakes to create channels, ...etc
+		///
+		/// Example of invoking this function via subxt
+		///
+		/// ```ignore
+		///     let api = client.to_runtime_api::<ibc_node::RuntimeApi<ibc_node::DefaultConfig>>();
+		///
+		///     let result = api
+		///         .tx()
+		///         .ibc()
+		///         .deliver(msg, 0)
+		///         .sign_and_submit(&signer)
+		///         .await?;
+		/// ```
 		#[pallet::weight(0)]
 		pub fn deliver(origin: OriginFor<T>, messages: Vec<Any>, tmp: u8) -> DispatchResult {
 			log::info!("in deliver");
@@ -1057,6 +798,19 @@ pub mod pallet {
 			Ok(())
 		}
 
+		/// Update the MMR root stored in client_state
+		/// Example of invoking this function via subxt
+		///
+		/// ```ignore
+		///     let api = client.to_runtime_api::<ibc_node::RuntimeApi<ibc_node::DefaultConfig>>();
+		///
+		///     let result = api
+		///         .tx()
+		///         .ibc()
+		///         .update_client_state(encode_client_id, encode_mmr_root)
+		///         .sign_and_submit(&signer)
+		///         .await?;
+		/// ```
 		#[pallet::weight(0)]
 		pub fn update_client_state(
 			origin: OriginFor<T>,
@@ -1066,11 +820,10 @@ pub mod pallet {
 			log::info!("received update_client_state request.");
 			let _who = ensure_signed(origin)?;
 
-			// check the client id exist?
+			// check if the client id exist?
 			let client_id_str = String::from_utf8(client_id.clone()).unwrap();
 			log::info!("received client id is {:?}", client_id_str);
 
-			// log::info!("receive encode mmr root is {:?}", mmr_root);
 			let decode_received_mmr_root = help::MmrRoot::decode(&mut &mmr_root[..]).unwrap();
 			log::info!("receive decode mmr root is {:?}", decode_received_mmr_root);
 
@@ -1079,9 +832,6 @@ pub mod pallet {
 			if !<ClientStates<T>>::contains_key(client_id.clone()) {
 				log::info!("in update_client_state: {:?} client_state not found !", client_id_str);
 				return core::result::Result::Err(DispatchError::Other("client id not found"));
-
-			// mock client_state
-			// client_state = mock_client_state();
 			} else {
 				// get client state from chain storage
 				let data = <ClientStates<T>>::get(client_id.clone());
@@ -1100,7 +850,6 @@ pub mod pallet {
 			let signed_commitment =
 				commitment::SignedCommitment::from(decode_received_mmr_root.signed_commitment);
 			let rev_block_number = signed_commitment.clone().commitment.block_number;
-			// confirm: receiv block number < client_state.latest_commitment.block_number
 			if rev_block_number <= client_state.latest_commitment.block_number {
 				log::info!("receive mmr root block number({}) less than client_state.latest_commitment.block_number({})",
 				rev_block_number,client_state.latest_commitment.block_number);
@@ -1201,6 +950,7 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
+		/// update the latest height of a client
 		fn store_latest_height(ibc_event: IbcEvent) {
 			match ibc_event {
 				IbcEvent::Empty(_value) => {

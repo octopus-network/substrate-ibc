@@ -12,7 +12,7 @@ The goal of this pallet is to allow the blockchains built on Substrate to gain t
 
 This project is currently in an early stage and will eventually be submitted to upstream.
 
-The pallet implements the chain specific logic of [ICS spec](https://github.com/cosmos/ibc/tree/ee71d0640c23ec4e05e924f52f557b5e06c1d82f),  and is integrated with [ibc-rs](https://github.com/informalsystems/ibc-rs), which implements the generic cross-chain logic in [ICS spec](https://github.com/cosmos/ibc/tree/ee71d0640c23ec4e05e924f52f557b5e06c1d82f).
+The pallet implements the chain specific logic of [ICS spec](https://github.com/cosmos/ibc/tree/51f0c9e8d8ebcbe6f7f023a8b80f65a8fab705e3/spec),  and is integrated with [ibc-rs](https://github.com/informalsystems/ibc-rs), which implements the generic cross-chain logic in [ICS spec](https://github.com/cosmos/ibc/tree/51f0c9e8d8ebcbe6f7f023a8b80f65a8fab705e3/spec).
 
 The chain specific logic of the modules in ICS spec implemented:
 * ics-002-client-semantics
@@ -21,6 +21,8 @@ The chain specific logic of the modules in ICS spec implemented:
 * ics-005-port-allocation
 * ics-010-grandpa-client
 * ics-018-relayer-algorithms
+* ics-023-vector-commitments
+* ics-024-host-requirements
 * ics-025-handler-interface
 * ics-026-routing-module
 
@@ -29,12 +31,10 @@ Here is a [demo](~~https://github.com/cdot-network/ibc-demo~~) for showing how t
 ## Design Overview
 The ibc pallet is integrated with the [modules in ibc-rs](https://github.com/octopus-network/ibc-rs/tree/b98094a57620d0b3d9f8d2caced09abfc14ab00f/modules), which implements the [ibc spec](https://github.com/cosmos/ibc/tree/7046202b645c65b1a2b7f293312bca5d651a13a4/spec) and leave the chain specific logics, which are named `???Readers` and `???Keepers`, to the ibc pallet.
 
-List of `???Readers` and `???Keepers`:
+List of `Readers` and `Keepers` of on-chain storage:
 * [ClientReader](https://github.com/octopus-network/ibc-rs/blob/b98094a57620d0b3d9f8d2caced09abfc14ab00f/modules/src/ics02_client/context.rs?_pjax=%23js-repo-pjax-container%2C%20div%5Bitemtype%3D%22http%3A%2F%2Fschema.org%2FSoftwareSourceCode%22%5D%20main%2C%20%5Bdata-pjax-container%5D#L14) & [ClientKeeper](https://github.com/octopus-network/ibc-rs/blob/b98094a57620d0b3d9f8d2caced09abfc14ab00f/modules/src/ics02_client/context.rs?_pjax=%23js-repo-pjax-container%2C%20div%5Bitemtype%3D%22http%3A%2F%2Fschema.org%2FSoftwareSourceCode%22%5D%20main%2C%20%5Bdata-pjax-container%5D#L29)
 * [ConnectionReader](https://github.com/octopus-network/ibc-rs/blob/b98094a57620d0b3d9f8d2caced09abfc14ab00f/modules/src/ics03_connection/context.rs?_pjax=%23js-repo-pjax-container%2C%20div%5Bitemtype%3D%22http%3A%2F%2Fschema.org%2FSoftwareSourceCode%22%5D%20main%2C%20%5Bdata-pjax-container%5D#L17) & [ConnectionKeeper](https://github.com/octopus-network/ibc-rs/blob/b98094a57620d0b3d9f8d2caced09abfc14ab00f/modules/src/ics03_connection/context.rs?_pjax=%23js-repo-pjax-container%2C%20div%5Bitemtype%3D%22http%3A%2F%2Fschema.org%2FSoftwareSourceCode%22%5D%20main%2C%20%5Bdata-pjax-container%5D#L67)
 * [ChannelReader](https://github.com/octopus-network/ibc-rs/blob/b98094a57620d0b3d9f8d2caced09abfc14ab00f/modules/src/ics04_channel/context.rs?_pjax=%23js-repo-pjax-container%2C%20div%5Bitemtype%3D%22http%3A%2F%2Fschema.org%2FSoftwareSourceCode%22%5D%20main%2C%20%5Bdata-pjax-container%5D#L20) & [ChannelKeeper](https://github.com/octopus-network/ibc-rs/blob/b98094a57620d0b3d9f8d2caced09abfc14ab00f/modules/src/ics04_channel/context.rs?_pjax=%23js-repo-pjax-container%2C%20div%5Bitemtype%3D%22http%3A%2F%2Fschema.org%2FSoftwareSourceCode%22%5D%20main%2C%20%5Bdata-pjax-container%5D#L82)
-
-
 
 ## Installation
 Thie section describe the modification of your substrate chain needed to integrate pallet ibc.
@@ -49,6 +49,30 @@ tendermint-proto        = { git = "https://github.com/informalsystems/tendermint
 tendermint-light-client = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
 tendermint-light-client-verifier = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
 tendermint-testgen      = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
+
+#for libp2p
+libp2p-noise 					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
+libp2p-yamux 					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
+libp2p-core 					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
+libp2p-websocket 					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
+libp2p-wasm-ext 					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
+libp2p-uds 					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
+libp2p-tcp 					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
+libp2p-swarm-derive 					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
+libp2p-swarm 					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
+libp2p-request-response 					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
+libp2p-relay 					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
+libp2p-pnet 					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
+libp2p-plaintext 					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
+libp2p-ping 					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
+libp2p-mplex 					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
+libp2p-mdns 					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
+libp2p-kad 					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
+libp2p-identify					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
+libp2p-gossipsub					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
+libp2p-floodsub					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
+libp2p-dns					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
+libp2p-deflate					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
 ```
 
 #### Runtime's `Cargo.toml`
