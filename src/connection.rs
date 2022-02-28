@@ -17,7 +17,6 @@ use ibc::{
 
 impl<T: Config> ConnectionReader for Context<T> {
 	fn connection_end(&self, conn_id: &ConnectionId) -> Result<ConnectionEnd, ICS03Error> {
-		log::info!("in connection : [connection_end]");
 		log::info!("in connection : [connection_end] >> connection_id = {:?}", conn_id);
 
 		if <Connections<T>>::contains_key(conn_id.as_bytes()) {
@@ -32,7 +31,6 @@ impl<T: Config> ConnectionReader for Context<T> {
 	}
 
 	fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, ICS03Error> {
-		log::info!("in connection : [client_state]");
 		log::info!("in connection : [client_state] >> client_id = {:?}", client_id);
 
 		// ClientReader::client_state(self, client_id)
@@ -79,7 +77,6 @@ impl<T: Config> ConnectionReader for Context<T> {
 	}
 
 	fn connection_counter(&self) -> Result<u64, ICS03Error> {
-		log::info!("in connection : [connection_counter]");
 		log::info!(
 			"in connection : [connection_counter] >> Connection_counter = {:?}",
 			<ConnectionCounter<T>>::get()
@@ -89,7 +86,6 @@ impl<T: Config> ConnectionReader for Context<T> {
 	}
 
 	fn commitment_prefix(&self) -> CommitmentPrefix {
-		log::info!("in connection : [commitment_prefix]");
 		log::info!("in connection : [commitment_prefix] >> CommitmentPrefix = {:?}", "ibc");
 
 		"ibc".as_bytes().to_vec().try_into().unwrap()
@@ -100,7 +96,6 @@ impl<T: Config> ConnectionReader for Context<T> {
 		client_id: &ClientId,
 		height: Height,
 	) -> Result<AnyConsensusState, ICS03Error> {
-		log::info!("in connection : [client_consensus_state]");
 		log::info!(
 			"in connection : [client_consensus_state] client_id = {:?}, height = {:?}",
 			client_id,
@@ -125,7 +120,6 @@ impl<T: Config> ConnectionReader for Context<T> {
 	}
 
 	fn host_consensus_state(&self, _height: Height) -> Result<AnyConsensusState, ICS03Error> {
-		log::info!("in connection : [host_consensus_state]");
 		log::info!("in connection : [host_consensus_state] >> _height = {:?}", _height);
 		let result = AnyConsensusState::Grandpa(GPConsensusState::from(Header::default()));
 
@@ -154,7 +148,6 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		connection_id: ConnectionId,
 		connection_end: &ConnectionEnd,
 	) -> Result<(), ICS03Error> {
-		log::info!("in connection : [store_connection]");
 		log::info!(
 			"in connection : [store_connection] >> connection_id: {:?}, connection_end: {:?}",
 			connection_id,
@@ -192,7 +185,6 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		connection_id: ConnectionId,
 		client_id: &ClientId,
 	) -> Result<(), ICS03Error> {
-		log::info!("in connection : [store_connection_to_client]");
 		log::info!(
 			"in connection : [store_connection_to_client] >> connection_id = {:?},\
 		 client_id = {:?}",

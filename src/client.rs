@@ -17,7 +17,6 @@ use ibc::timestamp::Timestamp;
 
 impl<T: Config> ClientReader for Context<T> {
 	fn client_type(&self, client_id: &ClientId) -> Result<ClientType, ICS02Error> {
-		log::info!("in client : [client_type]");
 		log::info!("in client : [client_type] >> client_id = {:?}", client_id);
 
 		if <Clients<T>>::contains_key(client_id.as_bytes()) {
@@ -39,7 +38,6 @@ impl<T: Config> ClientReader for Context<T> {
 	}
 
 	fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, ICS02Error> {
-		log::info!("in client : [client_state]");
 		log::info!("in client : [client_state] >> client_id = {:?}", client_id);
 
 		if <ClientStates<T>>::contains_key(client_id.as_bytes()) {
@@ -60,7 +58,6 @@ impl<T: Config> ClientReader for Context<T> {
 		client_id: &ClientId,
 		height: Height,
 	) -> Result<AnyConsensusState, ICS02Error> {
-		log::info!("in client : [consensus_state]");
 		log::info!(
 			"in client : [consensus_state] >> client_id = {:?}, height = {:?}",
 			client_id,
@@ -96,7 +93,6 @@ impl<T: Config> ClientReader for Context<T> {
 	}
 
 	fn next_consensus_state(&self, client_id: &ClientId, height: Height) -> Result<Option<AnyConsensusState>, ICS02Error> {
-		log::info!("in client : [next_consensus_state]");
 		log::info!(
 			"in client : [next_consensus_state] >> client_id = {:?}, height = {:?}",
 			client_id,
@@ -130,7 +126,6 @@ impl<T: Config> ClientReader for Context<T> {
 	}
 
 	fn prev_consensus_state(&self, client_id: &ClientId, height: Height) -> Result<Option<AnyConsensusState>, ICS02Error> {
-		log::info!("in client : [next_consensus_state]");
 		log::info!(
 			"in client : [next_consensus_state] >> client_id = {:?}, height = {:?}",
 			client_id,
@@ -163,6 +158,7 @@ impl<T: Config> ClientReader for Context<T> {
 	}
 
 	fn host_height(&self) -> Height {
+		log::info!("in client : [host_height]");
 		let block_number = format!("{:?}", <frame_system::Pallet<T>>::block_number());
 		let current_height = block_number
 			.parse()
@@ -192,7 +188,6 @@ impl<T: Config> ClientReader for Context<T> {
 	}
 
 	fn client_counter(&self) -> Result<u64, ICS02Error> {
-		log::info!("in client : [client_counter]");
 		log::info!(
 			"in client : [client_counter] >> client_counter: {:?}",
 			<ClientCounter<T>>::get()
@@ -208,7 +203,6 @@ impl<T: Config> ClientKeeper for Context<T> {
 		client_id: ClientId,
 		client_type: ClientType,
 	) -> Result<(), ICS02Error> {
-		log::info!("in client : [store_client_type]");
 		log::info!(
 			"in client : [store_client_type] >> client id = {:?}, client_type = {:?}",
 			client_id,
@@ -237,7 +231,6 @@ impl<T: Config> ClientKeeper for Context<T> {
 		client_id: ClientId,
 		client_state: AnyClientState,
 	) -> Result<(), ICS02Error> {
-		log::info!("in client : [store_client_state]");
 		log::info!(
 			"in client : [store_client_state] >> client_id: {:?}, client_state = {:?}",
 			client_id,
@@ -267,7 +260,6 @@ impl<T: Config> ClientKeeper for Context<T> {
 		height: Height,
 		consensus_state: AnyConsensusState,
 	) -> Result<(), ICS02Error> {
-		log::info!("in client : [store_consensus_state]");
 		log::info!("in client : [store_consensus_state] >> client_id: {:?}, height = {:?}, consensus_state = {:?}",
 			client_id, height, consensus_state);
 
@@ -291,7 +283,6 @@ impl<T: Config> ClientKeeper for Context<T> {
 	}
 
 	fn store_update_time(&mut self, client_id: ClientId, height: Height, timestamp: Timestamp) -> Result<(), ICS02Error> {
-		log::info!("in client: [store_update_time]");
 		log::info!("in client: [store_update_time] >> client_id: {:?}, height: {:?}, timestamp: {:?}", client_id, height, timestamp);
 
 		let encode_timestamp = serde_json::to_string(&timestamp).unwrap().as_bytes().to_vec();
@@ -301,7 +292,6 @@ impl<T: Config> ClientKeeper for Context<T> {
 	}
 
 	fn store_update_height(&mut self, client_id: ClientId, height: Height, host_height: Height) -> Result<(), ICS02Error> {
-		log::info!("in client: [store_update_height]");
 		log::info!("in client: [store_update_height] >> client_id: {:?}, height: {:?}, host_height: {:?}", client_id, height, host_height);
 
 		<ClientProcessedHeights<T>>::insert(client_id.as_bytes(), height.encode_vec().unwrap(), host_height.encode_vec().unwrap());

@@ -140,6 +140,7 @@ pub mod primitive {
 		}
 	}
 
+	/// Helper to convert between IBC timestamp and Substrate timestamp
 	#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 	pub struct Timestamp {
 		pub time: Vec<u8>,
