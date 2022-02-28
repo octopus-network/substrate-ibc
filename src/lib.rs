@@ -55,6 +55,7 @@ use frame_system::ensure_signed;
 pub use pallet::*;
 pub use routing::ModuleCallbacks;
 use scale_info::{prelude::vec, TypeInfo};
+use sp_core::keccak_256;
 use sp_runtime::RuntimeDebug;
 use sp_std::prelude::*;
 
@@ -85,17 +86,18 @@ mod tests;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
+mod primitives;
 
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use crate::event::primitive::Sequence;
-	use event::primitive::{
-		ChannelId, ClientId, ClientType, ConnectionId, Height, Packet, PortId, Timestamp,
-	};
+	use crate::primitives::IBC_DIGEST_ID;
+	use event::primitive::{ChannelId, ClientId, ClientType, ConnectionId, Height, Packet, PortId};
 	use frame_support::{dispatch::DispatchResult, pallet_prelude::*, traits::UnixTime};
 	use frame_system::pallet_prelude::*;
 	use ibc::events::IbcEvent;
+	use sp_io::offchain_index;
+	use sp_runtime::generic::DigestItem;
 	use tendermint_proto::Protobuf;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
@@ -248,16 +250,8 @@ pub mod pallet {
 		StorageValue<_, Vec<(Vec<u8>, Vec<u8>, Vec<u8>)>, ValueQuery>;
 
 	#[pallet::storage]
-	// TODO
-	// (height, port_id, channel_id, sequence) => event
-	pub type SendPacketEvent<T: Config> =
-		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>, u64), Vec<u8>, ValueQuery>;
-
-	#[pallet::storage]
-	//TODO
-	// (port_id, channel_id, sequence), ackHash)
-	pub type WriteAckPacketEvent<T: Config> =
-		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>, u64), Vec<u8>, ValueQuery>;
+	/// Vector of all IbcEvents generated in the current block
+	pub type IbcEvents<T: Config> = StorageValue<_, Vec<Event<T>>, ValueQuery>;
 
 	#[pallet::storage]
 	// store latest height
@@ -874,7 +868,32 @@ pub mod pallet {
 
 	// Errors inform users that something went wrong.
 	#[pallet::error]
-	pub enum Error<T> {}
+	pub enum Error<T> {
+		/// Error processing ibc messages
+		ProcessingError,
+		/// Error decoding message type url
+		MessageDecodingError,
+		/// Error mutating storage
+		StorageMutateError,
+	}
+
+	#[pallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+		fn on_finalize(_n: BlockNumberFor<T>) {
+			let events = IbcEvents::<T>::get();
+			let event_hashes = events.iter().map(|ev| keccak_256(&ev.encode())).collect::<Vec<_>>();
+			let tree = rs_merkle::MerkleTree::<KeccakHasher>::from_leaves(&event_hashes);
+			let root = tree.root();
+
+			if let Some(root) = root {
+				let log = DigestItem::Consensus(IBC_DIGEST_ID, root.to_vec());
+				<frame_system::Pallet<T>>::deposit_log(log);
+			}
+
+			offchain_index::set(&Pallet::<T>::offchain_key(), &events.encode());
+			IbcEvents::<T>::kill();
+		}
+	}
 
 	// Dispatch able functions allows users to interact with the pallet and invoke state changes.
 	// These functions materialize as "extrinsic", which are often compared to transactions.
@@ -889,21 +908,29 @@ pub mod pallet {
 			let mut ctx = routing::Context { _pd: PhantomData::<T>, tmp };
 			let messages = messages
 				.iter()
-				.map(|message| prost_types::Any {
-					type_url: String::from_utf8(message.type_url.clone()).unwrap(),
-					value: message.value.clone(),
+				.map(|message| {
+					let type_url = String::from_utf8(message.type_url.clone())
+						.map_err(|_| Error::MessageDecodingError)?;
+					Ok(prost_types::Any { type_url, value: message.value.clone() })
 				})
-				.collect();
-			let result = ibc::core::ics26_routing::handler::deliver(&mut ctx, messages).unwrap();
+				.collect::<Result<Vec<prost_types::Any>, Error<T>>>()?;
+			let result = ibc::core::ics26_routing::handler::deliver(&mut ctx, messages)
+				.map_err(|_| Error::<T>::ProcessingError)?;
 
 			log::info!("result: {:?}", result);
 
+			let mut events: Vec<Event<T>> = Vec::new();
 			for event in result {
 				log::info!("Event: {:?}", event);
-				Self::deposit_event(event.clone().into());
 				Self::store_latest_height(event.clone());
+				events.push(event.into());
 			}
 
+			IbcEvents::try_mutate::<_, (), _>(|evs| {
+				events.extend_from_slice(evs);
+				Ok(events)
+			})
+			.map_err(|_| Error::<T>::StorageMutateError)?;
 			Ok(())
 		}
 	}
@@ -922,41 +949,11 @@ pub mod pallet {
 					// store height
 					let height = value.height().encode_vec().unwrap();
 					<LatestHeight<T>>::set(height);
-
-					// store send-packet
-					let _value = value.clone();
-					let packet = Packet {
-						sequence: Sequence::from(_value.packet.sequence),
-						source_channel: ChannelId::from(_value.packet.source_channel),
-						source_port: PortId::from(_value.packet.source_port),
-						destination_channel: ChannelId::from(_value.packet.destination_channel),
-						destination_port: PortId::from(_value.packet.destination_port),
-						data: _value.packet.data,
-						timeout_timestamp: Timestamp::from(_value.packet.timeout_timestamp),
-						timeout_height: Height::from(_value.packet.timeout_height),
-					};
-					let packet = packet.encode();
-
-					let port_id = value.packet.source_port.as_bytes().to_vec();
-					let channel_id = value.packet.source_channel.as_bytes().to_vec();
-
-					<SendPacketEvent<T>>::insert(
-						(port_id, channel_id, u64::from(value.packet.sequence)),
-						packet,
-					);
 				},
 				IbcEvent::WriteAcknowledgement(value) => {
 					// store height
 					let height = value.height().encode_vec().unwrap();
 					<LatestHeight<T>>::set(height);
-
-					// store ack
-					let port_id = value.packet.source_port.as_bytes().to_vec();
-					let channel_id = value.packet.source_channel.as_bytes().to_vec();
-					let sequence = u64::from(value.packet.sequence);
-					let ack = value.ack;
-					// store.Set((portID, channelID, sequence), ackHash)
-					<WriteAckPacketEvent<T>>::insert((port_id, channel_id, sequence), ack)
 				},
 				IbcEvent::UpdateClient(value) => {
 					let height = value.height().encode_vec().unwrap();
@@ -1036,8 +1033,20 @@ pub mod pallet {
 			}
 		}
 
-		fn offchain_key() -> &'static str {
-			""
+		fn offchain_key() -> Vec<u8> {
+			let parent_blockhash = frame_system::Pallet::<T>::parent_hash();
+			(T::INDEXING_PREFIX, parent_blockhash).encode()
 		}
+	}
+}
+
+#[derive(Clone)]
+pub struct KeccakHasher;
+
+impl rs_merkle::Hasher for KeccakHasher {
+	type Hash = [u8; 32];
+
+	fn hash(data: &[u8]) -> [u8; 32] {
+		keccak_256(data)
 	}
 }

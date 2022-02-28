@@ -29,6 +29,7 @@ sp-io 					= { git = "https://github.com/paritytech/substrate.git", branch = "po
 ibc 					= { version = "0.12.0", default-features = false }
 prost-types 			= { version = "0.9", default-features = false }
 tendermint-proto 		= { version = "0.23.5", default-features = false }
+rs_merkle = { git = "https://github.com/ComposableFi/rs-merkle.git", default-features = false }
 
 [dev-dependencies]
 hex 		= '0.4.0'
@@ -57,7 +58,8 @@ std = [
 	'sp-std/std',
 	'sp-io/std',
 	'ibc/std',
-	'prost-types/std'
+	'prost-types/std',
+	'rs_merkle/std'
 ]
 
 runtime-benchmarks = ["frame-benchmarking"]
