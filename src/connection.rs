@@ -2,18 +2,18 @@ use super::*;
 
 use crate::routing::Context;
 use ibc::{
-	ics02_client::{client_consensus::AnyConsensusState, client_state::AnyClientState},
-	ics03_connection::{
-		connection::ConnectionEnd,
-		context::{ConnectionKeeper, ConnectionReader},
-		error::Error as ICS03Error,
+	core::{
+		ics02_client::{client_consensus::AnyConsensusState, client_state::AnyClientState},
+		ics03_connection::{
+			connection::ConnectionEnd,
+			context::{ConnectionKeeper, ConnectionReader},
+			error::Error as ICS03Error,
+		},
+		ics23_commitment::commitment::CommitmentPrefix,
+		ics24_host::identifier::{ClientId, ConnectionId},
 	},
-	ics10_grandpa::consensus_state::ConsensusState as GPConsensusState,
-	ics23_commitment::commitment::{CommitmentPrefix, CommitmentRoot},
-	ics24_host::identifier::{ClientId, ConnectionId},
 	Height,
 };
-use ibc::ics10_grandpa::header::Header;
 use tendermint_proto::Protobuf;
 
 impl<T: Config> ConnectionReader for Context<T> {
@@ -60,7 +60,10 @@ impl<T: Config> ConnectionReader for Context<T> {
 
 		<OldHeight<T>>::put(current_height);
 
-		log::info!("in connection : [host_current_height] >> Host current height = {:?}",Height::new(0, current_height));
+		log::info!(
+			"in connection : [host_current_height] >> Host current height = {:?}",
+			Height::new(0, current_height)
+		);
 		Height::new(0, current_height)
 	}
 
@@ -69,14 +72,19 @@ impl<T: Config> ConnectionReader for Context<T> {
 
 		let height = <OldHeight<T>>::get();
 
-		log::info!("in connection : [host_oldest_height] >> Host oldest height = {:?}", Height::new(0, height));
+		log::info!(
+			"in connection : [host_oldest_height] >> Host oldest height = {:?}",
+			Height::new(0, height)
+		);
 		Height::new(0, height)
 	}
 
 	fn connection_counter(&self) -> Result<u64, ICS03Error> {
 		log::info!("in connection : [connection_counter]");
-		log::info!("in connection : [connection_counter] >> Connection_counter = {:?}",
-			<ConnectionCounter<T>>::get());
+		log::info!(
+			"in connection : [connection_counter] >> Connection_counter = {:?}",
+			<ConnectionCounter<T>>::get()
+		);
 
 		Ok(<ConnectionCounter<T>>::get())
 	}
@@ -84,8 +92,8 @@ impl<T: Config> ConnectionReader for Context<T> {
 	fn commitment_prefix(&self) -> CommitmentPrefix {
 		log::info!("in connection : [commitment_prefix]");
 		log::info!("in connection : [commitment_prefix] >> CommitmentPrefix = {:?}", "ibc");
-
-		"ibc".as_bytes().to_vec().into()
+		// TODO: propoer error handling
+		"ibc".as_bytes().to_vec().try_into().unwrap()
 	}
 
 	fn client_consensus_state(
@@ -94,7 +102,11 @@ impl<T: Config> ConnectionReader for Context<T> {
 		height: Height,
 	) -> Result<AnyConsensusState, ICS03Error> {
 		log::info!("in connection : [client_consensus_state]");
-		log::info!("in connection : [client_consensus_state] client_id = {:?}, height = {:?}", client_id, height);
+		log::info!(
+			"in connection : [client_consensus_state] client_id = {:?}, height = {:?}",
+			client_id,
+			height
+		);
 
 		// ClientReader::consensus_state(self, client_id, height)
 		let height = height.encode_vec().unwrap();
@@ -110,12 +122,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 	}
 
 	fn host_consensus_state(&self, _height: Height) -> Result<AnyConsensusState, ICS03Error> {
-		log::info!("in connection : [host_consensus_state]");
-		log::info!("in connection : [host_consensus_state] >> _height = {:?}", _height);
-		let result = AnyConsensusState::Grandpa(GPConsensusState::from(Header::default()));
-
-		log::info!("in connection : [host_consensus_state] >> any_consensus_state = {:?}", result.clone());
-		Ok(result)
+		todo!()
 	}
 }
 
@@ -149,7 +156,8 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		<ConnectionsKeys<T>>::try_mutate(|val| -> Result<(), &'static str> {
 			val.push(connection_id.as_bytes().to_vec());
 			Ok(())
-		}).expect("store connections keys error");
+		})
+		.expect("store connections keys error");
 
 		let temp = ConnectionReader::connection_end(self, &connection_id);
 		log::info!("in connection : [store_connection] >> read store after: {:?}", temp);
@@ -162,10 +170,17 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		client_id: &ClientId,
 	) -> Result<(), ICS03Error> {
 		log::info!("in connection : [store_connection_to_client]");
-		log::info!("in connection : [store_connection_to_client] >> connection_id = {:?},\
-		 client_id = {:?}", connection_id, client_id);
+		log::info!(
+			"in connection : [store_connection_to_client] >> connection_id = {:?},\
+		 client_id = {:?}",
+			connection_id,
+			client_id
+		);
 
-		<ConnectionClient<T>>::insert(client_id.as_bytes().to_vec(), connection_id.as_bytes().to_vec());
+		<ConnectionClient<T>>::insert(
+			client_id.as_bytes().to_vec(),
+			connection_id.as_bytes().to_vec(),
+		);
 		Ok(())
 	}
 }

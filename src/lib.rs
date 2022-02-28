@@ -41,25 +41,22 @@
 //!
 //! ###  Public Functions
 //!
-//! * `deliver` - `ibc::ics26_routing::handler::deliver` Receives datagram transmitted from relayers/users, and pass to ICS26 router to look for the correct handler.
+//! * `deliver` - `ibc::ics26_routing::handler::deliver` Receives datagram transmitted from
+//!   relayers/users, and pass to ICS26 router to look for the correct handler.
 //!
 //! ## Usage
 //! Please refer to section "How to Interact with the Pallet" in the repository's README.md
-
 extern crate alloc;
-
-pub use pallet::*;
 
 use alloc::{format, string::String};
 use codec::{Decode, Encode};
 use core::marker::PhantomData;
 use frame_system::ensure_signed;
-use ibc::ics04_channel::channel::ChannelEnd;
+pub use pallet::*;
 pub use routing::ModuleCallbacks;
 use scale_info::{prelude::vec, TypeInfo};
 use sp_runtime::RuntimeDebug;
 use sp_std::prelude::*;
-use tendermint_proto::Protobuf;
 
 mod channel;
 mod client;
@@ -99,6 +96,7 @@ pub mod pallet {
 	use frame_support::{dispatch::DispatchResult, pallet_prelude::*, traits::UnixTime};
 	use frame_system::pallet_prelude::*;
 	use ibc::events::IbcEvent;
+	use tendermint_proto::Protobuf;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -107,10 +105,14 @@ pub mod pallet {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type ModuleCallbacks: routing::ModuleCallbacks;
 		type TimeProvider: UnixTime;
+
+		/// Prefix for events stored in the Off-chain DB via Indexing API.
+		const INDEXING_PREFIX: &'static [u8];
 	}
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
+	#[pallet::without_storage_info]
 	pub struct Pallet<T>(_);
 
 	#[pallet::storage]
@@ -118,14 +120,9 @@ pub mod pallet {
 	pub type ClientStates<T: Config> =
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
-	#[pallet::type_value]
-	pub fn default_client_state_keys() ->  Vec<Vec<u8>> {
-		vec![]
-	}
-
 	#[pallet::storage]
 	// vector client_id
-	pub type ClientStatesKeys<T: Config> = StorageValue<_, Vec<Vec<u8>>, ValueQuery, default_client_state_keys>;
+	pub type ClientStatesKeys<T: Config> = StorageValue<_, Vec<Vec<u8>>, ValueQuery>;
 
 	#[pallet::storage]
 	// fix before : (client_id, height) => ConsensusState
@@ -137,28 +134,25 @@ pub mod pallet {
 	// connection_id => ConnectionEnd
 	pub type Connections<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
-	#[pallet::type_value]
-	pub fn default_connection_keys() ->  Vec<Vec<u8>> {
-		vec![]
-	}
-
 	#[pallet::storage]
 	// vector connection_id
-	pub type ConnectionsKeys<T: Config> = StorageValue<_, Vec<Vec<u8>>, ValueQuery, default_connection_keys>;
+	pub type ConnectionsKeys<T: Config> = StorageValue<_, Vec<Vec<u8>>, ValueQuery>;
 
 	#[pallet::storage]
 	// (port_identifier, channel_identifier) => ChannelEnd
-	pub type Channels<T: Config> =
-		StorageDoubleMap<_, Blake2_128Concat, Vec<u8>, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
-
-	#[pallet::type_value]
-	pub fn default_channels_keys() ->  Vec<(Vec<u8>, Vec<u8>)> {
-		vec![]
-	}
+	pub type Channels<T: Config> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		Vec<u8>,
+		Blake2_128Concat,
+		Vec<u8>,
+		Vec<u8>,
+		ValueQuery,
+	>;
 
 	#[pallet::storage]
 	// vector (port_identifier, channel_identifier)
-	pub type ChannelsKeys<T: Config> = StorageValue<_, Vec<(Vec<u8>, Vec<u8>)>, ValueQuery, default_channels_keys>;
+	pub type ChannelsKeys<T: Config> = StorageValue<_, Vec<(Vec<u8>, Vec<u8>)>, ValueQuery>;
 
 	// store_connection_channels
 	#[pallet::storage]
@@ -168,67 +162,68 @@ pub mod pallet {
 
 	#[pallet::storage]
 	// (port_identifier, channel_identifier) => Sequence
-	pub type NextSequenceSend<T: Config> =
-		StorageDoubleMap<_, Blake2_128Concat, Vec<u8>, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
+	pub type NextSequenceSend<T: Config> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		Vec<u8>,
+		Blake2_128Concat,
+		Vec<u8>,
+		Vec<u8>,
+		ValueQuery,
+	>;
 
 	#[pallet::storage]
 	// (port_identifier, channel_identifier) => Sequence
-	pub type NextSequenceRecv<T: Config> =
-		StorageDoubleMap<_, Blake2_128Concat, Vec<u8>, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
+	pub type NextSequenceRecv<T: Config> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		Vec<u8>,
+		Blake2_128Concat,
+		Vec<u8>,
+		Vec<u8>,
+		ValueQuery,
+	>;
 
 	#[pallet::storage]
 	// (port_identifier, channel_identifier) = Sequence
-	pub type NextSequenceAck<T: Config> =
-		StorageDoubleMap<_, Blake2_128Concat, Vec<u8>, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
+	pub type NextSequenceAck<T: Config> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		Vec<u8>,
+		Blake2_128Concat,
+		Vec<u8>,
+		Vec<u8>,
+		ValueQuery,
+	>;
 
 	#[pallet::storage]
 	// (port_identifier, channel_identifier, sequence) => Hash
 	pub type Acknowledgements<T: Config> =
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
-	
-	#[pallet::type_value]
-	pub fn default_acknowledgements_keys() ->  Vec<(Vec<u8>, Vec<u8>, Vec<u8>)> {
-		vec![]
-	}
 
 	#[pallet::storage]
 	// TODO
 	// vector (port_identifier, channel_identifier, sequence)
-	pub type AcknowledgementsKeys<T: Config> = StorageValue<_, Vec<(Vec<u8>, Vec<u8>, Vec<u8>)>, ValueQuery, default_acknowledgements_keys>;
+	pub type AcknowledgementsKeys<T: Config> =
+		StorageValue<_, Vec<(Vec<u8>, Vec<u8>, Vec<u8>)>, ValueQuery>;
 
 	#[pallet::storage]
 	// clientId => ClientType
 	pub type Clients<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
-	#[pallet::type_value]
-	pub fn default_client_counter() -> u64 {
-		0u64
-	}
-
 	#[pallet::storage]
 	#[pallet::getter(fn client_counter)]
 	// client counter
-	pub type ClientCounter<T: Config> = StorageValue<_, u64, ValueQuery, default_client_counter>;
-
-	#[pallet::type_value]
-	pub fn default_connection_counter() -> u64 {
-		0u64
-	}
+	pub type ClientCounter<T: Config> = StorageValue<_, u64, ValueQuery>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn connection_counter)]
 	// connection counter
-	pub type ConnectionCounter<T: Config> =
-		StorageValue<_, u64, ValueQuery, default_connection_counter>;
-
-	#[pallet::type_value]
-	pub fn default_channel_counter() -> u64 {
-		0u64
-	}
+	pub type ConnectionCounter<T: Config> = StorageValue<_, u64, ValueQuery>;
 
 	#[pallet::storage]
 	// channel counter
-	pub type ChannelCounter<T: Config> = StorageValue<_, u64, ValueQuery, default_channel_counter>;
+	pub type ChannelCounter<T: Config> = StorageValue<_, u64, ValueQuery>;
 
 	#[pallet::storage]
 	// client_id => Connection id
@@ -247,14 +242,10 @@ pub mod pallet {
 	pub type PacketCommitment<T: Config> =
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>, Vec<u8>), Vec<u8>, ValueQuery>;
 
-	#[pallet::type_value]
-	pub fn default_packet_commitment_keys() ->  Vec<(Vec<u8>, Vec<u8>, Vec<u8>)> {
-		vec![]
-	}
-	
 	#[pallet::storage]
 	// vector (port_identifier, channel_identifier, sequence)
-	pub type PacketCommitmentKeys<T: Config>  = StorageValue<_, Vec<(Vec<u8>, Vec<u8>, Vec<u8>)>, ValueQuery, default_packet_commitment_keys>;
+	pub type PacketCommitmentKeys<T: Config> =
+		StorageValue<_, Vec<(Vec<u8>, Vec<u8>, Vec<u8>)>, ValueQuery>;
 
 	#[pallet::storage]
 	// TODO
@@ -268,25 +259,13 @@ pub mod pallet {
 	pub type WriteAckPacketEvent<T: Config> =
 		StorageMap<_, Blake2_128Concat, (Vec<u8>, Vec<u8>, u64), Vec<u8>, ValueQuery>;
 
-	#[pallet::type_value]
-	pub fn defaultlatest_height() -> Vec<u8> {
-		let height = ibc::Height::default();
-
-		height.encode_vec().unwrap()
-	}
+	#[pallet::storage]
+	// store latest height
+	pub type LatestHeight<T: Config> = StorageValue<_, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
 	// store latest height
-	pub type LatestHeight<T: Config> = StorageValue<_, Vec<u8>, ValueQuery, defaultlatest_height>;
-
-	#[pallet::type_value]
-	pub fn default_old_height() -> u64 {
-		0
-	}
-
-	#[pallet::storage]
-	// store latest height
-	pub type OldHeight<T: Config> = StorageValue<_, u64, ValueQuery, default_old_height>;
+	pub type OldHeight<T: Config> = StorageValue<_, u64, ValueQuery>;
 
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -578,14 +557,15 @@ pub mod pallet {
 				// 	counterparty_client_id: ClientId,
 				// }
 				ibc::events::IbcEvent::OpenInitConnection(value) => {
-					let height = value.0.height;
+					let attributes = value.attributes();
+					let height = attributes.height;
 					let connection_id: Option<ConnectionId> =
-						value.0.connection_id.map(|val| val.into());
-					let client_id = value.0.client_id;
+						attributes.connection_id.clone().map(|val| val.into());
+					let client_id = attributes.client_id.clone();
 					let counterparty_connection_id: Option<ConnectionId> =
-						value.0.counterparty_connection_id.map(|val| val.into());
+						attributes.counterparty_connection_id.clone().map(|val| val.into());
 
-					let counterparty_client_id = value.0.counterparty_client_id;
+					let counterparty_client_id = attributes.counterparty_client_id.clone();
 					Event::OpenInitConnection(
 						height.into(),
 						connection_id,
@@ -603,14 +583,15 @@ pub mod pallet {
 				// 	counterparty_client_id: ClientId,
 				// }
 				ibc::events::IbcEvent::OpenTryConnection(value) => {
-					let height = value.0.height;
+					let attributes = value.attributes();
+					let height = attributes.height;
 					let connection_id: Option<ConnectionId> =
-						value.0.connection_id.map(|val| val.into());
-					let client_id = value.0.client_id;
+						attributes.connection_id.clone().map(|val| val.into());
+					let client_id = attributes.client_id.clone();
 					let counterparty_connection_id: Option<ConnectionId> =
-						value.0.counterparty_connection_id.map(|val| val.into());
+						attributes.counterparty_connection_id.clone().map(|val| val.into());
 
-					let counterparty_client_id = value.0.counterparty_client_id;
+					let counterparty_client_id = attributes.counterparty_client_id.clone();
 					Event::OpenTryConnection(
 						height.into(),
 						connection_id,
@@ -627,14 +608,15 @@ pub mod pallet {
 				// 	counterparty_client_id: ClientId,
 				// }
 				ibc::events::IbcEvent::OpenAckConnection(value) => {
-					let height = value.0.height;
+					let attributes = value.attributes();
+					let height = attributes.height;
 					let connection_id: Option<ConnectionId> =
-						value.0.connection_id.map(|val| val.into());
-					let client_id = value.0.client_id;
+						attributes.connection_id.clone().map(|val| val.into());
+					let client_id = attributes.client_id.clone();
 					let counterparty_connection_id: Option<ConnectionId> =
-						value.0.counterparty_connection_id.map(|val| val.into());
+						attributes.counterparty_connection_id.clone().map(|val| val.into());
 
-					let counterparty_client_id = value.0.counterparty_client_id;
+					let counterparty_client_id = attributes.counterparty_client_id.clone();
 					Event::OpenAckConnection(
 						height.into(),
 						connection_id,
@@ -651,14 +633,15 @@ pub mod pallet {
 				// 	counterparty_client_id: ClientId,
 				// }
 				ibc::events::IbcEvent::OpenConfirmConnection(value) => {
-					let height = value.0.height;
+					let attributes = value.attributes();
+					let height = attributes.height;
 					let connection_id: Option<ConnectionId> =
-						value.0.connection_id.map(|val| val.into());
-					let client_id = value.0.client_id;
+						attributes.connection_id.clone().map(|val| val.into());
+					let client_id = attributes.client_id.clone();
 					let counterparty_connection_id: Option<ConnectionId> =
-						value.0.counterparty_connection_id.map(|val| val.into());
+						attributes.counterparty_connection_id.clone().map(|val| val.into());
 
-					let counterparty_client_id = value.0.counterparty_client_id;
+					let counterparty_client_id = attributes.counterparty_client_id.clone();
 					Event::OpenConfirmConnection(
 						height.into(),
 						connection_id,
@@ -901,9 +884,6 @@ pub mod pallet {
 		#[pallet::weight(0)]
 		pub fn deliver(origin: OriginFor<T>, messages: Vec<Any>, tmp: u8) -> DispatchResult {
 			log::info!("in deliver");
-			for item in messages.iter() {
-				log::info!("Message type: {:?}", String::from_utf8(item.type_url.clone()).unwrap());
-			}
 
 			let _sender = ensure_signed(origin)?;
 			let mut ctx = routing::Context { _pd: PhantomData::<T>, tmp };
@@ -914,7 +894,7 @@ pub mod pallet {
 					value: message.value.clone(),
 				})
 				.collect();
-			let result = ibc::ics26_routing::handler::deliver(&mut ctx, messages).unwrap();
+			let result = ibc::core::ics26_routing::handler::deliver(&mut ctx, messages).unwrap();
 
 			log::info!("result: {:?}", result);
 
@@ -1054,6 +1034,10 @@ pub mod pallet {
 					log::info!("Ibc event: {}", "chainError");
 				},
 			}
+		}
+
+		fn offchain_key() -> &'static str {
+			""
 		}
 	}
 }

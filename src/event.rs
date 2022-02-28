@@ -2,11 +2,13 @@ pub mod primitive {
 	use crate::alloc::string::ToString;
 	use alloc::string::String;
 	use ibc::{
-		ics02_client::{client_type::ClientType as IbcClientType, height::Height as IbcHeight},
-		ics04_channel::packet::{Packet as IbcPacket, Sequence as IbcSequence},
-		ics24_host::identifier::{
-			ChannelId as IbcChannelId, ClientId as IbcClientId, ConnectionId as IbcConnectionId,
-			PortId as IbcPortId,
+		core::{
+			ics02_client::{client_type::ClientType as IbcClientType, height::Height as IbcHeight},
+			ics04_channel::packet::{Packet as IbcPacket, Sequence as IbcSequence},
+			ics24_host::identifier::{
+				ChannelId as IbcChannelId, ClientId as IbcClientId,
+				ConnectionId as IbcConnectionId, PortId as IbcPortId,
+			},
 		},
 		timestamp::Timestamp as IbcTimestamp,
 	};
@@ -22,7 +24,7 @@ pub mod primitive {
 
 	impl From<IbcPortId> for PortId {
 		fn from(value: IbcPortId) -> Self {
-			let value = value.0.as_bytes().to_vec();
+			let value = value.as_bytes().to_vec();
 			Self(value)
 		}
 	}
@@ -30,7 +32,7 @@ pub mod primitive {
 	impl PortId {
 		pub fn to_ibc_port_id(self) -> IbcPortId {
 			let value = String::from_utf8(self.0).unwrap();
-			IbcPortId(value)
+			IbcPortId::from_str(&value).unwrap_or_default()
 		}
 	}
 
@@ -39,7 +41,7 @@ pub mod primitive {
 
 	impl From<IbcChannelId> for ChannelId {
 		fn from(value: IbcChannelId) -> Self {
-			let value = value.0.as_bytes().to_vec();
+			let value = value.as_bytes().to_vec();
 			Self(value)
 		}
 	}
@@ -47,7 +49,7 @@ pub mod primitive {
 	impl ChannelId {
 		pub fn to_ibc_channel_id(self) -> IbcChannelId {
 			let value = String::from_utf8(self.0).unwrap();
-			IbcChannelId(value)
+			IbcChannelId::from_str(&value).unwrap_or_default()
 		}
 	}
 
@@ -78,14 +80,12 @@ pub mod primitive {
 	#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 	pub enum ClientType {
 		Tendermint,
-		Grandpa,
 	}
 
 	impl From<IbcClientType> for ClientType {
 		fn from(value: IbcClientType) -> Self {
 			match value {
 				IbcClientType::Tendermint => ClientType::Tendermint,
-				IbcClientType::Grandpa => ClientType::Grandpa,
 				_ => unreachable!(),
 			}
 		}
@@ -95,7 +95,6 @@ pub mod primitive {
 		pub fn to_ibc_client_type(self) -> IbcClientType {
 			match self {
 				ClientType::Tendermint => IbcClientType::Tendermint,
-				ClientType::Grandpa => IbcClientType::Grandpa,
 				_ => unreachable!(),
 			}
 		}
@@ -106,7 +105,7 @@ pub mod primitive {
 
 	impl From<IbcClientId> for ClientId {
 		fn from(value: IbcClientId) -> Self {
-			let value = value.0.as_bytes().to_vec();
+			let value = value.as_bytes().to_vec();
 			Self(value)
 		}
 	}
@@ -114,7 +113,7 @@ pub mod primitive {
 	impl ClientId {
 		pub fn to_ibc_client_id(self) -> IbcClientId {
 			let value = String::from_utf8(self.0).unwrap();
-			IbcClientId(value)
+			IbcClientId::from_str(&value).unwrap_or_default()
 		}
 	}
 
@@ -123,7 +122,7 @@ pub mod primitive {
 
 	impl From<IbcConnectionId> for ConnectionId {
 		fn from(value: IbcConnectionId) -> Self {
-			let value = value.0.as_bytes().to_vec();
+			let value = value.as_bytes().to_vec();
 			Self(value)
 		}
 	}
@@ -131,7 +130,7 @@ pub mod primitive {
 	impl ConnectionId {
 		pub fn to_ibc_connection_id(self) -> IbcConnectionId {
 			let value = String::from_utf8(self.0).unwrap();
-			IbcConnectionId(value)
+			IbcConnectionId::from_str(&value).unwrap_or_default()
 		}
 	}
 
@@ -142,7 +141,7 @@ pub mod primitive {
 
 	impl From<IbcTimestamp> for Timestamp {
 		fn from(val: IbcTimestamp) -> Self {
-			Self { time: val.as_nanoseconds().to_string().as_bytes().to_vec() }
+			Self { time: val.nanoseconds().to_string().as_bytes().to_vec() }
 		}
 	}
 
@@ -158,13 +157,13 @@ pub mod primitive {
 
 	impl From<IbcSequence> for Sequence {
 		fn from(val: IbcSequence) -> Self {
-			Self(val.0)
+			Self(u64::from(val))
 		}
 	}
 
 	impl Sequence {
 		pub fn to_ibc_sequence(self) -> IbcSequence {
-			IbcSequence(self.0)
+			IbcSequence::from(self.0)
 		}
 	}
 
