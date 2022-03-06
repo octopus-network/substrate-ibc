@@ -977,7 +977,7 @@ pub mod pallet {
 						timeout_timestamp: Timestamp::from(_value.packet.timeout_timestamp),
 						timeout_height: Height::from(_value.packet.timeout_height),
 					};
-					let packet = packet.encode();
+					let packet = packet.to_ibc_packet().encode_vec().unwrap();
 
 					let port_id = value.packet.source_port.as_bytes().to_vec();
 					let channel_id = value.packet.source_channel.as_bytes().to_vec();
