@@ -560,6 +560,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		let seq = u64::from(key.2);
 		let seq = seq.encode();
 
+		log::info!("in channel: [store_packet_acknowledgement], ack hash = {:?}", ChannelReader::hash(self, ack.clone()).encode());
 		// store packet acknowledgement key-value
 		<Acknowledgements<T>>::insert(
 			(key.0.as_bytes().to_vec(), key.1.as_bytes().to_vec(), seq.clone()),

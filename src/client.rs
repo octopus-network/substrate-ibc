@@ -266,15 +266,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 		let height = height.encode_vec().unwrap();
 		let data = consensus_state.encode_vec().unwrap();
 		if <ConsensusStates<T>>::contains_key(client_id.as_bytes()) {
-			// if consensus_state is no empty use push insert an exist ConsensusStates
-			<ConsensusStates<T>>::try_mutate(
-				client_id.as_bytes(),
-				|val| -> Result<(), &'static str> {
-					val.push((height, data));
-					Ok(())
-				},
-			)
-			.expect("store consensus state error");
+			// consensus_state is stored after mmr root updated
 		} else {
 			// if consensus state is empty insert a new item.
 			<ConsensusStates<T>>::insert(client_id.as_bytes(), vec![(height, data)]);
