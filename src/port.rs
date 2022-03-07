@@ -9,11 +9,11 @@ use ibc::core::ics05_port::capabilities::CapabilityName;
 use ibc::core::ics05_port::context::CapabilityReader;
 
 impl<T: Config> CapabilityReader for Context<T> {
-	fn get_capability(&self, name: &CapabilityName) -> Result<Capability, ICS05Error> {
+	fn get_capability(&self, _name: &CapabilityName) -> Result<Capability, ICS05Error> {
 		todo!()
 	}
 
-	fn authenticate_capability(&self, name: &CapabilityName, capability: &Capability) -> Result<(), ICS05Error> {
+	fn authenticate_capability(&self, _name: &CapabilityName, _capability: &Capability) -> Result<(), ICS05Error> {
 		Ok(())
 	}
 }
@@ -23,7 +23,7 @@ impl<T: Config> PortReader for Context<T> {
 
 	fn lookup_module_by_port(
 		&self,
-		port_id: &PortId,
+		_port_id: &PortId,
 	) -> Result<(Self::ModuleId, Capability), ICS05Error> {
 		Ok(((), Capability::default()))
 	}
