@@ -4,6 +4,7 @@
 #![allow(clippy::type_complexity)]
 #![allow(non_camel_case_types)]
 #![allow(dead_code)]
+#![allow(unused_assignments)]
 
 //! # IBC Module
 //!
@@ -56,7 +57,6 @@ use codec::{Decode, Encode};
 use core::marker::PhantomData;
 use frame_system::ensure_signed;
 use ibc::core::ics02_client::client_state::AnyClientState;
-use ibc::core::ics02_client::height;
 use ibc::clients::ics10_grandpa::client_state::ClientState;
 use ibc::clients::ics10_grandpa::help;
 use ibc::clients::ics10_grandpa::help::{BlockHeader, Commitment};

@@ -170,7 +170,7 @@ impl<T: Config> ClientReader for Context<T> {
 		Height::new(0, current_height.unwrap())
 	}
 
-	fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, ICS02Error> {
+	fn host_consensus_state(&self, _height: Height) -> Result<AnyConsensusState, ICS02Error> {
 		log::info!("in client : [consensus_state]");
 
 		// TODO
