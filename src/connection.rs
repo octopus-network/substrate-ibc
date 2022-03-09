@@ -124,10 +124,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 		log::info!("in connection : [host_consensus_state] >> _height = {:?}", _height);
 		let result = AnyConsensusState::Grandpa(GPConsensusState::from(Header::default()));
 
-		log::info!(
-			"in connection : [host_consensus_state] >> any_consensus_state = {:?}",
-			result
-		);
+		log::info!("in connection : [host_consensus_state] >> any_consensus_state = {:?}", result);
 		Ok(result)
 	}
 }

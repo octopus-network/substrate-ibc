@@ -920,8 +920,7 @@ pub mod pallet {
 					// update client_client block number and latest commitment
 					let latest_commitment = light_client.latest_commitment.unwrap();
 					client_state.block_number = latest_commitment.block_number;
-					client_state.latest_commitment =
-						help::Commitment::from(latest_commitment);
+					client_state.latest_commitment = help::Commitment::from(latest_commitment);
 
 					// update validator_set
 					client_state.validator_set =

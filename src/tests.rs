@@ -81,11 +81,9 @@ fn test_store_client_state_ok() {
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		assert!(
-			context
-				.store_client_state(gp_client_id.clone(), gp_client_state.clone())
-				.is_ok()
-		);
+		assert!(context
+			.store_client_state(gp_client_id.clone(), gp_client_state.clone())
+			.is_ok());
 
 		let ret = ClientReader::client_state(&context, &gp_client_id).unwrap();
 
@@ -110,11 +108,9 @@ fn test_read_client_state_failed_by_supply_error_client_id() {
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		assert!(
-			context
-				.store_client_state(gp_client_id.clone(), gp_client_state.clone())
-				.is_ok()
-		);
+		assert!(context
+			.store_client_state(gp_client_id.clone(), gp_client_state.clone())
+			.is_ok());
 
 		let ret = ClientReader::client_state(&context, &gp_client_id_failed)
 			.unwrap_err()
@@ -134,11 +130,9 @@ fn test_store_consensus_state_ok() {
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		assert!(
-			context
-				.store_consensus_state(gp_client_id.clone(), height, consensus_state.clone())
-				.is_ok()
-		);
+		assert!(context
+			.store_consensus_state(gp_client_id.clone(), height, consensus_state.clone())
+			.is_ok());
 
 		let ret = context.consensus_state(&gp_client_id, height).unwrap();
 
@@ -202,14 +196,12 @@ fn test_get_identified_any_client_state_ok() {
 
 	new_test_ext().execute_with(|| {
 		for index in 0..range.len() {
-			assert!(
-				context
-					.store_client_state(
-						gp_client_id_vec[index].clone(),
-						client_state_vec[index].clone()
-					)
-					.is_ok()
-			);
+			assert!(context
+				.store_client_state(
+					gp_client_id_vec[index].clone(),
+					client_state_vec[index].clone()
+				)
+				.is_ok());
 		}
 
 		// let result = Pallet::<Test>::get_identified_any_client_state();
@@ -268,20 +260,18 @@ fn test_get_packet_commitment_state_ok() {
 
 	new_test_ext().execute_with(|| {
 		for index in 0..range.len() {
-			assert!(
-				context
-					.store_packet_commitment(
-						(
-							port_id_vec[index].clone(),
-							channel_id_vec[index].clone(),
-							sequence_vec[index]
-						),
-						timestamp_vec[index],
-						height_vec[index],
-						data_vec[index].clone(),
-					)
-					.is_ok()
-			);
+			assert!(context
+				.store_packet_commitment(
+					(
+						port_id_vec[index].clone(),
+						channel_id_vec[index].clone(),
+						sequence_vec[index]
+					),
+					timestamp_vec[index],
+					height_vec[index],
+					data_vec[index].clone(),
+				)
+				.is_ok());
 		}
 
 		// let result = Pallet::<Test>::get_packet_commitment_state();
@@ -409,24 +399,16 @@ fn test_delete_packet_acknowledgement_ok() {
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		assert!(
-			context
-				.store_packet_acknowledgement(
-					(port_id.clone(), channel_id.clone(), sequence),
-					ack.clone()
-				)
-				.is_ok()
-		);
+		assert!(context
+			.store_packet_acknowledgement(
+				(port_id.clone(), channel_id.clone(), sequence),
+				ack.clone()
+			)
+			.is_ok());
 
-		assert!(
-			context
-				.delete_packet_acknowledgement((
-					port_id.clone(),
-					channel_id.clone(),
-					sequence
-				))
-				.is_ok()
-		);
+		assert!(context
+			.delete_packet_acknowledgement((port_id.clone(), channel_id.clone(), sequence))
+			.is_ok());
 
 		let result = context
 			.get_packet_acknowledgement(&(port_id, channel_id, sequence))
@@ -464,18 +446,16 @@ fn test_get_acknowledge_state() {
 
 	new_test_ext().execute_with(|| {
 		for index in 0..range.len() {
-			assert!(
-				context
-					.store_packet_acknowledgement(
-						(
-							port_id_vec[index].clone(),
-							channel_id_vec[index].clone(),
-							sequence_vec[index]
-						),
-						ack_vec[index].clone()
-					)
-					.is_ok()
-			);
+			assert!(context
+				.store_packet_acknowledgement(
+					(
+						port_id_vec[index].clone(),
+						channel_id_vec[index].clone(),
+						sequence_vec[index]
+					),
+					ack_vec[index].clone()
+				)
+				.is_ok());
 		}
 
 		// let result = Pallet::<Test>::get_packet_acknowledge_state();
@@ -508,14 +488,12 @@ fn test_store_connection_channles_ok() {
 
 	let mut context: Context<Test> = Context::new();
 	new_test_ext().execute_with(|| {
-		assert!(
-			context
-				.store_connection_channels(
-					connection_id.clone(),
-					&(port_id.clone(), channel_id.clone())
-				)
-				.is_ok()
-		);
+		assert!(context
+			.store_connection_channels(
+				connection_id.clone(),
+				&(port_id.clone(), channel_id.clone())
+			)
+			.is_ok());
 
 		let result = context.connection_channels(&connection_id).unwrap();
 
@@ -533,9 +511,7 @@ fn test_next_sequence_send_ok() {
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		assert!(
-			context.store_next_sequence_send(port_channel.clone(), sequence_id).is_ok()
-		);
+		assert!(context.store_next_sequence_send(port_channel.clone(), sequence_id).is_ok());
 		let result = context.get_next_sequence_send(&port_channel).unwrap();
 		assert_eq!(result, sequence_id);
 	})
@@ -550,14 +526,12 @@ fn test_read_conection_channels_failed_by_suppley_error_conneciton_id() {
 
 	let mut context: Context<Test> = Context::new();
 	new_test_ext().execute_with(|| {
-		assert!(
-			context
-				.store_connection_channels(
-					connection_id.clone(),
-					&(port_id.clone(), channel_id.clone())
-				)
-				.is_ok()
-		);
+		assert!(context
+			.store_connection_channels(
+				connection_id.clone(),
+				&(port_id.clone(), channel_id.clone())
+			)
+			.is_ok());
 
 		let result = context.connection_channels(&connection_id_failed).unwrap_err().to_string();
 
@@ -577,11 +551,9 @@ fn test_store_channel_ok() {
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		assert!(
-			context
-				.store_channel((port_id.clone(), channel_id.clone()), &channel_end)
-				.is_ok()
-		);
+		assert!(context
+			.store_channel((port_id.clone(), channel_id.clone()), &channel_end)
+			.is_ok());
 
 		let result = context.channel_end(&(port_id.clone(), channel_id.clone())).unwrap();
 
@@ -608,9 +580,7 @@ fn test_next_sequence_recv_ok() {
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		assert!(
-			context.store_next_sequence_recv(port_channel.clone(), sequence_id).is_ok()
-		);
+		assert!(context.store_next_sequence_recv(port_channel.clone(), sequence_id).is_ok());
 		let result = context.get_next_sequence_recv(&port_channel).unwrap();
 		assert_eq!(result, sequence_id);
 	})
@@ -629,11 +599,9 @@ fn test_read_channel_end_failed_by_supply_error_channel_id_port_id() {
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		assert!(
-			context
-				.store_channel((port_id.clone(), channel_id.clone()), &channel_end)
-				.is_ok()
-		);
+		assert!(context
+			.store_channel((port_id.clone(), channel_id.clone()), &channel_end)
+			.is_ok());
 
 		let result = context
 			.channel_end(&(port_id_1.clone(), channel_id.clone()))
@@ -689,14 +657,12 @@ fn test_get_identified_channel_end() {
 	let mut context: Context<Test> = Context::new();
 	new_test_ext().execute_with(|| {
 		for index in 0..range.len() {
-			assert!(
-				context
-					.store_channel(
-						(port_id_vec[index].clone(), channel_id_vec[index].clone()),
-						&channel_end_vec[index].clone()
-					)
-					.is_ok()
-			);
+			assert!(context
+				.store_channel(
+					(port_id_vec[index].clone(), channel_id_vec[index].clone()),
+					&channel_end_vec[index].clone()
+				)
+				.is_ok());
 		}
 
 		// let result = Pallet::<Test>::get_idenfitied_channel_end();
@@ -734,9 +700,7 @@ fn test_next_sequence_ack_ok() {
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		assert!(
-			context.store_next_sequence_ack(port_channel.clone(), sequence_id).is_ok()
-		);
+		assert!(context.store_next_sequence_ack(port_channel.clone(), sequence_id).is_ok());
 		let result = context.get_next_sequence_ack(&port_channel).unwrap();
 		assert_eq!(result, sequence_id);
 	})
