@@ -1,28 +1,30 @@
 use super::*;
-use core::str::FromStr;
-use core::time::Duration;
+use core::{str::FromStr, time::Duration};
 
 use crate::routing::Context;
 use ibc::{
-	core::ics02_client::{client_consensus::AnyConsensusState, client_state::AnyClientState},
-	core::ics03_connection::connection::ConnectionEnd,
-	core::ics03_connection::error::Error as ICS03Error,
-	core::ics04_channel::{
-		channel::ChannelEnd,
-		context::{ChannelKeeper, ChannelReader},
-		error::Error as ICS04Error,
-		packet::{Receipt, Sequence},
+	core::{
+		ics02_client::{
+			client_consensus::AnyConsensusState, client_state::AnyClientState,
+			context::ClientReader,
+		},
+		ics03_connection::{
+			connection::ConnectionEnd, context::ConnectionReader, error::Error as ICS03Error,
+		},
+		ics04_channel::{
+			channel::ChannelEnd,
+			context::{ChannelKeeper, ChannelReader},
+			error::Error as ICS04Error,
+			packet::{Receipt, Sequence},
+		},
+		ics05_port::{capabilities::Capability, context::PortReader, error::Error as Ics05Error},
+		ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
 	},
-	core::ics05_port::{capabilities::Capability, context::PortReader, error::Error as Ics05Error},
-	core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
 	timestamp::Timestamp,
 	Height,
 };
-use ibc::core::ics02_client::context::ClientReader;
-use ibc::core::ics03_connection::context::ConnectionReader;
 
 impl<T: Config> ChannelReader for Context<T> {
-
 	fn channel_end(&self, port_channel_id: &(PortId, ChannelId)) -> Result<ChannelEnd, ICS04Error> {
 		// Todo: Confirm if all the errors are accurate
 		log::info!(
@@ -86,7 +88,7 @@ impl<T: Config> ChannelReader for Context<T> {
 			Ok(result)
 		} else {
 			Err(ICS04Error::connection_not_open(conn_id.clone()))
-		};
+		}
 	}
 
 	fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, ICS04Error> {
@@ -127,7 +129,7 @@ impl<T: Config> ChannelReader for Context<T> {
 					"in channel: [client_consensus_state] >> any consensus state = {:?}",
 					any_consensus_state
 				);
-				return Ok(any_consensus_state);
+				return Ok(any_consensus_state)
 			}
 		}
 		log::info!(
@@ -145,16 +147,14 @@ impl<T: Config> ChannelReader for Context<T> {
 		log::info!("in channel : [authenticated_capability] >> port_id: {:?}", port_id);
 
 		match PortReader::lookup_module_by_port(self, port_id) {
-			Ok((_, key)) => {
+			Ok((_, key)) =>
 				if !PortReader::authenticate(self, port_id.clone(), &key) {
 					Err(ICS04Error::invalid_port_capability())
 				} else {
 					Ok(key)
-				}
-			}
-			Err(e) if e.detail() == Ics05Error::unknown_port(port_id.clone()).detail() => {
-				Err(ICS04Error::no_port_capability(port_id.clone()))
-			}
+				},
+			Err(e) if e.detail() == Ics05Error::unknown_port(port_id.clone()).detail() =>
+				Err(ICS04Error::no_port_capability(port_id.clone())),
 			Err(_) => Err(ICS04Error::implementation_specific()),
 		}
 	}
@@ -394,11 +394,23 @@ impl<T: Config> ChannelReader for Context<T> {
 	}
 
 	/// Returns the `ClientProcessedTimes` for the given identifier `client_id` & `height`.
-	fn client_update_time(&self, client_id: &ClientId, height: Height) -> Result<Timestamp, ICS04Error> {
-		log::info!("in channel: [client_update_time] >> client_id = {:?}, height = {:?}", client_id, height);
+	fn client_update_time(
+		&self,
+		client_id: &ClientId,
+		height: Height,
+	) -> Result<Timestamp, ICS04Error> {
+		log::info!(
+			"in channel: [client_update_time] >> client_id = {:?}, height = {:?}",
+			client_id,
+			height
+		);
 
-		if <ClientProcessedTimes<T>>::contains_key(client_id.as_bytes(), height.encode_vec().unwrap()) {
-			let time = <ClientProcessedTimes<T>>::get(client_id.as_bytes(), height.encode_vec().unwrap());
+		if <ClientProcessedTimes<T>>::contains_key(
+			client_id.as_bytes(),
+			height.encode_vec().unwrap(),
+		) {
+			let time =
+				<ClientProcessedTimes<T>>::get(client_id.as_bytes(), height.encode_vec().unwrap());
 			let timestamp = String::from_utf8(time).unwrap();
 			let time: Timestamp = serde_json::from_str(&timestamp).unwrap();
 			Ok(time)
@@ -407,16 +419,23 @@ impl<T: Config> ChannelReader for Context<T> {
 		}
 	}
 
-	fn client_update_height(&self, client_id: &ClientId, height: Height) -> Result<Height, ICS04Error> {
-		if <ClientProcessedHeights<T>>::contains_key(client_id.as_bytes(), height.encode_vec().unwrap()) {
-			let host_height = <ClientProcessedHeights<T>>::get(client_id.as_bytes(), height.encode_vec().unwrap());
+	fn client_update_height(
+		&self,
+		client_id: &ClientId,
+		height: Height,
+	) -> Result<Height, ICS04Error> {
+		if <ClientProcessedHeights<T>>::contains_key(
+			client_id.as_bytes(),
+			height.encode_vec().unwrap(),
+		) {
+			let host_height = <ClientProcessedHeights<T>>::get(
+				client_id.as_bytes(),
+				height.encode_vec().unwrap(),
+			);
 			let host_height = Height::decode(&host_height[..]).unwrap();
 			Ok(host_height)
 		} else {
-			Err(ICS04Error::processed_height_not_found(
-				client_id.clone(),
-				height,
-			))
+			Err(ICS04Error::processed_height_not_found(client_id.clone(), height))
 		}
 	}
 
@@ -464,7 +483,10 @@ impl<T: Config> ChannelKeeper for Context<T> {
 			(key.0.as_bytes().to_vec(), key.1.as_bytes().to_vec(), seq.clone()),
 			ChannelReader::hash(self, input.clone()).encode(),
 		);
-		log::info!("in channel: [store_packet_commitment], val = {:?}", ChannelReader::hash(self, input).encode());
+		log::info!(
+			"in channel: [store_packet_commitment], val = {:?}",
+			ChannelReader::hash(self, input).encode()
+		);
 
 		// insert packet commitment keys
 		<PacketCommitmentKeys<T>>::try_mutate(|val| -> Result<(), &'static str> {
@@ -560,7 +582,10 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		let seq = u64::from(key.2);
 		let seq = seq.encode();
 
-		log::info!("in channel: [store_packet_acknowledgement], ack hash = {:?}", ChannelReader::hash(self, ack.clone()).encode());
+		log::info!(
+			"in channel: [store_packet_acknowledgement], ack hash = {:?}",
+			ChannelReader::hash(self, ack.clone()).encode()
+		);
 		// store packet acknowledgement key-value
 		<Acknowledgements<T>>::insert(
 			(key.0.as_bytes().to_vec(), key.1.as_bytes().to_vec(), seq.clone()),

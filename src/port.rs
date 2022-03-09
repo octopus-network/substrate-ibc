@@ -1,19 +1,25 @@
 use super::*;
 
 use crate::routing::Context;
-use ibc::{
-	core::ics05_port::{capabilities::Capability, context::PortReader, error::Error as ICS05Error},
-	core::ics24_host::identifier::PortId,
+use ibc::core::{
+	ics05_port::{
+		capabilities::{Capability, CapabilityName},
+		context::{CapabilityReader, PortReader},
+		error::Error as ICS05Error,
+	},
+	ics24_host::identifier::PortId,
 };
-use ibc::core::ics05_port::capabilities::CapabilityName;
-use ibc::core::ics05_port::context::CapabilityReader;
 
 impl<T: Config> CapabilityReader for Context<T> {
 	fn get_capability(&self, _name: &CapabilityName) -> Result<Capability, ICS05Error> {
 		todo!()
 	}
 
-	fn authenticate_capability(&self, _name: &CapabilityName, _capability: &Capability) -> Result<(), ICS05Error> {
+	fn authenticate_capability(
+		&self,
+		_name: &CapabilityName,
+		_capability: &Capability,
+	) -> Result<(), ICS05Error> {
 		Ok(())
 	}
 }
