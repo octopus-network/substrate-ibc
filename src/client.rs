@@ -1,5 +1,6 @@
 use super::*;
 use core::str::FromStr;
+use alloc::string::ToString;
 
 use crate::routing::Context;
 use ibc::{
@@ -27,7 +28,7 @@ impl<T: Config> ClientReader for Context<T> {
 			let data = Vec::<u8>::decode(&mut data).unwrap();
 			let data = String::from_utf8(data).unwrap();
 			match ClientType::from_str(&data) {
-				Err(_err) => Err(ICS02Error::unknown_client_type(format!("{}", data))),
+				Err(_err) => Err(ICS02Error::unknown_client_type(data.to_string())),
 				Ok(val) => {
 					log::info!("in client : [client_type] >> client_type : {:?}", val);
 					Ok(val)
@@ -66,7 +67,7 @@ impl<T: Config> ClientReader for Context<T> {
 			height
 		);
 
-		let mut values = <ConsensusStates<T>>::get(client_id.as_bytes()).clone();
+		let mut values = <ConsensusStates<T>>::get(client_id.as_bytes());
 		values.sort_by(|(height_left, _), (height_right, _)| {
 			let height_left = Height::decode(&height_left[..]).unwrap();
 			let height_right = Height::decode(&height_right[..]).unwrap();
@@ -105,7 +106,7 @@ impl<T: Config> ClientReader for Context<T> {
 			height
 		);
 
-		let mut values = <ConsensusStates<T>>::get(client_id.as_bytes()).clone();
+		let mut values = <ConsensusStates<T>>::get(client_id.as_bytes());
 		values.sort_by(|(height_left, _), (height_right, _)| {
 			let height_left = Height::decode(&height_left[..]).unwrap();
 			let height_right = Height::decode(&height_right[..]).unwrap();
@@ -141,7 +142,7 @@ impl<T: Config> ClientReader for Context<T> {
 			height
 		);
 
-		let mut values = <ConsensusStates<T>>::get(client_id.as_bytes()).clone();
+		let mut values = <ConsensusStates<T>>::get(client_id.as_bytes());
 		values.sort_by(|(height_left, _), (height_right, _)| {
 			let height_left = Height::decode(&height_left[..]).unwrap();
 			let height_right = Height::decode(&height_right[..]).unwrap();

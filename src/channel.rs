@@ -267,7 +267,7 @@ impl<T: Config> ChannelReader for Context<T> {
 			let data = Vec::<u8>::decode(&mut data).unwrap();
 			log::info!(
 				"in channel : [get_packet_commitment] >> packet_commitment = {:?}, packet_commitment_vec = {:?}",
-				String::from_utf8(data.clone()).unwrap(), data.clone()
+				String::from_utf8(data.clone()).unwrap(), data
 			);
 			Ok(String::from_utf8(data).unwrap())
 		} else {
@@ -339,7 +339,7 @@ impl<T: Config> ChannelReader for Context<T> {
 
 	/// A hashing function for packet commitments
 	fn hash(&self, value: String) -> String {
-		log::info!("in channel: [hash] >> value = {:?}", value.clone());
+		log::info!("in channel: [hash] >> value = {:?}", value);
 
 		let r = sp_io::hashing::sha2_256(value.as_bytes());
 

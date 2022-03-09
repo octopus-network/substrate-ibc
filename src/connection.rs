@@ -126,7 +126,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 
 		log::info!(
 			"in connection : [host_consensus_state] >> any_consensus_state = {:?}",
-			result.clone()
+			result
 		);
 		Ok(result)
 	}

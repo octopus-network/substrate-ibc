@@ -759,12 +759,12 @@ pub mod pallet {
 		// let chain_id = ICS24ChainId::new(String::from("chainA"), epoch_number);
 		let chain_id = ICS24ChainId::new(String::from("chainA"), epoch_number);
 		let client_state = ClientState {
-			chain_id: chain_id.clone(),
+			chain_id,
 			block_number: u32::default(),
 			frozen_height: None,
 			block_header: BlockHeader::default(),
 			latest_commitment: Commitment::default(),
-			validator_set: lc.validator_set.clone().into(),
+			validator_set: lc.validator_set.into(),
 		};
 		log::info!("mock client_state : {:?}", client_state);
 
@@ -872,7 +872,7 @@ pub mod pallet {
 
 			let signed_commitment =
 				commitment::SignedCommitment::from(decode_received_mmr_root.signed_commitment);
-			let rev_block_number = signed_commitment.clone().commitment.block_number;
+			let rev_block_number = signed_commitment.commitment.block_number;
 			if rev_block_number <= client_state.latest_commitment.block_number {
 				log::info!("receive mmr root block number({}) less than client_state.latest_commitment.block_number({})",
 				rev_block_number,client_state.latest_commitment.block_number);
@@ -921,14 +921,14 @@ pub mod pallet {
 					let latest_commitment = light_client.latest_commitment.unwrap();
 					client_state.block_number = latest_commitment.block_number;
 					client_state.latest_commitment =
-						help::Commitment::from(latest_commitment.clone());
+						help::Commitment::from(latest_commitment);
 
 					// update validator_set
 					client_state.validator_set =
 						help::ValidatorSet::from(light_client.validator_set.clone());
 
 					// update block header
-					client_state.block_header = decode_received_mmr_root.block_header.clone();
+					client_state.block_header = decode_received_mmr_root.block_header;
 
 					// save to chain
 					let any_client_state = AnyClientState::Grandpa(client_state.clone());
@@ -963,14 +963,14 @@ pub mod pallet {
 						revision_height: client_state.block_number as u64,
 					};
 
-					log::info!("in ibc-lib : [store_consensus_state] >> client_id: {:?}, height = {:?}, consensus_state = {:?}",client_id.clone(), height, any_consensus_state);
+					log::info!("in ibc-lib : [store_consensus_state] >> client_id: {:?}, height = {:?}, consensus_state = {:?}", client_id, height, any_consensus_state);
 
 					let height = height.encode_vec().unwrap();
 					let data = any_consensus_state.encode_vec().unwrap();
 					if <ConsensusStates<T>>::contains_key(client_id.clone()) {
 						// if consensus_state is no empty use push insert an exist ConsensusStates
 						<ConsensusStates<T>>::try_mutate(
-							client_id.clone(),
+							client_id,
 							|val| -> Result<(), &'static str> {
 								val.push((height, data));
 								Ok(())
@@ -979,7 +979,7 @@ pub mod pallet {
 						.expect("store consensus state error");
 					} else {
 						// if consensus state is empty insert a new item.
-						<ConsensusStates<T>>::insert(client_id.clone(), vec![(height, data)]);
+						<ConsensusStates<T>>::insert(client_id, vec![(height, data)]);
 					}
 
 					// emit update state sucesse event

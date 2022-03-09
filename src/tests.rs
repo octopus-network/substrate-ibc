@@ -39,7 +39,7 @@ fn test_store_client_type_ok() {
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		assert_eq!(context.store_client_type(gp_client_id.clone(), gp_client_type).is_ok(), true);
+		assert!(context.store_client_type(gp_client_id.clone(), gp_client_type).is_ok());
 
 		let ret = context.client_type(&gp_client_id).unwrap();
 
@@ -55,7 +55,7 @@ fn test_read_client_type_failed_by_supply_error_client_id() {
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		assert_eq!(context.store_client_type(gp_client_id.clone(), gp_client_type).is_ok(), true);
+		assert!(context.store_client_type(gp_client_id.clone(), gp_client_type).is_ok());
 
 		let ret = context.client_type(&gp_client_id_failed).unwrap_err().to_string();
 
@@ -81,11 +81,10 @@ fn test_store_client_state_ok() {
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		assert_eq!(
+		assert!(
 			context
 				.store_client_state(gp_client_id.clone(), gp_client_state.clone())
-				.is_ok(),
-			true
+				.is_ok()
 		);
 
 		let ret = ClientReader::client_state(&context, &gp_client_id).unwrap();
@@ -111,11 +110,10 @@ fn test_read_client_state_failed_by_supply_error_client_id() {
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		assert_eq!(
+		assert!(
 			context
 				.store_client_state(gp_client_id.clone(), gp_client_state.clone())
-				.is_ok(),
-			true
+				.is_ok()
 		);
 
 		let ret = ClientReader::client_state(&context, &gp_client_id_failed)
@@ -136,11 +134,10 @@ fn test_store_consensus_state_ok() {
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		assert_eq!(
+		assert!(
 			context
 				.store_consensus_state(gp_client_id.clone(), height, consensus_state.clone())
-				.is_ok(),
-			true
+				.is_ok()
 		);
 
 		let ret = context.consensus_state(&gp_client_id, height).unwrap();
@@ -205,14 +202,13 @@ fn test_get_identified_any_client_state_ok() {
 
 	new_test_ext().execute_with(|| {
 		for index in 0..range.len() {
-			assert_eq!(
+			assert!(
 				context
 					.store_client_state(
 						gp_client_id_vec[index].clone(),
 						client_state_vec[index].clone()
 					)
-					.is_ok(),
-				true
+					.is_ok()
 			);
 		}
 
@@ -272,20 +268,19 @@ fn test_get_packet_commitment_state_ok() {
 
 	new_test_ext().execute_with(|| {
 		for index in 0..range.len() {
-			assert_eq!(
+			assert!(
 				context
 					.store_packet_commitment(
 						(
 							port_id_vec[index].clone(),
 							channel_id_vec[index].clone(),
-							sequence_vec[index].clone()
+							sequence_vec[index]
 						),
-						timestamp_vec[index].clone(),
-						height_vec[index].clone(),
+						timestamp_vec[index],
+						height_vec[index],
 						data_vec[index].clone(),
 					)
-					.is_ok(),
-				true
+					.is_ok()
 			);
 		}
 
@@ -384,9 +379,9 @@ fn test_get_packet_commitment_state_ok() {
 #[test]
 fn test_connection_fail() {
 	let connection_id0 = ConnectionId::new(0);
-	let mut context: Context<Test> = Context::new();
+	let context: Context<Test> = Context::new();
 	new_test_ext().execute_with(|| {
-		let ret = ConnectionReader::connection_end(&mut context, &connection_id0.clone())
+		let ret = ConnectionReader::connection_end(&context, &connection_id0.clone())
 			.unwrap_err()
 			.to_string();
 		assert_eq!(ret, ICS03Error::connection_mismatch(connection_id0).to_string());
@@ -400,7 +395,7 @@ fn test_connection_client_ok() {
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		assert_eq!(context.store_connection_to_client(connection_id, &gp_client_id).is_ok(), true);
+		assert!(context.store_connection_to_client(connection_id, &gp_client_id).is_ok());
 	})
 }
 
@@ -414,25 +409,23 @@ fn test_delete_packet_acknowledgement_ok() {
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		assert_eq!(
+		assert!(
 			context
 				.store_packet_acknowledgement(
-					(port_id.clone(), channel_id.clone(), sequence.clone()),
+					(port_id.clone(), channel_id.clone(), sequence),
 					ack.clone()
 				)
-				.is_ok(),
-			true
+				.is_ok()
 		);
 
-		assert_eq!(
+		assert!(
 			context
 				.delete_packet_acknowledgement((
 					port_id.clone(),
 					channel_id.clone(),
-					sequence.clone()
+					sequence
 				))
-				.is_ok(),
-			true
+				.is_ok()
 		);
 
 		let result = context
@@ -471,18 +464,17 @@ fn test_get_acknowledge_state() {
 
 	new_test_ext().execute_with(|| {
 		for index in 0..range.len() {
-			assert_eq!(
+			assert!(
 				context
 					.store_packet_acknowledgement(
 						(
 							port_id_vec[index].clone(),
 							channel_id_vec[index].clone(),
-							sequence_vec[index].clone()
+							sequence_vec[index]
 						),
 						ack_vec[index].clone()
 					)
-					.is_ok(),
-				true
+					.is_ok()
 			);
 		}
 
@@ -516,14 +508,13 @@ fn test_store_connection_channles_ok() {
 
 	let mut context: Context<Test> = Context::new();
 	new_test_ext().execute_with(|| {
-		assert_eq!(
+		assert!(
 			context
 				.store_connection_channels(
 					connection_id.clone(),
 					&(port_id.clone(), channel_id.clone())
 				)
-				.is_ok(),
-			true
+				.is_ok()
 		);
 
 		let result = context.connection_channels(&connection_id).unwrap();
@@ -542,9 +533,8 @@ fn test_next_sequence_send_ok() {
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		assert_eq!(
-			context.store_next_sequence_send(port_channel.clone(), sequence_id).is_ok(),
-			true
+		assert!(
+			context.store_next_sequence_send(port_channel.clone(), sequence_id).is_ok()
 		);
 		let result = context.get_next_sequence_send(&port_channel).unwrap();
 		assert_eq!(result, sequence_id);
@@ -560,14 +550,13 @@ fn test_read_conection_channels_failed_by_suppley_error_conneciton_id() {
 
 	let mut context: Context<Test> = Context::new();
 	new_test_ext().execute_with(|| {
-		assert_eq!(
+		assert!(
 			context
 				.store_connection_channels(
 					connection_id.clone(),
 					&(port_id.clone(), channel_id.clone())
 				)
-				.is_ok(),
-			true
+				.is_ok()
 		);
 
 		let result = context.connection_channels(&connection_id_failed).unwrap_err().to_string();
@@ -588,11 +577,10 @@ fn test_store_channel_ok() {
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		assert_eq!(
+		assert!(
 			context
 				.store_channel((port_id.clone(), channel_id.clone()), &channel_end)
-				.is_ok(),
-			true
+				.is_ok()
 		);
 
 		let result = context.channel_end(&(port_id.clone(), channel_id.clone())).unwrap();
@@ -620,9 +608,8 @@ fn test_next_sequence_recv_ok() {
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		assert_eq!(
-			context.store_next_sequence_recv(port_channel.clone(), sequence_id).is_ok(),
-			true
+		assert!(
+			context.store_next_sequence_recv(port_channel.clone(), sequence_id).is_ok()
 		);
 		let result = context.get_next_sequence_recv(&port_channel).unwrap();
 		assert_eq!(result, sequence_id);
@@ -642,11 +629,10 @@ fn test_read_channel_end_failed_by_supply_error_channel_id_port_id() {
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		assert_eq!(
+		assert!(
 			context
 				.store_channel((port_id.clone(), channel_id.clone()), &channel_end)
-				.is_ok(),
-			true
+				.is_ok()
 		);
 
 		let result = context
@@ -703,14 +689,13 @@ fn test_get_identified_channel_end() {
 	let mut context: Context<Test> = Context::new();
 	new_test_ext().execute_with(|| {
 		for index in 0..range.len() {
-			assert_eq!(
+			assert!(
 				context
 					.store_channel(
 						(port_id_vec[index].clone(), channel_id_vec[index].clone()),
 						&channel_end_vec[index].clone()
 					)
-					.is_ok(),
-				true
+					.is_ok()
 			);
 		}
 
@@ -749,9 +734,8 @@ fn test_next_sequence_ack_ok() {
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		assert_eq!(
-			context.store_next_sequence_ack(port_channel.clone(), sequence_id).is_ok(),
-			true
+		assert!(
+			context.store_next_sequence_ack(port_channel.clone(), sequence_id).is_ok()
 		);
 		let result = context.get_next_sequence_ack(&port_channel).unwrap();
 		assert_eq!(result, sequence_id);
