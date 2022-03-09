@@ -37,6 +37,8 @@ jobs:
           profile: minimal
           toolchain: nightly
           override: true
+      - name: Install cargo-fmt
+        run: rustup component add rustfmt --toolchain nightly-x86_64-unknown-linux-gnu
       - name: Check code format
         run: cargo fmt -- --check
       - name: Check the package for errors
