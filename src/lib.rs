@@ -748,9 +748,9 @@ pub mod pallet {
 	// mock client state
 	fn mock_client_state() -> ClientState {
 		// mock light client
-		let public_keys = vec![
-			String::from("0x020a1091341fe5664bfa1782d5e04779689068c916b04cb365ec3153755684d9a1"), /* Alice */
-		];
+		let public_keys = vec![String::from(
+			"0x020a1091341fe5664bfa1782d5e04779689068c916b04cb365ec3153755684d9a1",
+		) /* Alice */];
 		let lc = beefy_light_client::new(public_keys);
 		log::info!("mock beefy light client: {:?}", lc);
 
