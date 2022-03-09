@@ -725,8 +725,9 @@ pub mod pallet {
 					Event::TimeoutOnClosePacket(height.into(), packet.into())
 				},
 				ibc::events::IbcEvent::Empty(value) => Event::Empty(value.as_bytes().to_vec()),
-				ibc::events::IbcEvent::ChainError(value) =>
-					Event::ChainError(value.as_bytes().to_vec()),
+				ibc::events::IbcEvent::ChainError(value) => {
+					Event::ChainError(value.as_bytes().to_vec())
+				},
 				_ => unimplemented!(),
 			}
 		}
@@ -854,7 +855,7 @@ pub mod pallet {
 			if !<ClientStates<T>>::contains_key(client_id.clone()) {
 				log::info!("in update_client_state: {:?} client_state not found !", client_id_str);
 
-				return Err(Error::<T>::ClientIdNotFound.into())
+				return Err(Error::<T>::ClientIdNotFound.into());
 			} else {
 				// get client state from chain storage
 				let data = <ClientStates<T>>::get(client_id.clone());
@@ -996,7 +997,7 @@ pub mod pallet {
 				Err(e) => {
 					log::info!("update the beefy light client failure! : {:?}", e);
 
-					return Err(Error::<T>::UpdateBeefyLightClientFailure.into())
+					return Err(Error::<T>::UpdateBeefyLightClientFailure.into());
 				},
 			}
 

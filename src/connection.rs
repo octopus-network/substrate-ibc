@@ -110,7 +110,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 		for item in value.iter() {
 			if item.0 == height {
 				let any_consensus_state = AnyConsensusState::decode_vec(&*item.1).unwrap();
-				return Ok(any_consensus_state)
+				return Ok(any_consensus_state);
 			}
 		}
 		// TODO

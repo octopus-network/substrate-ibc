@@ -88,7 +88,7 @@ impl<T: Config> ChannelReader for Context<T> {
 			Ok(result)
 		} else {
 			Err(ICS04Error::connection_not_open(conn_id.clone()))
-		}
+		};
 	}
 
 	fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, ICS04Error> {
@@ -129,7 +129,7 @@ impl<T: Config> ChannelReader for Context<T> {
 					"in channel: [client_consensus_state] >> any consensus state = {:?}",
 					any_consensus_state
 				);
-				return Ok(any_consensus_state)
+				return Ok(any_consensus_state);
 			}
 		}
 		log::info!(
@@ -147,14 +147,16 @@ impl<T: Config> ChannelReader for Context<T> {
 		log::info!("in channel : [authenticated_capability] >> port_id: {:?}", port_id);
 
 		match PortReader::lookup_module_by_port(self, port_id) {
-			Ok((_, key)) =>
+			Ok((_, key)) => {
 				if !PortReader::authenticate(self, port_id.clone(), &key) {
 					Err(ICS04Error::invalid_port_capability())
 				} else {
 					Ok(key)
-				},
-			Err(e) if e.detail() == Ics05Error::unknown_port(port_id.clone()).detail() =>
-				Err(ICS04Error::no_port_capability(port_id.clone())),
+				}
+			},
+			Err(e) if e.detail() == Ics05Error::unknown_port(port_id.clone()).detail() => {
+				Err(ICS04Error::no_port_capability(port_id.clone()))
+			},
 			Err(_) => Err(ICS04Error::implementation_specific()),
 		}
 	}
