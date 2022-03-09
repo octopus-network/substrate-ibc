@@ -1026,9 +1026,9 @@ pub mod pallet {
 					let port_id = value.packet.source_port.as_bytes().to_vec();
 					let channel_id = value.packet.source_channel.as_bytes().to_vec();
 					let sequence = u64::from(value.packet.sequence);
-					let ack = value.ack;
-					// store.Set((portID, channelID, sequence), ackHash)
-					<WriteAckPacketEvent<T>>::insert((port_id, channel_id, sequence), ack)
+					let write_ack = serde_json::to_string(&value).unwrap().as_bytes().to_vec();
+					// store.Set((portID, channelID, sequence), WriteAckEvent)
+					<WriteAckPacketEvent<T>>::insert((port_id, channel_id, sequence), write_ack);
 				},
 				IbcEvent::UpdateClient(value) => {
 					let height = value.height().encode_vec().unwrap();
