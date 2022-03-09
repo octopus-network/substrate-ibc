@@ -10,7 +10,7 @@ use ibc::{
 		error::Error as ICS03Error,
 	},
 	clients::ics10_grandpa::consensus_state::ConsensusState as GPConsensusState,
-	core::ics23_commitment::commitment::{CommitmentPrefix, CommitmentRoot},
+	core::ics23_commitment::commitment::CommitmentPrefix,
 	core::ics24_host::identifier::{ClientId, ConnectionId},
 	Height,
 };

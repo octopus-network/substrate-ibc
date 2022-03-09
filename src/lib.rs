@@ -4,6 +4,7 @@
 #![allow(clippy::type_complexity)]
 #![allow(non_camel_case_types)]
 #![allow(dead_code)]
+#![allow(unused_assignments)]
 
 //! # IBC Module
 //!
@@ -56,7 +57,6 @@ use codec::{Decode, Encode};
 use core::marker::PhantomData;
 use frame_system::ensure_signed;
 use ibc::core::ics02_client::client_state::AnyClientState;
-use ibc::core::ics02_client::height;
 use ibc::clients::ics10_grandpa::client_state::ClientState;
 use ibc::clients::ics10_grandpa::help;
 use ibc::clients::ics10_grandpa::help::{BlockHeader, Commitment};
@@ -716,11 +716,14 @@ pub mod pallet {
 	/// Errors in MMR verification informing users that something went wrong.
 	#[pallet::error]
 	pub enum Error<T> {
-		///receive mmr root block number less than client_state.latest_commitment.block_number !
-		NotLaststCommitment,
-		///verify mmr root failure
-		///update the beefy light client failure!
-		VerifyMmrRootFailure,
+		/// update the beefy light client failure!
+		UpdateBeefyLightClientFailure,
+
+		/// receive mmr root block number less than client_state.latest_commitment.block_number 
+		ReceiveMmrRootBlockNumberLessThanClientStateLatestCommitmentBlockNumber,
+
+		/// client id not found
+		ClientIdNotFound,
 	}
 
 	// mock client state
@@ -816,7 +819,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			client_id: Vec<u8>,
 			mmr_root: Vec<u8>,
-		) -> DispatchResult {
+		) -> DispatchResultWithPostInfo {
 			log::info!("received update_client_state request.");
 			let _who = ensure_signed(origin)?;
 
@@ -831,7 +834,8 @@ pub mod pallet {
 
 			if !<ClientStates<T>>::contains_key(client_id.clone()) {
 				log::info!("in update_client_state: {:?} client_state not found !", client_id_str);
-				return core::result::Result::Err(DispatchError::Other("client id not found"));
+				
+				return Err(Error::<T>::ClientIdNotFound.into())
 			} else {
 				// get client state from chain storage
 				let data = <ClientStates<T>>::get(client_id.clone());
@@ -854,7 +858,7 @@ pub mod pallet {
 				log::info!("receive mmr root block number({}) less than client_state.latest_commitment.block_number({})",
 				rev_block_number,client_state.latest_commitment.block_number);
 
-				return core::result::Result::Err(DispatchError::Other("receive mmr root block number less than client_state.latest_commitment.block_number !"));
+				return Err(Error::<T>::ReceiveMmrRootBlockNumberLessThanClientStateLatestCommitmentBlockNumber.into());
 			}
 			// build new beefy light client by client_state
 			let mut light_client = beefy_light_client::LightClient {
@@ -969,13 +973,11 @@ pub mod pallet {
 				Err(e) => {
 					log::info!("update the beefy light client failure! : {:?}", e);
 
-					return core::result::Result::Err(DispatchError::Other(
-						"update the beefy light client failure!",
-					));
+					return Err(Error::<T>::UpdateBeefyLightClientFailure.into())
 				},
 			}
 
-			Ok(())
+			Ok(().into())
 		}
 	}
 
