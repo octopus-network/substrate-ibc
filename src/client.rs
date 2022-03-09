@@ -82,7 +82,7 @@ impl<T: Config> ClientReader for Context<T> {
 					"in client : [consensus_state] >> any consensus state = {:?}",
 					any_consensus_state
 				);
-				return Ok(any_consensus_state);
+				return Ok(any_consensus_state)
 			}
 		}
 
@@ -121,7 +121,7 @@ impl<T: Config> ClientReader for Context<T> {
 					"in client : [consensus_state] >> any consensus state = {:?}",
 					any_consensus_state
 				);
-				return Ok(Some(any_consensus_state));
+				return Ok(Some(any_consensus_state))
 			}
 		}
 
@@ -157,7 +157,7 @@ impl<T: Config> ClientReader for Context<T> {
 					"in client : [consensus_state] >> any consensus state = {:?}",
 					any_consensus_state
 				);
-				return Ok(Some(any_consensus_state));
+				return Ok(Some(any_consensus_state))
 			}
 		}
 
