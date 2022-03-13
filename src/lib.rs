@@ -106,6 +106,7 @@ pub mod pallet {
 	};
 	use frame_support::{dispatch::DispatchResult, pallet_prelude::*, traits::UnixTime};
 	use frame_system::pallet_prelude::*;
+	use ibc::core::ics04_channel::events::WriteAcknowledgement;
 	use ibc::events::IbcEvent;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
@@ -1028,7 +1029,8 @@ pub mod pallet {
 					let port_id = value.packet.source_port.as_bytes().to_vec();
 					let channel_id = value.packet.source_channel.as_bytes().to_vec();
 					let sequence = u64::from(value.packet.sequence);
-					let write_ack = serde_json::to_string(&value).unwrap().as_bytes().to_vec();
+					let write_ack = value.encode_vec().unwrap();
+					let _write_ack = WriteAcknowledgement::decode(&*write_ack.clone()).unwrap();
 					// store.Set((portID, channelID, sequence), WriteAckEvent)
 					<WriteAckPacketEvent<T>>::insert((port_id, channel_id, sequence), write_ack);
 				},
