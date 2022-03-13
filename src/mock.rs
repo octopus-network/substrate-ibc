@@ -70,8 +70,7 @@ pub struct MockUnixTime;
 // maybe future to fix
 impl frame_support::traits::UnixTime for MockUnixTime {
 	fn now() -> Duration {
-		let now_time = Instant::now().elapsed();
-		now_time
+		Instant::now().elapsed()
 	}
 }
 

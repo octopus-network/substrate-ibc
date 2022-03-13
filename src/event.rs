@@ -2,16 +2,20 @@ pub mod primitive {
 	use crate::alloc::string::ToString;
 	use alloc::string::String;
 	use ibc::{
-		core::ics02_client::{client_type::ClientType as IbcClientType, height::Height as IbcHeight},
-		core::ics04_channel::packet::{Packet as IbcPacket, Sequence as IbcSequence},
-		clients::ics10_grandpa::client_state::ClientState as IbcClientState,
-		clients::ics10_grandpa::help::{
-			BlockHeader, Commitment, MmrRoot as IbcMmrRoot, SignedCommitment, ValidatorMerkleProof,
-			ValidatorSet,
+		clients::ics10_grandpa::{
+			client_state::ClientState as IbcClientState,
+			help::{
+				BlockHeader, Commitment, MmrRoot as IbcMmrRoot, SignedCommitment,
+				ValidatorMerkleProof, ValidatorSet,
+			},
 		},
-		core::ics24_host::identifier::{
-			ChainId as IbcChainId, ChannelId as IbcChannelId, ClientId as IbcClientId,
-			ConnectionId as IbcConnectionId, PortId as IbcPortId,
+		core::{
+			ics02_client::{client_type::ClientType as IbcClientType, height::Height as IbcHeight},
+			ics04_channel::packet::{Packet as IbcPacket, Sequence as IbcSequence},
+			ics24_host::identifier::{
+				ChainId as IbcChainId, ChannelId as IbcChannelId, ClientId as IbcClientId,
+				ConnectionId as IbcConnectionId, PortId as IbcPortId,
+			},
 		},
 		timestamp::Timestamp as IbcTimestamp,
 	};
@@ -280,7 +284,7 @@ pub mod primitive {
 				chain_id: val.chain_id.as_str().as_bytes().to_vec(),
 				// chain_id: val.chain_id,
 				block_number: val.block_number,
-				frozen_height: val.frozen_height.map(|val|val.into()),
+				frozen_height: val.frozen_height.map(|val| val.into()),
 				block_header: BlockHeader::encode(&val.block_header),
 				latest_commitment: Commitment::encode(&val.latest_commitment),
 				validator_set: ValidatorSet::encode(&val.validator_set),

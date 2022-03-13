@@ -42,7 +42,8 @@
 //!
 //! ###  Public Functions
 //!
-//! * `deliver` - `ibc::ics26_routing::handler::deliver` Receives datagram transmitted from relayers/users, and pass to ICS26 router to look for the correct handler.
+//! * `deliver` - `ibc::ics26_routing::handler::deliver` Receives datagram transmitted from
+//!   relayers/users, and pass to ICS26 router to look for the correct handler.
 //!
 //! ## Usage
 //! Please refer to section "How to Interact with the Pallet" in the repository's README.md
@@ -56,11 +57,16 @@ use beefy_light_client::commitment;
 use codec::{Decode, Encode};
 use core::marker::PhantomData;
 use frame_system::ensure_signed;
-use ibc::core::ics02_client::client_state::AnyClientState;
-use ibc::clients::ics10_grandpa::client_state::ClientState;
-use ibc::clients::ics10_grandpa::help;
-use ibc::clients::ics10_grandpa::help::{BlockHeader, Commitment};
-use ibc::core::ics24_host::identifier::ChainId as ICS24ChainId;
+use ibc::{
+	clients::ics10_grandpa::{
+		client_state::ClientState,
+		help,
+		help::{BlockHeader, Commitment},
+	},
+	core::{
+		ics02_client::client_state::AnyClientState, ics24_host::identifier::ChainId as ICS24ChainId,
+	},
+};
 pub use routing::ModuleCallbacks;
 use scale_info::{prelude::vec, TypeInfo};
 use sp_runtime::RuntimeDebug;
@@ -139,13 +145,27 @@ pub mod pallet {
 
 	#[pallet::storage]
 	/// (client_id, height) => timestamp
-	pub type ClientProcessedTimes<T: Config> =
-		StorageDoubleMap<_, Blake2_128Concat, Vec<u8>, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
+	pub type ClientProcessedTimes<T: Config> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		Vec<u8>,
+		Blake2_128Concat,
+		Vec<u8>,
+		Vec<u8>,
+		ValueQuery,
+	>;
 
 	#[pallet::storage]
 	/// (client_id, height) => host_height
-	pub type ClientProcessedHeights<T: Config> =
-		StorageDoubleMap<_, Blake2_128Concat, Vec<u8>, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
+	pub type ClientProcessedHeights<T: Config> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		Vec<u8>,
+		Blake2_128Concat,
+		Vec<u8>,
+		Vec<u8>,
+		ValueQuery,
+	>;
 
 	#[pallet::storage]
 	/// client_id => Vector<(Height, ConsensusState)>
@@ -706,9 +726,8 @@ pub mod pallet {
 					Event::TimeoutOnClosePacket(height.into(), packet.into())
 				},
 				ibc::events::IbcEvent::Empty(value) => Event::Empty(value.as_bytes().to_vec()),
-				ibc::events::IbcEvent::ChainError(value) => {
-					Event::ChainError(value.as_bytes().to_vec())
-				},
+				ibc::events::IbcEvent::ChainError(value) =>
+					Event::ChainError(value.as_bytes().to_vec()),
 				_ => unimplemented!(),
 			}
 		}
@@ -720,7 +739,7 @@ pub mod pallet {
 		/// update the beefy light client failure!
 		UpdateBeefyLightClientFailure,
 
-		/// receive mmr root block number less than client_state.latest_commitment.block_number 
+		/// receive mmr root block number less than client_state.latest_commitment.block_number
 		ReceiveMmrRootBlockNumberLessThanClientStateLatestCommitmentBlockNumber,
 
 		/// client id not found
@@ -730,9 +749,9 @@ pub mod pallet {
 	// mock client state
 	fn mock_client_state() -> ClientState {
 		// mock light client
-		let public_keys = vec![
-			String::from("0x020a1091341fe5664bfa1782d5e04779689068c916b04cb365ec3153755684d9a1"), // Alice
-		];
+		let public_keys = vec![String::from(
+			"0x020a1091341fe5664bfa1782d5e04779689068c916b04cb365ec3153755684d9a1",
+		) /* Alice */];
 		let lc = beefy_light_client::new(public_keys);
 		log::info!("mock beefy light client: {:?}", lc);
 
@@ -741,12 +760,12 @@ pub mod pallet {
 		// let chain_id = ICS24ChainId::new(String::from("chainA"), epoch_number);
 		let chain_id = ICS24ChainId::new(String::from("chainA"), epoch_number);
 		let client_state = ClientState {
-			chain_id: chain_id.clone(),
+			chain_id,
 			block_number: u32::default(),
 			frozen_height: None,
 			block_header: BlockHeader::default(),
 			latest_commitment: Commitment::default(),
-			validator_set: lc.validator_set.clone().into(),
+			validator_set: lc.validator_set.into(),
 		};
 		log::info!("mock client_state : {:?}", client_state);
 
@@ -835,7 +854,7 @@ pub mod pallet {
 
 			if !<ClientStates<T>>::contains_key(client_id.clone()) {
 				log::info!("in update_client_state: {:?} client_state not found !", client_id_str);
-				
+
 				return Err(Error::<T>::ClientIdNotFound.into())
 			} else {
 				// get client state from chain storage
@@ -854,7 +873,7 @@ pub mod pallet {
 
 			let signed_commitment =
 				commitment::SignedCommitment::from(decode_received_mmr_root.signed_commitment);
-			let rev_block_number = signed_commitment.clone().commitment.block_number;
+			let rev_block_number = signed_commitment.commitment.block_number;
 			if rev_block_number <= client_state.latest_commitment.block_number {
 				log::info!("receive mmr root block number({}) less than client_state.latest_commitment.block_number({})",
 				rev_block_number,client_state.latest_commitment.block_number);
@@ -902,15 +921,14 @@ pub mod pallet {
 					// update client_client block number and latest commitment
 					let latest_commitment = light_client.latest_commitment.unwrap();
 					client_state.block_number = latest_commitment.block_number;
-					client_state.latest_commitment =
-						help::Commitment::from(latest_commitment.clone());
+					client_state.latest_commitment = help::Commitment::from(latest_commitment);
 
 					// update validator_set
 					client_state.validator_set =
 						help::ValidatorSet::from(light_client.validator_set.clone());
 
 					// update block header
-					client_state.block_header = decode_received_mmr_root.block_header.clone();
+					client_state.block_header = decode_received_mmr_root.block_header;
 
 					// save to chain
 					let any_client_state = AnyClientState::Grandpa(client_state.clone());
@@ -930,34 +948,38 @@ pub mod pallet {
 
 					log::info!("the updated client state is : {:?}", client_state);
 
-					use ibc::clients::ics10_grandpa::consensus_state::ConsensusState as GPConsensusState;
-					use ibc::core::ics02_client::client_consensus::AnyConsensusState;
+					use ibc::{
+						clients::ics10_grandpa::consensus_state::ConsensusState as GPConsensusState,
+						core::ics02_client::client_consensus::AnyConsensusState,
+					};
 
-					let mut consensus_state = GPConsensusState::new(client_state.block_header.clone());
+					let mut consensus_state =
+						GPConsensusState::new(client_state.block_header.clone());
 					consensus_state.digest = client_state.latest_commitment.payload.clone();
 					let any_consensus_state = AnyConsensusState::Grandpa(consensus_state);
 
-					let height = ibc::Height{
+					let height = ibc::Height {
 						revision_number: 0,
 						revision_height: client_state.block_number as u64,
 					};
 
-					log::info!("in ibc-lib : [store_consensus_state] >> client_id: {:?}, height = {:?}, consensus_state = {:?}",client_id.clone(), height, any_consensus_state);
+					log::info!("in ibc-lib : [store_consensus_state] >> client_id: {:?}, height = {:?}, consensus_state = {:?}", client_id, height, any_consensus_state);
 
 					let height = height.encode_vec().unwrap();
 					let data = any_consensus_state.encode_vec().unwrap();
 					if <ConsensusStates<T>>::contains_key(client_id.clone()) {
 						// if consensus_state is no empty use push insert an exist ConsensusStates
 						<ConsensusStates<T>>::try_mutate(
-							client_id.clone(),
+							client_id,
 							|val| -> Result<(), &'static str> {
 								val.push((height, data));
 								Ok(())
 							},
-						).expect("store consensus state error");
+						)
+						.expect("store consensus state error");
 					} else {
 						// if consensus state is empty insert a new item.
-						<ConsensusStates<T>>::insert(client_id.clone(), vec![(height, data)]);
+						<ConsensusStates<T>>::insert(client_id, vec![(height, data)]);
 					}
 
 					// emit update state sucesse event

@@ -1,17 +1,18 @@
 use super::*;
 
 use crate::routing::Context;
-use ibc::clients::ics10_grandpa::header::Header;
 use ibc::{
-	core::ics02_client::{client_consensus::AnyConsensusState, client_state::AnyClientState},
-	core::ics03_connection::{
-		connection::ConnectionEnd,
-		context::{ConnectionKeeper, ConnectionReader},
-		error::Error as ICS03Error,
+	clients::ics10_grandpa::{consensus_state::ConsensusState as GPConsensusState, header::Header},
+	core::{
+		ics02_client::{client_consensus::AnyConsensusState, client_state::AnyClientState},
+		ics03_connection::{
+			connection::ConnectionEnd,
+			context::{ConnectionKeeper, ConnectionReader},
+			error::Error as ICS03Error,
+		},
+		ics23_commitment::commitment::CommitmentPrefix,
+		ics24_host::identifier::{ClientId, ConnectionId},
 	},
-	clients::ics10_grandpa::consensus_state::ConsensusState as GPConsensusState,
-	core::ics23_commitment::commitment::CommitmentPrefix,
-	core::ics24_host::identifier::{ClientId, ConnectionId},
 	Height,
 };
 
@@ -109,7 +110,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 		for item in value.iter() {
 			if item.0 == height {
 				let any_consensus_state = AnyConsensusState::decode_vec(&*item.1).unwrap();
-				return Ok(any_consensus_state);
+				return Ok(any_consensus_state)
 			}
 		}
 		// TODO
@@ -123,10 +124,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 		log::info!("in connection : [host_consensus_state] >> _height = {:?}", _height);
 		let result = AnyConsensusState::Grandpa(GPConsensusState::from(Header::default()));
 
-		log::info!(
-			"in connection : [host_consensus_state] >> any_consensus_state = {:?}",
-			result.clone()
-		);
+		log::info!("in connection : [host_consensus_state] >> any_consensus_state = {:?}", result);
 		Ok(result)
 	}
 }
@@ -155,7 +153,7 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		);
 
 		let temp = ConnectionReader::connection_end(self, &connection_id);
-		if let Ok(value)  = temp {
+		if let Ok(value) = temp {
 			log::info!("in connection : [store_connection] >> read store before: {:?}", value);
 		} else {
 			log::info!("in connection : [store_connection] >> before read Error");

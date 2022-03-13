@@ -1,19 +1,22 @@
 use super::*;
+use alloc::string::ToString;
 use core::str::FromStr;
 
 use crate::routing::Context;
 use ibc::{
-	core::ics02_client::{
-		client_consensus::AnyConsensusState,
-		client_state::AnyClientState,
-		client_type::ClientType,
-		context::{ClientKeeper, ClientReader},
-		error::Error as ICS02Error,
+	core::{
+		ics02_client::{
+			client_consensus::AnyConsensusState,
+			client_state::AnyClientState,
+			client_type::ClientType,
+			context::{ClientKeeper, ClientReader},
+			error::Error as ICS02Error,
+		},
+		ics24_host::identifier::ClientId,
 	},
-	core::ics24_host::identifier::ClientId,
+	timestamp::Timestamp,
 	Height,
 };
-use ibc::timestamp::Timestamp;
 
 impl<T: Config> ClientReader for Context<T> {
 	fn client_type(&self, client_id: &ClientId) -> Result<ClientType, ICS02Error> {
@@ -25,11 +28,11 @@ impl<T: Config> ClientReader for Context<T> {
 			let data = Vec::<u8>::decode(&mut data).unwrap();
 			let data = String::from_utf8(data).unwrap();
 			match ClientType::from_str(&data) {
-				Err(_err) => Err(ICS02Error::unknown_client_type(format!("{}", data))),
+				Err(_err) => Err(ICS02Error::unknown_client_type(data.to_string())),
 				Ok(val) => {
 					log::info!("in client : [client_type] >> client_type : {:?}", val);
 					Ok(val)
-				}
+				},
 			}
 		} else {
 			log::info!("in client : [client_type] >> read client_type is None");
@@ -64,7 +67,7 @@ impl<T: Config> ClientReader for Context<T> {
 			height
 		);
 
-		let mut values = <ConsensusStates<T>>::get(client_id.as_bytes()).clone();
+		let mut values = <ConsensusStates<T>>::get(client_id.as_bytes());
 		values.sort_by(|(height_left, _), (height_right, _)| {
 			let height_left = Height::decode(&height_left[..]).unwrap();
 			let height_right = Height::decode(&height_right[..]).unwrap();
@@ -80,7 +83,7 @@ impl<T: Config> ClientReader for Context<T> {
 					"in client : [consensus_state] >> any consensus state = {:?}",
 					any_consensus_state
 				);
-				return Ok(any_consensus_state);
+				return Ok(any_consensus_state)
 			}
 		}
 
@@ -92,14 +95,18 @@ impl<T: Config> ClientReader for Context<T> {
 		))
 	}
 
-	fn next_consensus_state(&self, client_id: &ClientId, height: Height) -> Result<Option<AnyConsensusState>, ICS02Error> {
+	fn next_consensus_state(
+		&self,
+		client_id: &ClientId,
+		height: Height,
+	) -> Result<Option<AnyConsensusState>, ICS02Error> {
 		log::info!(
 			"in client : [next_consensus_state] >> client_id = {:?}, height = {:?}",
 			client_id,
 			height
 		);
 
-		let mut values = <ConsensusStates<T>>::get(client_id.as_bytes()).clone();
+		let mut values = <ConsensusStates<T>>::get(client_id.as_bytes());
 		values.sort_by(|(height_left, _), (height_right, _)| {
 			let height_left = Height::decode(&height_left[..]).unwrap();
 			let height_right = Height::decode(&height_right[..]).unwrap();
@@ -115,24 +122,27 @@ impl<T: Config> ClientReader for Context<T> {
 					"in client : [consensus_state] >> any consensus state = {:?}",
 					any_consensus_state
 				);
-				return Ok(Some(any_consensus_state));
+				return Ok(Some(any_consensus_state))
 			}
 		}
-
 
 		Ok(Some(AnyConsensusState::Grandpa(
 			ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
 		)))
 	}
 
-	fn prev_consensus_state(&self, client_id: &ClientId, height: Height) -> Result<Option<AnyConsensusState>, ICS02Error> {
+	fn prev_consensus_state(
+		&self,
+		client_id: &ClientId,
+		height: Height,
+	) -> Result<Option<AnyConsensusState>, ICS02Error> {
 		log::info!(
 			"in client : [next_consensus_state] >> client_id = {:?}, height = {:?}",
 			client_id,
 			height
 		);
 
-		let mut values = <ConsensusStates<T>>::get(client_id.as_bytes()).clone();
+		let mut values = <ConsensusStates<T>>::get(client_id.as_bytes());
 		values.sort_by(|(height_left, _), (height_right, _)| {
 			let height_left = Height::decode(&height_left[..]).unwrap();
 			let height_right = Height::decode(&height_right[..]).unwrap();
@@ -148,7 +158,7 @@ impl<T: Config> ClientReader for Context<T> {
 					"in client : [consensus_state] >> any consensus state = {:?}",
 					any_consensus_state
 				);
-				return Ok(Some(any_consensus_state));
+				return Ok(Some(any_consensus_state))
 			}
 		}
 
@@ -274,19 +284,47 @@ impl<T: Config> ClientKeeper for Context<T> {
 		Ok(())
 	}
 
-	fn store_update_time(&mut self, client_id: ClientId, height: Height, timestamp: Timestamp) -> Result<(), ICS02Error> {
-		log::info!("in client: [store_update_time] >> client_id: {:?}, height: {:?}, timestamp: {:?}", client_id, height, timestamp);
+	fn store_update_time(
+		&mut self,
+		client_id: ClientId,
+		height: Height,
+		timestamp: Timestamp,
+	) -> Result<(), ICS02Error> {
+		log::info!(
+			"in client: [store_update_time] >> client_id: {:?}, height: {:?}, timestamp: {:?}",
+			client_id,
+			height,
+			timestamp
+		);
 
 		let encode_timestamp = serde_json::to_string(&timestamp).unwrap().as_bytes().to_vec();
-		<ClientProcessedTimes<T>>::insert(client_id.as_bytes(), height.encode_vec().unwrap(), encode_timestamp);
+		<ClientProcessedTimes<T>>::insert(
+			client_id.as_bytes(),
+			height.encode_vec().unwrap(),
+			encode_timestamp,
+		);
 
 		Ok(())
 	}
 
-	fn store_update_height(&mut self, client_id: ClientId, height: Height, host_height: Height) -> Result<(), ICS02Error> {
-		log::info!("in client: [store_update_height] >> client_id: {:?}, height: {:?}, host_height: {:?}", client_id, height, host_height);
+	fn store_update_height(
+		&mut self,
+		client_id: ClientId,
+		height: Height,
+		host_height: Height,
+	) -> Result<(), ICS02Error> {
+		log::info!(
+			"in client: [store_update_height] >> client_id: {:?}, height: {:?}, host_height: {:?}",
+			client_id,
+			height,
+			host_height
+		);
 
-		<ClientProcessedHeights<T>>::insert(client_id.as_bytes(), height.encode_vec().unwrap(), host_height.encode_vec().unwrap());
+		<ClientProcessedHeights<T>>::insert(
+			client_id.as_bytes(),
+			height.encode_vec().unwrap(),
+			host_height.encode_vec().unwrap(),
+		);
 
 		Ok(())
 	}
