@@ -20,7 +20,7 @@ use ibc::{
 
 impl<T: Config> ClientReader for Context<T> {
 	fn client_type(&self, client_id: &ClientId) -> Result<ClientType, ICS02Error> {
-		log::info!("in client : [client_type] >> client_id = {:?}", client_id);
+		log::trace!("in client : [client_type] >> client_id = {:?}", client_id);
 
 		if <Clients<T>>::contains_key(client_id.as_bytes()) {
 			let data = <Clients<T>>::get(client_id.as_bytes());
@@ -30,28 +30,28 @@ impl<T: Config> ClientReader for Context<T> {
 			match ClientType::from_str(&data) {
 				Err(_err) => Err(ICS02Error::unknown_client_type(data.to_string())),
 				Ok(val) => {
-					log::info!("in client : [client_type] >> client_type : {:?}", val);
+					log::trace!("in client : [client_type] >> client_type : {:?}", val);
 					Ok(val)
 				},
 			}
 		} else {
-			log::info!("in client : [client_type] >> read client_type is None");
+			log::trace!("in client : [client_type] >> read client_type is None");
 			Err(ICS02Error::client_not_found(client_id.clone()))
 		}
 	}
 
 	fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, ICS02Error> {
-		log::info!("in client : [client_state] >> client_id = {:?}", client_id);
+		log::trace!("in client : [client_state] >> client_id = {:?}", client_id);
 
 		if <ClientStates<T>>::contains_key(client_id.as_bytes()) {
 			let data = <ClientStates<T>>::get(client_id.as_bytes());
-			log::info!(
+			log::trace!(
 				"in client : [client_state] >> any client_state: {:?}",
 				AnyClientState::decode_vec(&*data).unwrap()
 			);
 			Ok(AnyClientState::decode_vec(&*data).unwrap())
 		} else {
-			log::info!("in client : [client_state] >> read any client state is None");
+			log::trace!("in client : [client_state] >> read any client state is None");
 			Err(ICS02Error::client_not_found(client_id.clone()))
 		}
 	}
@@ -61,7 +61,7 @@ impl<T: Config> ClientReader for Context<T> {
 		client_id: &ClientId,
 		height: Height,
 	) -> Result<AnyConsensusState, ICS02Error> {
-		log::info!(
+		log::trace!(
 			"in client : [consensus_state] >> client_id = {:?}, height = {:?}",
 			client_id,
 			height
@@ -79,7 +79,7 @@ impl<T: Config> ClientReader for Context<T> {
 
 			if item_height == height {
 				let any_consensus_state = AnyConsensusState::decode_vec(&*item.1).unwrap();
-				log::info!(
+				log::trace!(
 					"in client : [consensus_state] >> any consensus state = {:?}",
 					any_consensus_state
 				);
@@ -100,7 +100,7 @@ impl<T: Config> ClientReader for Context<T> {
 		client_id: &ClientId,
 		height: Height,
 	) -> Result<Option<AnyConsensusState>, ICS02Error> {
-		log::info!(
+		log::trace!(
 			"in client : [next_consensus_state] >> client_id = {:?}, height = {:?}",
 			client_id,
 			height
@@ -118,7 +118,7 @@ impl<T: Config> ClientReader for Context<T> {
 
 			if item_height < height {
 				let any_consensus_state = AnyConsensusState::decode_vec(&*item.1).unwrap();
-				log::info!(
+				log::trace!(
 					"in client : [consensus_state] >> any consensus state = {:?}",
 					any_consensus_state
 				);
@@ -136,7 +136,7 @@ impl<T: Config> ClientReader for Context<T> {
 		client_id: &ClientId,
 		height: Height,
 	) -> Result<Option<AnyConsensusState>, ICS02Error> {
-		log::info!(
+		log::trace!(
 			"in client : [next_consensus_state] >> client_id = {:?}, height = {:?}",
 			client_id,
 			height
@@ -154,7 +154,7 @@ impl<T: Config> ClientReader for Context<T> {
 
 			if item_height > height {
 				let any_consensus_state = AnyConsensusState::decode_vec(&*item.1).unwrap();
-				log::info!(
+				log::trace!(
 					"in client : [consensus_state] >> any consensus state = {:?}",
 					any_consensus_state
 				);
@@ -168,12 +168,12 @@ impl<T: Config> ClientReader for Context<T> {
 	}
 
 	fn host_height(&self) -> Height {
-		log::info!("in client : [host_height]");
+		log::trace!("in client : [host_height]");
 		let block_number = format!("{:?}", <frame_system::Pallet<T>>::block_number());
 		let current_height = block_number
 			.parse()
 			.map_err(|e| panic!("{:?}, caused by {:?} from frame_system::Pallet", e, block_number));
-		log::info!(
+		log::trace!(
 			"in channel: [host_height] >> host_height = {:?}",
 			Height::new(0, current_height.unwrap())
 		);
@@ -181,7 +181,7 @@ impl<T: Config> ClientReader for Context<T> {
 	}
 
 	fn host_consensus_state(&self, _height: Height) -> Result<AnyConsensusState, ICS02Error> {
-		log::info!("in client : [consensus_state]");
+		log::trace!("in client : [consensus_state]");
 
 		// TODO
 		Ok(AnyConsensusState::Grandpa(
@@ -190,7 +190,7 @@ impl<T: Config> ClientReader for Context<T> {
 	}
 
 	fn pending_host_consensus_state(&self) -> Result<AnyConsensusState, ICS02Error> {
-		log::info!("in client: [pending_host_consensus_state]");
+		log::trace!("in client: [pending_host_consensus_state]");
 		// TODO
 		Ok(AnyConsensusState::Grandpa(
 			ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
@@ -198,7 +198,7 @@ impl<T: Config> ClientReader for Context<T> {
 	}
 
 	fn client_counter(&self) -> Result<u64, ICS02Error> {
-		log::info!(
+		log::trace!(
 			"in client : [client_counter] >> client_counter: {:?}",
 			<ClientCounter<T>>::get()
 		);
@@ -241,7 +241,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 		client_id: ClientId,
 		client_state: AnyClientState,
 	) -> Result<(), ICS02Error> {
-		log::info!(
+		log::trace!(
 			"in client : [store_client_state] >> client_id: {:?}, client_state = {:?}",
 			client_id,
 			client_state
@@ -270,7 +270,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 		height: Height,
 		consensus_state: AnyConsensusState,
 	) -> Result<(), ICS02Error> {
-		log::info!("in client : [store_consensus_state] >> client_id: {:?}, height = {:?}, consensus_state = {:?}",
+		log::trace!("in client : [store_consensus_state] >> client_id: {:?}, height = {:?}, consensus_state = {:?}",
 			client_id, height, consensus_state);
 
 		let height = height.encode_vec().unwrap();
@@ -290,7 +290,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 		height: Height,
 		timestamp: Timestamp,
 	) -> Result<(), ICS02Error> {
-		log::info!(
+		log::trace!(
 			"in client: [store_update_time] >> client_id: {:?}, height: {:?}, timestamp: {:?}",
 			client_id,
 			height,
@@ -313,7 +313,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 		height: Height,
 		host_height: Height,
 	) -> Result<(), ICS02Error> {
-		log::info!(
+		log::trace!(
 			"in client: [store_update_height] >> client_id: {:?}, height: {:?}, host_height: {:?}",
 			client_id,
 			height,
