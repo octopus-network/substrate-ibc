@@ -797,9 +797,8 @@ pub mod pallet {
 		/// ```
 		#[pallet::weight(0)]
 		pub fn deliver(origin: OriginFor<T>, messages: Vec<Any>, tmp: u8) -> DispatchResult {
-			log::info!("in deliver");
 			for item in messages.iter() {
-				log::info!("Message type: {:?}", String::from_utf8(item.type_url.clone()).unwrap());
+				log::debug!("in deliver >> Message type: {:?}", String::from_utf8(item.type_url.clone()).unwrap());
 			}
 
 			let _sender = ensure_signed(origin)?;
@@ -846,20 +845,20 @@ pub mod pallet {
 			client_id: Vec<u8>,
 			mmr_root: Vec<u8>,
 		) -> DispatchResultWithPostInfo {
-			log::info!("received update_client_state request.");
+			log::trace!("update_client_state: update_client_state request.");
 			let _who = ensure_signed(origin)?;
 
 			// check if the client id exist?
 			let client_id_str = String::from_utf8(client_id.clone()).unwrap();
-			log::info!("received client id is {:?}", client_id_str);
+			log::trace!("update_client_state:  client id is {:?}", client_id_str);
 
 			let decode_received_mmr_root = help::MmrRoot::decode(&mut &mmr_root[..]).unwrap();
-			log::info!("receive decode mmr root is {:?}", decode_received_mmr_root);
+			log::trace!("update_client_state:  decode mmr root is {:?}", decode_received_mmr_root);
 
 			let mut client_state = ClientState::default();
 
 			if !<ClientStates<T>>::contains_key(client_id.clone()) {
-				log::info!("in update_client_state: {:?} client_state not found !", client_id_str);
+				log::error!("in update_client_state: {:?} client_state not found !", client_id_str);
 
 				return Err(Error::<T>::ClientIdNotFound.into());
 			} else {
@@ -871,8 +870,8 @@ pub mod pallet {
 					_ => unimplemented!(),
 				};
 
-				log::info!(
-					"in update_client_state : get client_state from chain storage: {:?}",
+				log::trace!(
+					"in update_client_state: get client_state from chain storage: {:?}",
 					client_state
 				);
 			}
@@ -881,7 +880,7 @@ pub mod pallet {
 				commitment::SignedCommitment::from(decode_received_mmr_root.signed_commitment);
 			let rev_block_number = signed_commitment.commitment.block_number;
 			if rev_block_number <= client_state.latest_commitment.block_number {
-				log::info!("receive mmr root block number({}) less than client_state.latest_commitment.block_number({})",
+				log::trace!("receive mmr root block number({}) less than client_state.latest_commitment.block_number({})",
 				rev_block_number,client_state.latest_commitment.block_number);
 
 				return Err(Error::<T>::ReceiveMmrRootBlockNumberLessThanClientStateLatestCommitmentBlockNumber.into());
@@ -892,7 +891,7 @@ pub mod pallet {
 				validator_set: client_state.validator_set.clone().into(),
 				in_process_state: None,
 			};
-			log::info!(
+			log::trace!(
 				"build new beefy_light_client from client_state store in chain \n {:?}",
 				light_client
 			);
@@ -922,7 +921,7 @@ pub mod pallet {
 
 			match result {
 				Ok(_) => {
-					log::info!("update the beefy light client sucesse! and the beefy light client state is : {:?} \n",light_client);
+					log::trace!("update the beefy light client sucesse! and the beefy light client state is : {:?} \n",light_client);
 
 					// update client_client block number and latest commitment
 					let latest_commitment = light_client.latest_commitment.unwrap();
@@ -952,7 +951,7 @@ pub mod pallet {
 					})
 					.expect("store client_state keys error");
 
-					log::info!("the updated client state is : {:?}", client_state);
+					log::trace!("the updated client state is : {:?}", client_state);
 
 					use ibc::{
 						clients::ics10_grandpa::consensus_state::ConsensusState as GPConsensusState,
@@ -969,7 +968,7 @@ pub mod pallet {
 						revision_height: client_state.block_number as u64,
 					};
 
-					log::info!("in ibc-lib : [store_consensus_state] >> client_id: {:?}, height = {:?}, consensus_state = {:?}", client_id, height, any_consensus_state);
+					log::trace!("in ibc-lib : [store_consensus_state] >> client_id: {:?}, height = {:?}, consensus_state = {:?}", client_id, height, any_consensus_state);
 
 					let height = height.encode_vec().unwrap();
 					let data = any_consensus_state.encode_vec().unwrap();
@@ -1000,7 +999,7 @@ pub mod pallet {
 					));
 				},
 				Err(e) => {
-					log::info!("update the beefy light client failure! : {:?}", e);
+					log::error!("update the beefy light client failure! : {:?}", e);
 
 					return Err(Error::<T>::UpdateBeefyLightClientFailure.into());
 				},
@@ -1330,7 +1329,7 @@ pub mod pallet {
 					<LatestHeight<T>>::set(height);
 				},
 				IbcEvent::ChainError(_value) => {
-					log::info!("Ibc event: {}", "chainError");
+					log::error!("Ibc event: {}", "chainError");
 				},
 			}
 		}
