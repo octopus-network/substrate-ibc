@@ -32,8 +32,10 @@ sp-std 					= { git = "https://github.com/paritytech/substrate.git", branch = "p
 sp-io 					= { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12", default-features = false }
 prost-types 			= { version = "0.9.0", default-features = false }
 
-ibc 					= { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/beefy", default-features = false }
-# ibc 					= { path = "../ibc-rs/modules", default-features = false }
+# ibc 					= { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/beefy", default-features = false }
+ibc 					= { path = "../ibc-rs/modules", default-features = false }
+ibc-proto				= { path = "../ibc-rs/proto", default-features = false }
+
 beefy-light-client = 	{ git = "https://github.com/octopus-network/beefy-light-client.git", default-features = false }
 serde_json 				= { version = "1.0", default-features = false }
 
@@ -45,8 +47,8 @@ default-features = false
 hex 		= '0.4.0'
 sha2 		= '0.9.3'
 serde 	    = { version = "1.0" }
-ibc 		= { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/beefy", features = ["mocks"]}
-# ibc 		= { path = "../ibc-rs/modules" }
+# ibc 		= { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/beefy", features = ["mocks"]}
+ibc 		= { path = "../ibc-rs/modules" }
 sp-io 		= { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12"}
 sp-runtime 	= { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12" }
 sp-std 		= { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.12" }
