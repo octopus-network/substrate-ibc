@@ -15,6 +15,7 @@ use ibc::{
 			error::Error as ICS02Error,
 		},
 		ics03_connection::{
+			connection::{ConnectionEnd, State},
 			context::{ConnectionKeeper, ConnectionReader},
 			error::Error as ICS03Error,
 		},
@@ -139,35 +140,34 @@ fn test_store_consensus_state_ok() {
 		assert_eq!(ret, consensus_state);
 	})
 }
-// TODO
-// #[test]
-// fn test_read_consensus_state_failed_by_supply_error_client_id() {
-// 	let gp_client_id = ClientId::new(ClientType::Grandpa, 0).unwrap();
-// 	let gp_client_id_failed = ClientId::new(ClientType::Grandpa, 1).unwrap();
 
-// 	let height = Height::default();
-// 	let gp_consensus_state = GPConsensusState::default();
-// 	let consensus_state = AnyConsensusState::Grandpa(gp_consensus_state);
+#[test]
+fn test_read_consensus_state_failed_by_supply_error_client_id() {
+	let gp_client_id = ClientId::new(ClientType::Grandpa, 0).unwrap();
+	let gp_client_id_failed = ClientId::new(ClientType::Grandpa, 1).unwrap();
 
-// 	let mut context: Context<Test> = Context::new();
+	let height = Height::default();
+	let gp_consensus_state = GPConsensusState::default();
+	let consensus_state = AnyConsensusState::Grandpa(gp_consensus_state);
 
-// 	new_test_ext().execute_with(|| {
-// 		assert_eq!(
-// 			context
-// 				.store_consensus_state(gp_client_id.clone(), height, consensus_state.clone())
-// 				.is_ok(),
-// 			true
-// 		);
+	let mut context: Context<Test> = Context::new();
 
-// 		let ret = context.consensus_state(&gp_client_id_failed, height).unwrap_err().to_string();
+	new_test_ext().execute_with(|| {
+		assert_eq!(
+			context
+				.store_consensus_state(gp_client_id.clone(), height, consensus_state.clone())
+				.is_ok(),
+			true
+		);
 
-// 		assert_eq!(
-// 			ret,
-// 			ICS02Error::consensus_state_not_found(gp_client_id_failed.clone(), height.clone())
-// 				.to_string()
-// 		);
-// 	})
-// }
+		let ret = context.consensus_state(&gp_client_id_failed, height).unwrap_err().to_string();
+		assert_eq!(
+			ret,
+			ICS02Error::consensus_state_not_found(gp_client_id_failed.clone(), height.clone())
+				.to_string()
+		);
+	})
+}
 
 #[test]
 fn test_get_identified_any_client_state_ok() {
@@ -203,22 +203,6 @@ fn test_get_identified_any_client_state_ok() {
 				)
 				.is_ok());
 		}
-
-		// let result = Pallet::<Test>::get_identified_any_client_state();
-
-		// assert_eq!(result.len(), range.len());
-
-		// for index in range {
-		// 	let (client_id, client_state) = result[index as usize].clone();
-		// 	let client_id =
-		// 		ClientId::from_str(String::from_utf8(client_id).unwrap().as_str()).unwrap();
-		// 	// println!("client_id: {:}", client_id);
-		// 	let client_state = AnyClientState::decode_vec(&*client_state).unwrap();
-		// 	// println!("client_state: {:?}", client_state);
-
-		// 	assert_eq!(gp_client_id_vec.iter().find(|&val| val == &client_id).is_some(), true);
-		// 	assert_eq!(client_state_vec.iter().find(|&val| val == &client_state).is_some(), true);
-		// }
 	})
 }
 
@@ -273,98 +257,64 @@ fn test_get_packet_commitment_state_ok() {
 				)
 				.is_ok());
 		}
-
-		// let result = Pallet::<Test>::get_packet_commitment_state();
-
-		// assert_eq!(result.len(), range.len());
-
-		// for (port_id_1, channel_id_1, sequence_1, value_1) in result {
-		// 	let port_id_2 =
-		// 		PortId::from_str(String::from_utf8(port_id_1).unwrap().as_str()).unwrap();
-		// 	let channel_id_2 =
-		// 		ChannelId::from_str(String::from_utf8(channel_id_1).unwrap().as_str()).unwrap();
-		// 	let sequence_2 = u64::decode(&mut sequence_1.as_slice()).unwrap();
-		// 	let sequence_2 = Sequence::from(sequence_2);
-		// 	// let sequence_2 =
-		// 	// Sequence::from_str(String::from_utf8(sequence_1).unwrap().as_str()).unwrap();
-
-		// 	// assert key
-		// 	assert_eq!(port_id_vec.iter().find(|&val| val == &port_id_2).is_some(), true);
-		// 	assert_eq!(channel_id_vec.iter().find(|&val| val == &channel_id_2).is_some(), true);
-		// 	assert_eq!(sequence_vec.iter().find(|&val| val == &sequence_2).is_some(), true);
-
-		// 	// assert value
-		// 	assert_eq!(value_vec.iter().find(|&val| val == &value_1).is_some(), true);
-		// }
 	})
 }
 
-//TODO
-// #[test]
-// fn test_connection_ok() {
-// 	let mut input: HashMap<ConnectionId, ConnectionEnd> = HashMap::new();
+#[test]
+fn test_connection_ok() {
+	use codec::alloc::collections::HashMap;
 
-// 	let connection_id0 = ConnectionId::new(0);
-// 	let connection_end0 = ConnectionEnd::default();
+	let mut input: HashMap<ConnectionId, ConnectionEnd> = HashMap::new();
 
-// 	let connection_id1 = ConnectionId::new(1);
-// 	let mut connection_end1 = ConnectionEnd::default();
-// 	connection_end1.set_state(State::from_i32(1).unwrap());
+	let connection_id0 = ConnectionId::new(0);
+	let connection_end0 = ConnectionEnd::default();
 
-// 	let connection_id2 = ConnectionId::new(2);
-// 	let mut connection_end2 = ConnectionEnd::default();
-// 	connection_end2.set_state(State::from_i32(2).unwrap());
+	let connection_id1 = ConnectionId::new(1);
+	let mut connection_end1 = ConnectionEnd::default();
 
-// 	input.insert(connection_id0.clone(), connection_end0.clone());
-// 	input.insert(connection_id1.clone(), connection_end1.clone());
-// 	input.insert(connection_id2.clone(), connection_end2.clone());
+	let connection_id2 = ConnectionId::new(2);
+	let mut connection_end2 = ConnectionEnd::default();
 
-// 	let mut context: Context<Test> = Context::new();
-// 	new_test_ext().execute_with(|| {
-// 		assert_eq!(
-// 			ConnectionKeeper::store_connection(
-// 				&mut context,
-// 				connection_id0.clone(),
-// 				input.get(&connection_id0.clone()).unwrap()
-// 			)
-// 			.is_ok(),
-// 			true
-// 		);
+	input.insert(connection_id0.clone(), connection_end0.clone());
+	input.insert(connection_id1.clone(), connection_end1.clone());
+	input.insert(connection_id2.clone(), connection_end2.clone());
 
-// 		let ret = ConnectionReader::connection_end(&mut context, &connection_id0).unwrap();
-// 		assert_eq!(ret, *input.get(&connection_id0.clone()).unwrap());
+	let mut context: Context<Test> = Context::new();
+	new_test_ext().execute_with(|| {
+		assert_eq!(
+			ConnectionKeeper::store_connection(
+				&mut context,
+				connection_id0.clone(),
+				input.get(&connection_id0.clone()).unwrap()
+			)
+			.is_ok(),
+			true
+		);
 
-// 		assert_eq!(
-// 			ConnectionKeeper::store_connection(
-// 				&mut context,
-// 				connection_id1.clone(),
-// 				input.get(&connection_id1.clone()).unwrap()
-// 			)
-// 			.is_ok(),
-// 			true
-// 		);
+		let ret = ConnectionReader::connection_end(&mut context, &connection_id0).unwrap();
+		assert_eq!(ret, *input.get(&connection_id0.clone()).unwrap());
 
-// 		assert_eq!(
-// 			ConnectionKeeper::store_connection(
-// 				&mut context,
-// 				connection_id2.clone(),
-// 				input.get(&connection_id2.clone()).unwrap()
-// 			)
-// 			.is_ok(),
-// 			true
-// 		);
+		assert_eq!(
+			ConnectionKeeper::store_connection(
+				&mut context,
+				connection_id1.clone(),
+				input.get(&connection_id1.clone()).unwrap()
+			)
+			.is_ok(),
+			true
+		);
 
-// 		// let result = Pallet::<Test>::get_idenfitied_connection_end();
-// 		// assert_eq!(result.len(), input.len());
-
-// 		// for (connection_id, connection_end) in result {
-// 		// 	let connection_id =
-// 		// 		ConnectionId::from_str(String::from_utf8(connection_id).unwrap().as_str()).unwrap();
-// 		// 	let connection_end = ConnectionEnd::decode_vec(&connection_end).unwrap();
-// 		// 	assert_eq!(*input.get(&connection_id).unwrap(), connection_end);
-// 		// }
-// 	})
-// }
+		assert_eq!(
+			ConnectionKeeper::store_connection(
+				&mut context,
+				connection_id2.clone(),
+				input.get(&connection_id2.clone()).unwrap()
+			)
+			.is_ok(),
+			true
+		);
+	})
+}
 
 #[test]
 fn test_connection_fail() {
@@ -457,26 +407,6 @@ fn test_get_acknowledge_state() {
 				)
 				.is_ok());
 		}
-
-		// let result = Pallet::<Test>::get_packet_acknowledge_state();
-		// assert_eq!(result.len(), range.len());
-
-		// for (port_id_1, channel_id_1, sequence_1, value_1) in result {
-		// 	let port_id_2 =
-		// 		PortId::from_str(String::from_utf8(port_id_1).unwrap().as_str()).unwrap();
-		// 	let channel_id_2 =
-		// 		ChannelId::from_str(String::from_utf8(channel_id_1).unwrap().as_str()).unwrap();
-		// 	let sequence_2 = u64::decode(&mut sequence_1.as_slice()).unwrap();
-		// 	let sequence_2 = Sequence::from(sequence_2);
-
-		// 	// assert key
-		// 	assert_eq!(port_id_vec.iter().find(|&val| val == &port_id_2).is_some(), true);
-		// 	assert_eq!(channel_id_vec.iter().find(|&val| val == &channel_id_2).is_some(), true);
-		// 	assert_eq!(sequence_vec.iter().find(|&val| val == &sequence_2).is_some(), true);
-
-		// 	// assert value
-		// 	assert_eq!(value_vec.iter().find(|&val| val == &value_1).is_some(), true);
-		// }
 	})
 }
 
@@ -664,21 +594,6 @@ fn test_get_identified_channel_end() {
 				)
 				.is_ok());
 		}
-
-		// let result = Pallet::<Test>::get_idenfitied_channel_end();
-
-		// assert_eq!(result.len(), range.len());
-
-		// for (port_id_1, channel_id_1, channel_end_1) in result {
-		// 	let port_id = PortId::from_str(String::from_utf8(port_id_1).unwrap().as_str()).unwrap();
-		// 	let channel_id =
-		// 		ChannelId::from_str(String::from_utf8(channel_id_1).unwrap().as_str()).unwrap();
-		// 	let channel_end = ChannelEnd::decode_vec(&channel_end_1).unwrap();
-
-		// 	assert_eq!(port_id_vec.iter().find(|&val| val == &port_id).is_some(), true);
-		// 	assert_eq!(channel_id_vec.iter().find(|&val| val == &channel_id).is_some(), true);
-		// 	assert_eq!(channel_end_vec.iter().find(|&val| val == &channel_end).is_some(), true);
-		// }
 	})
 }
 
