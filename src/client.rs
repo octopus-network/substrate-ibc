@@ -87,12 +87,7 @@ impl<T: Config> ClientReader for Context<T> {
 			}
 		}
 
-		// TODO
-		// Err(ICS02Error::consensus_state_not_found(client_id.clone(), native_height))
-		// if not find any_consensus_state at height will be return an default value consensus state
-		Ok(AnyConsensusState::Grandpa(
-			ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
-		))
+		Err(ICS02Error::consensus_state_not_found(client_id.clone(), height))
 	}
 
 	fn next_consensus_state(
