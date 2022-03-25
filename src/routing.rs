@@ -1,6 +1,10 @@
 use super::*;
 use ibc::{
-	applications::ics20_fungible_token_transfer::context::Ics20Context,
+	applications::ics20_fungible_token_transfer::{
+		context::Ics20Context, 
+		error::Error as ICS20Error,
+		msgs::denom_trace::DenomTrace,
+	},
 	core::ics26_routing::context::Ics26Context,
 };
 
@@ -18,7 +22,17 @@ impl<T: Config> Context<T> {
 
 impl<T: Config> Ics26Context for Context<T> {}
 
-impl<T: Config> Ics20Context for Context<T> {}
+impl<T: Config> Ics20Context for Context<T> {
+	fn get_denom_trace(&self, denom_trace_hash: &Vec<u8>) -> Result<DenomTrace, ICS20Error> {
+		todo!()
+	}
+    fn has_denom_trace(&self, denom_trace_hash: &Vec<u8>) -> bool {
+		todo!()
+	}
+    fn set_denom_trace(&self, denom_trace: &DenomTrace) -> Result<(), ICS20Error> {
+		todo!()
+	}
+}
 
 pub trait ModuleCallbacks {
 	// fn on_chan_open_try(

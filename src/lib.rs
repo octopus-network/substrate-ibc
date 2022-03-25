@@ -5,6 +5,8 @@
 #![allow(non_camel_case_types)]
 #![allow(dead_code)]
 #![allow(unused_assignments)]
+#![allow(unused_imports)]
+#![allow(unused_variables)]
 
 //! # IBC Module
 //!
