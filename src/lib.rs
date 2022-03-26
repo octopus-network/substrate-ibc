@@ -81,6 +81,7 @@ mod ics20_handler;
 mod ics20_ibc_module_impl;
 mod port;
 mod routing;
+pub mod transfer;
 
 /// A struct corresponds to `Any` in crate "prost-types", used in ibc-rs.
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
@@ -401,6 +402,10 @@ pub mod pallet {
 
 	#[pallet::storage]
 	pub type OldHeight<T: Config> = StorageValue<_, u64, ValueQuery, default_old_height>;
+
+	#[pallet::storage]
+	/// sha256(tracePath + "/" + baseDenom) => DenomTrace
+	pub type Denomination<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	/// Substrate IBC event list
 	#[pallet::event]
@@ -798,7 +803,10 @@ pub mod pallet {
 		#[pallet::weight(0)]
 		pub fn deliver(origin: OriginFor<T>, messages: Vec<Any>, tmp: u8) -> DispatchResult {
 			for item in messages.iter() {
-				log::debug!("in deliver >> Message type: {:?}", String::from_utf8(item.type_url.clone()).unwrap());
+				log::debug!(
+					"in deliver >> Message type: {:?}",
+					String::from_utf8(item.type_url.clone()).unwrap()
+				);
 			}
 
 			let _sender = ensure_signed(origin)?;

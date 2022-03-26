@@ -2,7 +2,7 @@ use super::*;
 
 use ibc::{
 	applications::ics20_fungible_token_transfer::{
-		context::Ics20Context, error::Error as Ics20Error,
+		context::Ics20Context, error::Error as Ics20Error, msgs::denom_trace,
 	},
 	core::ics04_channel::packet::Packet,
 };
@@ -114,6 +114,18 @@ pub fn handle_recv_packet(
 	Ok(())
 }
 
+/// OnTimeoutPacket refunds the sender since the original packet sent was
+/// never received and has been timed out.
+/// ibc-go implementation refer to https://github.com/octopus-network/ibc-go/blob/e40cdec6a3413fb3c8ea2a7ccad5e363ecd5a695/modules/apps/transfer/keeper/relay.go#L350
+pub fn handle_timeout_packet(
+	ctx: &mut dyn Ics20Context,
+	packet: Packet,
+	data: FungibleTokenPacketData,
+) -> Result<(), Ics20Error> {
+	refund_packet_token(ctx, packet, data)
+	// Ok(())
+}
+
 /// onAcknowledgePacket is called by the routing module when a packet sent by this module has been acknowledged.
 /// OnAcknowledgementPacket responds to the the success or failure of a packet
 /// acknowledgement written on the receiving chain. If the acknowledgement
@@ -134,17 +146,6 @@ pub fn handle_ack_packet(
 	//         // needs to be executed and no error needs to be returned
 	//         return nil
 	//     }
-	Ok(())
-}
-/// OnTimeoutPacket refunds the sender since the original packet sent was
-/// never received and has been timed out.
-/// ibc-go implementation refer to https://github.com/octopus-network/ibc-go/blob/e40cdec6a3413fb3c8ea2a7ccad5e363ecd5a695/modules/apps/transfer/keeper/relay.go#L350
-pub fn handle_timeout_packet(
-	ctx: &mut dyn Ics20Context,
-	packet: Packet,
-	data: FungibleTokenPacketData,
-) -> Result<(), Ics20Error> {
-	//return k.refundPacketToken(ctx, packet, data)
 	Ok(())
 }
 
@@ -177,25 +178,26 @@ pub fn refund_packet_token(
 /// DenomPathFromHash returns the full denomination path prefix from an ibc denom with a hash
 /// component.
 /// refer to https://github.com/octopus-network/ibc-go/blob/e40cdec6a3413fb3c8ea2a7ccad5e363ecd5a695/modules/apps/transfer/keeper/relay.go#L407
-pub fn denom_path_from_hash(
-	ctx: &mut dyn Ics20Context,
-	denom: String,
-) -> Result<String, Ics20Error> {
+pub fn denom_path_from_hash(ctx: &mut dyn Ics20Context, denom: &str) -> Result<String, Ics20Error> {
 	// trim the denomination prefix, by default "ibc/"
 	// hexHash := denom[len(types.DenomPrefix+"/"):]
+	let denom_split = denom.split("/").collect::<Vec<&str>>();
+	let hex_hash = denom_split[1];
 
 	// hash, err := types.ParseHexHash(hexHash)
 	// if err != nil {
 	// 	return "", sdkerrors.Wrap(types.ErrInvalidDenomForTransfer, err.Error())
 	// }
+	let hash = denom_trace::parse_hex_hash(hex_hash).unwrap();
 
 	// denomTrace, found := k.GetDenomTrace(ctx, hash)
 	// if !found {
 	// 	return "", sdkerrors.Wrap(types.ErrTraceNotFound, hexHash)
 	// }
+	let trace = ctx.get_denom_trace(&hash).unwrap();
 
 	// fullDenomPath := denomTrace.GetFullDenomPath()
 	// return fullDenomPath, nil
-	let full_denom_path = String::default();
-	Ok(full_denom_path)
+	trace.get_full_denom_path()
+	// Ok(full_denom_path)
 }
