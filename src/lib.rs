@@ -118,7 +118,17 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use ibc::{
 		applications::ics20_fungible_token_transfer::context::Ics20Context,
-		core::ics04_channel::events::WriteAcknowledgement, events::IbcEvent,
+		core::{
+			ics04_channel::{
+				channel::{Counterparty, Order},
+				events::WriteAcknowledgement,
+				Version,
+			},
+			ics05_port::capabilities::Capability,
+			ics24_host::identifier::{ChannelId as IbcChannelId, PortId as IbcPortId},
+		},
+		events::IbcEvent,
+		signer::Signer,
 	};
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
@@ -1083,6 +1093,8 @@ pub mod pallet {
 						//TODO: handle SendPacket
 						// let _value = value.clone();
 						let _ = ics20_handler::handle_transfer(ctx, value.clone().packet);
+
+						Self::deposit_event(event.clone().into());
 					},
 
 					IbcEvent::ReceivePacket(value) => {
@@ -1113,30 +1125,46 @@ pub mod pallet {
 
 						//TODO: emit write acknowledgement event
 						// Self::deposit_event(write_ack_event);
+
+						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule;
+						let ret = ibc::core::ics26_routing::ibc_module::IBCModule::on_recv_packet(
+							&ics20_modlue,
+							ctx,
+							value.clone().packet,
+							Signer::new("IBC"),
+						);
 					},
 					IbcEvent::TimeoutPacket(value) => {
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L442
 
-						//TODO: get relayer address
-						// let timeout_msg = decode(messsages[0].clone());
-						// let relayer =timeout_msg.signer;
+						// TODO:
+						// get relayer signer
+						// let timeout_msg = decode(messages[0].clone());
+						// let relayer = tiomeout_msg.signer;
+						let ics20_module = ics20_ibc_module_impl::Ics20IBCModule;
+						let ret =
+							ibc::core::ics26_routing::ibc_module::IBCModule::on_timeout_packet(
+								&ics20_module,
+								ctx,
+								value.clone().packet,
+								Signer::new("IBC"),
+							);
 
-						// Perform application logic callback -> on_timeout_packet
-						// ibc_module_impl::on_timeout_packet(&mut ctx, value.packet,relayer);
+						Self::deposit_event(event.clone().into());
 					},
 
 					IbcEvent::AcknowledgePacket(value) => {
-
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L581
 
-						//TODO: get relayer address
+						// TODO: get relayer address
 						// let ack_msg = decode(messsages[0].clone());
-						// let relayer =ack_msg.signer;
-
-						//TODO: Perform callback --> on_acknowledgement_packet
+						// let relayer = ack_msg.signer;
 						// let ack = ack_msg.acknowledgement;
-						// ibc_module_impl::on_acknowledgement_packet(&mut ctx,
-						// value.packet,ack,relayer);
+
+						let ics20_module = ics20_ibc_module_impl::Ics20IBCModule;
+						let ret = ibc::core::ics26_routing::ibc_module::IBCModule::on_acknowledgement_packet(&ics20_module, ctx, value.clone().packet, vec![], Signer::new("IBC"));
+
+						Self::deposit_event(event.clone().into());
 					},
 
 					IbcEvent::OpenInitChannel(value) => {
@@ -1145,71 +1173,116 @@ pub mod pallet {
 						//TODO: get data from value.packet
 						// let order = value.packet.order;
 						// ...
-						//TODO: Perform callback --> on_open_init_channel
-						// ibc_module_impl::on_chan_open_init(&mut ctx,
-						// 	order,
-						// 	connection_hops,
-						// 	port_id,
-						// 	channel_id,
-						// 	channel_cap,
-						// 	counterparty,
-						// 	version)
+
+						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule;
+						let ret =
+							ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_init(
+								&ics20_modlue,
+								ctx,
+								Order::default(),
+								vec![],
+								IbcPortId::default(),
+								IbcChannelId::default(),
+								&Capability::default(),
+								Counterparty::default(),
+								Version::default(),
+							);
+
+						Self::deposit_event(event.clone().into());
 					},
 
 					IbcEvent::OpenTryChannel(value) => {
-
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L203
 						//TODO: get data from value.packet
 						// let order = value.packet.order;
 						// ...
-						//TODO: Perform callback --> on_open_try_channel
-						// ibc_module_impl::on_chan_open_try(&mut ctx,...)
+						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule;
+						let ret = ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_try(
+							&ics20_modlue,
+							ctx,
+							Order::default(),
+							vec![],
+							IbcPortId::default(),
+							IbcChannelId::default(),
+							&Capability::default(),
+							Counterparty::default(),
+							Version::default(),
+						);
+
+						Self::deposit_event(event.clone().into());
 					},
 
 					IbcEvent::OpenAckChannel(value) => {
-
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L241
 						//TODO: get data from value.packet
 						// let order = value.packet.order;
 						// ...
-						//TODO: Perform callback --> on_open_ack_channel
-						// ibc_module_impl::on_chan_open_ack(&mut ctx,...)
+						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule;
+						let ret = ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_ack(
+							&ics20_modlue,
+							ctx,
+							IbcPortId::default(),
+							IbcChannelId::default(),
+							Version::default(),
+						);
+
+						Self::deposit_event(event.clone().into());
 					},
 
 					IbcEvent::OpenConfirmChannel(value) => {
-
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L277
 						//TODO: get data from value.packet
 						// let order = value.packet.order;
 						// ...
-						//TODO: Perform callback --> on_open_confirm_channel
-						// ibc_module_impl::on_chan_open_confirm(&mut ctx,...)
+						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule;
+						let ret =
+							ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_confirm(
+								&ics20_modlue,
+								ctx,
+								IbcPortId::default(),
+								IbcChannelId::default(),
+							);
+
+						Self::deposit_event(event.clone().into());
 					},
 					IbcEvent::CloseInitChannel(value) => {
-
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L309
 						//TODO: get data from value.packet
 						// let order = value.packet.order;
 						// ...
-						//TODO: Perform callback --> on_close_init_channel
-						// ibc_module_impl::on_chan_close_init(&mut ctx,...)
+						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule;
+						let ret =
+							ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_close_init(
+								&ics20_modlue,
+								ctx,
+								IbcPortId::default(),
+								IbcChannelId::default(),
+							);
+
+						Self::deposit_event(event.clone().into());
 					},
 
 					IbcEvent::CloseConfirmChannel(value) => {
-
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L336
 						//TODO: get data from value.packet
 						// let order = value.packet.order;
 						// ...
-						//TODO: Perform callback --> on_close_confirm_channel
-						// ibc_module_impl::on_chan_close_confirm(&mut ctx,...)
+
+						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule;
+						let ret =
+							ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_close_confirm(
+								&ics20_modlue,
+								ctx,
+								IbcPortId::default(),
+								IbcChannelId::default(),
+							);
+
+						Self::deposit_event(event.clone().into());
 					},
 					_ => {
-						log::info!("Unhandled event: {:?}", event);
+						log::warn!("Unhandled event: {:?}", event);
 					},
 				}
-				// Finally, emit event
-				Self::deposit_event(event.clone().into());
 			}
 		}
 
@@ -1217,7 +1290,7 @@ pub mod pallet {
 		fn store_latest_height(ibc_event: IbcEvent) {
 			match ibc_event {
 				IbcEvent::Empty(_value) => {
-					log::info!("ibc event: {}", "Empty");
+					log::warn!("ibc event: {}", "Empty");
 				},
 				IbcEvent::NewBlock(value) => {
 					let height = value.height().encode_vec().unwrap();
@@ -1337,7 +1410,7 @@ pub mod pallet {
 					<LatestHeight<T>>::set(height);
 				},
 				IbcEvent::ChainError(_value) => {
-					log::error!("Ibc event: {}", "chainError");
+					log::warn!("Ibc event: {}", "chainError");
 				},
 			}
 		}
