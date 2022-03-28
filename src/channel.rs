@@ -374,8 +374,8 @@ impl<T: Config> ChannelReader for Context<T> {
 		// let time = T::TimeProvider::now();
 		// let ts = Timestamp::from_nanoseconds(time.as_nanos() as u64)
 		// 	.map_err(|e| panic!("{:?}, caused by {:?} from pallet timestamp_pallet", e, time));
-		// log::trace!("in channel: [host_timestamp] >> host_timestamp = {:?}", ts.clone().unwrap());
-		// ts.unwrap()
+		// log::trace!("in channel: [host_timestamp] >> host_timestamp = {:?}",
+		// ts.clone().unwrap()); ts.unwrap()
 		ClientReader::host_timestamp(self)
 	}
 
@@ -808,4 +808,3 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		.expect("increase channel counter error");
 	}
 }
-

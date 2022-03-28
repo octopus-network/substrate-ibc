@@ -1,15 +1,20 @@
 use super::*;
 use crate::ics20_handler;
 use ibc::{
+	applications::ics20_fungible_token_transfer::{
+		context::Ics20Context, error::Error as Ics20Error,
+	},
 	core::{
-		ics04_channel::{channel::Counterparty, channel::Order, packet::Packet, Version},
+		ics04_channel::{
+			channel::{Counterparty, Order},
+			packet::Packet,
+			Version,
+		},
 		ics05_port::capabilities::Capability,
 		ics24_host::identifier::{ChannelId, ConnectionId, PortId},
 		ics26_routing::ibc_module::IBCModule,
 	},
-	signer::Signer, applications::ics20_fungible_token_transfer::{
-	context::Ics20Context, error::Error as Ics20Error,
-},
+	signer::Signer,
 };
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Ics20IBCModule;
@@ -28,17 +33,17 @@ impl IBCModule for Ics20IBCModule {
 		counterparty: Counterparty,
 		version: Version,
 	) -> Result<(), Ics20Error> {
-		// if err := ValidateTransferChannelParams(ctx, im.keeper, order, portID, channelID); err != nil {
-		//     return err
+		// if err := ValidateTransferChannelParams(ctx, im.keeper, order, portID, channelID); err !=
+		// nil {     return err
 		// }
 
 		// if version != types.Version {
-		//     return sdkerrors.Wrapf(types.ErrInvalidVersion, "got %s, expected %s", version, types.Version)
-		// }
+		//     return sdkerrors.Wrapf(types.ErrInvalidVersion, "got %s, expected %s", version,
+		// types.Version) }
 
 		// // Claim channel capability passed back by IBC module
-		// if err := im.keeper.ClaimCapability(ctx, chanCap, host.ChannelCapabilityPath(portID, channelID)); err != nil {
-		//     return err
+		// if err := im.keeper.ClaimCapability(ctx, chanCap, host.ChannelCapabilityPath(portID,
+		// channelID)); err != nil {     return err
 		// }
 
 		// return nil
@@ -58,22 +63,23 @@ impl IBCModule for Ics20IBCModule {
 		counterparty: Counterparty,
 		counterparty_version: Version,
 	) -> Result<Version, Ics20Error> {
-		// if err := ValidateTransferChannelParams(ctx, im.keeper, order, portID, channelID); err != nil {
-		//     return "", err
+		// if err := ValidateTransferChannelParams(ctx, im.keeper, order, portID, channelID); err !=
+		// nil {     return "", err
 		// }
 
 		// if counterpartyVersion != types.Version {
-		//     return "", sdkerrors.Wrapf(types.ErrInvalidVersion, "invalid counterparty version: got: %s, expected %s", counterpartyVersion, types.Version)
-		// }
+		//     return "", sdkerrors.Wrapf(types.ErrInvalidVersion, "invalid counterparty version:
+		// got: %s, expected %s", counterpartyVersion, types.Version) }
 
-		// // Module may have already claimed capability in OnChanOpenInit in the case of crossing hellos
-		// // (ie chainA and chainB both call ChanOpenInit before one of them calls ChanOpenTry)
-		// // If module can already authenticate the capability then module already owns it so we don't need to claim
-		// // Otherwise, module does not have channel capability and we must claim it from IBC
-		// if !im.keeper.AuthenticateCapability(ctx, chanCap, host.ChannelCapabilityPath(portID, channelID)) {
-		//     // Only claim channel capability passed back by IBC module if we do not already own it
-		//     if err := im.keeper.ClaimCapability(ctx, chanCap, host.ChannelCapabilityPath(portID, channelID)); err != nil {
-		//         return "", err
+		// // Module may have already claimed capability in OnChanOpenInit in the case of crossing
+		// hellos // (ie chainA and chainB both call ChanOpenInit before one of them calls
+		// ChanOpenTry) // If module can already authenticate the capability then module already
+		// owns it so we don't need to claim // Otherwise, module does not have channel capability
+		// and we must claim it from IBC if !im.keeper.AuthenticateCapability(ctx, chanCap,
+		// host.ChannelCapabilityPath(portID, channelID)) {     // Only claim channel capability
+		// passed back by IBC module if we do not already own it     if err :=
+		// im.keeper.ClaimCapability(ctx, chanCap, host.ChannelCapabilityPath(portID, channelID));
+		// err != nil {         return "", err
 		//     }
 		// }
 
@@ -92,8 +98,8 @@ impl IBCModule for Ics20IBCModule {
 		counterparty_version: Version,
 	) -> Result<(), Ics20Error> {
 		// if counterpartyVersion != types.Version {
-		//     return sdkerrors.Wrapf(types.ErrInvalidVersion, "invalid counterparty version: %s, expected %s", counterpartyVersion, types.Version)
-		// }
+		//     return sdkerrors.Wrapf(types.ErrInvalidVersion, "invalid counterparty version: %s,
+		// expected %s", counterpartyVersion, types.Version) }
 		// return nil
 		Ok(())
 	}

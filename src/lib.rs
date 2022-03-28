@@ -116,8 +116,10 @@ pub mod pallet {
 	};
 	use frame_support::{dispatch::DispatchResult, pallet_prelude::*, traits::UnixTime};
 	use frame_system::pallet_prelude::*;
-	use ibc::core::ics04_channel::events::WriteAcknowledgement;
-	use ibc::events::IbcEvent;
+	use ibc::{
+		applications::ics20_fungible_token_transfer::context::Ics20Context,
+		core::ics04_channel::events::WriteAcknowledgement, events::IbcEvent,
+	};
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -730,9 +732,8 @@ pub mod pallet {
 					Event::TimeoutOnClosePacket(height.into(), packet.into())
 				},
 				ibc::events::IbcEvent::Empty(value) => Event::Empty(value.as_bytes().to_vec()),
-				ibc::events::IbcEvent::ChainError(value) => {
-					Event::ChainError(value.as_bytes().to_vec())
-				},
+				ibc::events::IbcEvent::ChainError(value) =>
+					Event::ChainError(value.as_bytes().to_vec()),
 				_ => unimplemented!(),
 			}
 		}
@@ -800,7 +801,10 @@ pub mod pallet {
 		#[pallet::weight(0)]
 		pub fn deliver(origin: OriginFor<T>, messages: Vec<Any>, tmp: u8) -> DispatchResult {
 			for item in messages.iter() {
-				log::debug!("in deliver >> Message type: {:?}", String::from_utf8(item.type_url.clone()).unwrap());
+				log::debug!(
+					"in deliver >> Message type: {:?}",
+					String::from_utf8(item.type_url.clone()).unwrap()
+				);
 			}
 
 			let _sender = ensure_signed(origin)?;
@@ -862,7 +866,7 @@ pub mod pallet {
 			if !<ClientStates<T>>::contains_key(client_id.clone()) {
 				log::error!("in update_client_state: {:?} client_state not found !", client_id_str);
 
-				return Err(Error::<T>::ClientIdNotFound.into());
+				return Err(Error::<T>::ClientIdNotFound.into())
 			} else {
 				// get client state from chain storage
 				let data = <ClientStates<T>>::get(client_id.clone());
@@ -1003,7 +1007,7 @@ pub mod pallet {
 				Err(e) => {
 					log::error!("update the beefy light client failure! : {:?}", e);
 
-					return Err(Error::<T>::UpdateBeefyLightClientFailure.into());
+					return Err(Error::<T>::UpdateBeefyLightClientFailure.into())
 				},
 			}
 
@@ -1068,18 +1072,17 @@ pub mod pallet {
 
 	impl<T: Config> Pallet<T> {
 		/// handle the event returned by ics26 route module
-		fn handle_result(
-			ctx: &mut routing::Context<T>,
-			messages: Vec<prost_types::Any>,
-			result: Vec<IbcEvent>,
-		) {
+		fn handle_result<Ctx>(ctx: &mut Ctx, messages: Vec<prost_types::Any>, result: Vec<IbcEvent>)
+		where
+			Ctx: Ics20Context,
+		{
 			for event in result {
 				match event.clone() {
 					IbcEvent::SendPacket(value) => {
 						// refer to https://github.com/octopus-network/ibc-go/blob/f5962c3324ee7e69eeaa9918b65eb1b089da6095/modules/apps/transfer/keeper/msg_server.go#L16
 						//TODO: handle SendPacket
 						// let _value = value.clone();
-						// ics20_handler::handle_transfer(&mut ctx, _value.packet);
+						let _ = ics20_handler::handle_transfer(ctx, value.clone().packet);
 					},
 
 					IbcEvent::ReceivePacket(value) => {
@@ -1089,7 +1092,8 @@ pub mod pallet {
 						// let relayer =recv_msg.signer;
 
 						//TODO: Perform callback -> on_recv_packet
-						// let ack = ibc_module_impl::on_recv_packet(&mut ctx, value.packet,relayer);
+						// let ack = ibc_module_impl::on_recv_packet(&mut ctx,
+						// value.packet,relayer);
 
 						// TODO： handle write acknowledgement
 						// let packet = value.packet;
@@ -1101,10 +1105,10 @@ pub mod pallet {
 						// 	let channel_id = value.packet.source_channel.as_bytes().to_vec();
 						// 	let sequence = u64::from(value.packet.sequence);
 						// 	let write_ack = value.encode_vec().unwrap();
-						// 	let _write_ack = WriteAcknowledgement::decode(&*write_ack.clone()).unwrap();
-						// 	// store.Set((portID, channelID, sequence), WriteAckEvent)
-						// 	<WriteAckPacketEvent<T>>::insert((port_id, channel_id, sequence), write_ack);
-						// };
+						// 	let _write_ack =
+						// WriteAcknowledgement::decode(&*write_ack.clone()).unwrap(); 	// store.Set((portID,
+						// channelID, sequence), WriteAckEvent) 	<WriteAckPacketEvent<T>>::
+						// insert((port_id, channel_id, sequence), write_ack); };
 
 						//TODO: emit write acknowledgement event
 						// Self::deposit_event(write_ack_event);
@@ -1130,7 +1134,8 @@ pub mod pallet {
 
 						//TODO: Perform callback --> on_acknowledgement_packet
 						// let ack = ack_msg.acknowledgement;
-						// ibc_module_impl::on_acknowledgement_packet(&mut ctx, value.packet,ack,relayer);
+						// ibc_module_impl::on_acknowledgement_packet(&mut ctx,
+						// value.packet,ack,relayer);
 					},
 
 					IbcEvent::OpenInitChannel(value) => {

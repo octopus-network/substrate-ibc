@@ -44,7 +44,10 @@ use ibc_proto::ibc::apps::transfer::v2::FungibleTokenPacketData;
 /// ibc-go implementation refer to https://github.com/octopus-network/ibc-go/blob/e40cdec6a3413fb3c8ea2a7ccad5e363ecd5a695/modules/apps/transfer/keeper/relay.go#L51
 /// pallet-asset lock refer to https://github.com/octopus-network/octopus-pallets/blob/main/appchain/src/lib.rs#L676
 /// pallet-asset burn refer to https://github.com/octopus-network/octopus-pallets/blob/main/appchain/src/lib.rs#L731
-pub fn handle_transfer(ctx: &mut dyn Ics20Context, packet: Packet) -> Result<(), Ics20Error> {
+pub fn handle_transfer<Ctx>(ctx: &Ctx, packet: Packet) -> Result<(), Ics20Error>
+where
+	Ctx: Ics20Context,
+{
 	//TODO: get data from packet
 	// let source_channel = ChannelId::from(_value.packet.source_channel);
 	// let source_port =  PortId::from(_value.packet.source_port);
@@ -55,7 +58,8 @@ pub fn handle_transfer(ctx: &mut dyn Ics20Context, packet: Packet) -> Result<(),
 	// let data = packet.data;
 
 	//TODO: get FungibleTokenPacketData from packet data
-	// let fungible_token_packet_data = FungibleTokenPacketData::decode(&mut data.as_slice()).unwrap();
+	// let fungible_token_packet_data = FungibleTokenPacketData::decode(&mut
+	// data.as_slice()).unwrap();
 
 	// let token_id = fungible_token_packet_data.token_id;
 	// let sender= fungible_token_packet_data.sender_chain_id;
@@ -86,11 +90,14 @@ pub fn handle_transfer(ctx: &mut dyn Ics20Context, packet: Packet) -> Result<(),
 /// ibc-go implementation refer to https://github.com/octopus-network/ibc-go/blob/e40cdec6a3413fb3c8ea2a7ccad5e363ecd5a695/modules/apps/transfer/keeper/relay.go#L189
 /// pallet-asset mint refer to https://github.com/octopus-network/octopus-pallets/blob/main/appchain/src/lib.rs#L1068
 /// pallet-asset unlock refer to https://github.com/octopus-network/octopus-pallets/blob/main/appchain/src/lib.rs#L1051
-pub fn handle_recv_packet(
-	ctx: &mut dyn Ics20Context,
+pub fn handle_recv_packet<Ctx>(
+	ctx: &Ctx,
 	packet: Packet,
 	data: FungibleTokenPacketData,
-) -> Result<(), Ics20Error> {
+) -> Result<(), Ics20Error>
+where
+	Ctx: Ics20Context,
+{
 	//TODO: token state transfaction
 	//     prefix = "{packet.sourcePort}/{packet.sourceChannel}/"
 	//   // we are the source if the packets were prefixed by the sending chain
@@ -100,8 +107,8 @@ pub fn handle_recv_packet(
 	//     // determine escrow account
 	//     escrowAccount = channelEscrowAddresses[packet.destChannel]
 	//     // unescrow tokens to receiver (assumed to fail if balance insufficient)
-	//     err = bank.TransferCoins(escrowAccount, data.receiver, data.denomination.slice(len(prefix)), data.amount)
-	//     if (err !== nil)
+	//     err = bank.TransferCoins(escrowAccount, data.receiver,
+	// data.denomination.slice(len(prefix)), data.amount)     if (err !== nil)
 	//       ack = FungibleTokenPacketAcknowledgement{false, "transfer coins failed"}
 	//   } else {
 	//     prefix = "{packet.destPort}/{packet.destChannel}/"
@@ -114,18 +121,21 @@ pub fn handle_recv_packet(
 	Ok(())
 }
 
-/// onAcknowledgePacket is called by the routing module when a packet sent by this module has been acknowledged.
-/// OnAcknowledgementPacket responds to the the success or failure of a packet
+/// onAcknowledgePacket is called by the routing module when a packet sent by this module has been
+/// acknowledged. OnAcknowledgementPacket responds to the the success or failure of a packet
 /// acknowledgement written on the receiving chain. If the acknowledgement
 /// was a success then nothing occurs. If the acknowledgement failed, then
 /// the sender is refunded their tokens using the refundPacketToken function.
 /// ibc-go implementation refer to https://github.com/octopus-network/ibc-go/blob/e40cdec6a3413fb3c8ea2a7ccad5e363ecd5a695/modules/apps/transfer/keeper/relay.go#L337
-pub fn handle_ack_packet(
-	ctx: &mut dyn Ics20Context,
+pub fn handle_ack_packet<Ctx>(
+	ctx: &Ctx,
 	packet: Packet,
 	data: FungibleTokenPacketData,
 	ack: Vec<u8>,
-) -> Result<(), Ics20Error> {
+) -> Result<(), Ics20Error>
+where
+	Ctx: Ics20Context,
+{
 	// switch ack.Response.(type) {
 	//     case *channeltypes.Acknowledgement_Error:
 	//         return k.refundPacketToken(ctx, packet, data)
@@ -139,26 +149,32 @@ pub fn handle_ack_packet(
 /// OnTimeoutPacket refunds the sender since the original packet sent was
 /// never received and has been timed out.
 /// ibc-go implementation refer to https://github.com/octopus-network/ibc-go/blob/e40cdec6a3413fb3c8ea2a7ccad5e363ecd5a695/modules/apps/transfer/keeper/relay.go#L350
-pub fn handle_timeout_packet(
-	ctx: &mut dyn Ics20Context,
+pub fn handle_timeout_packet<Ctx>(
+	ctx: &Ctx,
 	packet: Packet,
 	data: FungibleTokenPacketData,
-) -> Result<(), Ics20Error> {
+) -> Result<(), Ics20Error>
+where
+	Ctx: Ics20Context,
+{
 	//return k.refundPacketToken(ctx, packet, data)
 	Ok(())
 }
 
-/// refundTokens is called by both onAcknowledgePacket, on failure, and onTimeoutPacket, to refund escrowed tokens to the original sender.
-/// refundPacketToken will unescrow and send back the tokens back to sender
-/// if the sending chain was the source chain. Otherwise, the sent tokens
+/// refundTokens is called by both onAcknowledgePacket, on failure, and onTimeoutPacket, to refund
+/// escrowed tokens to the original sender. refundPacketToken will unescrow and send back the tokens
+/// back to sender if the sending chain was the source chain. Otherwise, the sent tokens
 /// were burnt in the original send so new tokens are minted and sent to
 /// the sending address.
 /// ibc-go implementation refer to https://github.com/octopus-network/ibc-go/blob/e40cdec6a3413fb3c8ea2a7ccad5e363ecd5a695/modules/apps/transfer/keeper/relay.go#L358
-pub fn refund_packet_token(
-	ctx: &mut dyn Ics20Context,
+pub fn refund_packet_token<Ctx>(
+	ctx: &Ctx,
 	packet: Packet,
 	data: FungibleTokenPacketData,
-) -> Result<(), Ics20Error> {
+) -> Result<(), Ics20Error>
+where
+	Ctx: Ics20Context,
+{
 	// FungibleTokenPacketData data = packet.data
 	// prefix = "{packet.sourcePort}/{packet.sourceChannel}/"
 	// // we are the source if the denomination is not prefixed
@@ -177,10 +193,10 @@ pub fn refund_packet_token(
 /// DenomPathFromHash returns the full denomination path prefix from an ibc denom with a hash
 /// component.
 /// refer to https://github.com/octopus-network/ibc-go/blob/e40cdec6a3413fb3c8ea2a7ccad5e363ecd5a695/modules/apps/transfer/keeper/relay.go#L407
-pub fn denom_path_from_hash(
-	ctx: &mut dyn Ics20Context,
-	denom: String,
-) -> Result<String, Ics20Error> {
+pub fn denom_path_from_hash<Ctx>(ctx: &Ctx, denom: String) -> Result<String, Ics20Error>
+where
+	Ctx: Ics20Context,
+{
 	// trim the denomination prefix, by default "ibc/"
 	// hexHash := denom[len(types.DenomPrefix+"/"):]
 

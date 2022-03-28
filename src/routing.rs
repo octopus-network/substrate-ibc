@@ -1,9 +1,7 @@
 use super::*;
 use ibc::{
 	applications::ics20_fungible_token_transfer::{
-		context::Ics20Context, 
-		error::Error as ICS20Error,
-		msgs::denom_trace::DenomTrace,
+		context::Ics20Context, error::Error as ICS20Error, msgs::denom_trace::DenomTrace,
 	},
 	core::ics26_routing::context::Ics26Context,
 };
@@ -26,10 +24,10 @@ impl<T: Config> Ics20Context for Context<T> {
 	fn get_denom_trace(&self, denom_trace_hash: &Vec<u8>) -> Result<DenomTrace, ICS20Error> {
 		todo!()
 	}
-    fn has_denom_trace(&self, denom_trace_hash: &Vec<u8>) -> bool {
+	fn has_denom_trace(&self, denom_trace_hash: &Vec<u8>) -> bool {
 		todo!()
 	}
-    fn set_denom_trace(&self, denom_trace: &DenomTrace) -> Result<(), ICS20Error> {
+	fn set_denom_trace(&self, denom_trace: &DenomTrace) -> Result<(), ICS20Error> {
 		todo!()
 	}
 }
