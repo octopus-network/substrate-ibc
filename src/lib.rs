@@ -455,7 +455,8 @@ pub mod pallet {
 
 	#[pallet::storage]
 	/// sha256(tracePath + "/" + baseDenom) => DenomTrace
-	pub type Denomination<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
+	pub type Denomination<T: Config> =
+		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
 	pub type ChannelEscrowAddresses<T: Config> =

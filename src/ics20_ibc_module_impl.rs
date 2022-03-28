@@ -16,8 +16,9 @@ use ibc::{
 	},
 	signer::Signer,
 };
-use ibc_proto::ibc::apps::transfer::v2::FungibleTokenPacketData;
-use ibc_proto::ibc::core::channel::v1::Acknowledgement;
+use ibc_proto::ibc::{
+	apps::transfer::v2::FungibleTokenPacketData, core::channel::v1::Acknowledgement,
+};
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Ics20IBCModule;
 
@@ -192,8 +193,8 @@ impl IBCModule for Ics20IBCModule {
 		//TODO: build FungibleTokenPacketData
 		// var data types.FungibleTokenPacketData
 		// if err := types.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
-		// 	return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal ICS-20 transfer packet data: %s", err.Error())
-		// }
+		// 	return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal ICS-20 transfer
+		// packet data: %s", err.Error()) }
 
 		// let data = FungibleTokenPacketData::decode(&mut &packet.data[..]).unwrap();
 

@@ -216,7 +216,7 @@ pub fn handle_timeout_packet<Ctx, T: Config>(
 	ctx: &Ctx,
 	packet: Packet,
 	data: FungibleTokenPacketData<T>,
-) -> Result<(), Ics20Error> 
+) -> Result<(), Ics20Error>
 where
 	Ctx: Ics20Context,
 {
@@ -225,8 +225,8 @@ where
 	// Ok(())
 }
 
-/// onAcknowledgePacket is called by the routing module when a packet sent by this module has been acknowledged.
-/// OnAcknowledgementPacket responds to the the success or failure of a packet
+/// onAcknowledgePacket is called by the routing module when a packet sent by this module has been
+/// acknowledged. OnAcknowledgementPacket responds to the the success or failure of a packet
 /// acknowledgement written on the receiving chain. If the acknowledgement
 /// was a success then nothing occurs. If the acknowledgement failed, then
 /// the sender is refunded their tokens using the refundPacketToken function.
@@ -245,9 +245,8 @@ where
 		serde_json::from_str(&acknowledgement).unwrap();
 	// if the transfer failed, refund the token
 	match acknowledgement {
-		FungibleTokenPacketAcknowledgement::Err(_ack) => {
-			return refund_packet_token(ctx, packet, data)
-		},
+		FungibleTokenPacketAcknowledgement::Err(_ack) =>
+			return refund_packet_token(ctx, packet, data),
 		_ => unimplemented!(),
 	}
 

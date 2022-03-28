@@ -1,7 +1,6 @@
 ///
 /// ics20 transfer keeper
 /// refer to https://github.com/octopus-network/ibc-go/blob/main/modules/apps/transfer/keeper/keeper.go
-///
 use super::*;
 use crate::routing::Context;
 use ibc::applications::ics20_fungible_token_transfer::{

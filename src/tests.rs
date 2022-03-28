@@ -1,10 +1,10 @@
 use super::*;
 use crate::{mock::*, routing::Context};
 use core::str::FromStr;
-use ibc::applications::ics20_fungible_token_transfer::{
-	context::Ics20Context, error::Error as ICS20Error, msgs::denom_trace::DenomTrace,
-};
 use ibc::{
+	applications::ics20_fungible_token_transfer::{
+		context::Ics20Context, error::Error as ICS20Error, msgs::denom_trace::DenomTrace,
+	},
 	clients::ics10_grandpa::{
 		client_state::ClientState as GPClientState,
 		consensus_state::ConsensusState as GPConsensusState, help::ValidatorSet,
