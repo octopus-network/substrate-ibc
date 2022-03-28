@@ -212,11 +212,14 @@ where
 /// OnTimeoutPacket refunds the sender since the original packet sent was
 /// never received and has been timed out.
 /// ibc-go implementation refer to https://github.com/octopus-network/ibc-go/blob/e40cdec6a3413fb3c8ea2a7ccad5e363ecd5a695/modules/apps/transfer/keeper/relay.go#L350
-pub fn handle_timeout_packet(
-	ctx: &mut dyn Ics20Context,
+pub fn handle_timeout_packet<Ctx, T: Config>(
+	ctx: &Ctx,
 	packet: Packet,
-	data: FungibleTokenPacketData,
-) -> Result<(), Ics20Error> {
+	data: FungibleTokenPacketData<T>,
+) -> Result<(), Ics20Error> 
+where
+	Ctx: Ics20Context,
+{
 	log::trace!("in ics20_handler : handle timeout packet !");
 	refund_packet_token(ctx, packet, data)
 	// Ok(())

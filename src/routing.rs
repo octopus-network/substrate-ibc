@@ -20,18 +20,6 @@ impl<T: Config> Context<T> {
 
 impl<T: Config> Ics26Context for Context<T> {}
 
-impl<T: Config> Ics20Context for Context<T> {
-	fn get_denom_trace(&self, denom_trace_hash: &Vec<u8>) -> Result<DenomTrace, ICS20Error> {
-		todo!()
-	}
-	fn has_denom_trace(&self, denom_trace_hash: &Vec<u8>) -> bool {
-		todo!()
-	}
-	fn set_denom_trace(&self, denom_trace: &DenomTrace) -> Result<(), ICS20Error> {
-		todo!()
-	}
-}
-
 pub trait ModuleCallbacks {
 	// fn on_chan_open_try(
 	// 	index: usize,
