@@ -22,9 +22,9 @@ pub struct Ics20IBCModule;
 impl IBCModule for Ics20IBCModule {
 	// OnChanOpenInit implements the IBCModule interface
 	// refter to https://github.com/octopus-network/ibc-go/blob/ac46ac06084f586a460b092b2b293a321b7c43d6/modules/apps/transfer/ibc_module.go#L64
-	fn on_chan_open_init(
+	fn on_chan_open_init<Ctx>(
 		&self,
-		ctx: &dyn Ics20Context,
+		ctx: &Ctx,
 		order: Order,
 		connection_hops: Vec<ConnectionId>,
 		port_id: PortId,
@@ -32,7 +32,10 @@ impl IBCModule for Ics20IBCModule {
 		channel_cap: &Capability,
 		counterparty: Counterparty,
 		version: Version,
-	) -> Result<(), Ics20Error> {
+	) -> Result<(), Ics20Error>
+	where
+		Ctx: Ics20Context,
+	{
 		// if err := ValidateTransferChannelParams(ctx, im.keeper, order, portID, channelID); err !=
 		// nil {     return err
 		// }
@@ -52,9 +55,9 @@ impl IBCModule for Ics20IBCModule {
 
 	// OnChanOpenTry implements the IBCModule interface.
 	// refer to https://github.com/octopus-network/ibc-go/blob/ac46ac06084f586a460b092b2b293a321b7c43d6/modules/apps/transfer/ibc_module.go#L91
-	fn on_chan_open_try(
+	fn on_chan_open_try<Ctx>(
 		&self,
-		ctx: &dyn Ics20Context,
+		ctx: &Ctx,
 		order: Order,
 		connection_hops: Vec<ConnectionId>,
 		port_id: PortId,
@@ -62,7 +65,10 @@ impl IBCModule for Ics20IBCModule {
 		channel_cap: &Capability,
 		counterparty: Counterparty,
 		counterparty_version: Version,
-	) -> Result<Version, Ics20Error> {
+	) -> Result<Version, Ics20Error>
+	where
+		Ctx: Ics20Context,
+	{
 		// if err := ValidateTransferChannelParams(ctx, im.keeper, order, portID, channelID); err !=
 		// nil {     return "", err
 		// }
@@ -90,13 +96,16 @@ impl IBCModule for Ics20IBCModule {
 
 	// OnChanOpenAck implements the IBCModule interface
 	// refer to https://github.com/octopus-network/ibc-go/blob/ac46ac06084f586a460b092b2b293a321b7c43d6/modules/apps/transfer/ibc_module.go#L124
-	fn on_chan_open_ack(
+	fn on_chan_open_ack<Ctx>(
 		&self,
-		ctx: &dyn Ics20Context,
+		ctx: &Ctx,
 		port_id: PortId,
 		channel_id: ChannelId,
 		counterparty_version: Version,
-	) -> Result<(), Ics20Error> {
+	) -> Result<(), Ics20Error>
+	where
+		Ctx: Ics20Context,
+	{
 		// if counterpartyVersion != types.Version {
 		//     return sdkerrors.Wrapf(types.ErrInvalidVersion, "invalid counterparty version: %s,
 		// expected %s", counterpartyVersion, types.Version) }
@@ -106,44 +115,56 @@ impl IBCModule for Ics20IBCModule {
 
 	// OnChanOpenConfirm implements the IBCModule interface
 	// refer to https://github.com/octopus-network/ibc-go/blob/ac46ac06084f586a460b092b2b293a321b7c43d6/modules/apps/transfer/ibc_module.go#L137
-	fn on_chan_open_confirm(
+	fn on_chan_open_confirm<Ctx>(
 		&self,
-		ctx: &dyn Ics20Context,
+		ctx: &Ctx,
 		port_id: PortId,
 		channel_id: ChannelId,
-	) -> Result<(), Ics20Error> {
+	) -> Result<(), Ics20Error>
+	where
+		Ctx: Ics20Context,
+	{
 		Ok(())
 	}
 	// OnChanCloseInit implements the IBCModule interface
 	// refer to https://github.com/octopus-network/ibc-go/blob/ac46ac06084f586a460b092b2b293a321b7c43d6/modules/apps/transfer/ibc_module.go#L146
-	fn on_chan_close_init(
+	fn on_chan_close_init<Ctx>(
 		&self,
-		ctx: &dyn Ics20Context,
+		ctx: &Ctx,
 		port_id: PortId,
 		channel_id: ChannelId,
-	) -> Result<(), Ics20Error> {
+	) -> Result<(), Ics20Error>
+	where
+		Ctx: Ics20Context,
+	{
 		Ok(())
 	}
 	// OnChanCloseConfirm implements the IBCModule interface
 	// refer to https://github.com/octopus-network/ibc-go/blob/ac46ac06084f586a460b092b2b293a321b7c43d6/modules/apps/transfer/ibc_module.go#L156
-	fn on_chan_close_confirm(
+	fn on_chan_close_confirm<Ctx>(
 		&self,
-		ctx: &dyn Ics20Context,
+		ctx: &Ctx,
 		port_id: PortId,
 		channel_id: ChannelId,
-	) -> Result<(), Ics20Error> {
+	) -> Result<(), Ics20Error>
+	where
+		Ctx: Ics20Context,
+	{
 		Ok(())
 	}
 	// OnRecvPacket implements the IBCModule interface. A successful acknowledgement
 	// is returned if the packet data is succesfully decoded and the receive application
 	// logic returns without error.
 	// refer to ibc-go https://github.com/octopus-network/ibc-go/blob/ac46ac06084f586a460b092b2b293a321b7c43d6/modules/apps/transfer/ibc_module.go#L167
-	fn on_recv_packet(
+	fn on_recv_packet<Ctx>(
 		&self,
-		ctx: &dyn Ics20Context,
+		ctx: &Ctx,
 		packet: Packet,
 		relayer: Signer,
-	) -> Result<Vec<u8>, Ics20Error> {
+	) -> Result<Vec<u8>, Ics20Error>
+	where
+		Ctx: Ics20Context,
+	{
 		let ack = vec![1];
 
 		//TODO: build FungibleTokenPacketData
@@ -169,13 +190,16 @@ impl IBCModule for Ics20IBCModule {
 
 	// OnAcknowledgementPacket implements the IBCModule interface
 	// refer to ibc-go https://github.com/octopus-network/ibc-go/blob/ac46ac06084f586a460b092b2b293a321b7c43d6/modules/apps/transfer/ibc_module.go#L204
-	fn on_acknowledgement_packet(
+	fn on_acknowledgement_packet<Ctx>(
 		&self,
-		ctx: &dyn Ics20Context,
+		ctx: &Ctx,
 		packet: Packet,
 		acknowledgement: Vec<u8>,
 		relayer: Signer,
-	) -> Result<(), Ics20Error> {
+	) -> Result<(), Ics20Error>
+	where
+		Ctx: Ics20Context,
+	{
 		//TODO: build FungibleTokenPacketData
 		// let data =  struct FungibleTokenPacketData {
 		//     /// the token denomination to be transferred
@@ -198,12 +222,15 @@ impl IBCModule for Ics20IBCModule {
 
 	// OnTimeoutPacket implements the IBCModule interface
 	// refer to https://github.com/octopus-network/ibc-go/blob/ac46ac06084f586a460b092b2b293a321b7c43d6/modules/apps/transfer/ibc_module.go#L204
-	fn on_timeout_packet(
+	fn on_timeout_packet<Ctx>(
 		&self,
-		ctx: &dyn Ics20Context,
+		ctx: &Ctx,
 		packet: Packet,
 		relayer: Signer,
-	) -> Result<(), Ics20Error> {
+	) -> Result<(), Ics20Error>
+	where
+		Ctx: Ics20Context,
+	{
 		//TODO: build FungibleTokenPacketData
 		// let data =  struct FungibleTokenPacketData {
 		//     /// the token denomination to be transferred

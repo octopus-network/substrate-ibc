@@ -1106,9 +1106,10 @@ pub mod pallet {
 						// 	let sequence = u64::from(value.packet.sequence);
 						// 	let write_ack = value.encode_vec().unwrap();
 						// 	let _write_ack =
-						// WriteAcknowledgement::decode(&*write_ack.clone()).unwrap(); 	// store.Set((portID,
-						// channelID, sequence), WriteAckEvent) 	<WriteAckPacketEvent<T>>::
-						// insert((port_id, channel_id, sequence), write_ack); };
+						// WriteAcknowledgement::decode(&*write_ack.clone()).unwrap(); 	//
+						// store.Set((portID, channelID, sequence), WriteAckEvent)
+						// <WriteAckPacketEvent<T>>:: insert((port_id, channel_id, sequence),
+						// write_ack); };
 
 						//TODO: emit write acknowledgement event
 						// Self::deposit_event(write_ack_event);
