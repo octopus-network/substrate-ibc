@@ -4,9 +4,10 @@ use ibc::{
 	applications::ics20_fungible_token_transfer::{
 		context::Ics20Context, error::Error as Ics20Error, msgs::denom_trace,
 	},
-	core::ics04_channel::packet::Packet,
+	core::ics04_channel::{msgs::acknowledgement::MsgAcknowledgement, packet::Packet},
 };
 use ibc_proto::ibc::apps::transfer::v2::FungibleTokenPacketData;
+use ibc_proto::ibc::core::channel::v1::{acknowledgement::Response, Acknowledgement};
 
 /// handles transfer sending logic. There are 2 possible cases:
 ///
@@ -122,6 +123,7 @@ pub fn handle_timeout_packet(
 	packet: Packet,
 	data: FungibleTokenPacketData,
 ) -> Result<(), Ics20Error> {
+	log::trace!("in ics20_handler : handle timeout packet !");
 	refund_packet_token(ctx, packet, data)
 	// Ok(())
 }
@@ -136,7 +138,7 @@ pub fn handle_ack_packet(
 	ctx: &mut dyn Ics20Context,
 	packet: Packet,
 	data: FungibleTokenPacketData,
-	ack: Vec<u8>,
+	ack: Acknowledgement,
 ) -> Result<(), Ics20Error> {
 	// switch ack.Response.(type) {
 	//     case *channeltypes.Acknowledgement_Error:
@@ -146,6 +148,14 @@ pub fn handle_ack_packet(
 	//         // needs to be executed and no error needs to be returned
 	//         return nil
 	//     }
+	match ack.response {
+		Response::Error(e) => {
+			log::trace!("in ics20_handler : handle ack packet error >> {:?}", e);
+			refund_packet_token(ctx, packet, data)
+		},
+		Response::Result(()) => Ok(()),
+	}
+
 	Ok(())
 }
 

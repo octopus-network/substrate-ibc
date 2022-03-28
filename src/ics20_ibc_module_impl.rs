@@ -1,16 +1,19 @@
 use super::*;
 use crate::ics20_handler;
 use ibc::{
+	applications::ics20_fungible_token_transfer::{
+		context::Ics20Context, error::Error as Ics20Error,
+	},
 	core::{
 		ics04_channel::{channel::Counterparty, channel::Order, packet::Packet, Version},
 		ics05_port::capabilities::Capability,
 		ics24_host::identifier::{ChannelId, ConnectionId, PortId},
 		ics26_routing::ibc_module::IBCModule,
 	},
-	signer::Signer, applications::ics20_fungible_token_transfer::{
-	context::Ics20Context, error::Error as Ics20Error,
-},
+	signer::Signer,
 };
+use ibc_proto::ibc::apps::transfer::v2::FungibleTokenPacketData;
+use ibc_proto::ibc::core::channel::v1::Acknowledgement;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Ics20IBCModule;
 
@@ -138,23 +141,12 @@ impl IBCModule for Ics20IBCModule {
 		packet: Packet,
 		relayer: Signer,
 	) -> Result<Vec<u8>, Ics20Error> {
-		let ack = vec![1];
+		//TODO: build ack packet
+		// ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+		let ack = Acknowledgement::encode(&[1]);
 
 		//TODO: build FungibleTokenPacketData
-		// let data =  struct FungibleTokenPacketData {
-		//     /// the token denomination to be transferred
-		//     #[prost(string, tag = "1")]
-		//     pub denom: ::prost::alloc::string::String,
-		//     /// the token amount to be transferred
-		//     #[prost(string, tag = "2")]
-		//     pub amount: ::prost::alloc::string::String,
-		//     /// the sender address
-		//     #[prost(string, tag = "3")]
-		//     pub sender: ::prost::alloc::string::String,
-		//     /// the recipient address on the destination chain
-		//     #[prost(string, tag = "4")]
-		//     pub receiver: ::prost::alloc::string::String,
-		// }
+		// let data = FungibleTokenPacketData::decode(&mut &packet.data[..]).unwrap();
 
 		// TODO: handle recv packet
 		//ics20_handler::handle_recv_packet(ctx, packet, data)
@@ -170,23 +162,26 @@ impl IBCModule for Ics20IBCModule {
 		acknowledgement: Vec<u8>,
 		relayer: Signer,
 	) -> Result<(), Ics20Error> {
-		//TODO: build FungibleTokenPacketData
-		// let data =  struct FungibleTokenPacketData {
-		//     /// the token denomination to be transferred
-		//     #[prost(string, tag = "1")]
-		//     pub denom: ::prost::alloc::string::String,
-		//     /// the token amount to be transferred
-		//     #[prost(string, tag = "2")]
-		//     pub amount: ::prost::alloc::string::String,
-		//     /// the sender address
-		//     #[prost(string, tag = "3")]
-		//     pub sender: ::prost::alloc::string::String,
-		//     /// the recipient address on the destination chain
-		//     #[prost(string, tag = "4")]
-		//     pub receiver: ::prost::alloc::string::String,
+		//TODO: build Acknowledgement
+		// 	var ack channeltypes.Acknowledgement
+		// if err := types.ModuleCdc.UnmarshalJSON(acknowledgement, &ack); err != nil {
+		// 	return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal ICS-20 transfer packet acknowledgement: %v", err)
 		// }
+		//let ack = Acknowledgement::decode(&mut &acknowledgement[..]).unwrap();
+
+		//TODO: build FungibleTokenPacketData
+		// var data types.FungibleTokenPacketData
+		// if err := types.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
+		// 	return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal ICS-20 transfer packet data: %s", err.Error())
+		// }
+
+		// let data = FungibleTokenPacketData::decode(&mut &packet.data[..]).unwrap();
+
 		// TODO: handle ack packet
-		//ics20_handler::handle_ack_packet(ctx, packet, data)
+		// if err := im.keeper.OnAcknowledgementPacket(ctx, packet, data, ack); err != nil {
+		// 	return err
+		// }
+		//ics20_handler::handle_ack_packet(ctx, packet, data, ack)
 		Ok(())
 	}
 
@@ -199,23 +194,10 @@ impl IBCModule for Ics20IBCModule {
 		relayer: Signer,
 	) -> Result<(), Ics20Error> {
 		//TODO: build FungibleTokenPacketData
-		// let data =  struct FungibleTokenPacketData {
-		//     /// the token denomination to be transferred
-		//     #[prost(string, tag = "1")]
-		//     pub denom: ::prost::alloc::string::String,
-		//     /// the token amount to be transferred
-		//     #[prost(string, tag = "2")]
-		//     pub amount: ::prost::alloc::string::String,
-		//     /// the sender address
-		//     #[prost(string, tag = "3")]
-		//     pub sender: ::prost::alloc::string::String,
-		//     /// the recipient address on the destination chain
-		//     #[prost(string, tag = "4")]
-		//     pub receiver: ::prost::alloc::string::String,
-		// }
+		// let data = FungibleTokenPacketData::decode(&mut &packet.data[..]).unwrap();
 
 		// TODO: handle ack packet/refund tokens
-		//ics20_handler::handle_ack_packet(ctx, packet, data)
+		//ics20_handler::handle_timeout_packet(ctx, packet, data)
 
 		Ok(())
 	}
