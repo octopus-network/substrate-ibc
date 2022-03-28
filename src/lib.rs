@@ -5,6 +5,8 @@
 #![allow(non_camel_case_types)]
 #![allow(dead_code)]
 #![allow(unused_assignments)]
+#![allow(unused_imports)]
+#![allow(unused_variables)]
 
 //! # IBC Module
 //!
@@ -54,7 +56,7 @@ pub use pallet::*;
 
 use alloc::{format, string::String};
 use beefy_light_client::commitment;
-use codec::{Decode, Encode};
+use codec::{Codec, Decode, Encode};
 use core::marker::PhantomData;
 use frame_system::ensure_signed;
 use ibc::{
@@ -69,6 +71,7 @@ use ibc::{
 };
 pub use routing::ModuleCallbacks;
 use scale_info::{prelude::vec, TypeInfo};
+use serde::{Deserialize, Serialize};
 use sp_runtime::RuntimeDebug;
 use sp_std::prelude::*;
 use tendermint_proto::Protobuf;
@@ -82,6 +85,13 @@ mod ics20_ibc_module_impl;
 mod port;
 mod routing;
 pub mod transfer;
+
+use frame_support::{
+	sp_runtime::traits::{AtLeast32BitUnsigned, CheckedConversion},
+	sp_std::fmt::Debug,
+	traits::{tokens::fungibles, Currency, ExistenceRequirement::AllowDeath},
+	PalletId,
+};
 
 /// A struct corresponds to `Any` in crate "prost-types", used in ibc-rs.
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
@@ -115,8 +125,20 @@ pub mod pallet {
 	};
 	use frame_support::{dispatch::DispatchResult, pallet_prelude::*, traits::UnixTime};
 	use frame_system::pallet_prelude::*;
-	use ibc::core::ics04_channel::events::WriteAcknowledgement;
-	use ibc::events::IbcEvent;
+	use ibc::{
+		applications::ics20_fungible_token_transfer::context::Ics20Context,
+		core::{
+			ics04_channel::{
+				channel::{Counterparty, Order},
+				events::WriteAcknowledgement,
+				Version,
+			},
+			ics05_port::capabilities::Capability,
+			ics24_host::identifier::{ChannelId as IbcChannelId, PortId as IbcPortId},
+		},
+		events::IbcEvent,
+		signer::Signer,
+	};
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -125,6 +147,34 @@ pub mod pallet {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type ModuleCallbacks: routing::ModuleCallbacks;
 		type TimeProvider: UnixTime;
+
+		type Currency: Currency<Self::AccountId>;
+
+		type AssetId: Member
+			+ Parameter
+			+ AtLeast32BitUnsigned
+			+ Codec
+			+ Copy
+			+ Debug
+			+ Default
+			+ MaybeSerializeDeserialize;
+
+		type AssetBalance: Parameter
+			+ Member
+			+ AtLeast32BitUnsigned
+			+ Codec
+			+ Default
+			+ From<u128>
+			+ Into<u128>
+			+ Copy
+			+ MaybeSerializeDeserialize
+			+ Debug;
+
+		type Assets: fungibles::Mutate<
+			<Self as frame_system::Config>::AccountId,
+			AssetId = Self::AssetId,
+			Balance = Self::AssetBalance,
+		>;
 	}
 
 	#[pallet::pallet]
@@ -406,6 +456,9 @@ pub mod pallet {
 	#[pallet::storage]
 	/// sha256(tracePath + "/" + baseDenom) => DenomTrace
 	pub type Denomination<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
+
+	pub type ChannelEscrowAddresses<T: Config> =
+		StorageMap<_, Blake2_128Concat, ChannelId, T::AccountId, ValueQuery>;
 
 	/// Substrate IBC event list
 	#[pallet::event]
@@ -733,9 +786,8 @@ pub mod pallet {
 					Event::TimeoutOnClosePacket(height.into(), packet.into())
 				},
 				ibc::events::IbcEvent::Empty(value) => Event::Empty(value.as_bytes().to_vec()),
-				ibc::events::IbcEvent::ChainError(value) => {
-					Event::ChainError(value.as_bytes().to_vec())
-				},
+				ibc::events::IbcEvent::ChainError(value) =>
+					Event::ChainError(value.as_bytes().to_vec()),
 				_ => unimplemented!(),
 			}
 		}
@@ -868,7 +920,7 @@ pub mod pallet {
 			if !<ClientStates<T>>::contains_key(client_id.clone()) {
 				log::error!("in update_client_state: {:?} client_state not found !", client_id_str);
 
-				return Err(Error::<T>::ClientIdNotFound.into());
+				return Err(Error::<T>::ClientIdNotFound.into())
 			} else {
 				// get client state from chain storage
 				let data = <ClientStates<T>>::get(client_id.clone());
@@ -1009,7 +1061,7 @@ pub mod pallet {
 				Err(e) => {
 					log::error!("update the beefy light client failure! : {:?}", e);
 
-					return Err(Error::<T>::UpdateBeefyLightClientFailure.into());
+					return Err(Error::<T>::UpdateBeefyLightClientFailure.into())
 				},
 			}
 
@@ -1074,18 +1126,19 @@ pub mod pallet {
 
 	impl<T: Config> Pallet<T> {
 		/// handle the event returned by ics26 route module
-		fn handle_result(
-			ctx: &mut routing::Context<T>,
-			messages: Vec<prost_types::Any>,
-			result: Vec<IbcEvent>,
-		) {
+		fn handle_result<Ctx>(ctx: &mut Ctx, messages: Vec<prost_types::Any>, result: Vec<IbcEvent>)
+		where
+			Ctx: Ics20Context,
+		{
 			for event in result {
 				match event.clone() {
 					IbcEvent::SendPacket(value) => {
 						// refer to https://github.com/octopus-network/ibc-go/blob/f5962c3324ee7e69eeaa9918b65eb1b089da6095/modules/apps/transfer/keeper/msg_server.go#L16
 						//TODO: handle SendPacket
-						// let _value = value.clone();
-						// ics20_handler::handle_transfer(&mut ctx, _value.packet);
+
+						let _ = ics20_handler::handle_transfer::<Ctx, T>(ctx, value.clone().packet);
+
+						Self::deposit_event(event.clone().into());
 					},
 
 					IbcEvent::ReceivePacket(value) => {
@@ -1095,7 +1148,8 @@ pub mod pallet {
 						// let relayer =recv_msg.signer;
 
 						//TODO: Perform callback -> on_recv_packet
-						// let ack = ibc_module_impl::on_recv_packet(&mut ctx, value.packet,relayer);
+						// let ack = ibc_module_impl::on_recv_packet(&mut ctx,
+						// value.packet,relayer);
 
 						// TODO： handle write acknowledgement
 						// let packet = value.packet;
@@ -1107,36 +1161,54 @@ pub mod pallet {
 						// 	let channel_id = value.packet.source_channel.as_bytes().to_vec();
 						// 	let sequence = u64::from(value.packet.sequence);
 						// 	let write_ack = value.encode_vec().unwrap();
-						// 	let _write_ack = WriteAcknowledgement::decode(&*write_ack.clone()).unwrap();
-						// 	// store.Set((portID, channelID, sequence), WriteAckEvent)
-						// 	<WriteAckPacketEvent<T>>::insert((port_id, channel_id, sequence), write_ack);
-						// };
+						// 	let _write_ack =
+						// WriteAcknowledgement::decode(&*write_ack.clone()).unwrap(); 	//
+						// store.Set((portID, channelID, sequence), WriteAckEvent)
+						// <WriteAckPacketEvent<T>>:: insert((port_id, channel_id, sequence),
+						// write_ack); };
 
 						//TODO: emit write acknowledgement event
 						// Self::deposit_event(write_ack_event);
+
+						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule;
+						let ret = ibc::core::ics26_routing::ibc_module::IBCModule::on_recv_packet(
+							&ics20_modlue,
+							ctx,
+							value.clone().packet,
+							Signer::new("IBC"),
+						);
 					},
 					IbcEvent::TimeoutPacket(value) => {
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L442
 
-						//TODO: get relayer address
-						// let timeout_msg = decode(messsages[0].clone());
-						// let relayer =timeout_msg.signer;
+						// TODO:
+						// get relayer signer
+						// let timeout_msg = decode(messages[0].clone());
+						// let relayer = tiomeout_msg.signer;
+						let ics20_module = ics20_ibc_module_impl::Ics20IBCModule;
+						let ret =
+							ibc::core::ics26_routing::ibc_module::IBCModule::on_timeout_packet(
+								&ics20_module,
+								ctx,
+								value.clone().packet,
+								Signer::new("IBC"),
+							);
 
-						// Perform application logic callback -> on_timeout_packet
-						// ibc_module_impl::on_timeout_packet(&mut ctx, value.packet,relayer);
+						Self::deposit_event(event.clone().into());
 					},
 
 					IbcEvent::AcknowledgePacket(value) => {
-
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L581
 
-						//TODO: get relayer address
+						// TODO: get relayer address
 						// let ack_msg = decode(messsages[0].clone());
-						// let relayer =ack_msg.signer;
-
-						//TODO: Perform callback --> on_acknowledgement_packet
+						// let relayer = ack_msg.signer;
 						// let ack = ack_msg.acknowledgement;
-						// ibc_module_impl::on_acknowledgement_packet(&mut ctx, value.packet,ack,relayer);
+
+						let ics20_module = ics20_ibc_module_impl::Ics20IBCModule;
+						let ret = ibc::core::ics26_routing::ibc_module::IBCModule::on_acknowledgement_packet(&ics20_module, ctx, value.clone().packet, vec![], Signer::new("IBC"));
+
+						Self::deposit_event(event.clone().into());
 					},
 
 					IbcEvent::OpenInitChannel(value) => {
@@ -1145,71 +1217,116 @@ pub mod pallet {
 						//TODO: get data from value.packet
 						// let order = value.packet.order;
 						// ...
-						//TODO: Perform callback --> on_open_init_channel
-						// ibc_module_impl::on_chan_open_init(&mut ctx,
-						// 	order,
-						// 	connection_hops,
-						// 	port_id,
-						// 	channel_id,
-						// 	channel_cap,
-						// 	counterparty,
-						// 	version)
+
+						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule;
+						let ret =
+							ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_init(
+								&ics20_modlue,
+								ctx,
+								Order::default(),
+								vec![],
+								IbcPortId::default(),
+								IbcChannelId::default(),
+								&Capability::default(),
+								Counterparty::default(),
+								Version::default(),
+							);
+
+						Self::deposit_event(event.clone().into());
 					},
 
 					IbcEvent::OpenTryChannel(value) => {
-
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L203
 						//TODO: get data from value.packet
 						// let order = value.packet.order;
 						// ...
-						//TODO: Perform callback --> on_open_try_channel
-						// ibc_module_impl::on_chan_open_try(&mut ctx,...)
+						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule;
+						let ret = ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_try(
+							&ics20_modlue,
+							ctx,
+							Order::default(),
+							vec![],
+							IbcPortId::default(),
+							IbcChannelId::default(),
+							&Capability::default(),
+							Counterparty::default(),
+							Version::default(),
+						);
+
+						Self::deposit_event(event.clone().into());
 					},
 
 					IbcEvent::OpenAckChannel(value) => {
-
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L241
 						//TODO: get data from value.packet
 						// let order = value.packet.order;
 						// ...
-						//TODO: Perform callback --> on_open_ack_channel
-						// ibc_module_impl::on_chan_open_ack(&mut ctx,...)
+						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule;
+						let ret = ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_ack(
+							&ics20_modlue,
+							ctx,
+							IbcPortId::default(),
+							IbcChannelId::default(),
+							Version::default(),
+						);
+
+						Self::deposit_event(event.clone().into());
 					},
 
 					IbcEvent::OpenConfirmChannel(value) => {
-
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L277
 						//TODO: get data from value.packet
 						// let order = value.packet.order;
 						// ...
-						//TODO: Perform callback --> on_open_confirm_channel
-						// ibc_module_impl::on_chan_open_confirm(&mut ctx,...)
+						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule;
+						let ret =
+							ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_confirm(
+								&ics20_modlue,
+								ctx,
+								IbcPortId::default(),
+								IbcChannelId::default(),
+							);
+
+						Self::deposit_event(event.clone().into());
 					},
 					IbcEvent::CloseInitChannel(value) => {
-
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L309
 						//TODO: get data from value.packet
 						// let order = value.packet.order;
 						// ...
-						//TODO: Perform callback --> on_close_init_channel
-						// ibc_module_impl::on_chan_close_init(&mut ctx,...)
+						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule;
+						let ret =
+							ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_close_init(
+								&ics20_modlue,
+								ctx,
+								IbcPortId::default(),
+								IbcChannelId::default(),
+							);
+
+						Self::deposit_event(event.clone().into());
 					},
 
 					IbcEvent::CloseConfirmChannel(value) => {
-
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L336
 						//TODO: get data from value.packet
 						// let order = value.packet.order;
 						// ...
-						//TODO: Perform callback --> on_close_confirm_channel
-						// ibc_module_impl::on_chan_close_confirm(&mut ctx,...)
+
+						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule;
+						let ret =
+							ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_close_confirm(
+								&ics20_modlue,
+								ctx,
+								IbcPortId::default(),
+								IbcChannelId::default(),
+							);
+
+						Self::deposit_event(event.clone().into());
 					},
 					_ => {
-						log::info!("Unhandled event: {:?}", event);
+						log::warn!("Unhandled event: {:?}", event);
 					},
 				}
-				// Finally, emit event
-				Self::deposit_event(event.clone().into());
 			}
 		}
 
@@ -1217,7 +1334,7 @@ pub mod pallet {
 		fn store_latest_height(ibc_event: IbcEvent) {
 			match ibc_event {
 				IbcEvent::Empty(_value) => {
-					log::info!("ibc event: {}", "Empty");
+					log::warn!("ibc event: {}", "Empty");
 				},
 				IbcEvent::NewBlock(value) => {
 					let height = value.height().encode_vec().unwrap();
@@ -1337,9 +1454,60 @@ pub mod pallet {
 					<LatestHeight<T>>::set(height);
 				},
 				IbcEvent::ChainError(_value) => {
-					log::error!("Ibc event: {}", "chainError");
+					log::warn!("Ibc event: {}", "chainError");
 				},
 			}
 		}
 	}
+}
+
+/// FungibleTokenPacketData defines a struct for the packet payload
+/// See FungibleTokenPacketData spec: https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer#data-structures
+#[derive(Decode, Encode, Debug, PartialEq)]
+pub struct FungibleTokenPacketData<T: Config> {
+	// the token denomination to be transferred
+	pub denomination: Vec<u8>,
+	// the token amount to be transferred
+	pub amount: u128,
+	// pub amount: T::AssetBalance,
+	// the sender address
+	pub sender: T::AccountId,
+	// the recipient address on the destination chain
+	pub receiver: T::AccountId,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum FungibleTokenPacketAcknowledgement {
+	Success(FungibleTokenPacketSuccess),
+	Err(FungibleTokenPacketError),
+}
+
+impl FungibleTokenPacketAcknowledgement {
+	pub fn new() -> Self {
+		Self::Success(FungibleTokenPacketSuccess::new())
+	}
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct FungibleTokenPacketSuccess {
+	result: AQ,
+}
+
+impl FungibleTokenPacketSuccess {
+	pub fn new() -> Self {
+		let aq = AQ;
+		Self { result: aq }
+	}
+	pub fn result(&self) -> &str {
+		// this is binary 0x01 base64 encoded
+		"AQ=="
+	}
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct AQ;
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct FungibleTokenPacketError {
+	pub error: String,
 }
