@@ -150,36 +150,38 @@ where
 {
 	let data = packet.data.clone();
 	let data = FungibleTokenPacketData::<T>::decode(&mut &*data).unwrap();
-	// construct default acknowledgement of success 
+	// construct default acknowledgement of success
 	let mut ack = FungibleTokenPacketAcknowledgement::new();
 	let prefix = format!("{}/{}", packet.source_port, packet.source_channel).as_bytes().to_vec();
-	// we are the source if the packets were prefixed by the sending chain 
+	// we are the source if the packets were prefixed by the sending chain
 	let source = data.denomination.starts_with(&prefix);
 	// let amount_unwrapped = data.amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
 	if source {
 		// todo
-		// receiver is source chain: unescrow tokens 
-		// determine escrow account 
+		// receiver is source chain: unescrow tokens
+		// determine escrow account
 		// escrowAccount = channelEscrowAddresses[packet.destChannel]
 		let escrow_account = generate_escrow_account::<T>(packet.source_channel.clone());
-		<ChannelEscrowAddresses<T>>::insert(ChannelId::from(packet.source_channel), escrow_account.clone());
+		<ChannelEscrowAddresses<T>>::insert(
+			ChannelId::from(packet.source_channel),
+			escrow_account.clone(),
+		);
 		// unescrow tokens to receive (assumed to fail if balance insufficient)
-		// err = bank.TransferCoins(escrowAccount, data.receiver, data.denomination.slice(len(prefix)), data.amount)
-		// if (err !== nil)
-			// ack = FungibleTokenPacketAcknowledgement{false, "transfer coins failed"}
-			// how to deail with denomination
+		// err = bank.TransferCoins(escrowAccount, data.receiver,
+		// data.denomination.slice(len(prefix)), data.amount) if (err !== nil)
+		// ack = FungibleTokenPacketAcknowledgement{false, "transfer coins failed"}
+		// how to deail with denomination
 		let amount = data.amount.checked_into().unwrap();
 		let result = T::Currency::transfer(&escrow_account, &data.receiver, amount, AllowDeath);
 		match result {
-			Ok(_) => {}
-			Err(_err) => {
-				ack = FungibleTokenPacketAcknowledgement::Err(FungibleTokenPacketError{
+			Ok(_) => {},
+			Err(_err) =>
+				ack = FungibleTokenPacketAcknowledgement::Err(FungibleTokenPacketError {
 					error: "transfer coin failed".to_string(),
-				})
-			}
+				}),
 		}
 	} else {
-		// todo 
+		// todo
 		// prefix = "{packet.destPort}/{packet.destChannel}/"
 		let prefix = format!("{}/{}", packet.destination_port, packet.destination_channel);
 		// prefixedDenomination = prefix + data.denomination
@@ -188,16 +190,19 @@ where
 		// sender was source, mint vouchers to receiver (assumed to fail if balance insufficient)
 		// err = bank.MintCoins(data.receiver, prefixedDenomination, data.amount)
 		// todo how to deail with asset_id
-		// todo asset id is default 
+		// todo asset id is default
 		let amount = data.amount.checked_into().unwrap();
-		let result = <T::Assets as fungibles::Mutate<T::AccountId>>::mint_into(T::AssetId::default(), &data.receiver, amount);
+		let result = <T::Assets as fungibles::Mutate<T::AccountId>>::mint_into(
+			T::AssetId::default(),
+			&data.receiver,
+			amount,
+		);
 		match result {
-			Ok(()) => {}
-			Err(_) =>  {
+			Ok(()) => {},
+			Err(_) =>
 				ack = FungibleTokenPacketAcknowledgement::Err(FungibleTokenPacketError {
 					error: "mint coins failed".to_string(),
-				})
-			}
+				}),
 		}
 	}
 
@@ -220,13 +225,14 @@ where
 	Ctx: Ics20Context,
 {
 	let acknowledgement = String::from_utf8(acknowledgement).unwrap();
-	let acknowledgement : FungibleTokenPacketAcknowledgement = serde_json::from_str(&acknowledgement).unwrap();
-	// if the transfer failed, refund the token 
+	let acknowledgement: FungibleTokenPacketAcknowledgement =
+		serde_json::from_str(&acknowledgement).unwrap();
+	// if the transfer failed, refund the token
 	match acknowledgement {
 		FungibleTokenPacketAcknowledgement::Err(_ack) => {
-			return refund_packet_token(ctx, packet, data);
-		}
-		_ => unimplemented!()
+			return refund_packet_token(ctx, packet, data)
+		},
+		_ => unimplemented!(),
 	}
 
 	Ok(())
@@ -264,7 +270,7 @@ where
 {
 	let data = packet.data.clone();
 	let data = FungibleTokenPacketData::<T>::decode(&mut &*data).unwrap();
-	let prefix = format!("{}/{}",packet.source_port,packet.source_channel).as_bytes().to_vec();
+	let prefix = format!("{}/{}", packet.source_port, packet.source_channel).as_bytes().to_vec();
 	// we are the source if the denomination is not prefixed
 	let source = data.denomination.starts_with(&prefix);
 	// let amount_unwrapped = data.amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
@@ -273,19 +279,27 @@ where
 		// sender was source chain, unescrow tokens back to sender
 		// escrowAccount = channelEscrowAddresses[packet.srcChannel]
 		let escrow_account = generate_escrow_account::<T>(packet.source_channel.clone());
-		<ChannelEscrowAddresses<T>>::insert(ChannelId::from(packet.source_channel), escrow_account.clone());
+		<ChannelEscrowAddresses<T>>::insert(
+			ChannelId::from(packet.source_channel),
+			escrow_account.clone(),
+		);
 		// bank.TransferCoins(escrowAccount, data.sender, data.denomination, data.amount)
 		// todo how to deail with denomination
 		let amount = data.amount.checked_into().unwrap();
 		T::Currency::transfer(&escrow_account, &data.sender, amount, AllowDeath).unwrap();
 	} else {
-		// todo  
+		// todo
 		// receiver was source chain, mint vouchers back to sender
 		// bank.MintCoins(data.sender, denomination, data.amount)
 		// todo how to deail with denomination
 		// todo how to deail with asset id
 		let amount = data.amount.checked_into().unwrap();
-		<T::Assets as fungibles::Mutate<T::AccountId>>::mint_into(T::AssetId::default(), &data.receiver, amount).unwrap();
+		<T::Assets as fungibles::Mutate<T::AccountId>>::mint_into(
+			T::AssetId::default(),
+			&data.receiver,
+			amount,
+		)
+		.unwrap();
 	}
 
 	Ok(())
