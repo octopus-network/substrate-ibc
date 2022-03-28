@@ -56,7 +56,7 @@ pub use pallet::*;
 
 use alloc::{format, string::String};
 use beefy_light_client::commitment;
-use codec::{Decode, Encode};
+use codec::{Codec, Decode, Encode};
 use core::marker::PhantomData;
 use frame_system::ensure_signed;
 use ibc::{
@@ -83,6 +83,13 @@ mod ics20_handler;
 mod ics20_ibc_module_impl;
 mod port;
 mod routing;
+
+use frame_support::{
+	sp_runtime::traits::{AtLeast32BitUnsigned, CheckedConversion},
+	sp_std::fmt::Debug,
+	traits::{tokens::fungibles, Currency, ExistenceRequirement::AllowDeath},
+	PalletId,
+};
 
 /// A struct corresponds to `Any` in crate "prost-types", used in ibc-rs.
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
@@ -138,6 +145,34 @@ pub mod pallet {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type ModuleCallbacks: routing::ModuleCallbacks;
 		type TimeProvider: UnixTime;
+
+		type Currency: Currency<Self::AccountId>;
+
+		type AssetId: Member
+			+ Parameter
+			+ AtLeast32BitUnsigned
+			+ Codec
+			+ Copy
+			+ Debug
+			+ Default
+			+ MaybeSerializeDeserialize;
+
+		type AssetBalance: Parameter
+			+ Member
+			+ AtLeast32BitUnsigned
+			+ Codec
+			+ Default
+			+ From<u128>
+			+ Into<u128>
+			+ Copy
+			+ MaybeSerializeDeserialize
+			+ Debug;
+
+		type Assets: fungibles::Mutate<
+			<Self as frame_system::Config>::AccountId,
+			AssetId = Self::AssetId,
+			Balance = Self::AssetBalance,
+		>;
 	}
 
 	#[pallet::pallet]
@@ -415,6 +450,10 @@ pub mod pallet {
 
 	#[pallet::storage]
 	pub type OldHeight<T: Config> = StorageValue<_, u64, ValueQuery, default_old_height>;
+
+	#[pallet::storage]
+	pub type ChannelEscrowAddresses<T: Config> =
+		StorageMap<_, Blake2_128Concat, ChannelId, T::AccountId, ValueQuery>;
 
 	/// Substrate IBC event list
 	#[pallet::event]
@@ -1091,8 +1130,8 @@ pub mod pallet {
 					IbcEvent::SendPacket(value) => {
 						// refer to https://github.com/octopus-network/ibc-go/blob/f5962c3324ee7e69eeaa9918b65eb1b089da6095/modules/apps/transfer/keeper/msg_server.go#L16
 						//TODO: handle SendPacket
-						// let _value = value.clone();
-						let _ = ics20_handler::handle_transfer(ctx, value.clone().packet);
+
+						let _ = ics20_handler::handle_transfer::<Ctx, T>(ctx, value.clone().packet);
 
 						Self::deposit_event(event.clone().into());
 					},

@@ -1,5 +1,9 @@
 use super::*;
 
+use event::primitive::{
+	ChannelId, ClientId, ClientState as EventClientState, ClientType, ConnectionId, Height,
+	Packet as IbcPacket, PortId, Timestamp,
+};
 use ibc::{
 	applications::ics20_fungible_token_transfer::{
 		context::Ics20Context, error::Error as Ics20Error,
@@ -7,6 +11,28 @@ use ibc::{
 	core::ics04_channel::packet::Packet,
 };
 use ibc_proto::ibc::apps::transfer::v2::FungibleTokenPacketData;
+
+use frame_support::{
+	sp_runtime::traits::{AtLeast32BitUnsigned, CheckedConversion},
+	sp_std::fmt::Debug,
+	traits::{tokens::fungibles, Currency, ExistenceRequirement::AllowDeath},
+	PalletId,
+};
+use sp_runtime::traits::AccountIdConversion;
+
+fn generate_escrow_account<T: Config>(
+	channel_id: ibc::core::ics24_host::identifier::ChannelId,
+) -> T::AccountId {
+	let channel_id_number =
+		channel_id.as_str().strip_prefix("channel-").unwrap().parse::<u64>().unwrap();
+	let channel_id_number = format!("cha{:>05}", channel_id_number).as_bytes().to_vec();
+
+	let mut temp_value = [0u8; 8];
+	temp_value.copy_from_slice(&channel_id_number);
+	let escrow_account: T::AccountId = PalletId(temp_value).into_account();
+
+	escrow_account
+}
 
 /// handles transfer sending logic. There are 2 possible cases:
 ///
@@ -44,13 +70,17 @@ use ibc_proto::ibc::apps::transfer::v2::FungibleTokenPacketData;
 /// ibc-go implementation refer to https://github.com/octopus-network/ibc-go/blob/e40cdec6a3413fb3c8ea2a7ccad5e363ecd5a695/modules/apps/transfer/keeper/relay.go#L51
 /// pallet-asset lock refer to https://github.com/octopus-network/octopus-pallets/blob/main/appchain/src/lib.rs#L676
 /// pallet-asset burn refer to https://github.com/octopus-network/octopus-pallets/blob/main/appchain/src/lib.rs#L731
-pub fn handle_transfer<Ctx>(ctx: &Ctx, packet: Packet) -> Result<(), Ics20Error>
+pub fn handle_transfer<Ctx, T: Config>(ctx: &Ctx, packet: Packet) -> Result<(), Ics20Error>
 where
 	Ctx: Ics20Context,
 {
 	//TODO: get data from packet
-	// let source_channel = ChannelId::from(_value.packet.source_channel);
-	// let source_port =  PortId::from(_value.packet.source_port);
+	let source_channel = packet.source_channel.clone();
+	let source_port = packet.source_port.clone();
+	let denomination = String::new(); // TODO
+	let amount: u128 = 10; // TODO
+	let sender: T::AccountId = T::AccountId::default(); // TODO
+
 	// let destination_channel = ChannelId::from(_value.packet.destination_channel);
 	// let destination_port = PortId::from(_value.packet.destination_port);
 	// let timeout_timestamp= Timestamp::from(_value.packet.timeout_timestamp);
@@ -65,19 +95,38 @@ where
 	// let sender= fungible_token_packet_data.sender_chain_id;
 	// let receiver = fungible_token_packet_data.receiver_chain_id;
 
-	//TODO: token state transfaction
-	//     prefix = "{sourcePort}/{sourceChannel}/"
-	//     // we are the source if the denomination is not prefixed
-	//     source = denomination.slice(0, len(prefix)) !== prefix
-	//     if source {
-	//       // determine escrow account
-	//       escrowAccount = channelEscrowAddresses[sourceChannel]
-	//       // escrow source tokens (assumed to fail if balance insufficient)
-	//       bank.TransferCoins(sender, escrowAccount, denomination, amount)
-	//     } else {
-	//       // receiver is source chain, burn vouchers
-	//       bank.BurnCoins(sender, denomination, amount)
-	//     }
+	let prefix = format!("{}/{}", source_port, source_channel);
+	let source = denomination.starts_with(&prefix);
+
+	if source {
+		// determine escrow account
+		let escrow_account = generate_escrow_account::<T>(source_channel.clone());
+		<ChannelEscrowAddresses<T>>::insert(
+			ChannelId::from(source_channel),
+			escrow_account.clone(),
+		);
+
+		// escrow source tokens (assumed to fail if balance insufficient)
+		// bank.TransferCoins(sender, escrowAccount, denomination, amount)
+
+		// TODO
+		// how to deail with denomination
+		let amount = amount.checked_into().unwrap(); // TODO: unwrap()
+		let ret = T::Currency::transfer(&sender, &escrow_account, amount, AllowDeath).unwrap(); // TODO: unwrap()
+	} else {
+		// todo
+		// receiver is source chain, burn vouchers
+		// bank.BurnCoins(sender, denomination, amount)
+		// todo how to deail with denomination <> asset_id
+		// todo Assetid is default
+		let amount = amount.checked_into().unwrap(); // TODO : unwrap()
+		let ret = <T::Assets as fungibles::Mutate<T::AccountId>>::burn_from(
+			T::AssetId::default(),
+			&sender,
+			amount,
+		)
+		.unwrap(); // TODO: unwrap()
+	}
 
 	Ok(())
 }
