@@ -1,5 +1,6 @@
 use super::*;
 
+use crate::alloc::string::ToString;
 use event::primitive::{
 	ChannelId, ClientId, ClientState as EventClientState, ClientType, ConnectionId, Height,
 	Packet as IbcPacket, PortId, Timestamp,
@@ -10,7 +11,7 @@ use ibc::{
 	},
 	core::ics04_channel::packet::Packet,
 };
-use ibc_proto::ibc::apps::transfer::v2::FungibleTokenPacketData;
+use ibc_proto::ibc::apps::transfer::v2::FungibleTokenPacketData as IBCFungibleTokenPacketData;
 
 use frame_support::{
 	sp_runtime::traits::{AtLeast32BitUnsigned, CheckedConversion},
@@ -139,35 +140,68 @@ where
 /// ibc-go implementation refer to https://github.com/octopus-network/ibc-go/blob/e40cdec6a3413fb3c8ea2a7ccad5e363ecd5a695/modules/apps/transfer/keeper/relay.go#L189
 /// pallet-asset mint refer to https://github.com/octopus-network/octopus-pallets/blob/main/appchain/src/lib.rs#L1068
 /// pallet-asset unlock refer to https://github.com/octopus-network/octopus-pallets/blob/main/appchain/src/lib.rs#L1051
-pub fn handle_recv_packet<Ctx>(
+pub fn handle_recv_packet<Ctx, T: Config>(
 	ctx: &Ctx,
 	packet: Packet,
-	data: FungibleTokenPacketData,
-) -> Result<(), Ics20Error>
+	data: FungibleTokenPacketData<T>,
+) -> Result<FungibleTokenPacketAcknowledgement, Ics20Error>
 where
 	Ctx: Ics20Context,
 {
-	//TODO: token state transfaction
-	//     prefix = "{packet.sourcePort}/{packet.sourceChannel}/"
-	//   // we are the source if the packets were prefixed by the sending chain
-	//   source = data.denomination.slice(0, len(prefix)) === prefix
-	//   if source {
-	//     // receiver is source chain: unescrow tokens
-	//     // determine escrow account
-	//     escrowAccount = channelEscrowAddresses[packet.destChannel]
-	//     // unescrow tokens to receiver (assumed to fail if balance insufficient)
-	//     err = bank.TransferCoins(escrowAccount, data.receiver,
-	// data.denomination.slice(len(prefix)), data.amount)     if (err !== nil)
-	//       ack = FungibleTokenPacketAcknowledgement{false, "transfer coins failed"}
-	//   } else {
-	//     prefix = "{packet.destPort}/{packet.destChannel}/"
-	//     prefixedDenomination = prefix + data.denomination
-	//     // sender was source, mint vouchers to receiver (assumed to fail if balance insufficient)
-	//     err = bank.MintCoins(data.receiver, prefixedDenomination, data.amount)
-	//     if (err !== nil)
-	//       ack = FungibleTokenPacketAcknowledgement{false, "mint coins failed"}
-	//   }
-	Ok(())
+	let data = packet.data.clone();
+	let data = FungibleTokenPacketData::<T>::decode(&mut &*data).unwrap();
+	// construct default acknowledgement of success 
+	let mut ack = FungibleTokenPacketAcknowledgement::new();
+	let prefix = format!("{}/{}", packet.source_port, packet.source_channel).as_bytes().to_vec();
+	// we are the source if the packets were prefixed by the sending chain 
+	let source = data.denomination.starts_with(&prefix);
+	// let amount_unwrapped = data.amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
+	if source {
+		// todo
+		// receiver is source chain: unescrow tokens 
+		// determine escrow account 
+		// escrowAccount = channelEscrowAddresses[packet.destChannel]
+		let escrow_account = generate_escrow_account::<T>(packet.source_channel.clone());
+		<ChannelEscrowAddresses<T>>::insert(ChannelId::from(packet.source_channel), escrow_account.clone());
+		// unescrow tokens to receive (assumed to fail if balance insufficient)
+		// err = bank.TransferCoins(escrowAccount, data.receiver, data.denomination.slice(len(prefix)), data.amount)
+		// if (err !== nil)
+			// ack = FungibleTokenPacketAcknowledgement{false, "transfer coins failed"}
+			// how to deail with denomination
+		let amount = data.amount.checked_into().unwrap();
+		let result = T::Currency::transfer(&escrow_account, &data.receiver, amount, AllowDeath);
+		match result {
+			Ok(_) => {}
+			Err(_err) => {
+				ack = FungibleTokenPacketAcknowledgement::Err(FungibleTokenPacketError{
+					error: "transfer coin failed".to_string(),
+				})
+			}
+		}
+	} else {
+		// todo 
+		// prefix = "{packet.destPort}/{packet.destChannel}/"
+		let prefix = format!("{}/{}", packet.destination_port, packet.destination_channel);
+		// prefixedDenomination = prefix + data.denomination
+		let denomination = String::from_utf8(data.denomination).unwrap();
+		let _prefixed_denomination = format!("{}{}", prefix, denomination);
+		// sender was source, mint vouchers to receiver (assumed to fail if balance insufficient)
+		// err = bank.MintCoins(data.receiver, prefixedDenomination, data.amount)
+		// todo how to deail with asset_id
+		// todo asset id is default 
+		let amount = data.amount.checked_into().unwrap();
+		let result = <T::Assets as fungibles::Mutate<T::AccountId>>::mint_into(T::AssetId::default(), &data.receiver, amount);
+		match result {
+			Ok(()) => {}
+			Err(_) =>  {
+				ack = FungibleTokenPacketAcknowledgement::Err(FungibleTokenPacketError {
+					error: "mint coins failed".to_string(),
+				})
+			}
+		}
+	}
+
+	Ok(ack)
 }
 
 /// onAcknowledgePacket is called by the routing module when a packet sent by this module has been
@@ -176,37 +210,41 @@ where
 /// was a success then nothing occurs. If the acknowledgement failed, then
 /// the sender is refunded their tokens using the refundPacketToken function.
 /// ibc-go implementation refer to https://github.com/octopus-network/ibc-go/blob/e40cdec6a3413fb3c8ea2a7ccad5e363ecd5a695/modules/apps/transfer/keeper/relay.go#L337
-pub fn handle_ack_packet<Ctx>(
+pub fn handle_ack_packet<Ctx, T: Config>(
 	ctx: &Ctx,
 	packet: Packet,
-	data: FungibleTokenPacketData,
-	ack: Vec<u8>,
+	data: FungibleTokenPacketData<T>,
+	acknowledgement: Vec<u8>,
 ) -> Result<(), Ics20Error>
 where
 	Ctx: Ics20Context,
 {
-	// switch ack.Response.(type) {
-	//     case *channeltypes.Acknowledgement_Error:
-	//         return k.refundPacketToken(ctx, packet, data)
-	//     default:
-	//         // the acknowledgement succeeded on the receiving chain so nothing
-	//         // needs to be executed and no error needs to be returned
-	//         return nil
-	//     }
+	let acknowledgement = String::from_utf8(acknowledgement).unwrap();
+	let acknowledgement : FungibleTokenPacketAcknowledgement = serde_json::from_str(&acknowledgement).unwrap();
+	// if the transfer failed, refund the token 
+	match acknowledgement {
+		FungibleTokenPacketAcknowledgement::Err(_ack) => {
+			return refund_packet_token(ctx, packet, data);
+		}
+		_ => unimplemented!()
+	}
+
 	Ok(())
 }
 /// OnTimeoutPacket refunds the sender since the original packet sent was
 /// never received and has been timed out.
 /// ibc-go implementation refer to https://github.com/octopus-network/ibc-go/blob/e40cdec6a3413fb3c8ea2a7ccad5e363ecd5a695/modules/apps/transfer/keeper/relay.go#L350
-pub fn handle_timeout_packet<Ctx>(
+pub fn handle_timeout_packet<Ctx, T: Config>(
 	ctx: &Ctx,
 	packet: Packet,
-	data: FungibleTokenPacketData,
+	data: FungibleTokenPacketData<T>,
 ) -> Result<(), Ics20Error>
 where
 	Ctx: Ics20Context,
 {
-	//return k.refundPacketToken(ctx, packet, data)
+	// the packet timeout_out, so refund the tokens
+	let ret = refund_packet_token(ctx, packet, data);
+
 	Ok(())
 }
 
@@ -216,26 +254,40 @@ where
 /// were burnt in the original send so new tokens are minted and sent to
 /// the sending address.
 /// ibc-go implementation refer to https://github.com/octopus-network/ibc-go/blob/e40cdec6a3413fb3c8ea2a7ccad5e363ecd5a695/modules/apps/transfer/keeper/relay.go#L358
-pub fn refund_packet_token<Ctx>(
+fn refund_packet_token<Ctx, T: Config>(
 	ctx: &Ctx,
 	packet: Packet,
-	data: FungibleTokenPacketData,
+	data: FungibleTokenPacketData<T>,
 ) -> Result<(), Ics20Error>
 where
 	Ctx: Ics20Context,
 {
-	// FungibleTokenPacketData data = packet.data
-	// prefix = "{packet.sourcePort}/{packet.sourceChannel}/"
-	// // we are the source if the denomination is not prefixed
-	// source = denomination.slice(0, len(prefix)) !== prefix
-	// if source {
-	//   // sender was source chain, unescrow tokens back to sender
-	//   escrowAccount = channelEscrowAddresses[packet.srcChannel]
-	//   bank.TransferCoins(escrowAccount, data.sender, data.denomination, data.amount)
-	// } else {
-	//   // receiver was source chain, mint vouchers back to sender
-	//   bank.MintCoins(data.sender, denomination, data.amount)
-	// }
+	let data = packet.data.clone();
+	let data = FungibleTokenPacketData::<T>::decode(&mut &*data).unwrap();
+	let prefix = format!("{}/{}",packet.source_port,packet.source_channel).as_bytes().to_vec();
+	// we are the source if the denomination is not prefixed
+	let source = data.denomination.starts_with(&prefix);
+	// let amount_unwrapped = data.amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
+	if source {
+		// todo
+		// sender was source chain, unescrow tokens back to sender
+		// escrowAccount = channelEscrowAddresses[packet.srcChannel]
+		let escrow_account = generate_escrow_account::<T>(packet.source_channel.clone());
+		<ChannelEscrowAddresses<T>>::insert(ChannelId::from(packet.source_channel), escrow_account.clone());
+		// bank.TransferCoins(escrowAccount, data.sender, data.denomination, data.amount)
+		// todo how to deail with denomination
+		let amount = data.amount.checked_into().unwrap();
+		T::Currency::transfer(&escrow_account, &data.sender, amount, AllowDeath).unwrap();
+	} else {
+		// todo  
+		// receiver was source chain, mint vouchers back to sender
+		// bank.MintCoins(data.sender, denomination, data.amount)
+		// todo how to deail with denomination
+		// todo how to deail with asset id
+		let amount = data.amount.checked_into().unwrap();
+		<T::Assets as fungibles::Mutate<T::AccountId>>::mint_into(T::AssetId::default(), &data.receiver, amount).unwrap();
+	}
+
 	Ok(())
 }
 

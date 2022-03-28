@@ -39,6 +39,7 @@ ibc-proto = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "f
 
 beefy-light-client = { git = "https://github.com/octopus-network/beefy-light-client.git", branch="feature/v0.9.13", default-features = false }
 serde_json = { version = "1.0", default-features = false }
+serde = { version = "1.0", default-features = false }
 
 [dependencies.tendermint-proto]
 version = "=0.23.5"
@@ -77,6 +78,7 @@ std = [
 	'ibc-proto/std',
 	'beefy-light-client/std',
 	'serde_json/std',
+	'serde/std',
 ]
 
 runtime-benchmarks = ["frame-benchmarking"]

@@ -57,6 +57,7 @@ pub use pallet::*;
 use alloc::{format, string::String};
 use beefy_light_client::commitment;
 use codec::{Codec, Decode, Encode};
+use serde::{Serialize, Deserialize};
 use core::marker::PhantomData;
 use frame_system::ensure_signed;
 use ibc::{
@@ -1454,4 +1455,60 @@ pub mod pallet {
 			}
 		}
 	}
+}
+
+
+/// FungibleTokenPacketData defines a struct for the packet payload
+/// See FungibleTokenPacketData spec: https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer#data-structures
+#[derive(Decode, Encode, Debug, PartialEq)]
+pub struct FungibleTokenPacketData<T: Config> {
+	// the token denomination to be transferred
+	pub denomination: Vec<u8>,
+	// the token amount to be transferred
+	pub amount: u128,
+	// pub amount: T::AssetBalance,
+	// the sender address
+	pub sender: T::AccountId,
+	// the recipient address on the destination chain
+	pub receiver: T::AccountId,
+}
+
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum FungibleTokenPacketAcknowledgement {
+	Success(FungibleTokenPacketSuccess),
+	Err(FungibleTokenPacketError),
+}
+
+impl FungibleTokenPacketAcknowledgement { 
+	pub fn new() -> Self {
+		Self::Success(FungibleTokenPacketSuccess::new())
+	}
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct FungibleTokenPacketSuccess {
+	result: AQ,
+}
+
+
+
+impl FungibleTokenPacketSuccess {
+	pub fn new() -> Self {
+		let aq = AQ;
+		Self { result: aq}
+	}
+	pub fn result(&self) -> &str {
+		// this is binary 0x01 base64 encoded
+		"AQ=="
+	}
+}
+
+
+#[derive(Debug, Serialize, Deserialize)]
+struct AQ;
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct FungibleTokenPacketError { 
+	pub error: String,
 }
