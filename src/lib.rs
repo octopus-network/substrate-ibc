@@ -788,8 +788,9 @@ pub mod pallet {
 					Event::TimeoutOnClosePacket(height.into(), packet.into())
 				},
 				ibc::events::IbcEvent::Empty(value) => Event::Empty(value.as_bytes().to_vec()),
-				ibc::events::IbcEvent::ChainError(value) =>
-					Event::ChainError(value.as_bytes().to_vec()),
+				ibc::events::IbcEvent::ChainError(value) => {
+					Event::ChainError(value.as_bytes().to_vec())
+				},
 				_ => unimplemented!(),
 			}
 		}
@@ -922,7 +923,7 @@ pub mod pallet {
 			if !<ClientStates<T>>::contains_key(client_id.clone()) {
 				log::error!("in update_client_state: {:?} client_state not found !", client_id_str);
 
-				return Err(Error::<T>::ClientIdNotFound.into())
+				return Err(Error::<T>::ClientIdNotFound.into());
 			} else {
 				// get client state from chain storage
 				let data = <ClientStates<T>>::get(client_id.clone());
@@ -1063,7 +1064,7 @@ pub mod pallet {
 				Err(e) => {
 					log::error!("update the beefy light client failure! : {:?}", e);
 
-					return Err(Error::<T>::UpdateBeefyLightClientFailure.into())
+					return Err(Error::<T>::UpdateBeefyLightClientFailure.into());
 				},
 			}
 
@@ -1145,6 +1146,37 @@ pub mod pallet {
 
 					IbcEvent::ReceivePacket(value) => {
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L364
+						// Lookup module by channel capability
+						// module, cap, err := k.ChannelKeeper.LookupModuleByChannel(ctx, msg.Packet.DestinationPort, msg.Packet.DestinationChannel)
+						// if err != nil {
+						// 	return nil, sdkerrors.Wrap(err, "could not retrieve module from port-id")
+						// }
+
+						// // Retrieve callbacks from router
+						// cbs, ok := k.Router.GetRoute(module)
+						// if !ok {
+						// 	return nil, sdkerrors.Wrapf(porttypes.ErrInvalidRoute, "route not found to module: %s", module)
+						// }
+
+						// // Perform TAO verification
+						// //
+						// // If the packet was already received, perform a no-op
+						// // Use a cached context to prevent accidental state changes
+						// cacheCtx, writeFn := ctx.CacheContext()
+						// err = k.ChannelKeeper.RecvPacket(cacheCtx, cap, msg.Packet, msg.ProofCommitment, msg.ProofHeight)
+
+						// // NOTE: The context returned by CacheContext() refers to a new EventManager, so it needs to explicitly set events to the original context.
+						// ctx.EventManager().EmitEvents(cacheCtx.EventManager().Events())
+
+						// switch err {
+						// case nil:
+						// 	writeFn()
+						// case channeltypes.ErrNoOpMsg:
+						// 	return &channeltypes.MsgRecvPacketResponse{}, nil // no-op
+						// default:
+						// 	return nil, sdkerrors.Wrap(err, "receive packet verification failed")
+						// }
+
 						//TODO: get relayer address from messages
 						// let recv_msg = decode(messsages[0].clone());
 						// let relayer =recv_msg.signer;
@@ -1179,6 +1211,8 @@ pub mod pallet {
 							value.clone().packet,
 							Signer::new("IBC"),
 						);
+						//TODO: emit recv event
+						// Self::deposit_event(recv event);
 					},
 					IbcEvent::TimeoutPacket(value) => {
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L442

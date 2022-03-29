@@ -21,6 +21,15 @@ use frame_support::{
 };
 use sp_runtime::traits::AccountIdConversion;
 
+use ibc::{
+	applications::ics20_fungible_token_transfer::{
+		context::Ics20Context, error::Error as Ics20Error, msgs::denom_trace,
+	},
+	core::ics04_channel::{msgs::acknowledgement::MsgAcknowledgement, packet::Packet},
+};
+use ibc_proto::ibc::apps::transfer::v2::FungibleTokenPacketData;
+use ibc_proto::ibc::core::channel::v1::{acknowledgement::Response, Acknowledgement};
+
 fn generate_escrow_account<T: Config>(
 	channel_id: ibc::core::ics24_host::identifier::ChannelId,
 ) -> T::AccountId {
@@ -75,6 +84,63 @@ pub fn handle_transfer<Ctx, T: Config>(ctx: &Ctx, packet: Packet) -> Result<(), 
 where
 	Ctx: Ics20Context,
 {
+	// // NOTE: denomination and hex hash correctness checked during msg.ValidateBasic
+	// fullDenomPath := token.Denom
+
+	// var err error
+
+	// // deconstruct the token denomination into the denomination trace info
+	// // to determine if the sender is the source chain
+	// if strings.HasPrefix(token.Denom, "ibc/") {
+	// 	fullDenomPath, err = k.DenomPathFromHash(ctx, token.Denom)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
+
+	//TODO: add telemetry
+	// labels := []metrics.Label{
+	// 	telemetry.NewLabel(coretypes.LabelDestinationPort, destinationPort),
+	// 	telemetry.NewLabel(coretypes.LabelDestinationChannel, destinationChannel),
+	// }
+
+	// // NOTE: SendTransfer simply sends the denomination as it exists on its own
+	// // chain inside the packet data. The receiving chain will perform denom
+	// // prefixing as necessary.
+
+	// if types.SenderChainIsSource(sourcePort, sourceChannel, fullDenomPath) {
+	// 	labels = append(labels, telemetry.NewLabel(coretypes.LabelSource, "true"))
+
+	// 	// create the escrow address for the tokens
+	// 	escrowAddress := types.GetEscrowAddress(sourcePort, sourceChannel)
+
+	// 	// escrow source tokens. It fails if balance insufficient.
+	// 	if err := k.bankKeeper.SendCoins(
+	// 		ctx, sender, escrowAddress, sdk.NewCoins(token),
+	// 	); err != nil {
+	// 		return err
+	// 	}
+
+	// } else {
+	// 	labels = append(labels, telemetry.NewLabel(coretypes.LabelSource, "false"))
+
+	// 	// transfer the coins to the module account and burn them
+	// 	if err := k.bankKeeper.SendCoinsFromAccountToModule(
+	// 		ctx, sender, types.ModuleName, sdk.NewCoins(token),
+	// 	); err != nil {
+	// 		return err
+	// 	}
+
+	// 	if err := k.bankKeeper.BurnCoins(
+	// 		ctx, types.ModuleName, sdk.NewCoins(token),
+	// 	); err != nil {
+	// 		// NOTE: should not happen as the module account was
+	// 		// retrieved on the step above and it has enough balace
+	// 		// to burn.
+	// 		panic(fmt.Sprintf("cannot burn coins after a successful send to a module account: %v", err))
+	// 	}
+	// }
+
 	//TODO: get data from packet
 	let source_channel = packet.source_channel.clone();
 	let source_port = packet.source_port.clone();
@@ -113,7 +179,8 @@ where
 		// TODO
 		// how to deail with denomination
 		let amount = amount.checked_into().unwrap(); // TODO: unwrap()
-		let ret = T::Currency::transfer(&sender, &escrow_account, amount, AllowDeath).unwrap(); // TODO: unwrap()
+		let ret = T::Currency::transfer(&sender, &escrow_account, amount, AllowDeath).unwrap();
+		// TODO: unwrap()
 	} else {
 		// todo
 		// receiver is source chain, burn vouchers
@@ -148,6 +215,149 @@ pub fn handle_recv_packet<Ctx, T: Config>(
 where
 	Ctx: Ics20Context,
 {
+	// // validate packet data upon receiving
+	// if err := data.ValidateBasic(); err != nil {
+	// 	return err
+	// }
+
+	// if !k.GetReceiveEnabled(ctx) {
+	// 	return types.ErrReceiveDisabled
+	// }
+
+	// // decode the receiver address
+	// receiver, err := sdk.AccAddressFromBech32(data.Receiver)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// // parse the transfer amount
+	// transferAmount, ok := sdk.NewIntFromString(data.Amount)
+	// if !ok {
+	// 	return sdkerrors.Wrapf(types.ErrInvalidAmount, "unable to parse transfer amount (%s) into sdk.Int", data.Amount)
+	// }
+
+	// labels := []metrics.Label{
+	// 	telemetry.NewLabel(coretypes.LabelSourcePort, packet.GetSourcePort()),
+	// 	telemetry.NewLabel(coretypes.LabelSourceChannel, packet.GetSourceChannel()),
+	// }
+
+	// // This is the prefix that would have been prefixed to the denomination
+	// // on sender chain IF and only if the token originally came from the
+	// // receiving chain.
+	// //
+	// // NOTE: We use SourcePort and SourceChannel here, because the counterparty
+	// // chain would have prefixed with DestPort and DestChannel when originally
+	// // receiving this coin as seen in the "sender chain is the source" condition.
+
+	// if types.ReceiverChainIsSource(packet.GetSourcePort(), packet.GetSourceChannel(), data.Denom) {
+	// 	// sender chain is not the source, unescrow tokens
+
+	// 	// remove prefix added by sender chain
+	// 	voucherPrefix := types.GetDenomPrefix(packet.GetSourcePort(), packet.GetSourceChannel())
+	// 	unprefixedDenom := data.Denom[len(voucherPrefix):]
+
+	// 	// coin denomination used in sending from the escrow address
+	// 	denom := unprefixedDenom
+
+	// 	// The denomination used to send the coins is either the native denom or the hash of the path
+	// 	// if the denomination is not native.
+	// 	denomTrace := types.ParseDenomTrace(unprefixedDenom)
+	// 	if denomTrace.Path != "" {
+	// 		denom = denomTrace.IBCDenom()
+	// 	}
+	// 	token := sdk.NewCoin(denom, transferAmount)
+
+	// 	// unescrow tokens
+	// 	escrowAddress := types.GetEscrowAddress(packet.GetDestPort(), packet.GetDestChannel())
+	// 	if err := k.bankKeeper.SendCoins(ctx, escrowAddress, receiver, sdk.NewCoins(token)); err != nil {
+	// 		// NOTE: this error is only expected to occur given an unexpected bug or a malicious
+	// 		// counterparty module. The bug may occur in bank or any part of the code that allows
+	// 		// the escrow address to be drained. A malicious counterparty module could drain the
+	// 		// escrow address by allowing more tokens to be sent back then were escrowed.
+	// 		return sdkerrors.Wrap(err, "unable to unescrow tokens, this may be caused by a malicious counterparty module or a bug: please open an issue on counterparty module")
+	// 	}
+
+	// 	defer func() {
+	// 		if transferAmount.IsInt64() {
+	// 			telemetry.SetGaugeWithLabels(
+	// 				[]string{"ibc", types.ModuleName, "packet", "receive"},
+	// 				float32(transferAmount.Int64()),
+	// 				[]metrics.Label{telemetry.NewLabel(coretypes.LabelDenom, unprefixedDenom)},
+	// 			)
+	// 		}
+
+	// 		telemetry.IncrCounterWithLabels(
+	// 			[]string{"ibc", types.ModuleName, "receive"},
+	// 			1,
+	// 			append(
+	// 				labels, telemetry.NewLabel(coretypes.LabelSource, "true"),
+	// 			),
+	// 		)
+	// 	}()
+
+	// 	return nil
+	// }
+
+	// // sender chain is the source, mint vouchers
+
+	// // since SendPacket did not prefix the denomination, we must prefix denomination here
+	// sourcePrefix := types.GetDenomPrefix(packet.GetDestPort(), packet.GetDestChannel())
+	// // NOTE: sourcePrefix contains the trailing "/"
+	// prefixedDenom := sourcePrefix + data.Denom
+
+	// // construct the denomination trace from the full raw denomination
+	// denomTrace := types.ParseDenomTrace(prefixedDenom)
+
+	// traceHash := denomTrace.Hash()
+	// if !k.HasDenomTrace(ctx, traceHash) {
+	// 	k.SetDenomTrace(ctx, denomTrace)
+	// }
+	//TODO: rust implementation
+
+	// voucherDenom := denomTrace.IBCDenom()
+	// ctx.EventManager().EmitEvent(
+	// 	sdk.NewEvent(
+	// 		types.EventTypeDenomTrace,
+	// 		sdk.NewAttribute(types.AttributeKeyTraceHash, traceHash.String()),
+	// 		sdk.NewAttribute(types.AttributeKeyDenom, voucherDenom),
+	// 	),
+	// )
+	// voucher := sdk.NewCoin(voucherDenom, transferAmount)
+
+	// // mint new tokens if the source of the transfer is the same chain
+	// if err := k.bankKeeper.MintCoins(
+	// 	ctx, types.ModuleName, sdk.NewCoins(voucher),
+	// ); err != nil {
+	// 	return err
+	// }
+
+	// // send to receiver
+	// if err := k.bankKeeper.SendCoinsFromModuleToAccount(
+	// 	ctx, types.ModuleName, receiver, sdk.NewCoins(voucher),
+	// ); err != nil {
+	// 	return err
+	// }
+
+	// defer func() {
+	// 	if transferAmount.IsInt64() {
+	// 		telemetry.SetGaugeWithLabels(
+	// 			[]string{"ibc", types.ModuleName, "packet", "receive"},
+	// 			float32(transferAmount.Int64()),
+	// 			[]metrics.Label{telemetry.NewLabel(coretypes.LabelDenom, data.Denom)},
+	// 		)
+	// 	}
+
+	// 	telemetry.IncrCounterWithLabels(
+	// 		[]string{"ibc", types.ModuleName, "receive"},
+	// 		1,
+	// 		append(
+	// 			labels, telemetry.NewLabel(coretypes.LabelSource, "false"),
+	// 		),
+	// 	)
+	// }()
+
+	// return nil
+
 	let data = packet.data.clone();
 	let data = FungibleTokenPacketData::<T>::decode(&mut &*data).unwrap();
 	// construct default acknowledgement of success
@@ -175,10 +385,11 @@ where
 		let result = T::Currency::transfer(&escrow_account, &data.receiver, amount, AllowDeath);
 		match result {
 			Ok(_) => {},
-			Err(_err) =>
+			Err(_err) => {
 				ack = FungibleTokenPacketAcknowledgement::Err(FungibleTokenPacketError {
 					error: "transfer coin failed".to_string(),
-				}),
+				})
+			},
 		}
 	} else {
 		// todo
@@ -199,10 +410,11 @@ where
 		);
 		match result {
 			Ok(()) => {},
-			Err(_) =>
+			Err(_) => {
 				ack = FungibleTokenPacketAcknowledgement::Err(FungibleTokenPacketError {
 					error: "mint coins failed".to_string(),
-				}),
+				})
+			},
 		}
 	}
 
@@ -235,21 +447,30 @@ pub fn handle_ack_packet<Ctx, T: Config>(
 	ctx: &Ctx,
 	packet: Packet,
 	data: FungibleTokenPacketData<T>,
-	acknowledgement: Vec<u8>,
+	acknowledgement: Acknowledgement,
 ) -> Result<(), Ics20Error>
 where
 	Ctx: Ics20Context,
 {
-	let acknowledgement = String::from_utf8(acknowledgement).unwrap();
-	let acknowledgement: FungibleTokenPacketAcknowledgement =
-		serde_json::from_str(&acknowledgement).unwrap();
-	// if the transfer failed, refund the token
-	match acknowledgement {
-		FungibleTokenPacketAcknowledgement::Err(_ack) =>
-			return refund_packet_token(ctx, packet, data),
-		_ => unimplemented!(),
-	}
+	// let acknowledgement = String::from_utf8(acknowledgement).unwrap();
+	// let acknowledgement: FungibleTokenPacketAcknowledgement =
+	// 	serde_json::from_str(&acknowledgement).unwrap();
+	// // if the transfer failed, refund the token
+	// match acknowledgement {
+	// 	FungibleTokenPacketAcknowledgement::Err(_ack) => {
+	// 		return refund_packet_token(ctx, packet, data)
+	// 	},
+	// 	_ => unimplemented!(),
+	// }
 
+
+	match ack.response {
+		Response::Error(e) => {
+			log::trace!("in ics20_handler : handle ack packet error >> {:?}", e);
+			refund_packet_token(ctx, packet, data)
+		},
+		Response::Result(()) => Ok(()),
+	}
 	Ok(())
 }
 
@@ -267,6 +488,52 @@ fn refund_packet_token<Ctx, T: Config>(
 where
 	Ctx: Ics20Context,
 {
+
+	// NOTE: packet data type already checked in handler.go
+
+	// parse the denomination from the full denom path
+	// trace := types.ParseDenomTrace(data.Denom)
+
+	// // parse the transfer amount
+	// transferAmount, ok := sdk.NewIntFromString(data.Amount)
+	// if !ok {
+	// 	return sdkerrors.Wrapf(types.ErrInvalidAmount, "unable to parse transfer amount (%s) into sdk.Int", data.Amount)
+	// }
+	// token := sdk.NewCoin(trace.IBCDenom(), transferAmount)
+
+	// // decode the sender address
+	// sender, err := sdk.AccAddressFromBech32(data.Sender)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// if types.SenderChainIsSource(packet.GetSourcePort(), packet.GetSourceChannel(), data.Denom) {
+	// 	// unescrow tokens back to sender
+	// 	escrowAddress := types.GetEscrowAddress(packet.GetSourcePort(), packet.GetSourceChannel())
+	// 	if err := k.bankKeeper.SendCoins(ctx, escrowAddress, sender, sdk.NewCoins(token)); err != nil {
+	// 		// NOTE: this error is only expected to occur given an unexpected bug or a malicious
+	// 		// counterparty module. The bug may occur in bank or any part of the code that allows
+	// 		// the escrow address to be drained. A malicious counterparty module could drain the
+	// 		// escrow address by allowing more tokens to be sent back then were escrowed.
+	// 		return sdkerrors.Wrap(err, "unable to unescrow tokens, this may be caused by a malicious counterparty module or a bug: please open an issue on counterparty module")
+	// 	}
+
+	// 	return nil
+	// }
+
+	// // mint vouchers back to sender
+	// if err := k.bankKeeper.MintCoins(
+	// 	ctx, types.ModuleName, sdk.NewCoins(token),
+	// ); err != nil {
+	// 	return err
+	// }
+
+	// if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, sender, sdk.NewCoins(token)); err != nil {
+	// 	panic(fmt.Sprintf("unable to send coins from module to account despite previously minting coins to module account: %v", err))
+	// }
+
+	// return nil
+
 	let data = packet.data.clone();
 	let data = FungibleTokenPacketData::<T>::decode(&mut &*data).unwrap();
 	let prefix = format!("{}/{}", packet.source_port, packet.source_channel).as_bytes().to_vec();

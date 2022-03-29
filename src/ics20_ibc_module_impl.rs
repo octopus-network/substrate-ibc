@@ -5,20 +5,16 @@ use ibc::{
 		context::Ics20Context, error::Error as Ics20Error,
 	},
 	core::{
-		ics04_channel::{
-			channel::{Counterparty, Order},
-			packet::Packet,
-			Version,
-		},
+		ics04_channel::{channel::Counterparty, channel::Order, packet::Packet, Version},
 		ics05_port::capabilities::Capability,
 		ics24_host::identifier::{ChannelId, ConnectionId, PortId},
 		ics26_routing::ibc_module::IBCModule,
 	},
 	signer::Signer,
 };
-use ibc_proto::ibc::{
-	apps::transfer::v2::FungibleTokenPacketData, core::channel::v1::Acknowledgement,
-};
+use ibc_proto::ibc::apps::transfer::v2::FungibleTokenPacketData;
+use ibc_proto::ibc::core::channel::v1::Acknowledgement;
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Ics20IBCModule;
 
@@ -168,13 +164,39 @@ impl IBCModule for Ics20IBCModule {
 	where
 		Ctx: Ics20Context,
 	{
-		let ack = vec![1];
+
+	// 	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+
+	// var data types.FungibleTokenPacketData
+	// if err := types.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
+	// 	ack = channeltypes.NewErrorAcknowledgement("cannot unmarshal ICS-20 transfer packet data")
+	// }
+
+	// // only attempt the application logic if the packet data
+	// // was successfully decoded
+	// if ack.Success() {
+	// 	err := im.keeper.OnRecvPacket(ctx, packet, data)
+	// 	if err != nil {
+	// 		ack = types.NewErrorAcknowledgement(err)
+	// 	}
+	// }
+		
+		
+		let ack_value = vec![1];
 
 		//TODO: build FungibleTokenPacketData
 		// let data = FungibleTokenPacketData::decode(&mut &packet.data[..]).unwrap();
 
 		// TODO: handle recv packet
-		//ics20_handler::handle_recv_packet(ctx, packet, data)
+		//let result = ics20_handler::handle_recv_packet(ctx, packet, data)
+		
+		//TODO:
+		// if result is err 
+		//let ack_result = err.to_string.get_bytes
+		// if result is ok let ack_value = vec![1];
+		
+		let ack_result = vec![1];
+		let ack = Acknowledgement::encode(&ack_result);
 		Ok(ack)
 	}
 
