@@ -21,13 +21,7 @@ use frame_support::{
 };
 use sp_runtime::traits::AccountIdConversion;
 
-use ibc::{
-	applications::ics20_fungible_token_transfer::{
-		context::Ics20Context, error::Error as Ics20Error, msgs::denom_trace,
-	},
-	core::ics04_channel::{msgs::acknowledgement::MsgAcknowledgement, packet::Packet},
-};
-use ibc_proto::ibc::apps::transfer::v2::FungibleTokenPacketData;
+// use ibc_proto::ibc::apps::transfer::v2::FungibleTokenPacketData;
 use ibc_proto::ibc::core::channel::v1::{acknowledgement::Response, Acknowledgement};
 
 fn generate_escrow_account<T: Config>(
@@ -463,15 +457,16 @@ where
 	// 	_ => unimplemented!(),
 	// }
 
+	let response = acknowledgement.response.ok_or(Ics20Error::acknowledgement_response_empty())?;
 
-	match ack.response {
+	match response {
 		Response::Error(e) => {
 			log::trace!("in ics20_handler : handle ack packet error >> {:?}", e);
-			refund_packet_token(ctx, packet, data)
+			return refund_packet_token(ctx, packet, data);
 		},
-		Response::Result(()) => Ok(()),
+		Response::Result(ret) => Ok(()),
 	}
-	Ok(())
+	
 }
 
 /// refundTokens is called by both onAcknowledgePacket, on failure, and onTimeoutPacket, to refund

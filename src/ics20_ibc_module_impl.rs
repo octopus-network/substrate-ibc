@@ -12,8 +12,9 @@ use ibc::{
 	},
 	signer::Signer,
 };
-use ibc_proto::ibc::apps::transfer::v2::FungibleTokenPacketData;
-use ibc_proto::ibc::core::channel::v1::Acknowledgement;
+use prost::Message;
+use ibc::applications::ics20_fungible_token_transfer::msgs::fungible_token_packet_data::FungibleTokenPacketData;
+use ibc::core::ics04_channel::msgs::acknowledgement_response::Acknowledgement;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Ics20IBCModule;
@@ -196,7 +197,11 @@ impl IBCModule for Ics20IBCModule {
 		// if result is ok let ack_value = vec![1];
 		
 		let ack_result = vec![1];
-		let ack = Acknowledgement::encode(&ack_result);
+
+		// construct Acknowledgement 
+		let acknowledgement = Acknowledgement::new(ack_result);
+
+		let ack = acknowledgement.encode_vec().unwrap();
 		Ok(ack)
 	}
 
