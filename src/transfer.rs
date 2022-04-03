@@ -9,7 +9,7 @@ use ibc::applications::ics20_fungible_token_transfer::{
 
 impl<T: Config> Ics20Context for Context<T> {
 	// GetDenomTrace retreives the full identifiers trace and base denomination from the store.
-	fn get_denom_trace(&self, denom_trace_hash: &Vec<u8>) -> Result<DenomTrace, Error> {
+	fn get_denom_trace(&self, denom_trace_hash: &[u8]) -> Result<DenomTrace, Error> {
 		log::trace!("in transfer : [denom trace hash] >> {:?}", denom_trace_hash);
 
 		if <Denomination<T>>::contains_key(denom_trace_hash) {
@@ -23,7 +23,7 @@ impl<T: Config> Ics20Context for Context<T> {
 		}
 	}
 	// HasDenomTrace checks if a the key with the given denomination trace hash exists on the store.
-	fn has_denom_trace(&self, denom_trace_hash: &Vec<u8>) -> bool {
+	fn has_denom_trace(&self, denom_trace_hash: &[u8]) -> bool {
 		log::trace!("in transfer : [denom trace hash] >> {:?}", denom_trace_hash,);
 
 		<Denomination<T>>::contains_key(denom_trace_hash)

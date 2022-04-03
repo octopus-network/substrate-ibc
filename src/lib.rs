@@ -72,7 +72,7 @@ use ibc::{
 pub use routing::ModuleCallbacks;
 use scale_info::{prelude::vec, TypeInfo};
 use serde::{Deserialize, Serialize};
-use sp_runtime::RuntimeDebug;
+use sp_runtime::{traits::AccountIdConversion, RuntimeDebug, TypeId};
 use sp_std::prelude::*;
 use tendermint_proto::Protobuf;
 
@@ -459,8 +459,16 @@ pub mod pallet {
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
-	pub type ChannelEscrowAddresses<T: Config> =
-		StorageMap<_, Blake2_128Concat, ChannelId, T::AccountId, ValueQuery>;
+	// port, channel -> escrow address
+	pub type EscrowAddresses<T: Config> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		PortId,
+		Blake2_128Concat,
+		ChannelId,
+		T::AccountId,
+		ValueQuery,
+	>;
 
 	/// Substrate IBC event list
 	#[pallet::event]
@@ -788,9 +796,8 @@ pub mod pallet {
 					Event::TimeoutOnClosePacket(height.into(), packet.into())
 				},
 				ibc::events::IbcEvent::Empty(value) => Event::Empty(value.as_bytes().to_vec()),
-				ibc::events::IbcEvent::ChainError(value) => {
-					Event::ChainError(value.as_bytes().to_vec())
-				},
+				ibc::events::IbcEvent::ChainError(value) =>
+					Event::ChainError(value.as_bytes().to_vec()),
 				_ => unimplemented!(),
 			}
 		}
@@ -923,7 +930,7 @@ pub mod pallet {
 			if !<ClientStates<T>>::contains_key(client_id.clone()) {
 				log::error!("in update_client_state: {:?} client_state not found !", client_id_str);
 
-				return Err(Error::<T>::ClientIdNotFound.into());
+				return Err(Error::<T>::ClientIdNotFound.into())
 			} else {
 				// get client state from chain storage
 				let data = <ClientStates<T>>::get(client_id.clone());
@@ -1064,7 +1071,7 @@ pub mod pallet {
 				Err(e) => {
 					log::error!("update the beefy light client failure! : {:?}", e);
 
-					return Err(Error::<T>::UpdateBeefyLightClientFailure.into());
+					return Err(Error::<T>::UpdateBeefyLightClientFailure.into())
 				},
 			}
 
@@ -1146,88 +1153,65 @@ pub mod pallet {
 
 					IbcEvent::ReceivePacket(value) => {
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L364
-						// Lookup module by channel capability
-						// module, cap, err := k.ChannelKeeper.LookupModuleByChannel(ctx, msg.Packet.DestinationPort, msg.Packet.DestinationChannel)
-						// if err != nil {
-						// 	return nil, sdkerrors.Wrap(err, "could not retrieve module from port-id")
-						// }
 
-						// // Retrieve callbacks from router
-						// cbs, ok := k.Router.GetRoute(module)
-						// if !ok {
-						// 	return nil, sdkerrors.Wrapf(porttypes.ErrInvalidRoute, "route not found to module: %s", module)
-						// }
-
-						// // Perform TAO verification
-						// //
-						// // If the packet was already received, perform a no-op
-						// // Use a cached context to prevent accidental state changes
-						// cacheCtx, writeFn := ctx.CacheContext()
-						// err = k.ChannelKeeper.RecvPacket(cacheCtx, cap, msg.Packet, msg.ProofCommitment, msg.ProofHeight)
-
-						// // NOTE: The context returned by CacheContext() refers to a new EventManager, so it needs to explicitly set events to the original context.
-						// ctx.EventManager().EmitEvents(cacheCtx.EventManager().Events())
-
-						// switch err {
-						// case nil:
-						// 	writeFn()
-						// case channeltypes.ErrNoOpMsg:
-						// 	return &channeltypes.MsgRecvPacketResponse{}, nil // no-op
-						// default:
-						// 	return nil, sdkerrors.Wrap(err, "receive packet verification failed")
-						// }
-
-						//TODO: get relayer address from messages
-						// let recv_msg = decode(messsages[0].clone());
-						// let relayer =recv_msg.signer;
-
-						//TODO: Perform callback -> on_recv_packet
-						// let ack = ibc_module_impl::on_recv_packet(&mut ctx,
-						// value.packet,relayer);
-
-						// TODO： handle write acknowledgement
-						// let packet = value.packet;
-						// let write_ack_event = write_acknowledgement::process(ctx, packet, ack)?;
-
-						//TODO: store write ack
-						// match write_ack_event(value) {
-						// 	let port_id = value.packet.source_port.as_bytes().to_vec();
-						// 	let channel_id = value.packet.source_channel.as_bytes().to_vec();
-						// 	let sequence = u64::from(value.packet.sequence);
-						// 	let write_ack = value.encode_vec().unwrap();
-						// 	let _write_ack =
-						// WriteAcknowledgement::decode(&*write_ack.clone()).unwrap(); 	//
-						// store.Set((portID, channelID, sequence), WriteAckEvent)
-						// <WriteAckPacketEvent<T>>:: insert((port_id, channel_id, sequence),
-						// write_ack); };
-
-						//TODO: emit write acknowledgement event
-						// Self::deposit_event(write_ack_event);
+						let relayer_signer = get_signer(messages[0].clone());
 
 						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule;
-						let ret = ibc::core::ics26_routing::ibc_module::IBCModule::on_recv_packet(
+						let ack = ibc::core::ics26_routing::ibc_module::IBCModule::on_recv_packet(
 							&ics20_modlue,
 							ctx,
 							value.clone().packet,
-							Signer::new("IBC"),
-						);
+							relayer_signer,
+						)
+						.unwrap();
+
+						// TODO： handle write acknowledgement
+						let packet = value.packet;
+						let write_ack_event =
+							ibc::core::ics04_channel::handler::write_acknowledgement::process(
+								ctx,
+								packet.clone(),
+								ack.clone(),
+							)
+							.unwrap();
+
+						// store write acknowledgement event
+						match write_ack_event.result {
+							ibc::core::ics04_channel::packet::PacketResult::WriteAck(value) => {
+								<WriteAckPacketEvent<T>>::insert(
+									(
+										value.port_id.as_bytes().to_vec(),
+										value.channel_id.as_bytes().to_vec(),
+										u64::from(value.seq),
+									),
+									ack.clone(),
+								);
+							},
+							_ => unimplemented!(),
+						}
+					
+						//TODO: emit write acknowledgement event
+						Self::deposit_event(Event::<T>::WriteAcknowledgement(
+							Height::new(0, 0),
+							packet.into(),
+							ack,
+						));
+
 						//TODO: emit recv event
-						// Self::deposit_event(recv event);
+						Self::deposit_event(event.clone().into());
 					},
 					IbcEvent::TimeoutPacket(value) => {
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L442
 
-						// TODO:
-						// get relayer signer
-						// let timeout_msg = decode(messages[0].clone());
-						// let relayer = tiomeout_msg.signer;
+						let relayer_signer = get_signer(messages[0].clone());
+
 						let ics20_module = ics20_ibc_module_impl::Ics20IBCModule;
 						let ret =
 							ibc::core::ics26_routing::ibc_module::IBCModule::on_timeout_packet(
 								&ics20_module,
 								ctx,
 								value.clone().packet,
-								Signer::new("IBC"),
+								relayer_signer,
 							);
 
 						Self::deposit_event(event.clone().into());
@@ -1239,10 +1223,12 @@ pub mod pallet {
 						// TODO: get relayer address
 						// let ack_msg = decode(messsages[0].clone());
 						// let relayer = ack_msg.signer;
-						// let ack = ack_msg.acknowledgement;
+						// let ack = ack_msg.acknowledgement; 
+						
+						let relayer_signer = get_signer(messages[0].clone());
 
 						let ics20_module = ics20_ibc_module_impl::Ics20IBCModule;
-						let ret = ibc::core::ics26_routing::ibc_module::IBCModule::on_acknowledgement_packet(&ics20_module, ctx, value.clone().packet, vec![], Signer::new("IBC"));
+						let ret = ibc::core::ics26_routing::ibc_module::IBCModule::on_acknowledgement_packet(&ics20_module, ctx, value.clone().packet, vec![], relayer_signer);
 
 						Self::deposit_event(event.clone().into());
 					},
@@ -1250,6 +1236,7 @@ pub mod pallet {
 					IbcEvent::OpenInitChannel(value) => {
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L163
 
+						let relayer_signer = get_signer(messages[0].clone());
 						//TODO: get data from value.packet
 						// let order = value.packet.order;
 						// ...
@@ -1297,6 +1284,8 @@ pub mod pallet {
 						//TODO: get data from value.packet
 						// let order = value.packet.order;
 						// ...
+						let relayer_signer = get_signer(messages[0].clone());
+
 						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule;
 						let ret = ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_ack(
 							&ics20_modlue,
@@ -1314,6 +1303,8 @@ pub mod pallet {
 						//TODO: get data from value.packet
 						// let order = value.packet.order;
 						// ...
+						let relayer_signer = get_signer(messages[0].clone());
+
 						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule;
 						let ret =
 							ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_confirm(
@@ -1330,6 +1321,8 @@ pub mod pallet {
 						//TODO: get data from value.packet
 						// let order = value.packet.order;
 						// ...
+						let relayer_signer = get_signer(messages[0].clone());
+
 						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule;
 						let ret =
 							ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_close_init(
@@ -1347,6 +1340,8 @@ pub mod pallet {
 						//TODO: get data from value.packet
 						// let order = value.packet.order;
 						// ...
+
+						let relayer_signer = get_signer(messages[0].clone());
 
 						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule;
 						let ret =
@@ -1512,6 +1507,19 @@ pub struct FungibleTokenPacketData<T: Config> {
 	pub receiver: T::AccountId,
 }
 
+use ibc::applications::ics20_fungible_token_transfer::msgs::fungible_token_packet_data::FungibleTokenPacketData as IBCFungibleTokenPacketData;
+
+impl<T: Config> From<IBCFungibleTokenPacketData> for FungibleTokenPacketData<T> {
+	fn from(value: IBCFungibleTokenPacketData) -> Self {
+		Self {
+			denomination: value.denom.as_bytes().to_vec(),
+			amount: value.amount.parse::<u128>().unwrap(),
+			sender: IbcId(value.sender.as_str().as_bytes().to_vec()).into_account(),
+			receiver: IbcId(value.receiver.as_str().as_bytes().to_vec()).into_account(),
+		}
+	}
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub enum FungibleTokenPacketAcknowledgement {
 	Success(FungibleTokenPacketSuccess),
@@ -1546,4 +1554,53 @@ struct AQ;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FungibleTokenPacketError {
 	pub error: String,
+}
+
+/// A pallet identifier. These are per pallet and should be stored in a registry somewhere.
+#[derive(Clone, Eq, PartialEq, Encode, Decode, TypeInfo)]
+pub struct IbcId(pub Vec<u8>);
+
+impl TypeId for IbcId {
+	const TYPE_ID: [u8; 4] = *b"Ibcs";
+}
+
+fn get_signer(message: prost_types::Any) -> ibc::signer::Signer {
+	let decode_message = ibc::core::ics26_routing::handler::decode(message).unwrap();
+	let signer = match decode_message {
+		ibc::core::ics26_routing::msgs::Ics26Envelope::Ics2Msg(value) => match value {
+			ibc::core::ics02_client::msgs::ClientMsg::CreateClient(val) => val.signer.clone(),
+			ibc::core::ics02_client::msgs::ClientMsg::UpdateClient(val) => val.signer.clone(),
+			ibc::core::ics02_client::msgs::ClientMsg::Misbehaviour(val) => val.signer.clone(),
+			ibc::core::ics02_client::msgs::ClientMsg::UpgradeClient(val) => val.signer.clone(),
+		},
+		ibc::core::ics26_routing::msgs::Ics26Envelope::Ics3Msg(value) => match value {
+			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenInit(val) =>
+				val.signer.clone(),
+			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenTry(val) =>
+				val.signer.clone(),
+			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenAck(val) =>
+				val.signer.clone(),
+			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenConfirm(val) =>
+				val.signer.clone(),
+		},
+		ibc::core::ics26_routing::msgs::Ics26Envelope::Ics4ChannelMsg(value) => match value {
+			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelOpenInit(val) => val.signer.clone(),
+			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelOpenTry(val) => val.signer.clone(),
+			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelOpenAck(val) => val.signer.clone(),
+			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelOpenConfirm(val) =>
+				val.signer.clone(),
+			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelCloseInit(val) => val.signer.clone(),
+			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelCloseConfirm(val) =>
+				val.signer.clone(),
+		},
+		ibc::core::ics26_routing::msgs::Ics26Envelope::Ics4PacketMsg(value) => match value {
+			ibc::core::ics04_channel::msgs::PacketMsg::RecvPacket(val) => val.signer.clone(),
+			ibc::core::ics04_channel::msgs::PacketMsg::AckPacket(val) => val.signer.clone(),
+			ibc::core::ics04_channel::msgs::PacketMsg::ToPacket(val) => val.signer.clone(),
+			ibc::core::ics04_channel::msgs::PacketMsg::ToClosePacket(val) => val.signer.clone(),
+		},
+		ibc::core::ics26_routing::msgs::Ics26Envelope::Ics20Msg(value) => value.sender.clone(),
+	};
+
+	ibc::signer::Signer::new("ibc")
 }
