@@ -5,6 +5,10 @@ use ibc::{
 	},
 	core::ics26_routing::context::Ics26Context,
 };
+// use ibc::core::ics26_routing::context::Ics26Context::Router;
+use ibc::core::ics26_routing::context::ModuleId;
+use alloc::borrow::{Borrow, Cow};
+use ibc::core::ics26_routing::context::Module;
 
 #[derive(Clone)]
 pub struct Context<T: Config> {
@@ -18,7 +22,31 @@ impl<T: Config> Context<T> {
 	}
 }
 
-impl<T: Config> Ics26Context for Context<T> {}
+pub struct TempRouter;
+
+impl ibc::core::ics26_routing::context::Router for TempRouter {
+	/// Returns a mutable reference to a `Module` registered against the specified `ModuleId`
+    fn get_route_mut(&mut self, module_id: &impl Borrow<ModuleId>) -> Option<&mut dyn Module> {
+		todo!()
+	}
+
+    /// Returns true if the `Router` has a `Module` registered against the specified `ModuleId`
+    fn has_route(&self, module_id: &impl Borrow<ModuleId>) -> bool {
+		todo!()
+	}
+}
+
+impl<T: Config> Ics26Context for Context<T> {
+	type Router = TempRouter;
+
+    fn router(&self) -> &Self::Router {
+		todo!()
+	}
+
+    fn router_mut(&mut self) -> &mut Self::Router {
+		todo!()
+	}
+}
 
 pub trait ModuleCallbacks {
 	// fn on_chan_open_try(

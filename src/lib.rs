@@ -100,8 +100,8 @@ pub struct Any {
 	pub value: Vec<u8>,
 }
 
-impl From<prost_types::Any> for Any {
-	fn from(any: prost_types::Any) -> Self {
+impl From<ibc_proto::google::protobuf::Any> for Any {
+	fn from(any: ibc_proto::google::protobuf::Any) -> Self {
 		Self { type_url: any.type_url.as_bytes().to_vec(), value: any.value }
 	}
 }
@@ -657,14 +657,14 @@ pub mod pallet {
 					)
 				},
 				ibc::events::IbcEvent::OpenInitChannel(value) => {
-					let height = value.attributes().height;
-					let port_id = value.attributes().port_id.clone();
+					let height = value.height.clone();
+					let port_id = value.port_id.clone();
 					let channel_id: Option<ChannelId> =
-						value.attributes().channel_id.clone().map(|val| val.into());
-					let connection_id = value.attributes().connection_id.clone();
-					let counterparty_port_id = value.attributes().counterparty_port_id.clone();
+						value.channel_id.clone().map(|val| val.into());
+					let connection_id = value.connection_id.clone();
+					let counterparty_port_id = value.counterparty_port_id.clone();
 					let counterparty_channel_id: Option<ChannelId> =
-						value.attributes().channel_id.clone().map(|val| val.into());
+						value.channel_id.clone().map(|val| val.into());
 					Event::OpenInitChannel(
 						height.into(),
 						port_id.into(),
@@ -675,14 +675,14 @@ pub mod pallet {
 					)
 				},
 				ibc::events::IbcEvent::OpenTryChannel(value) => {
-					let height = value.attributes().height;
-					let port_id = value.attributes().port_id.clone();
+					let height = value.height.clone();
+					let port_id = value.port_id.clone();
 					let channel_id: Option<ChannelId> =
-						value.attributes().channel_id.clone().map(|val| val.into());
-					let connection_id = value.attributes().connection_id.clone();
-					let counterparty_port_id = value.attributes().counterparty_port_id.clone();
+						value.channel_id.clone().map(|val| val.into());
+					let connection_id = value.connection_id.clone();
+					let counterparty_port_id = value.counterparty_port_id.clone();
 					let counterparty_channel_id: Option<ChannelId> =
-						value.attributes().channel_id.clone().map(|val| val.into());
+						value.channel_id.clone().map(|val| val.into());
 					Event::OpenTryChannel(
 						height.into(),
 						port_id.into(),
@@ -693,14 +693,14 @@ pub mod pallet {
 					)
 				},
 				ibc::events::IbcEvent::OpenAckChannel(value) => {
-					let height = value.attributes().height;
-					let port_id = value.attributes().port_id.clone();
+					let height = value.height.clone();
+					let port_id = value.port_id.clone();
 					let channel_id: Option<ChannelId> =
-						value.attributes().channel_id.clone().map(|val| val.into());
-					let connection_id = value.attributes().connection_id.clone();
-					let counterparty_port_id = value.attributes().counterparty_port_id.clone();
+						value.channel_id.clone().map(|val| val.into());
+					let connection_id = value.connection_id.clone();
+					let counterparty_port_id = value.counterparty_port_id.clone();
 					let counterparty_channel_id: Option<ChannelId> =
-						value.attributes().channel_id.clone().map(|val| val.into());
+						value.channel_id.clone().map(|val| val.into());
 					Event::OpenAckChannel(
 						height.into(),
 						port_id.into(),
@@ -711,14 +711,14 @@ pub mod pallet {
 					)
 				},
 				ibc::events::IbcEvent::OpenConfirmChannel(value) => {
-					let height = value.0.height;
-					let port_id = value.0.port_id;
+					let height = value.height.clone();
+					let port_id = value.port_id.clone();
 					let channel_id: Option<ChannelId> =
-						value.0.channel_id.clone().map(|val| val.into());
-					let connection_id = value.0.connection_id;
-					let counterparty_port_id = value.0.counterparty_port_id;
+						value.channel_id.clone().map(|val| val.into());
+					let connection_id = value.connection_id.clone();
+					let counterparty_port_id = value.counterparty_port_id;
 					let counterparty_channel_id: Option<ChannelId> =
-						value.0.channel_id.map(|val| val.into());
+						value.channel_id.map(|val| val.into());
 					Event::OpenConfirmChannel(
 						height.into(),
 						port_id.into(),
@@ -729,14 +729,14 @@ pub mod pallet {
 					)
 				},
 				ibc::events::IbcEvent::CloseInitChannel(value) => {
-					let height = value.0.height;
-					let port_id = value.0.port_id;
+					let height = value.height.clone();
+					let port_id = value.port_id.clone();
 					let channel_id: Option<ChannelId> =
-						value.0.channel_id.clone().map(|val| val.into());
-					let connection_id = value.0.connection_id;
-					let counterparty_port_id = value.0.counterparty_port_id;
+						Some(value.channel_id.clone().into());
+					let connection_id = value.connection_id.clone();
+					let counterparty_port_id = value.counterparty_port_id;
 					let counterparty_channel_id: Option<ChannelId> =
-						value.0.channel_id.map(|val| val.into());
+						value.counterparty_channel_id.map(|val| val.into());
 					Event::CloseInitChannel(
 						height.into(),
 						port_id.into(),
@@ -747,14 +747,14 @@ pub mod pallet {
 					)
 				},
 				ibc::events::IbcEvent::CloseConfirmChannel(value) => {
-					let height = value.0.height;
-					let port_id = value.0.port_id;
+					let height = value.height.clone();
+					let port_id = value.port_id.clone();
 					let channel_id: Option<ChannelId> =
-						value.0.channel_id.clone().map(|val| val.into());
-					let connection_id = value.0.connection_id;
-					let counterparty_port_id = value.0.counterparty_port_id;
+						value.channel_id.clone().map(|val| val.into());
+					let connection_id = value.connection_id.clone();
+					let counterparty_port_id = value.counterparty_port_id.clone();
 					let counterparty_channel_id: Option<ChannelId> =
-						value.0.channel_id.map(|val| val.into());
+						value.channel_id.map(|val| val.into());
 					Event::CloseConfirmChannel(
 						height.into(),
 						port_id.into(),
@@ -863,28 +863,19 @@ pub mod pallet {
 		///         .await?;
 		/// ```
 		#[pallet::weight(0)]
-		pub fn deliver(origin: OriginFor<T>, messages: Vec<Any>, tmp: u8) -> DispatchResult {
-			for item in messages.iter() {
-				log::debug!(
-					"in deliver >> Message type: {:?}",
-					String::from_utf8(item.type_url.clone()).unwrap()
-				);
-			}
-
+		pub fn deliver(origin: OriginFor<T>, message: Any, tmp: u8) -> DispatchResult {
 			let _sender = ensure_signed(origin)?;
 			let mut ctx = routing::Context { _pd: PhantomData::<T>, tmp };
-			let messages: Vec<prost_types::Any> = messages
-				.iter()
-				.map(|message| prost_types::Any {
+			let message =  ibc_proto::google::protobuf::Any {
 					type_url: String::from_utf8(message.type_url.clone()).unwrap(),
 					value: message.value.clone(),
-				})
-				.collect();
+				};
+		
 			let result =
-				ibc::core::ics26_routing::handler::deliver(&mut ctx, messages.clone()).unwrap();
+				ibc::core::ics26_routing::handler::deliver(&mut ctx, message.clone()).unwrap();
 
 			log::info!("result: {:?}", result);
-			Self::handle_result(&mut ctx, messages.clone(), result);
+			Self::handle_result(&mut ctx, message.clone(), result.0);
 
 			// for event in result {
 			// 	log::info!("Event: {:?}", event);
@@ -1136,7 +1127,7 @@ pub mod pallet {
 
 	impl<T: Config> Pallet<T> {
 		/// handle the event returned by ics26 route module
-		fn handle_result<Ctx>(ctx: &mut Ctx, messages: Vec<prost_types::Any>, result: Vec<IbcEvent>)
+		fn handle_result<Ctx>(ctx: &mut Ctx, messages: ibc_proto::google::protobuf::Any, result: Vec<IbcEvent>)
 		where
 			Ctx: Ics20Context,
 		{
@@ -1154,7 +1145,7 @@ pub mod pallet {
 					IbcEvent::ReceivePacket(value) => {
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L364
 
-						let relayer_signer = get_signer(messages[0].clone());
+						let relayer_signer = get_signer(messages.clone());
 
 						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule;
 						let ack = ibc::core::ics26_routing::ibc_module::IBCModule::on_recv_packet(
@@ -1203,7 +1194,7 @@ pub mod pallet {
 					IbcEvent::TimeoutPacket(value) => {
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L442
 
-						let relayer_signer = get_signer(messages[0].clone());
+						let relayer_signer = get_signer(messages.clone());
 
 						let ics20_module = ics20_ibc_module_impl::Ics20IBCModule;
 						let ret =
@@ -1225,7 +1216,7 @@ pub mod pallet {
 						// let relayer = ack_msg.signer;
 						// let ack = ack_msg.acknowledgement; 
 						
-						let relayer_signer = get_signer(messages[0].clone());
+						let relayer_signer = get_signer(messages.clone());
 
 						let ics20_module = ics20_ibc_module_impl::Ics20IBCModule;
 						let ret = ibc::core::ics26_routing::ibc_module::IBCModule::on_acknowledgement_packet(&ics20_module, ctx, value.clone().packet, vec![], relayer_signer);
@@ -1236,7 +1227,7 @@ pub mod pallet {
 					IbcEvent::OpenInitChannel(value) => {
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L163
 
-						let relayer_signer = get_signer(messages[0].clone());
+						let relayer_signer = get_signer(messages.clone());
 						//TODO: get data from value.packet
 						// let order = value.packet.order;
 						// ...
@@ -1284,7 +1275,7 @@ pub mod pallet {
 						//TODO: get data from value.packet
 						// let order = value.packet.order;
 						// ...
-						let relayer_signer = get_signer(messages[0].clone());
+						let relayer_signer = get_signer(messages.clone());
 
 						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule;
 						let ret = ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_ack(
@@ -1303,7 +1294,7 @@ pub mod pallet {
 						//TODO: get data from value.packet
 						// let order = value.packet.order;
 						// ...
-						let relayer_signer = get_signer(messages[0].clone());
+						let relayer_signer = get_signer(messages.clone());
 
 						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule;
 						let ret =
@@ -1321,7 +1312,7 @@ pub mod pallet {
 						//TODO: get data from value.packet
 						// let order = value.packet.order;
 						// ...
-						let relayer_signer = get_signer(messages[0].clone());
+						let relayer_signer = get_signer(messages.clone());
 
 						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule;
 						let ret =
@@ -1341,7 +1332,7 @@ pub mod pallet {
 						// let order = value.packet.order;
 						// ...
 
-						let relayer_signer = get_signer(messages[0].clone());
+						let relayer_signer = get_signer(messages.clone());
 
 						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule;
 						let ret =
@@ -1564,7 +1555,7 @@ impl TypeId for IbcId {
 	const TYPE_ID: [u8; 4] = *b"Ibcs";
 }
 
-fn get_signer(message: prost_types::Any) -> ibc::signer::Signer {
+fn get_signer(message: ibc_proto::google::protobuf::Any) -> ibc::signer::Signer {
 	let decode_message = ibc::core::ics26_routing::handler::decode(message).unwrap();
 	let signer = match decode_message {
 		ibc::core::ics26_routing::msgs::Ics26Envelope::Ics2Msg(value) => match value {
