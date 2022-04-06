@@ -26,10 +26,11 @@ impl<T: Config> CapabilityReader for Context<T> {
 }
 
 impl<T: Config> PortReader for Context<T> {
-
-	 /// Return the module_id along with the capability associated with a given port_id
-	 fn lookup_module_by_port(&self, port_id: &PortId) -> Result<(ModuleId, PortCapability), ICS05Error> {
-		
+	/// Return the module_id along with the capability associated with a given port_id
+	fn lookup_module_by_port(
+		&self,
+		port_id: &PortId,
+	) -> Result<(ModuleId, PortCapability), ICS05Error> {
 		todo!()
 	}
 }

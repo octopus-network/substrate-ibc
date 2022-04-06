@@ -731,8 +731,7 @@ pub mod pallet {
 				ibc::events::IbcEvent::CloseInitChannel(value) => {
 					let height = value.height.clone();
 					let port_id = value.port_id.clone();
-					let channel_id: Option<ChannelId> =
-						Some(value.channel_id.clone().into());
+					let channel_id: Option<ChannelId> = Some(value.channel_id.clone().into());
 					let connection_id = value.connection_id.clone();
 					let counterparty_port_id = value.counterparty_port_id;
 					let counterparty_channel_id: Option<ChannelId> =
@@ -866,11 +865,11 @@ pub mod pallet {
 		pub fn deliver(origin: OriginFor<T>, message: Any, tmp: u8) -> DispatchResult {
 			let _sender = ensure_signed(origin)?;
 			let mut ctx = routing::Context { _pd: PhantomData::<T>, tmp };
-			let message =  ibc_proto::google::protobuf::Any {
-					type_url: String::from_utf8(message.type_url.clone()).unwrap(),
-					value: message.value.clone(),
-				};
-		
+			let message = ibc_proto::google::protobuf::Any {
+				type_url: String::from_utf8(message.type_url.clone()).unwrap(),
+				value: message.value.clone(),
+			};
+
 			let result =
 				ibc::core::ics26_routing::handler::deliver(&mut ctx, message.clone()).unwrap();
 
@@ -1127,8 +1126,11 @@ pub mod pallet {
 
 	impl<T: Config> Pallet<T> {
 		/// handle the event returned by ics26 route module
-		fn handle_result<Ctx>(ctx: &mut Ctx, messages: ibc_proto::google::protobuf::Any, result: Vec<IbcEvent>)
-		where
+		fn handle_result<Ctx>(
+			ctx: &mut Ctx,
+			messages: ibc_proto::google::protobuf::Any,
+			result: Vec<IbcEvent>,
+		) where
 			Ctx: Ics20Context,
 		{
 			for event in result {
@@ -1180,7 +1182,7 @@ pub mod pallet {
 							},
 							_ => unimplemented!(),
 						}
-					
+
 						//TODO: emit write acknowledgement event
 						Self::deposit_event(Event::<T>::WriteAcknowledgement(
 							Height::new(0, 0),
@@ -1214,8 +1216,8 @@ pub mod pallet {
 						// TODO: get relayer address
 						// let ack_msg = decode(messsages[0].clone());
 						// let relayer = ack_msg.signer;
-						// let ack = ack_msg.acknowledgement; 
-						
+						// let ack = ack_msg.acknowledgement;
+
 						let relayer_signer = get_signer(messages.clone());
 
 						let ics20_module = ics20_ibc_module_impl::Ics20IBCModule;

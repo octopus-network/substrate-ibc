@@ -6,9 +6,8 @@ use ibc::{
 	core::ics26_routing::context::Ics26Context,
 };
 // use ibc::core::ics26_routing::context::Ics26Context::Router;
-use ibc::core::ics26_routing::context::ModuleId;
 use alloc::borrow::{Borrow, Cow};
-use ibc::core::ics26_routing::context::Module;
+use ibc::core::ics26_routing::context::{Module, ModuleId};
 
 #[derive(Clone)]
 pub struct Context<T: Config> {
@@ -26,12 +25,12 @@ pub struct TempRouter;
 
 impl ibc::core::ics26_routing::context::Router for TempRouter {
 	/// Returns a mutable reference to a `Module` registered against the specified `ModuleId`
-    fn get_route_mut(&mut self, module_id: &impl Borrow<ModuleId>) -> Option<&mut dyn Module> {
+	fn get_route_mut(&mut self, module_id: &impl Borrow<ModuleId>) -> Option<&mut dyn Module> {
 		todo!()
 	}
 
-    /// Returns true if the `Router` has a `Module` registered against the specified `ModuleId`
-    fn has_route(&self, module_id: &impl Borrow<ModuleId>) -> bool {
+	/// Returns true if the `Router` has a `Module` registered against the specified `ModuleId`
+	fn has_route(&self, module_id: &impl Borrow<ModuleId>) -> bool {
 		todo!()
 	}
 }
@@ -39,11 +38,11 @@ impl ibc::core::ics26_routing::context::Router for TempRouter {
 impl<T: Config> Ics26Context for Context<T> {
 	type Router = TempRouter;
 
-    fn router(&self) -> &Self::Router {
+	fn router(&self) -> &Self::Router {
 		todo!()
 	}
 
-    fn router_mut(&mut self) -> &mut Self::Router {
+	fn router_mut(&mut self) -> &mut Self::Router {
 		todo!()
 	}
 }

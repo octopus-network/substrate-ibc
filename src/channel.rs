@@ -17,14 +17,17 @@ use ibc::{
 			error::Error as ICS04Error,
 			packet::{Receipt, Sequence},
 		},
-		ics05_port::{capabilities::{Capability, ChannelCapability, PortCapability}, context::PortReader, error::Error as ICS05Error},
+		ics05_port::{
+			capabilities::{Capability, ChannelCapability, PortCapability},
+			context::PortReader,
+			error::Error as ICS05Error,
+		},
 		ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
 		ics26_routing::context::ModuleId,
 	},
 	timestamp::Timestamp,
 	Height,
 };
-
 
 impl<T: Config> ChannelReader for Context<T> {
 	fn channel_end(&self, port_channel_id: &(PortId, ChannelId)) -> Result<ChannelEnd, ICS04Error> {
@@ -149,18 +152,16 @@ impl<T: Config> ChannelReader for Context<T> {
 		log::trace!("in channel : [authenticated_capability] >> port_id: {:?}", port_id);
 
 		match PortReader::lookup_module_by_port(self, port_id) {
-            Ok((_, key)) => {
-                if !PortReader::authenticate(self, port_id.clone(), &key) {
-                    Err(ICS04Error::invalid_port_capability())
-                } else {
-                    Ok(Capability::from(key).into())
-                }
-            }
-            Err(e) if e.detail() == ICS05Error::unknown_port(port_id.clone()).detail() => {
-                Err(ICS04Error::no_port_capability(port_id.clone()))
-            }
-            Err(_) => Err(ICS04Error::implementation_specific()),
-        }
+			Ok((_, key)) =>
+				if !PortReader::authenticate(self, port_id.clone(), &key) {
+					Err(ICS04Error::invalid_port_capability())
+				} else {
+					Ok(Capability::from(key).into())
+				},
+			Err(e) if e.detail() == ICS05Error::unknown_port(port_id.clone()).detail() =>
+				Err(ICS04Error::no_port_capability(port_id.clone())),
+			Err(_) => Err(ICS04Error::implementation_specific()),
+		}
 	}
 
 	fn get_next_sequence_send(
@@ -459,11 +460,11 @@ impl<T: Config> ChannelReader for Context<T> {
 	}
 
 	/// Return the module_id along with the capability associated with a given (channel-id, port_id)
-    fn lookup_module_by_channel(
-        &self,
-        channel_id: &ChannelId,
-        port_id: &PortId,
-    ) -> Result<(ModuleId, ChannelCapability), ICS04Error> {
+	fn lookup_module_by_channel(
+		&self,
+		channel_id: &ChannelId,
+		port_id: &PortId,
+	) -> Result<(ModuleId, ChannelCapability), ICS04Error> {
 		todo!()
 	}
 }
