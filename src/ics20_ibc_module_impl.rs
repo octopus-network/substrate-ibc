@@ -136,6 +136,8 @@ impl IBCModule for Ics20IBCModule {
 	where
 		Ctx: Ics20Context,
 	{
+		// Disallow user-initiated channel closing for transfer channels
+		// return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "user cannot close channel")
 		Ok(())
 	}
 	// OnChanCloseConfirm implements the IBCModule interface
@@ -164,24 +166,22 @@ impl IBCModule for Ics20IBCModule {
 	where
 		Ctx: Ics20Context,
 	{
+		// 	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
 
-	// 	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
+		// var data types.FungibleTokenPacketData
+		// if err := types.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
+		// 	ack = channeltypes.NewErrorAcknowledgement("cannot unmarshal ICS-20 transfer packet data")
+		// }
 
-	// var data types.FungibleTokenPacketData
-	// if err := types.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
-	// 	ack = channeltypes.NewErrorAcknowledgement("cannot unmarshal ICS-20 transfer packet data")
-	// }
+		// // only attempt the application logic if the packet data
+		// // was successfully decoded
+		// if ack.Success() {
+		// 	err := im.keeper.OnRecvPacket(ctx, packet, data)
+		// 	if err != nil {
+		// 		ack = types.NewErrorAcknowledgement(err)
+		// 	}
+		// }
 
-	// // only attempt the application logic if the packet data
-	// // was successfully decoded
-	// if ack.Success() {
-	// 	err := im.keeper.OnRecvPacket(ctx, packet, data)
-	// 	if err != nil {
-	// 		ack = types.NewErrorAcknowledgement(err)
-	// 	}
-	// }
-		
-		
 		let ack_value = vec![1];
 
 		//TODO: build FungibleTokenPacketData
@@ -189,12 +189,12 @@ impl IBCModule for Ics20IBCModule {
 
 		// TODO: handle recv packet
 		//let result = ics20_handler::handle_recv_packet(ctx, packet, data)
-		
+
 		//TODO:
-		// if result is err 
+		// if result is err
 		//let ack_result = err.to_string.get_bytes
 		// if result is ok let ack_value = vec![1];
-		
+
 		let ack_result = vec![1];
 		let ack = Acknowledgement::encode(&ack_result);
 		Ok(ack)
@@ -224,6 +224,7 @@ impl IBCModule for Ics20IBCModule {
 		// if err := im.keeper.OnAcknowledgementPacket(ctx, packet, data, ack); err != nil {
 		// 	return err
 		// }
+		//let ack = Acknowledgement::decode(&mut &acknowledgement[..]).unwrap();
 		//ics20_handler::handle_ack_packet(ctx, packet, data, ack)
 		Ok(())
 	}
