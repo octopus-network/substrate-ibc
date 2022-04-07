@@ -1231,10 +1231,10 @@ pub mod pallet {
 						let relayer_signer = get_signer(messages.clone());
 
 						// // Perform application logic callback
-						// if err = cbs.OnChanOpenInit(ctx, msg.Channel.Ordering, msg.Channel.ConnectionHops, msg.PortId, channelID, cap, msg.Channel.Counterparty, msg.Channel.Version); err != nil {
-						// 	return nil, sdkerrors.Wrap(err, "channel open init callback failed")
-						// }
-				
+						// if err = cbs.OnChanOpenInit(ctx, msg.Channel.Ordering,
+						// msg.Channel.ConnectionHops, msg.PortId, channelID, cap,
+						// msg.Channel.Counterparty, msg.Channel.Version); err != nil { 	return nil,
+						// sdkerrors.Wrap(err, "channel open init callback failed") }
 
 						//TODO: get data from value.packet
 						// let order = value.packet.order;
@@ -1261,8 +1261,9 @@ pub mod pallet {
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L203
 
 						// Perform application logic callback
-						// version, err := cbs.OnChanOpenTry(ctx, msg.Channel.Ordering, msg.Channel.ConnectionHops, msg.PortId, channelID, cap, msg.Channel.Counterparty, msg.CounterpartyVersion)
-						// if err != nil {
+						// version, err := cbs.OnChanOpenTry(ctx, msg.Channel.Ordering,
+						// msg.Channel.ConnectionHops, msg.PortId, channelID, cap,
+						// msg.Channel.Counterparty, msg.CounterpartyVersion) if err != nil {
 						// 	return nil, sdkerrors.Wrap(err, "channel open try callback failed")
 						// }
 
