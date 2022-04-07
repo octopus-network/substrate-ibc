@@ -31,26 +31,27 @@ sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "po
 sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13", default-features = false }
 prost-types = { version = "0.9.0", default-features = false }
+prost = { version = "0.9.0", default-features = false }
 
-ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/ics20", default-features = false }
-ibc-proto = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/ics20", default-features = false }
-# ibc = { path = "../ibc-rs/modules", default-features = false }
-# ibc-proto = { path = "../ibc-rs/proto", default-features = false }
+# ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/ics20", default-features = false }
+# ibc-proto = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/ics20", default-features = false }
+ibc = { path = "../ibc-rs/modules", default-features = false }
+ibc-proto = { path = "../ibc-rs/proto", default-features = false }
 
 beefy-light-client = { git = "https://github.com/octopus-network/beefy-light-client.git", branch="feature/v0.9.13", default-features = false }
 serde_json = { version = "1.0", default-features = false }
 serde = { version = "1.0", default-features = false }
 
 [dependencies.tendermint-proto]
-version = "=0.23.5"
+version = "=0.23.6"
 default-features = false
 
 [dev-dependencies]
 hex = '0.4.0'
 sha2 = '0.9.3'
 serde = { version = "1.0" }
-ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/ics20", features = ["mocks"]}
-# ibc = { path = "../ibc-rs/modules", features = ["mocks"]}
+# ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/ics20", features = ["mocks"]}
+ibc = { path = "../ibc-rs/modules", features = ["mocks"]}
 sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13"}
 sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
 sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
@@ -73,7 +74,8 @@ std = [
 	'sp-runtime/std',
 	'sp-std/std',
 	'sp-io/std',
-	'prost-types/std',
+	'prost-types/std',	
+	'prost/std',
 	'ibc/std',
 	'ibc-proto/std',
 	'beefy-light-client/std',
@@ -87,8 +89,8 @@ try-runtime = ["frame-support/try-runtime"]
 [patch.crates-io]
 # for tendermint
 tendermint              = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
-# tendermint-rpc          = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
+tendermint-rpc          = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
 tendermint-proto        = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
-# tendermint-light-client = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
+tendermint-light-client = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
 tendermint-light-client-verifier = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
-# tendermint-testgen      = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
+tendermint-testgen      = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }

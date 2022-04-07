@@ -76,6 +76,10 @@ pub mod primitive {
 	}
 
 	impl Height {
+		pub fn new(revision_number: u64, revision_height: u64) -> Self {
+			Self { revision_number, revision_height }
+		}
+
 		pub fn to_ibc_height(self) -> IbcHeight {
 			IbcHeight {
 				revision_number: self.revision_number,
