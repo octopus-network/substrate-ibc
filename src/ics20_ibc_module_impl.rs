@@ -141,6 +141,8 @@ impl IBCModule for Ics20IBCModule {
 	where
 		Ctx: Ics20Context,
 	{
+		// Disallow user-initiated channel closing for transfer channels
+		// return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "user cannot close channel")
 		Ok(())
 	}
 	// OnChanCloseConfirm implements the IBCModule interface
@@ -231,6 +233,7 @@ impl IBCModule for Ics20IBCModule {
 		// if err := im.keeper.OnAcknowledgementPacket(ctx, packet, data, ack); err != nil {
 		// 	return err
 		// }
+		//let ack = Acknowledgement::decode(&mut &acknowledgement[..]).unwrap();
 		//ics20_handler::handle_ack_packet(ctx, packet, data, ack)
 		Ok(())
 	}
