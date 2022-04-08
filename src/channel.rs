@@ -17,8 +17,13 @@ use ibc::{
 			error::Error as ICS04Error,
 			packet::{Receipt, Sequence},
 		},
-		ics05_port::{capabilities::Capability, context::PortReader, error::Error as Ics05Error},
+		ics05_port::{
+			capabilities::{Capability, ChannelCapability, PortCapability},
+			context::PortReader,
+			error::Error as ICS05Error,
+		},
 		ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
+		ics26_routing::context::ModuleId,
 	},
 	timestamp::Timestamp,
 	Height,
@@ -143,7 +148,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		))
 	}
 
-	fn authenticated_capability(&self, port_id: &PortId) -> Result<Capability, ICS04Error> {
+	fn authenticated_capability(&self, port_id: &PortId) -> Result<ChannelCapability, ICS04Error> {
 		log::trace!("in channel : [authenticated_capability] >> port_id: {:?}", port_id);
 
 		match PortReader::lookup_module_by_port(self, port_id) {
@@ -151,9 +156,9 @@ impl<T: Config> ChannelReader for Context<T> {
 				if !PortReader::authenticate(self, port_id.clone(), &key) {
 					Err(ICS04Error::invalid_port_capability())
 				} else {
-					Ok(key)
+					Ok(Capability::from(key).into())
 				},
-			Err(e) if e.detail() == Ics05Error::unknown_port(port_id.clone()).detail() =>
+			Err(e) if e.detail() == ICS05Error::unknown_port(port_id.clone()).detail() =>
 				Err(ICS04Error::no_port_capability(port_id.clone())),
 			Err(_) => Err(ICS04Error::implementation_specific()),
 		}
@@ -451,6 +456,15 @@ impl<T: Config> ChannelReader for Context<T> {
 	}
 
 	fn max_expected_time_per_block(&self) -> Duration {
+		todo!()
+	}
+
+	/// Return the module_id along with the capability associated with a given (channel-id, port_id)
+	fn lookup_module_by_channel(
+		&self,
+		channel_id: &ChannelId,
+		port_id: &PortId,
+	) -> Result<(ModuleId, ChannelCapability), ICS04Error> {
 		todo!()
 	}
 }
