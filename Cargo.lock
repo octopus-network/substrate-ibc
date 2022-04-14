@@ -1010,7 +1010,7 @@ dependencies = [
 [[package]]
 name = "ibc"
 version = "0.13.0"
-source = "git+https://github.com/octopus-network/ibc-rs.git?branch=feature/ics20#53ddf65727466f31a68673b054a4b96365491060"
+source = "git+https://github.com/octopus-network/ibc-rs.git?branch=feature/ics20#507541d90b6d807f44e6be34dec1361fd7b9400f"
 dependencies = [
  "beefy-light-client",
  "beefy-merkle-tree",
@@ -1049,7 +1049,7 @@ dependencies = [
 [[package]]
 name = "ibc-proto"
 version = "0.17.0"
-source = "git+https://github.com/octopus-network/ibc-rs.git?branch=feature/ics20#53ddf65727466f31a68673b054a4b96365491060"
+source = "git+https://github.com/octopus-network/ibc-rs.git?branch=feature/ics20#507541d90b6d807f44e6be34dec1361fd7b9400f"
 dependencies = [
  "base64",
  "bytes",
@@ -1181,9 +1181,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"
-version = "0.2.122"
+version = "0.2.123"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec647867e2bf0772e28c8bcde4f0d19a9216916e890543b5a03ed8ef27b8f259"
+checksum = "cb691a747a7ab48abc15c5b42066eaafde10dc427e3b6ee2a1cf43db04c763bd"
 
 [[package]]
 name = "libm"
@@ -1735,9 +1735,9 @@ dependencies = [
 
 [[package]]
 name = "quote"
-version = "1.0.17"
+version = "1.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "632d02bff7f874a36f33ea8bb416cd484b90cc66c1194b1a1110d067a7013f58"
+checksum = "a1feb54ed693b93a84e14094943b84b7c4eae204c512b7ccb95ab0c66d278ad1"
 dependencies = [
  "proc-macro2",
 ]
@@ -2787,7 +2787,8 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.23.6"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=v0.23.x#543b989bcbff40685bcd19a502df3f9b582794a7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "16a3d617db287955b07e4bf1523b831bf5055e7d3ceab8504174181df40cb143"
 dependencies = [
  "async-trait",
  "bytes",
@@ -2815,7 +2816,8 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client-verifier"
 version = "0.23.6"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=v0.23.x#543b989bcbff40685bcd19a502df3f9b582794a7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "26787f3d9a6dc1c5e1e5661d7d70bb53613852b01545730df082128fd98e6529"
 dependencies = [
  "derive_more",
  "flex-error",
@@ -2827,7 +2829,8 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.23.6"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=v0.23.x#543b989bcbff40685bcd19a502df3f9b582794a7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b8a65da26cc1f24cd53f40d1267372c22d6ce727d9fd40c6c61b879b26154994"
 dependencies = [
  "bytes",
  "flex-error",
@@ -2844,7 +2847,8 @@ dependencies = [
 [[package]]
 name = "tendermint-testgen"
 version = "0.23.6"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=v0.23.x#543b989bcbff40685bcd19a502df3f9b582794a7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1514e269ebd2dd1f99e931ac99d96eb9b521a0820d9f03e9b56ac724ca456f19"
 dependencies = [
  "ed25519-dalek",
  "gumdrop",
@@ -2967,9 +2971,9 @@ dependencies = [
 
 [[package]]
 name = "tracing"
-version = "0.1.32"
+version = "0.1.33"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a1bdf54a7c28a2bbf701e1d2233f6c77f473486b94bee4f9678da5a148dca7f"
+checksum = "80b9fa4360528139bc96100c160b7ae879f5567f49f1782b0b02035b0358ebf3"
 dependencies = [
  "cfg-if 1.0.0",
  "pin-project-lite",
@@ -2990,9 +2994,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-core"
-version = "0.1.24"
+version = "0.1.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "90442985ee2f57c9e1b548ee72ae842f4a9a20e3f417cc38dbc5dc684d9bb4ee"
+checksum = "6dfce9f3241b150f36e8e54bb561a742d5daa1a47b5dd9a5ce369fd4a4db2210"
 dependencies = [
  "lazy_static",
  "valuable",
@@ -3329,13 +3333,3 @@ dependencies = [
  "cc",
  "libc",
 ]
-
-[[patch.unused]]
-name = "tendermint-light-client"
-version = "0.23.6"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=v0.23.x#543b989bcbff40685bcd19a502df3f9b582794a7"
-
-[[patch.unused]]
-name = "tendermint-rpc"
-version = "0.23.6"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=v0.23.x#543b989bcbff40685bcd19a502df3f9b582794a7"

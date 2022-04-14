@@ -1,4 +1,5 @@
 use super::*;
+use core::str::FromStr;
 use crate::ics20_handler;
 use ibc::{
 	applications::ics20_fungible_token_transfer::{
@@ -21,9 +22,15 @@ use ibc::{
 use prost::Message;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Ics20IBCModule;
+pub struct Ics20IBCModule<T: Config>(core::marker::PhantomData<T>);
 
-impl IBCModule for Ics20IBCModule {
+impl<T: Config> Ics20IBCModule<T> {
+	pub fn new() -> Self {
+		Self(core::marker::PhantomData)
+	} 
+}
+
+impl<T: Config> IBCModule for Ics20IBCModule<T> {
 	// OnChanOpenInit implements the IBCModule interface
 	// refter to https://github.com/octopus-network/ibc-go/blob/ac46ac06084f586a460b092b2b293a321b7c43d6/modules/apps/transfer/ibc_module.go#L64
 	fn on_chan_open_init<Ctx>(
@@ -40,20 +47,20 @@ impl IBCModule for Ics20IBCModule {
 	where
 		Ctx: Ics20Context,
 	{
-		// if err := ValidateTransferChannelParams(ctx, im.keeper, order, portID, channelID); err !=
-		// nil {     return err
-		// }
-
-		// if version != types.Version {
-		//     return sdkerrors.Wrapf(types.ErrInvalidVersion, "got %s, expected %s", version,
-		// types.Version) }
-
-		// // Claim channel capability passed back by IBC module
-		// if err := im.keeper.ClaimCapability(ctx, chanCap, host.ChannelCapabilityPath(portID,
-		// channelID)); err != nil {     return err
-		// }
-
-		// return nil
+		if let Err(err) = validate_transfer_channel_params(ctx, order, port_id, channel_id) {
+			panic!("Error while validating transfer channel")
+		}
+	
+		if version != Version::ics20() {
+			panic!("Error invalid version, got {}, expected {}", version, Version::ics20());
+		}
+	
+		// todo
+		// Claim channel capability passed back by IBC module
+		//if err := im.keeper.ClaimCapability(ctx, chanCap, host.ChannelCapabilityPath(portID, channelID)); err != nil {
+		//	return err
+		//}
+		
 		Ok(())
 	}
 
@@ -73,29 +80,26 @@ impl IBCModule for Ics20IBCModule {
 	where
 		Ctx: Ics20Context,
 	{
-		// if err := ValidateTransferChannelParams(ctx, im.keeper, order, portID, channelID); err !=
-		// nil {     return "", err
-		// }
+		if let Err(err) = validate_transfer_channel_params(ctx, order, port_id, channel_id) {
+			panic!("Error while validating transfer channel")
+		}
+	
+		if counterparty_version != Version::ics20() {
+			panic!("Error invalid version, got {}, expected {}", counterparty_version, Version::ics20());
+		}
+	
+		// todo
+		// Module may have already claimed capability in OnChanOpenInit in the case of crossing hellos
+		// (ie chainA and chainB both call ChanOpenInit before one of them calls ChanOpenTry)
+		// If module can already authenticate the capability then module already owns it so we don't need to claim
+		// Otherwise, module does not have channel capability and we must claim it from IBC
+		// if !im.keeper.AuthenticateCapability(ctx, chanCap, host.ChannelCapabilityPath(portID, channelID)) {
+		// Only claim channel capability passed back by IBC module if we do not already own it
+		// if err := im.keeper.ClaimCapability(ctx, chanCap, host.ChannelCapabilityPath(portID, channelID)); err != nil {
+		//	return "", err
+		//}
 
-		// if counterpartyVersion != types.Version {
-		//     return "", sdkerrors.Wrapf(types.ErrInvalidVersion, "invalid counterparty version:
-		// got: %s, expected %s", counterpartyVersion, types.Version) }
-
-		// // Module may have already claimed capability in OnChanOpenInit in the case of crossing
-		// hellos // (ie chainA and chainB both call ChanOpenInit before one of them calls
-		// ChanOpenTry) // If module can already authenticate the capability then module already
-		// owns it so we don't need to claim // Otherwise, module does not have channel capability
-		// and we must claim it from IBC if !im.keeper.AuthenticateCapability(ctx, chanCap,
-		// host.ChannelCapabilityPath(portID, channelID)) {     // Only claim channel capability
-		// passed back by IBC module if we do not already own it     if err :=
-		// im.keeper.ClaimCapability(ctx, chanCap, host.ChannelCapabilityPath(portID, channelID));
-		// err != nil {         return "", err
-		//     }
-		// }
-
-		// return types.Version, nil
-		let version = Version::ics20();
-		Ok(version)
+		Ok(Version::ics20())
 	}
 
 	// OnChanOpenAck implements the IBCModule interface
@@ -110,10 +114,9 @@ impl IBCModule for Ics20IBCModule {
 	where
 		Ctx: Ics20Context,
 	{
-		// if counterpartyVersion != types.Version {
-		//     return sdkerrors.Wrapf(types.ErrInvalidVersion, "invalid counterparty version: %s,
-		// expected %s", counterpartyVersion, types.Version) }
-		// return nil
+		if counterparty_version != Version::ics20() {
+			panic!("Error invalid version, got {}, expected {}", counterparty_version, Version::ics20());
+		}
 		Ok(())
 	}
 
@@ -142,7 +145,8 @@ impl IBCModule for Ics20IBCModule {
 		Ctx: Ics20Context,
 	{
 		// Disallow user-initiated channel closing for transfer channels
-		// return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "user cannot close channel")
+		// todo
+		panic!("{}",format!("Error invalid request: user cannot close channel"));
 		Ok(())
 	}
 	// OnChanCloseConfirm implements the IBCModule interface
@@ -172,38 +176,23 @@ impl IBCModule for Ics20IBCModule {
 		Ctx: Ics20Context,
 	{
 		// 	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
-
-		// var data types.FungibleTokenPacketData
-		// if err := types.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
-		// 	ack = channeltypes.NewErrorAcknowledgement("cannot unmarshal ICS-20 transfer packet
-		// data") }
-
-		// // only attempt the application logic if the packet data
-		// // was successfully decoded
-		// if ack.Success() {
-		// 	err := im.keeper.OnRecvPacket(ctx, packet, data)
-		// 	if err != nil {
-		// 		ack = types.NewErrorAcknowledgement(err)
-		// 	}
-		// }
-
-		let ack_value = vec![1];
-
-		//TODO: build FungibleTokenPacketData
-		// let data = FungibleTokenPacketData::decode(&mut &packet.data[..]).unwrap();
-
-		// TODO: handle recv packet
-		//let result = ics20_handler::handle_recv_packet(ctx, packet, data)
-
-		//TODO:
-		// if result is err
-		//let ack_result = err.to_string.get_bytes
-		// if result is ok let ack_value = vec![1];
-
-		let ack_result = vec![1];
-
+		let default_ack_value = vec![1];
 		// construct Acknowledgement
-		let acknowledgement = Acknowledgement::new(ack_result);
+		let mut acknowledgement = Acknowledgement::new_success(default_ack_value);
+
+		//TODO: build FungibleTokenPacketData 
+		// todo unwrap()
+		let data = FungibleTokenPacketData::decode(&mut &packet.data[..]).unwrap();
+		
+		// only attempt the application logic if the packet data
+		// was successfully decoded
+		if acknowledgement.success() { 
+			// TODO: handle recv packet
+			let result = ics20_handler::handle_recv_packet::<Ctx, T>(ctx, packet, data);
+			if let Err(err) = result {
+				acknowledgement = Acknowledgement::new_error(format!("{}",err));
+			}
+		}		
 
 		let ack = acknowledgement.encode_vec().unwrap();
 		Ok(ack)
@@ -221,20 +210,13 @@ impl IBCModule for Ics20IBCModule {
 	where
 		Ctx: Ics20Context,
 	{
-		//TODO: build FungibleTokenPacketData
-		// var data types.FungibleTokenPacketData
-		// if err := types.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
-		// 	return sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal ICS-20 transfer
-		// packet data: %s", err.Error()) }
+		// todo unwrap()
+		let ack = Acknowledgement::decode(&mut &acknowledgement[..]).unwrap();
+		// todo unwrap()
+		let data = FungibleTokenPacketData::decode(&mut &packet.data[..]).unwrap();
+		
+		let ret = ics20_handler::handle_ack_packet::<Ctx, T>(ctx, packet, data, ack.into());
 
-		// let data = FungibleTokenPacketData::decode(&mut &packet.data[..]).unwrap();
-
-		// TODO: handle ack packet
-		// if err := im.keeper.OnAcknowledgementPacket(ctx, packet, data, ack); err != nil {
-		// 	return err
-		// }
-		//let ack = Acknowledgement::decode(&mut &acknowledgement[..]).unwrap();
-		//ics20_handler::handle_ack_packet(ctx, packet, data, ack)
 		Ok(())
 	}
 
@@ -249,12 +231,60 @@ impl IBCModule for Ics20IBCModule {
 	where
 		Ctx: Ics20Context,
 	{
-		//TODO: build FungibleTokenPacketData
-		// let data = FungibleTokenPacketData::decode(&mut &packet.data[..]).unwrap();
-
+	
+		// todo unwrap()
+		let data = FungibleTokenPacketData::decode(&mut &packet.data[..]).unwrap();
+		
 		// TODO: handle ack packet/refund tokens
-		//ics20_handler::handle_timeout_packet(ctx, packet, data)
+		let ret= ics20_handler::handle_timeout_packet::<Ctx, T>(ctx, packet, data);
 
 		Ok(())
 	}
+}
+
+
+// validate_transfer_channel_params does validation of a newly created transfer channel. A transfer
+// channel must be UNORDERED, use the correct port (by default 'transfer'), and use the current
+// supported version. Only 2^32 channels are allowed to be created.
+fn validate_transfer_channel_params<Ctx: Ics20Context>(
+	ctx: &Ctx, 
+	order: Order,
+	port_id: PortId,
+	channel_id: ChannelId,
+) -> Result<(), Ics20Error> {
+	// NOTE: for escrow address security only 2^32 channels are allowed to be created
+	// Issue: https://github.com/cosmos/cosmos-sdk/issues/7737
+	// todo unwrap()
+	let channel_sequence = parse_channel_sequence(channel_id.0).unwrap();
+
+	if channel_sequence > u32::MAX.into() {
+		// todo
+		panic!("{}", format!("Error Max Transfer Channel: Channel sequence {} is greater than max allowd transfer channels {}", channel_sequence, u32::MAX));
+	}
+
+	if order != Order::Unordered {
+		// todo
+		panic!("{}", format!("Error invalid channle ordering, expected {} channel, got {}", Order::Unordered, order));
+	}
+
+	// Require portID is the portID transfer module is bound to
+	let bound_port = ctx.get_port().unwrap();
+	if bound_port != port_id {
+		// todo
+		panic!("{}", format!("Error invalid prot, invalid prot: {}, expected: {}", port_id, bound_port));
+	}
+
+	Ok(())
+}
+
+// parse_channel_sequence parses the channel sequence from the channel identifier.
+fn parse_channel_sequence(channel_identifier: String) -> Result<u64, Ics20Error> {
+	// todo unwrap()
+	let channel_id = ibc::core::ics24_host::identifier::ChannelId::from_str(channel_identifier.as_str()).unwrap();
+	// todo unwrap()
+	let sequence = channel_id.as_str().split_once("channel-").unwrap().1;
+	// todo unwrap()
+	let sequence = sequence.parse::<u64>().unwrap();
+
+	Ok(sequence)
 }

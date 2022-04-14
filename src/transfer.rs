@@ -6,6 +6,7 @@ use crate::routing::Context;
 use ibc::applications::ics20_fungible_token_transfer::{
 	context::Ics20Context, error::Error, msgs::denom_trace::DenomTrace,
 };
+use ibc::core::ics24_host::identifier::PortId;
 
 impl<T: Config> Ics20Context for Context<T> {
 	// GetDenomTrace retreives the full identifiers trace and base denomination from the store.
@@ -35,5 +36,9 @@ impl<T: Config> Ics20Context for Context<T> {
 		let data = denom_trace.encode_vec().unwrap();
 		<Denomination<T>>::insert(denom_trace.hash().unwrap(), data);
 		Ok(())
+	}
+
+	fn get_port(&self) -> Result<PortId, Error> {
+		todo!()
 	}
 }

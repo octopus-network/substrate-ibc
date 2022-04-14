@@ -186,15 +186,9 @@ pub mod pallet {
 	pub type ClientStates<T: Config> =
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
-	#[pallet::type_value]
-	pub fn default_client_state_keys() -> Vec<Vec<u8>> {
-		vec![]
-	}
-
 	#[pallet::storage]
 	/// client_id vector
-	pub type ClientStatesKeys<T: Config> =
-		StorageValue<_, Vec<Vec<u8>>, ValueQuery, default_client_state_keys>;
+	pub type ClientStatesKeys<T: Config> = StorageValue<_, Vec<Vec<u8>>, ValueQuery>;
 
 	#[pallet::storage]
 	/// (client_id, height) => timestamp
@@ -229,15 +223,9 @@ pub mod pallet {
 	/// connection_id => ConnectionEnd
 	pub type Connections<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
-	#[pallet::type_value]
-	pub fn default_connection_keys() -> Vec<Vec<u8>> {
-		vec![]
-	}
-
 	#[pallet::storage]
 	/// connection_id vector
-	pub type ConnectionsKeys<T: Config> =
-		StorageValue<_, Vec<Vec<u8>>, ValueQuery, default_connection_keys>;
+	pub type ConnectionsKeys<T: Config> = StorageValue<_, Vec<Vec<u8>>, ValueQuery>;
 
 	#[pallet::storage]
 	/// (port_identifier, channel_identifier) => ChannelEnd
@@ -251,15 +239,9 @@ pub mod pallet {
 		ValueQuery,
 	>;
 
-	#[pallet::type_value]
-	pub fn default_channels_keys() -> Vec<(Vec<u8>, Vec<u8>)> {
-		vec![]
-	}
-
 	#[pallet::storage]
 	/// vector of (port_id, channel_id)
-	pub type ChannelsKeys<T: Config> =
-		StorageValue<_, Vec<(Vec<u8>, Vec<u8>)>, ValueQuery, default_channels_keys>;
+	pub type ChannelsKeys<T: Config> = StorageValue<_, Vec<(Vec<u8>, Vec<u8>)>, ValueQuery>;
 
 	#[pallet::storage]
 	/// connection_id => Vec<(port_id, channel_id)>
@@ -315,53 +297,28 @@ pub mod pallet {
 		ValueQuery,
 	>;
 
-	#[pallet::type_value]
-	pub fn default_acknowledgements_keys() -> Vec<(Vec<u8>, Vec<u8>, Vec<u8>)> {
-		vec![]
-	}
-
 	#[pallet::storage]
 	/// vector of (port_identifier, channel_identifier, sequence)
-	pub type AcknowledgementsKeys<T: Config> = StorageValue<
-		_,
-		Vec<(Vec<u8>, Vec<u8>, Vec<u8>)>,
-		ValueQuery,
-		default_acknowledgements_keys,
-	>;
+	pub type AcknowledgementsKeys<T: Config> =
+		StorageValue<_, Vec<(Vec<u8>, Vec<u8>, Vec<u8>)>, ValueQuery>;
 
 	#[pallet::storage]
 	/// client_id => client_type
 	pub type Clients<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
-	#[pallet::type_value]
-	pub fn default_client_counter() -> u64 {
-		0u64
-	}
-
 	#[pallet::storage]
 	#[pallet::getter(fn client_counter)]
 	/// client counter
-	pub type ClientCounter<T: Config> = StorageValue<_, u64, ValueQuery, default_client_counter>;
-
-	#[pallet::type_value]
-	pub fn default_connection_counter() -> u64 {
-		0u64
-	}
+	pub type ClientCounter<T: Config> = StorageValue<_, u64, ValueQuery>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn connection_counter)]
 	/// connection counter
-	pub type ConnectionCounter<T: Config> =
-		StorageValue<_, u64, ValueQuery, default_connection_counter>;
-
-	#[pallet::type_value]
-	pub fn default_channel_counter() -> u64 {
-		0u64
-	}
+	pub type ConnectionCounter<T: Config> = StorageValue<_, u64, ValueQuery>;
 
 	#[pallet::storage]
 	/// channel counter
-	pub type ChannelCounter<T: Config> = StorageValue<_, u64, ValueQuery, default_channel_counter>;
+	pub type ChannelCounter<T: Config> = StorageValue<_, u64, ValueQuery>;
 
 	#[pallet::storage]
 	/// client_id => connection_id
@@ -394,19 +351,10 @@ pub mod pallet {
 		ValueQuery,
 	>;
 
-	#[pallet::type_value]
-	pub fn default_packet_commitment_keys() -> Vec<(Vec<u8>, Vec<u8>, Vec<u8>)> {
-		vec![]
-	}
-
 	#[pallet::storage]
 	/// vector of (port_id, channel_id, sequence)
-	pub type PacketCommitmentKeys<T: Config> = StorageValue<
-		_,
-		Vec<(Vec<u8>, Vec<u8>, Vec<u8>)>,
-		ValueQuery,
-		default_packet_commitment_keys,
-	>;
+	pub type PacketCommitmentKeys<T: Config> =
+		StorageValue<_, Vec<(Vec<u8>, Vec<u8>, Vec<u8>)>, ValueQuery>;
 
 	#[pallet::storage]
 	/// (height, port_id, channel_id, sequence) => sendpacket event
@@ -434,24 +382,12 @@ pub mod pallet {
 		ValueQuery,
 	>;
 
-	#[pallet::type_value]
-	pub fn defaultlatest_height() -> Vec<u8> {
-		let height = ibc::Height::default();
-
-		height.encode_vec().unwrap()
-	}
-
 	#[pallet::storage]
 	/// store latest height
-	pub type LatestHeight<T: Config> = StorageValue<_, Vec<u8>, ValueQuery, defaultlatest_height>;
-
-	#[pallet::type_value]
-	pub fn default_old_height() -> u64 {
-		0
-	}
+	pub type LatestHeight<T: Config> = StorageValue<_, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
-	pub type OldHeight<T: Config> = StorageValue<_, u64, ValueQuery, default_old_height>;
+	pub type OldHeight<T: Config> = StorageValue<_, u64, ValueQuery>;
 
 	#[pallet::storage]
 	/// sha256(tracePath + "/" + baseDenom) => DenomTrace
@@ -815,31 +751,31 @@ pub mod pallet {
 		ClientIdNotFound,
 	}
 
-	// mock client state
-	fn mock_client_state() -> ClientState {
-		// mock light client
-		let public_keys = vec![String::from(
-			"0x020a1091341fe5664bfa1782d5e04779689068c916b04cb365ec3153755684d9a1",
-		) /* Alice */];
-		let lc = beefy_light_client::new(public_keys);
-		log::info!("mock beefy light client: {:?}", lc);
+	// // mock client state
+	// fn mock_client_state() -> ClientState {
+	// 	// mock light client
+	// 	let public_keys = vec![String::from(
+	// 		"0x020a1091341fe5664bfa1782d5e04779689068c916b04cb365ec3153755684d9a1",
+	// 	) /* Alice */];
+	// 	let lc = beefy_light_client::new(public_keys);
+	// 	log::info!("mock beefy light client: {:?}", lc);
 
-		//mock client state
-		let epoch_number = 10;
-		// let chain_id = ICS24ChainId::new(String::from("chainA"), epoch_number);
-		let chain_id = ICS24ChainId::new(String::from("chainA"), epoch_number);
-		let client_state = ClientState {
-			chain_id,
-			block_number: u32::default(),
-			frozen_height: None,
-			block_header: BlockHeader::default(),
-			latest_commitment: Commitment::default(),
-			validator_set: lc.validator_set.into(),
-		};
-		log::info!("mock client_state : {:?}", client_state);
+	// 	//mock client state
+	// 	let epoch_number = 10;
+	// 	// let chain_id = ICS24ChainId::new(String::from("chainA"), epoch_number);
+	// 	let chain_id = ICS24ChainId::new(String::from("chainA"), epoch_number);
+	// 	let client_state = ClientState {
+	// 		chain_id,
+	// 		block_number: u32::default(),
+	// 		frozen_height: None,
+	// 		block_header: BlockHeader::default(),
+	// 		latest_commitment: Commitment::default(),
+	// 		validator_set: lc.validator_set.into(),
+	// 	};
+	// 	log::info!("mock client_state : {:?}", client_state);
 
-		client_state
-	}
+	// 	client_state
+	// }
 
 	/// Dispatchable functions allows users to interact with the pallet and invoke state changes.
 	/// These functions materialize as "extrinsic", which are often compared to transactions.
@@ -1138,7 +1074,6 @@ pub mod pallet {
 					IbcEvent::SendPacket(value) => {
 						// refer to https://github.com/octopus-network/ibc-go/blob/f5962c3324ee7e69eeaa9918b65eb1b089da6095/modules/apps/transfer/keeper/msg_server.go#L16
 						//TODO: handle SendPacket
-
 						let _ = ics20_handler::handle_transfer::<Ctx, T>(ctx, value.clone().packet);
 
 						Self::deposit_event(event.clone().into());
@@ -1149,7 +1084,7 @@ pub mod pallet {
 
 						let relayer_signer = get_signer(messages.clone());
 
-						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule;
+						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule::<T>::new();
 						let ack = ibc::core::ics26_routing::ibc_module::IBCModule::on_recv_packet(
 							&ics20_modlue,
 							ctx,
@@ -1198,7 +1133,7 @@ pub mod pallet {
 
 						let relayer_signer = get_signer(messages.clone());
 
-						let ics20_module = ics20_ibc_module_impl::Ics20IBCModule;
+						let ics20_module = ics20_ibc_module_impl::Ics20IBCModule::<T>::new();
 						let ret =
 							ibc::core::ics26_routing::ibc_module::IBCModule::on_timeout_packet(
 								&ics20_module,
@@ -1220,7 +1155,7 @@ pub mod pallet {
 
 						let relayer_signer = get_signer(messages.clone());
 
-						let ics20_module = ics20_ibc_module_impl::Ics20IBCModule;
+						let ics20_module = ics20_ibc_module_impl::Ics20IBCModule::<T>::new();
 						let ret = ibc::core::ics26_routing::ibc_module::IBCModule::on_acknowledgement_packet(&ics20_module, ctx, value.clone().packet, vec![], relayer_signer);
 
 						Self::deposit_event(event.clone().into());
@@ -1240,7 +1175,7 @@ pub mod pallet {
 						// let order = value.packet.order;
 						// ...
 
-						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule;
+						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule::<T>::new();
 						let ret =
 							ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_init(
 								&ics20_modlue,
@@ -1270,7 +1205,7 @@ pub mod pallet {
 						//TODO: get data from value.packet
 						// let order = value.packet.order;
 						// ...
-						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule;
+						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule::<T>::new();
 						let ret = ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_try(
 							&ics20_modlue,
 							ctx,
@@ -1293,7 +1228,7 @@ pub mod pallet {
 						// ...
 						let relayer_signer = get_signer(messages.clone());
 
-						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule;
+						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule::<T>::new();
 						let ret = ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_ack(
 							&ics20_modlue,
 							ctx,
@@ -1312,7 +1247,7 @@ pub mod pallet {
 						// ...
 						let relayer_signer = get_signer(messages.clone());
 
-						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule;
+						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule::<T>::new();
 						let ret =
 							ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_confirm(
 								&ics20_modlue,
@@ -1330,7 +1265,7 @@ pub mod pallet {
 						// ...
 						let relayer_signer = get_signer(messages.clone());
 
-						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule;
+						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule::<T>::new();
 						let ret =
 							ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_close_init(
 								&ics20_modlue,
@@ -1350,7 +1285,7 @@ pub mod pallet {
 
 						let relayer_signer = get_signer(messages.clone());
 
-						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule;
+						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule::<T>::new();
 						let ret =
 							ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_close_confirm(
 								&ics20_modlue,
