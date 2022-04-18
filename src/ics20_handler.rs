@@ -117,7 +117,8 @@ where
 	Ctx: Ics20Context,
 {
 	let packet_data: IBCFungibleTokenPacketData =
-		serde_json::from_slice(packet.data.clone().as_slice()).map_err(Ics20Error::invalid_serde_ibc_fungible_token_packet_data)?;
+		serde_json::from_slice(packet.data.clone().as_slice())
+			.map_err(Ics20Error::invalid_serde_ibc_fungible_token_packet_data)?;
 	// the token denomination to be transferred
 	// get the token denomination
 	let token_denom = packet_data.clone().denom;
@@ -128,14 +129,14 @@ where
 	let full_denom_path;
 	if token_denom.starts_with("ibc/") {
 		// todo unwrap()
-		full_denom_path = ctx.get_denom_trace(denom_trace_hash).unwrap().get_full_denom_path().unwrap();
+		full_denom_path =
+			ctx.get_denom_trace(denom_trace_hash).unwrap().get_full_denom_path().unwrap();
 	}
 
 	// get source_channel_id from packet
 	let source_channel = packet.source_channel.clone();
 	// get source_port_id  from packet
 	let source_port = packet.source_port.clone();
-
 
 	// convert IBC FungibleTokenPacketData to substrate FungibleTokenPacketData
 	let pallet_data: FungibleTokenPacketData<T> = packet_data.into();
@@ -168,14 +169,14 @@ where
 		// todo how to deail with denomination <> asset_id
 		// todo Assetid is default
 		// TODO : unwrap()
-		let amount = amount.checked_into().unwrap(); 
+		let amount = amount.checked_into().unwrap();
 		// TODO: unwrap()
 		let ret = <T::Assets as fungibles::Mutate<T::AccountId>>::burn_from(
 			T::AssetId::default(),
 			&sender,
 			amount,
 		)
-		.unwrap(); 
+		.unwrap();
 	}
 
 	Ok(())

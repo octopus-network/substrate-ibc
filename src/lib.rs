@@ -1226,7 +1226,7 @@ pub mod pallet {
 
 					IbcEvent::OpenAckChannel(value) => {
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L241
-			
+
 						// let height = value.clone().height;
 						let port_id = value.clone().port_id;
 						let channel_id = value.clone().channel_id;
