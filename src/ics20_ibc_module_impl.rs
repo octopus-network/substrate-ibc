@@ -47,12 +47,10 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 	where
 		Ctx: Ics20Context,
 	{
-		if let Err(err) = validate_transfer_channel_params(ctx, order, port_id, channel_id) {
-			panic!("Error while validating transfer channel")
-		}
+		let ret = validate_transfer_channel_params(ctx, order, port_id, channel_id)?;
 
 		if version != Version::ics20() {
-			panic!("Error invalid version, got {}, expected {}", version, Version::ics20());
+			return Err(Ics20Error::invalid_version(version, Version::ics20()))
 		}
 
 		// todo
@@ -80,18 +78,10 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 	where
 		Ctx: Ics20Context,
 	{
-		if let Err(err) = validate_transfer_channel_params(ctx, order, port_id, channel_id) {
-			// TODO: panic
-			panic!("Error while validating transfer channel")
-		}
+		let ret = validate_transfer_channel_params(ctx, order, port_id, channel_id)?;
 
 		if counterparty_version != Version::ics20() {
-			// TODO: panic
-			panic!(
-				"Error invalid version, got {}, expected {}",
-				counterparty_version,
-				Version::ics20()
-			);
+			return Err(Ics20Error::invalid_version(counterparty_version, Version::ics20()))
 		}
 
 		// todo
@@ -121,12 +111,7 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 		Ctx: Ics20Context,
 	{
 		if counterparty_version != Version::ics20() {
-			// TODO: panic
-			panic!(
-				"Error invalid version, got {}, expected {}",
-				counterparty_version,
-				Version::ics20()
-			);
+			return Err(Ics20Error::invalid_version(counterparty_version, Version::ics20()))
 		}
 		Ok(())
 	}
@@ -144,6 +129,7 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 	{
 		Ok(())
 	}
+
 	// OnChanCloseInit implements the IBCModule interface
 	// refer to https://github.com/octopus-network/ibc-go/blob/ac46ac06084f586a460b092b2b293a321b7c43d6/modules/apps/transfer/ibc_module.go#L146
 	fn on_chan_close_init<Ctx>(
@@ -156,9 +142,7 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 		Ctx: Ics20Context,
 	{
 		// Disallow user-initiated channel closing for transfer channels
-		// TODO: panic
-		panic!("{}", format!("Error invalid request: user cannot close channel"));
-		Ok(())
+		Err(Ics20Error::invalid_request())
 	}
 	// OnChanCloseConfirm implements the IBCModule interface
 	// refer to https://github.com/octopus-network/ibc-go/blob/ac46ac06084f586a460b092b2b293a321b7c43d6/modules/apps/transfer/ibc_module.go#L156
@@ -191,21 +175,21 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 		// construct Acknowledgement
 		let mut acknowledgement = Acknowledgement::new_success(default_ack_value);
 
-		//TODO: build FungibleTokenPacketData
-		// todo unwrap()
-		let data = FungibleTokenPacketData::decode(&mut &packet.data[..]).unwrap();
+		// build FungibleTokenPacketData
+		let data = FungibleTokenPacketData::decode(&mut &packet.data[..])
+			.map_err(|e| Ics20Error::invalid_decode(e))?;
 
 		// only attempt the application logic if the packet data
 		// was successfully decoded
 		if acknowledgement.success() {
-			// TODO: handle recv packet
+			// handle recv packet
 			let result = ics20_handler::handle_recv_packet::<Ctx, T>(ctx, packet, data);
 			if let Err(err) = result {
 				acknowledgement = Acknowledgement::new_error(format!("{}", err));
 			}
 		}
 
-		let ack = acknowledgement.encode_vec().unwrap();
+		let ack = acknowledgement.encode_vec().map_err(|e| Ics20Error::invalid_encode(e))?;
 		Ok(ack)
 	}
 
@@ -221,12 +205,13 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 	where
 		Ctx: Ics20Context,
 	{
-		// todo unwrap()
-		let ack = Acknowledgement::decode(&mut &acknowledgement[..]).unwrap();
-		// todo unwrap()
-		let data = FungibleTokenPacketData::decode(&mut &packet.data[..]).unwrap();
+		let ack = Acknowledgement::decode(&mut &acknowledgement[..])
+			.map_err(|e| Ics20Error::invalid_decode(e))?;
 
-		let ret = ics20_handler::handle_ack_packet::<Ctx, T>(ctx, packet, data, ack.into());
+		let data = FungibleTokenPacketData::decode(&mut &packet.data[..])
+			.map_err(|e| Ics20Error::invalid_decode(e))?;
+
+		let ret = ics20_handler::handle_ack_packet::<Ctx, T>(ctx, packet, data, ack.into())?;
 
 		Ok(())
 	}
@@ -242,11 +227,11 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 	where
 		Ctx: Ics20Context,
 	{
-		// todo unwrap()
-		let data = FungibleTokenPacketData::decode(&mut &packet.data[..]).unwrap();
+		let data = FungibleTokenPacketData::decode(&mut &packet.data[..])
+			.map_err(|e| Ics20Error::invalid_decode(e))?;
 
-		// TODO: handle ack packet/refund tokens
-		let ret = ics20_handler::handle_timeout_packet::<Ctx, T>(ctx, packet, data);
+		// handle ack packet/refund tokens
+		let ret = ics20_handler::handle_timeout_packet::<Ctx, T>(ctx, packet, data)?;
 
 		Ok(())
 	}
@@ -263,34 +248,20 @@ fn validate_transfer_channel_params<Ctx: Ics20Context>(
 ) -> Result<(), Ics20Error> {
 	// NOTE: for escrow address security only 2^32 channels are allowed to be created
 	// Issue: https://github.com/cosmos/cosmos-sdk/issues/7737
-	// todo unwrap()
-	let channel_sequence = parse_channel_sequence(channel_id.0).unwrap();
+	let channel_sequence = parse_channel_sequence(channel_id.0)?;
 
 	if channel_sequence > u32::MAX.into() {
-		// TODO: panic
-		panic!("{}", format!("Error Max Transfer Channel: Channel sequence {} is greater than max allowd transfer channels {}", channel_sequence, u32::MAX));
+		return Err(Ics20Error::overflow_channel_sequence(channel_sequence, u32::MAX.into()))
 	}
 
 	if order != Order::Unordered {
-		// TODO: panic
-		panic!(
-			"{}",
-			format!(
-				"Error invalid channle ordering, expected {} channel, got {}",
-				Order::Unordered,
-				order
-			)
-		);
+		return Err(Ics20Error::invalid_equal_order(Order::Unordered, order))
 	}
 
 	// Require portID is the portID transfer module is bound to
-	let bound_port = ctx.get_port().unwrap();
+	let bound_port = ctx.get_port()?;
 	if bound_port != port_id {
-		// TODO: panic
-		panic!(
-			"{}",
-			format!("Error invalid prot, invalid prot: {}, expected: {}", port_id, bound_port)
-		);
+		return Err(Ics20Error::invalid_equal_port_id(bound_port, port_id))
 	}
 
 	Ok(())
@@ -298,14 +269,13 @@ fn validate_transfer_channel_params<Ctx: Ics20Context>(
 
 // parse_channel_sequence parses the channel sequence from the channel identifier.
 fn parse_channel_sequence(channel_identifier: String) -> Result<u64, Ics20Error> {
-	// todo unwrap()
 	let channel_id =
 		ibc::core::ics24_host::identifier::ChannelId::from_str(channel_identifier.as_str())
-			.unwrap();
-	// todo unwrap()
-	let sequence = channel_id.as_str().split_once("channel-").unwrap().1;
-	// todo unwrap()
-	let sequence = sequence.parse::<u64>().unwrap();
+			.map_err(|e| Ics20Error::invalid_channel_id(channel_identifier, e))?;
+
+	let sequence = channel_id.as_str().split_once("channel-").ok_or(Ics20Error::invalid_split())?.1;
+
+	let sequence = sequence.parse::<u64>().map_err(|_| Ics20Error::invalid_parse())?;
 
 	Ok(sequence)
 }

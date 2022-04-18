@@ -22,7 +22,8 @@ impl<T: Config> ConnectionReader for Context<T> {
 
 		if <Connections<T>>::contains_key(conn_id.as_bytes()) {
 			let data = <Connections<T>>::get(conn_id.as_bytes());
-			let ret = ConnectionEnd::decode_vec(&*data).map_err(|_| Ics03Error::invalid_decode())?;
+			let ret =
+				ConnectionEnd::decode_vec(&*data).map_err(|e| Ics03Error::invalid_decode(e))?;
 			log::trace!("in connection : [connection_end] >>  connection_end = {:?}", ret);
 			Ok(ret)
 		} else {
@@ -37,11 +38,9 @@ impl<T: Config> ConnectionReader for Context<T> {
 		// ClientReader::client_state(self, client_id)
 		if <ClientStates<T>>::contains_key(client_id.as_bytes()) {
 			let data = <ClientStates<T>>::get(client_id.as_bytes());
-			let result = AnyClientState::decode_vec(&*data).map_err(|_| Ics03Error::invalid_decode())?;
-			log::trace!(
-				"in connection : [client_state] >> client_state: {:?}",
-				result
-			);
+			let result =
+				AnyClientState::decode_vec(&*data).map_err(|e| Ics03Error::invalid_decode(e))?;
+			log::trace!("in connection : [client_state] >> client_state: {:?}", result);
 			Ok(result)
 		} else {
 			log::trace!("in connection : [client_state] >> read client_state is None");
@@ -104,16 +103,17 @@ impl<T: Config> ConnectionReader for Context<T> {
 		);
 
 		// ClientReader::consensus_state(self, client_id, height)
-		let height = height.encode_vec().map_err(|_| Ics03Error::invalid_encode())?;
+		let height = height.encode_vec().map_err(|e| Ics03Error::invalid_encode(e))?;
 		let value = <ConsensusStates<T>>::get(client_id.as_bytes());
 
 		for item in value.iter() {
 			if item.0 == height {
-				let any_consensus_state = AnyConsensusState::decode_vec(&*item.1).map_err(|_| Ics03Error::invalid_decode())?;
+				let any_consensus_state = AnyConsensusState::decode_vec(&*item.1)
+					.map_err(|e| Ics03Error::invalid_decode(e))?;
 				return Ok(any_consensus_state)
 			}
 		}
-		// TODO
+
 		// Err(ICS03Error::missing_consensus_height())
 		Ok(AnyConsensusState::Grandpa(
 			ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
@@ -134,7 +134,8 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		log::trace!("in connection : [increase_connection_counter]");
 
 		let ret = <ConnectionCounter<T>>::try_mutate(|val| -> Result<(), Ics03Error> {
-			let new = val.checked_add(1).ok_or("Add connection counter error").map_err(|_| Ics03Error::invalid_increment_connection_counter())?;
+			let new =
+				val.checked_add(1).ok_or(Ics03Error::invalid_increment_connection_counter())?;
 			*val = new;
 			Ok(())
 		});
@@ -158,7 +159,7 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 			log::trace!("in connection : [store_connection] >> before read Error");
 		}
 
-		let data = connection_end.encode_vec().map_err(|_| Ics03Error::invalid_decode())?;
+		let data = connection_end.encode_vec().map_err(|e| Ics03Error::invalid_encode(e))?;
 
 		<Connections<T>>::insert(connection_id.as_bytes().to_vec(), data);
 
