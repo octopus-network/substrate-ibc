@@ -1,5 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 // TODO to remove
+#![allow(unreachable_code)]
 #![allow(unreachable_patterns)]
 #![allow(clippy::type_complexity)]
 #![allow(non_camel_case_types)]
@@ -1085,6 +1086,7 @@ pub mod pallet {
 						let relayer_signer = get_signer(messages.clone());
 
 						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule::<T>::new();
+						// TODO: unwrap
 						let ack = ibc::core::ics26_routing::ibc_module::IBCModule::on_recv_packet(
 							&ics20_modlue,
 							ctx,
@@ -1095,6 +1097,7 @@ pub mod pallet {
 
 						// TODO： handle write acknowledgement
 						let packet = value.packet;
+						// TODO: unwrap
 						let write_ack_event =
 							ibc::core::ics04_channel::handler::write_acknowledgement::process(
 								ctx,
@@ -1134,6 +1137,7 @@ pub mod pallet {
 						let relayer_signer = get_signer(messages.clone());
 
 						let ics20_module = ics20_ibc_module_impl::Ics20IBCModule::<T>::new();
+						// TODO: unwrap
 						let ret =
 							ibc::core::ics26_routing::ibc_module::IBCModule::on_timeout_packet(
 								&ics20_module,
@@ -1152,6 +1156,7 @@ pub mod pallet {
 
 						let ics20_module = ics20_ibc_module_impl::Ics20IBCModule::<T>::new();
 						// todo acknowledgement data
+						// TODO: unwrap
 						let ret = ibc::core::ics26_routing::ibc_module::IBCModule::on_acknowledgement_packet(&ics20_module, ctx, value.clone().packet, vec![], relayer_signer);
 
 						Self::deposit_event(event.clone().into());
@@ -1169,6 +1174,7 @@ pub mod pallet {
 						let counterparty_channel_id = value.clone().counterparty_channel_id;
 
 						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule::<T>::new();
+						// TODO: unwrap
 						let ret =
 							ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_init(
 								&ics20_modlue,
@@ -1199,6 +1205,7 @@ pub mod pallet {
 						let counterparty_channel_id = value.clone().counterparty_channel_id;
 
 						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule::<T>::new();
+						// TODO: unwrap
 						let ret = ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_try(
 							&ics20_modlue,
 							ctx,
@@ -1230,6 +1237,7 @@ pub mod pallet {
 						let relayer_signer = get_signer(messages.clone());
 
 						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule::<T>::new();
+						// TODO: unwrap
 						let ret = ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_ack(
 							&ics20_modlue,
 							ctx,
@@ -1254,6 +1262,7 @@ pub mod pallet {
 						let relayer_signer = get_signer(messages.clone());
 
 						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule::<T>::new();
+						// TODO: unwrap
 						let ret =
 							ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_confirm(
 								&ics20_modlue,
@@ -1277,6 +1286,7 @@ pub mod pallet {
 						let relayer_signer = get_signer(messages.clone());
 
 						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule::<T>::new();
+						// TODO: unwrap
 						let ret =
 							ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_close_init(
 								&ics20_modlue,
@@ -1301,6 +1311,7 @@ pub mod pallet {
 						let relayer_signer = get_signer(messages.clone());
 
 						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule::<T>::new();
+						// TODO: unwrap
 						let ret =
 							ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_close_confirm(
 								&ics20_modlue,

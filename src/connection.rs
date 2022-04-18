@@ -8,7 +8,7 @@ use ibc::{
 		ics03_connection::{
 			connection::ConnectionEnd,
 			context::{ConnectionKeeper, ConnectionReader},
-			error::Error as ICS03Error,
+			error::Error as Ics03Error,
 		},
 		ics23_commitment::commitment::CommitmentPrefix,
 		ics24_host::identifier::{ClientId, ConnectionId},
@@ -17,7 +17,7 @@ use ibc::{
 };
 
 impl<T: Config> ConnectionReader for Context<T> {
-	fn connection_end(&self, conn_id: &ConnectionId) -> Result<ConnectionEnd, ICS03Error> {
+	fn connection_end(&self, conn_id: &ConnectionId) -> Result<ConnectionEnd, Ics03Error> {
 		log::trace!("in connection : [connection_end] >> connection_id = {:?}", conn_id);
 
 		if <Connections<T>>::contains_key(conn_id.as_bytes()) {
@@ -27,11 +27,11 @@ impl<T: Config> ConnectionReader for Context<T> {
 			Ok(ret)
 		} else {
 			log::trace!("in connection : [connection_end] >> read connection end returns None");
-			Err(ICS03Error::connection_mismatch(conn_id.clone()))
+			Err(Ics03Error::connection_mismatch(conn_id.clone()))
 		}
 	}
 
-	fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, ICS03Error> {
+	fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, Ics03Error> {
 		log::trace!("in connection : [client_state] >> client_id = {:?}", client_id);
 
 		// ClientReader::client_state(self, client_id)
@@ -45,7 +45,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 		} else {
 			log::trace!("in connection : [client_state] >> read client_state is None");
 
-			Err(ICS03Error::frozen_client(client_id.clone()))
+			Err(Ics03Error::frozen_client(client_id.clone()))
 		}
 	}
 
@@ -77,7 +77,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 		Height::new(0, height)
 	}
 
-	fn connection_counter(&self) -> Result<u64, ICS03Error> {
+	fn connection_counter(&self) -> Result<u64, Ics03Error> {
 		log::trace!(
 			"in connection : [connection_counter] >> Connection_counter = {:?}",
 			<ConnectionCounter<T>>::get()
@@ -96,7 +96,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 		&self,
 		client_id: &ClientId,
 		height: Height,
-	) -> Result<AnyConsensusState, ICS03Error> {
+	) -> Result<AnyConsensusState, Ics03Error> {
 		log::trace!(
 			"in connection : [client_consensus_state] client_id = {:?}, height = {:?}",
 			client_id,
@@ -120,7 +120,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 		))
 	}
 
-	fn host_consensus_state(&self, _height: Height) -> Result<AnyConsensusState, ICS03Error> {
+	fn host_consensus_state(&self, _height: Height) -> Result<AnyConsensusState, Ics03Error> {
 		log::trace!("in connection : [host_consensus_state] >> _height = {:?}", _height);
 		let result = AnyConsensusState::Grandpa(GPConsensusState::from(Header::default()));
 
@@ -145,7 +145,7 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		&mut self,
 		connection_id: ConnectionId,
 		connection_end: &ConnectionEnd,
-	) -> Result<(), ICS03Error> {
+	) -> Result<(), Ics03Error> {
 		log::trace!(
 			"in connection : [store_connection] >> connection_id: {:?}, connection_end: {:?}",
 			connection_id,
@@ -182,7 +182,7 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		&mut self,
 		connection_id: ConnectionId,
 		client_id: &ClientId,
-	) -> Result<(), ICS03Error> {
+	) -> Result<(), Ics03Error> {
 		log::trace!(
 			"in connection : [store_connection_to_client] >> connection_id = {:?},\
 		 client_id = {:?}",

@@ -117,19 +117,27 @@ where
 	Ctx: Ics20Context,
 {
 	let packet_data: IBCFungibleTokenPacketData =
-		serde_json::from_slice(packet.data.clone().as_slice()).unwrap();
+		serde_json::from_slice(packet.data.clone().as_slice()).map_err(Ics20Error::invalid_serde_ibc_fungible_token_packet_data)?;
+	// the token denomination to be transferred
+	// get the token denomination
 	let token_denom = packet_data.clone().denom;
+
+	// get denom hash example "ibc/hash_number"
+	let denom_trace_hash = token_denom.split_once("/").unwrap().1.as_bytes();
 
 	let full_denom_path;
 	if token_denom.starts_with("ibc/") {
-		// todo: denom_trace_hash to do
-		full_denom_path = ctx.get_denom_trace(&vec![0]).unwrap().get_full_denom_path().unwrap();
+		// todo unwrap()
+		full_denom_path = ctx.get_denom_trace(denom_trace_hash).unwrap().get_full_denom_path().unwrap();
 	}
 
-	//TODO: get data from packet
+	// get source_channel_id from packet
 	let source_channel = packet.source_channel.clone();
+	// get source_port_id  from packet
 	let source_port = packet.source_port.clone();
 
+
+	// convert IBC FungibleTokenPacketData to substrate FungibleTokenPacketData
 	let pallet_data: FungibleTokenPacketData<T> = packet_data.into();
 	let denomination = token_denom;
 	let amount = pallet_data.amount;
@@ -149,22 +157,25 @@ where
 
 		// TODO
 		// how to deail with denomination
-		let amount = amount.checked_into().unwrap(); // TODO: unwrap()
+		// TODO: unwrap()
+		let amount = amount.checked_into().unwrap();
+		// TODO: unwrap()
 		let ret = T::Currency::transfer(&sender, &escrow_account, amount, AllowDeath).unwrap();
-	// TODO: unwrap()
 	} else {
 		// todo
 		// receiver is source chain, burn vouchers
 		// bank.BurnCoins(sender, denomination, amount)
 		// todo how to deail with denomination <> asset_id
 		// todo Assetid is default
-		let amount = amount.checked_into().unwrap(); // TODO : unwrap()
+		// TODO : unwrap()
+		let amount = amount.checked_into().unwrap(); 
+		// TODO: unwrap()
 		let ret = <T::Assets as fungibles::Mutate<T::AccountId>>::burn_from(
 			T::AssetId::default(),
 			&sender,
 			amount,
 		)
-		.unwrap(); // TODO: unwrap()
+		.unwrap(); 
 	}
 
 	Ok(())
@@ -220,7 +231,9 @@ where
 		let unprefixed_denom = &data.denom[0..voucher_prefix.len()];
 
 		let mut denom = unprefixed_denom.to_string();
+		// TODO: unwrap()
 		let denom_trace = parse_denom_trace(&denom).unwrap();
+		// TODO: unwrap()
 		if denom_trace.path != "" {
 			denom = denom_trace.ibc_denom().unwrap();
 		}
@@ -246,6 +259,7 @@ where
 			escrow_account.clone(),
 		);
 
+		// TODO: unwrap()
 		let amount = pallet_data.amount.checked_into().unwrap();
 		let result =
 			T::Currency::transfer(&escrow_account, &pallet_data.receiver, amount, AllowDeath);
@@ -263,11 +277,13 @@ where
 
 		let denom_trace = parse_denom_trace(&prefixed_denomination).unwrap();
 
+		// TODO: unwrap()
 		let trace_hash = denom_trace.hash().unwrap();
 		if !ctx.has_denom_trace(&trace_hash) {
 			let _ = ctx.set_denom_trace(&denom_trace);
 		}
 
+		// TODO: unwrap()
 		let voucher_denom = denom_trace.ibc_denom().unwrap();
 
 		// TODO
@@ -287,6 +303,7 @@ where
 
 		let pallet_data: FungibleTokenPacketData<T> = data.into();
 
+		// TODO: unwrap()
 		let amount = pallet_data.amount.checked_into().unwrap();
 		let result = <T::Assets as fungibles::Mutate<T::AccountId>>::mint_into(
 			T::AssetId::default(),
@@ -360,6 +377,7 @@ fn refund_packet_token<Ctx, T: Config>(
 where
 	Ctx: Ics20Context,
 {
+	// TODO: unwrap()
 	let trace = parse_denom_trace(&data.denom).unwrap();
 
 	// // parse the transfer amount
@@ -386,13 +404,14 @@ where
 			ChannelId::from(packet.source_channel),
 			escrow_account.clone(),
 		);
+		// TODO: unwrap()
 		let amount = pallet_data.amount.checked_into().unwrap();
-		// TODO
+		// TODO: unwrap()
 		T::Currency::transfer(&escrow_account, &pallet_data.sender, amount, AllowDeath).unwrap();
 	} else {
-		// todo
+		// TODO: unwrap()
 		let amount = pallet_data.amount.checked_into().unwrap();
-		// TODO
+		// TODO: unwrap()
 		<T::Assets as fungibles::Mutate<T::AccountId>>::mint_into(
 			T::AssetId::default(),
 			&pallet_data.receiver,
@@ -416,8 +435,10 @@ where
 
 	let hex_hash = denom_split[1];
 
+	// TODO: unwrap()
 	let hash = denom_trace::parse_hex_hash(hex_hash).unwrap();
 
+	// TODO: unwrap()
 	let trace = ctx.get_denom_trace(&hash).unwrap();
 
 	trace.get_full_denom_path()

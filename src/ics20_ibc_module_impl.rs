@@ -81,10 +81,12 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 		Ctx: Ics20Context,
 	{
 		if let Err(err) = validate_transfer_channel_params(ctx, order, port_id, channel_id) {
+			// TODO: panic
 			panic!("Error while validating transfer channel")
 		}
 
 		if counterparty_version != Version::ics20() {
+			// TODO: panic
 			panic!(
 				"Error invalid version, got {}, expected {}",
 				counterparty_version,
@@ -119,6 +121,7 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 		Ctx: Ics20Context,
 	{
 		if counterparty_version != Version::ics20() {
+			// TODO: panic
 			panic!(
 				"Error invalid version, got {}, expected {}",
 				counterparty_version,
@@ -153,7 +156,7 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 		Ctx: Ics20Context,
 	{
 		// Disallow user-initiated channel closing for transfer channels
-		// todo
+		// TODO: panic
 		panic!("{}", format!("Error invalid request: user cannot close channel"));
 		Ok(())
 	}
@@ -264,12 +267,12 @@ fn validate_transfer_channel_params<Ctx: Ics20Context>(
 	let channel_sequence = parse_channel_sequence(channel_id.0).unwrap();
 
 	if channel_sequence > u32::MAX.into() {
-		// todo
+		// TODO: panic
 		panic!("{}", format!("Error Max Transfer Channel: Channel sequence {} is greater than max allowd transfer channels {}", channel_sequence, u32::MAX));
 	}
 
 	if order != Order::Unordered {
-		// todo
+		// TODO: panic
 		panic!(
 			"{}",
 			format!(
@@ -283,7 +286,7 @@ fn validate_transfer_channel_params<Ctx: Ics20Context>(
 	// Require portID is the portID transfer module is bound to
 	let bound_port = ctx.get_port().unwrap();
 	if bound_port != port_id {
-		// todo
+		// TODO: panic
 		panic!(
 			"{}",
 			format!("Error invalid prot, invalid prot: {}, expected: {}", port_id, bound_port)

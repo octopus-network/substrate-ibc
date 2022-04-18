@@ -14,13 +14,13 @@ use ibc::{
 		ics04_channel::{
 			channel::ChannelEnd,
 			context::{ChannelKeeper, ChannelReader},
-			error::Error as ICS04Error,
+			error::Error as Ics04Error,
 			packet::{Receipt, Sequence},
 		},
 		ics05_port::{
 			capabilities::{Capability, ChannelCapability, PortCapability},
 			context::PortReader,
-			error::Error as ICS05Error,
+			error::Error as Ics05Error,
 		},
 		ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
 		ics26_routing::context::ModuleId,
@@ -30,7 +30,7 @@ use ibc::{
 };
 
 impl<T: Config> ChannelReader for Context<T> {
-	fn channel_end(&self, port_channel_id: &(PortId, ChannelId)) -> Result<ChannelEnd, ICS04Error> {
+	fn channel_end(&self, port_channel_id: &(PortId, ChannelId)) -> Result<ChannelEnd, Ics04Error> {
 		// Todo: Confirm if all the errors are accurate
 		log::trace!(
 			"in channel : [channel_end] >> port_id = {:?}, channel_id = {:?}",
@@ -46,11 +46,11 @@ impl<T: Config> ChannelReader for Context<T> {
 			Ok(channel_end)
 		} else {
 			log::trace!("in channel : [channel_end] >> read channel_end return None");
-			Err(ICS04Error::channel_not_found(port_channel_id.clone().0, port_channel_id.clone().1))
+			Err(Ics04Error::channel_not_found(port_channel_id.clone().0, port_channel_id.clone().1))
 		}
 	}
 
-	fn connection_end(&self, connection_id: &ConnectionId) -> Result<ConnectionEnd, ICS04Error> {
+	fn connection_end(&self, connection_id: &ConnectionId) -> Result<ConnectionEnd, Ics04Error> {
 		log::trace!("in channel : [connection_end] >> connection_id = {:?}", connection_id);
 
 		if <Connections<T>>::contains_key(connection_id.as_bytes()) {
@@ -60,7 +60,7 @@ impl<T: Config> ChannelReader for Context<T> {
 			Ok(ret)
 		} else {
 			log::trace!("in channel : [channel_end] >> read connection end returns None");
-			Err(ICS04Error::connection_not_open(connection_id.clone()))
+			Err(Ics04Error::connection_not_open(connection_id.clone()))
 		}
 	}
 
@@ -68,7 +68,7 @@ impl<T: Config> ChannelReader for Context<T> {
 	fn connection_channels(
 		&self,
 		conn_id: &ConnectionId,
-	) -> Result<Vec<(PortId, ChannelId)>, ICS04Error> {
+	) -> Result<Vec<(PortId, ChannelId)>, Ics04Error> {
 		log::trace!("in channel : [connection_channels] >> connection_id : {:?}", conn_id);
 
 		return if <ChannelsConnection<T>>::contains_key(conn_id.as_bytes()) {
@@ -92,11 +92,11 @@ impl<T: Config> ChannelReader for Context<T> {
 			);
 			Ok(result)
 		} else {
-			Err(ICS04Error::connection_not_open(conn_id.clone()))
+			Err(Ics04Error::connection_not_open(conn_id.clone()))
 		}
 	}
 
-	fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, ICS04Error> {
+	fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, Ics04Error> {
 		log::trace!("in channel : [client_state] >> client_id = {:?}", client_id);
 
 		if <ClientStates<T>>::contains_key(client_id.as_bytes()) {
@@ -109,7 +109,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		} else {
 			log::trace!("In client : [client_state] >> read client_state is None");
 
-			Err(ICS04Error::frozen_client(client_id.clone()))
+			Err(Ics04Error::frozen_client(client_id.clone()))
 		}
 	}
 
@@ -117,7 +117,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		&self,
 		client_id: &ClientId,
 		height: Height,
-	) -> Result<AnyConsensusState, ICS04Error> {
+	) -> Result<AnyConsensusState, Ics04Error> {
 		log::trace!(
 			"in channel : [client_consensus_state] >> client_id = {:?}, height = {:?}",
 			client_id,
@@ -148,26 +148,26 @@ impl<T: Config> ChannelReader for Context<T> {
 		))
 	}
 
-	fn authenticated_capability(&self, port_id: &PortId) -> Result<ChannelCapability, ICS04Error> {
+	fn authenticated_capability(&self, port_id: &PortId) -> Result<ChannelCapability, Ics04Error> {
 		log::trace!("in channel : [authenticated_capability] >> port_id: {:?}", port_id);
 
 		match PortReader::lookup_module_by_port(self, port_id) {
 			Ok((_, key)) =>
 				if !PortReader::authenticate(self, port_id.clone(), &key) {
-					Err(ICS04Error::invalid_port_capability())
+					Err(Ics04Error::invalid_port_capability())
 				} else {
 					Ok(Capability::from(key).into())
 				},
-			Err(e) if e.detail() == ICS05Error::unknown_port(port_id.clone()).detail() =>
-				Err(ICS04Error::no_port_capability(port_id.clone())),
-			Err(_) => Err(ICS04Error::implementation_specific()),
+			Err(e) if e.detail() == Ics05Error::unknown_port(port_id.clone()).detail() =>
+				Err(Ics04Error::no_port_capability(port_id.clone())),
+			Err(_) => Err(Ics04Error::implementation_specific()),
 		}
 	}
 
 	fn get_next_sequence_send(
 		&self,
 		port_channel_id: &(PortId, ChannelId),
-	) -> Result<Sequence, ICS04Error> {
+	) -> Result<Sequence, Ics04Error> {
 		log::trace!(
 			"in channel : [get_next_sequence] >> port_id = {:?}, channel_id =  {:?}",
 			port_channel_id.0,
@@ -190,14 +190,14 @@ impl<T: Config> ChannelReader for Context<T> {
 			log::trace!(
 				"in channel : [get_next_sequence] >> read get next sequence send return None"
 			);
-			Err(ICS04Error::missing_next_send_seq(port_channel_id.clone()))
+			Err(Ics04Error::missing_next_send_seq(port_channel_id.clone()))
 		}
 	}
 
 	fn get_next_sequence_recv(
 		&self,
 		port_channel_id: &(PortId, ChannelId),
-	) -> Result<Sequence, ICS04Error> {
+	) -> Result<Sequence, Ics04Error> {
 		log::trace!(
 			"in channel : [get_next_sequence_recv] >> port_id = {:?}, channel_id = {:?}",
 			port_channel_id.0,
@@ -220,14 +220,14 @@ impl<T: Config> ChannelReader for Context<T> {
 			log::trace!(
 				"in channel : [get_next_sequence_recv] >> read get next sequence recv return None"
 			);
-			Err(ICS04Error::missing_next_recv_seq(port_channel_id.clone()))
+			Err(Ics04Error::missing_next_recv_seq(port_channel_id.clone()))
 		}
 	}
 
 	fn get_next_sequence_ack(
 		&self,
 		port_channel_id: &(PortId, ChannelId),
-	) -> Result<Sequence, ICS04Error> {
+	) -> Result<Sequence, Ics04Error> {
 		log::trace!(
 			"in channel : [get_next_sequence_ack] >> port_id = {:?}, channel_id = {:?}",
 			port_channel_id.0,
@@ -250,7 +250,7 @@ impl<T: Config> ChannelReader for Context<T> {
 			log::trace!(
 				"in channel : [get_next_sequence_ack] >> read get next sequence ack return None"
 			);
-			Err(ICS04Error::missing_next_ack_seq(port_channel_id.clone()))
+			Err(Ics04Error::missing_next_ack_seq(port_channel_id.clone()))
 		}
 	}
 
@@ -258,7 +258,7 @@ impl<T: Config> ChannelReader for Context<T> {
 	fn get_packet_commitment(
 		&self,
 		key: &(PortId, ChannelId, Sequence),
-	) -> Result<String, ICS04Error> {
+	) -> Result<String, Ics04Error> {
 		log::trace!("in channel : [get_packet_commitment] >> port_id = {:?}, channel_id = {:?}, sequence = {:?}",
 			key.0, key.1, key.2
 		);
@@ -279,14 +279,14 @@ impl<T: Config> ChannelReader for Context<T> {
 			log::trace!(
 				"in channel : [get_packet_commitment] >> read get packet commitment return None"
 			);
-			Err(ICS04Error::packet_commitment_not_found(key.2))
+			Err(Ics04Error::packet_commitment_not_found(key.2))
 		}
 	}
 
 	fn get_packet_receipt(
 		&self,
 		key: &(PortId, ChannelId, Sequence),
-	) -> Result<Receipt, ICS04Error> {
+	) -> Result<Receipt, Ics04Error> {
 		log::trace!("in channel : [get_packet_receipt] >> port_id = {:?}, channel_id = {:?}, sequence = {:?}",
 			key.0, key.1, key.2
 		);
@@ -309,7 +309,7 @@ impl<T: Config> ChannelReader for Context<T> {
 			Ok(data)
 		} else {
 			log::trace!("in channel : [get_packet_receipt] >> read get packet receipt not found");
-			Err(ICS04Error::packet_receipt_not_found(key.2))
+			Err(Ics04Error::packet_receipt_not_found(key.2))
 		}
 	}
 
@@ -317,7 +317,7 @@ impl<T: Config> ChannelReader for Context<T> {
 	fn get_packet_acknowledgement(
 		&self,
 		key: &(PortId, ChannelId, Sequence),
-	) -> Result<String, ICS04Error> {
+	) -> Result<String, Ics04Error> {
 		log::trace!("in channel : [get_packet_acknowledgement] >> port_id = {:?}, channel_id = {:?}, sequence = {:?}",
 			key.0, key.1, key.2
 		);
@@ -338,7 +338,7 @@ impl<T: Config> ChannelReader for Context<T> {
 			log::trace!(
 				"in channel : [get_packet_acknowledgement] >> get acknowledgement not found"
 			);
-			Err(ICS04Error::packet_acknowledgement_not_found(key.2))
+			Err(Ics04Error::packet_acknowledgement_not_found(key.2))
 		}
 	}
 
@@ -385,17 +385,17 @@ impl<T: Config> ChannelReader for Context<T> {
 	}
 
 	/// Returns the `AnyConsensusState` for the given identifier `height`.
-	fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, ICS04Error> {
+	fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Ics04Error> {
 		log::trace!("in channel: [host_consensus_state] >> height = {:?}", height);
 
-		ConnectionReader::host_consensus_state(self, height).map_err(ICS04Error::ics03_connection)
+		ConnectionReader::host_consensus_state(self, height).map_err(Ics04Error::ics03_connection)
 	}
 
-	fn pending_host_consensus_state(&self) -> Result<AnyConsensusState, ICS04Error> {
+	fn pending_host_consensus_state(&self) -> Result<AnyConsensusState, Ics04Error> {
 		log::trace!("in channel: [pending_host_consensus_stata]");
 
 		ClientReader::pending_host_consensus_state(self)
-			.map_err(|e| ICS04Error::ics03_connection(ICS03Error::ics02_client(e)))
+			.map_err(|e| Ics04Error::ics03_connection(ICS03Error::ics02_client(e)))
 	}
 
 	/// Returns the `ClientProcessedTimes` for the given identifier `client_id` & `height`.
@@ -403,7 +403,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		&self,
 		client_id: &ClientId,
 		height: Height,
-	) -> Result<Timestamp, ICS04Error> {
+	) -> Result<Timestamp, Ics04Error> {
 		log::trace!(
 			"in channel: [client_update_time] >> client_id = {:?}, height = {:?}",
 			client_id,
@@ -420,7 +420,7 @@ impl<T: Config> ChannelReader for Context<T> {
 			let time: Timestamp = serde_json::from_str(&timestamp).unwrap();
 			Ok(time)
 		} else {
-			Err(ICS04Error::processed_time_not_found(client_id.clone(), height))
+			Err(Ics04Error::processed_time_not_found(client_id.clone(), height))
 		}
 	}
 
@@ -428,7 +428,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		&self,
 		client_id: &ClientId,
 		height: Height,
-	) -> Result<Height, ICS04Error> {
+	) -> Result<Height, Ics04Error> {
 		if <ClientProcessedHeights<T>>::contains_key(
 			client_id.as_bytes(),
 			height.encode_vec().unwrap(),
@@ -440,14 +440,14 @@ impl<T: Config> ChannelReader for Context<T> {
 			let host_height = Height::decode(&host_height[..]).unwrap();
 			Ok(host_height)
 		} else {
-			Err(ICS04Error::processed_height_not_found(client_id.clone(), height))
+			Err(Ics04Error::processed_height_not_found(client_id.clone(), height))
 		}
 	}
 
 	/// Returns a counter on the number of channel ids have been created thus far.
 	/// The value of this counter should increase only via method
 	/// `ChannelKeeper::increase_channel_counter`.
-	fn channel_counter(&self) -> Result<u64, ICS04Error> {
+	fn channel_counter(&self) -> Result<u64, Ics04Error> {
 		log::trace!(
 			"in channel: [channel_counter] >> channel_counter = {:?}",
 			<Pallet<T> as Store>::ChannelCounter::get()
@@ -464,7 +464,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		&self,
 		channel_id: &ChannelId,
 		port_id: &PortId,
-	) -> Result<(ModuleId, ChannelCapability), ICS04Error> {
+	) -> Result<(ModuleId, ChannelCapability), Ics04Error> {
 		todo!()
 	}
 }
@@ -476,7 +476,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		timestamp: Timestamp,
 		heigh: Height,
 		data: Vec<u8>,
-	) -> Result<(), ICS04Error> {
+	) -> Result<(), Ics04Error> {
 		log::trace!(
 			"in channel: [store_packet_commitment] >> port_id = {:?}, channel_id = {:?}, \
 		sequence = {:?}, timestamp = {:?}, height  = {:?}, data = {:?}",
@@ -514,7 +514,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 	fn delete_packet_commitment(
 		&mut self,
 		key: (PortId, ChannelId, Sequence),
-	) -> Result<(), ICS04Error> {
+	) -> Result<(), Ics04Error> {
 		log::trace!(
 			"in channel: [delete_packet_commitment] >> port_id = {:?}, channel_id = {:?}, \
 		sequence = {:?}",
@@ -553,7 +553,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		&mut self,
 		key: (PortId, ChannelId, Sequence),
 		receipt: Receipt,
-	) -> Result<(), ICS04Error> {
+	) -> Result<(), Ics04Error> {
 		log::trace!(
 			"in channel: [store_packet_receipt] >> port_id = {:?}, channel_id = {:?},\
 		 sequence = {:?}, receipt = {:?}",
@@ -582,7 +582,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		&mut self,
 		key: (PortId, ChannelId, Sequence),
 		ack: Vec<u8>,
-	) -> Result<(), ICS04Error> {
+	) -> Result<(), Ics04Error> {
 		log::trace!(
 			"in channel: [store_packet_acknowledgement] >> port_id = {:?}, channel_id = {:?},\
 		 sequence = {:?}, ack = {:?}",
@@ -619,7 +619,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 	fn delete_packet_acknowledgement(
 		&mut self,
 		key: (PortId, ChannelId, Sequence),
-	) -> Result<(), ICS04Error> {
+	) -> Result<(), Ics04Error> {
 		log::trace!(
 			"in channel: [delete_packet_acknowledgement] >> port_id = {:?}, channel_id = {:?},\
 		 sequence = {:?}",
@@ -659,7 +659,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		&mut self,
 		conn_id: ConnectionId,
 		port_channel_id: &(PortId, ChannelId),
-	) -> Result<(), ICS04Error> {
+	) -> Result<(), Ics04Error> {
 		log::trace!(
 			"in channel: [store_connection_channels] >> connection_id = {:?}, port_id = {:?},\
 		 channel_id = {:?}",
@@ -696,7 +696,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		&mut self,
 		port_channel_id: (PortId, ChannelId),
 		channel_end: &ChannelEnd,
-	) -> Result<(), ICS04Error> {
+	) -> Result<(), Ics04Error> {
 		log::trace!(
 			"in channel: [store_channel] >> port_id = {:?}, channel_id = {:?}, \
 			channel_end = {:?}",
@@ -737,7 +737,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		&mut self,
 		port_channel_id: (PortId, ChannelId),
 		seq: Sequence,
-	) -> Result<(), ICS04Error> {
+	) -> Result<(), Ics04Error> {
 		log::trace!(
 			"in channel: [store_next_sequence_send] >> port_id = {:?}, channel_id = {:?},\
 		 sequence = {:?}",
@@ -762,7 +762,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		&mut self,
 		port_channel_id: (PortId, ChannelId),
 		seq: Sequence,
-	) -> Result<(), ICS04Error> {
+	) -> Result<(), Ics04Error> {
 		log::trace!(
 			"in channel: [store_next_sequence_recv] >> port_id = {:?}, channel_id = {:?}, \
 			seq = {:?}",
@@ -787,7 +787,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		&mut self,
 		port_channel_id: (PortId, ChannelId),
 		seq: Sequence,
-	) -> Result<(), ICS04Error> {
+	) -> Result<(), Ics04Error> {
 		log::trace!(
 			"in channel: [store_next_sequence_ack] >> port_id = {:?}, channel_id = {:?},\
 		 sequence = {:?}",
