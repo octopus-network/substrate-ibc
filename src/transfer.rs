@@ -3,10 +3,12 @@
 /// refer to https://github.com/octopus-network/ibc-go/blob/main/modules/apps/transfer/keeper/keeper.go
 use super::*;
 use crate::routing::Context;
-use ibc::applications::ics20_fungible_token_transfer::{
-	context::Ics20Context, error::Error, msgs::denom_trace::DenomTrace,
+use ibc::{
+	applications::ics20_fungible_token_transfer::{
+		context::Ics20Context, error::Error, msgs::denom_trace::DenomTrace,
+	},
+	core::ics24_host::identifier::PortId,
 };
-use ibc::core::ics24_host::identifier::PortId;
 
 impl<T: Config> Ics20Context for Context<T> {
 	// GetDenomTrace retreives the full identifiers trace and base denomination from the store.

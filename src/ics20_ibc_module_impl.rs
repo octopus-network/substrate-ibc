@@ -1,6 +1,6 @@
 use super::*;
-use core::str::FromStr;
 use crate::ics20_handler;
+use core::str::FromStr;
 use ibc::{
 	applications::ics20_fungible_token_transfer::{
 		context::Ics20Context, error::Error as Ics20Error,
@@ -27,7 +27,7 @@ pub struct Ics20IBCModule<T: Config>(core::marker::PhantomData<T>);
 impl<T: Config> Ics20IBCModule<T> {
 	pub fn new() -> Self {
 		Self(core::marker::PhantomData)
-	} 
+	}
 }
 
 impl<T: Config> IBCModule for Ics20IBCModule<T> {
@@ -50,17 +50,17 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 		if let Err(err) = validate_transfer_channel_params(ctx, order, port_id, channel_id) {
 			panic!("Error while validating transfer channel")
 		}
-	
+
 		if version != Version::ics20() {
 			panic!("Error invalid version, got {}, expected {}", version, Version::ics20());
 		}
-	
+
 		// todo
 		// Claim channel capability passed back by IBC module
-		//if err := im.keeper.ClaimCapability(ctx, chanCap, host.ChannelCapabilityPath(portID, channelID)); err != nil {
-		//	return err
+		//if err := im.keeper.ClaimCapability(ctx, chanCap, host.ChannelCapabilityPath(portID,
+		// channelID)); err != nil { 	return err
 		//}
-		
+
 		Ok(())
 	}
 
@@ -83,20 +83,24 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 		if let Err(err) = validate_transfer_channel_params(ctx, order, port_id, channel_id) {
 			panic!("Error while validating transfer channel")
 		}
-	
+
 		if counterparty_version != Version::ics20() {
-			panic!("Error invalid version, got {}, expected {}", counterparty_version, Version::ics20());
+			panic!(
+				"Error invalid version, got {}, expected {}",
+				counterparty_version,
+				Version::ics20()
+			);
 		}
-	
+
 		// todo
-		// Module may have already claimed capability in OnChanOpenInit in the case of crossing hellos
-		// (ie chainA and chainB both call ChanOpenInit before one of them calls ChanOpenTry)
-		// If module can already authenticate the capability then module already owns it so we don't need to claim
-		// Otherwise, module does not have channel capability and we must claim it from IBC
-		// if !im.keeper.AuthenticateCapability(ctx, chanCap, host.ChannelCapabilityPath(portID, channelID)) {
-		// Only claim channel capability passed back by IBC module if we do not already own it
-		// if err := im.keeper.ClaimCapability(ctx, chanCap, host.ChannelCapabilityPath(portID, channelID)); err != nil {
-		//	return "", err
+		// Module may have already claimed capability in OnChanOpenInit in the case of crossing
+		// hellos (ie chainA and chainB both call ChanOpenInit before one of them calls ChanOpenTry)
+		// If module can already authenticate the capability then module already owns it so we don't
+		// need to claim Otherwise, module does not have channel capability and we must claim it
+		// from IBC if !im.keeper.AuthenticateCapability(ctx, chanCap,
+		// host.ChannelCapabilityPath(portID, channelID)) { Only claim channel capability passed
+		// back by IBC module if we do not already own it if err := im.keeper.ClaimCapability(ctx,
+		// chanCap, host.ChannelCapabilityPath(portID, channelID)); err != nil { 	return "", err
 		//}
 
 		Ok(Version::ics20())
@@ -115,7 +119,11 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 		Ctx: Ics20Context,
 	{
 		if counterparty_version != Version::ics20() {
-			panic!("Error invalid version, got {}, expected {}", counterparty_version, Version::ics20());
+			panic!(
+				"Error invalid version, got {}, expected {}",
+				counterparty_version,
+				Version::ics20()
+			);
 		}
 		Ok(())
 	}
@@ -146,7 +154,7 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 	{
 		// Disallow user-initiated channel closing for transfer channels
 		// todo
-		panic!("{}",format!("Error invalid request: user cannot close channel"));
+		panic!("{}", format!("Error invalid request: user cannot close channel"));
 		Ok(())
 	}
 	// OnChanCloseConfirm implements the IBCModule interface
@@ -180,19 +188,19 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 		// construct Acknowledgement
 		let mut acknowledgement = Acknowledgement::new_success(default_ack_value);
 
-		//TODO: build FungibleTokenPacketData 
+		//TODO: build FungibleTokenPacketData
 		// todo unwrap()
 		let data = FungibleTokenPacketData::decode(&mut &packet.data[..]).unwrap();
-		
+
 		// only attempt the application logic if the packet data
 		// was successfully decoded
-		if acknowledgement.success() { 
+		if acknowledgement.success() {
 			// TODO: handle recv packet
 			let result = ics20_handler::handle_recv_packet::<Ctx, T>(ctx, packet, data);
 			if let Err(err) = result {
-				acknowledgement = Acknowledgement::new_error(format!("{}",err));
+				acknowledgement = Acknowledgement::new_error(format!("{}", err));
 			}
-		}		
+		}
 
 		let ack = acknowledgement.encode_vec().unwrap();
 		Ok(ack)
@@ -214,7 +222,7 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 		let ack = Acknowledgement::decode(&mut &acknowledgement[..]).unwrap();
 		// todo unwrap()
 		let data = FungibleTokenPacketData::decode(&mut &packet.data[..]).unwrap();
-		
+
 		let ret = ics20_handler::handle_ack_packet::<Ctx, T>(ctx, packet, data, ack.into());
 
 		Ok(())
@@ -231,23 +239,21 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 	where
 		Ctx: Ics20Context,
 	{
-	
 		// todo unwrap()
 		let data = FungibleTokenPacketData::decode(&mut &packet.data[..]).unwrap();
-		
+
 		// TODO: handle ack packet/refund tokens
-		let ret= ics20_handler::handle_timeout_packet::<Ctx, T>(ctx, packet, data);
+		let ret = ics20_handler::handle_timeout_packet::<Ctx, T>(ctx, packet, data);
 
 		Ok(())
 	}
 }
 
-
 // validate_transfer_channel_params does validation of a newly created transfer channel. A transfer
 // channel must be UNORDERED, use the correct port (by default 'transfer'), and use the current
 // supported version. Only 2^32 channels are allowed to be created.
 fn validate_transfer_channel_params<Ctx: Ics20Context>(
-	ctx: &Ctx, 
+	ctx: &Ctx,
 	order: Order,
 	port_id: PortId,
 	channel_id: ChannelId,
@@ -264,14 +270,24 @@ fn validate_transfer_channel_params<Ctx: Ics20Context>(
 
 	if order != Order::Unordered {
 		// todo
-		panic!("{}", format!("Error invalid channle ordering, expected {} channel, got {}", Order::Unordered, order));
+		panic!(
+			"{}",
+			format!(
+				"Error invalid channle ordering, expected {} channel, got {}",
+				Order::Unordered,
+				order
+			)
+		);
 	}
 
 	// Require portID is the portID transfer module is bound to
 	let bound_port = ctx.get_port().unwrap();
 	if bound_port != port_id {
 		// todo
-		panic!("{}", format!("Error invalid prot, invalid prot: {}, expected: {}", port_id, bound_port));
+		panic!(
+			"{}",
+			format!("Error invalid prot, invalid prot: {}, expected: {}", port_id, bound_port)
+		);
 	}
 
 	Ok(())
@@ -280,7 +296,9 @@ fn validate_transfer_channel_params<Ctx: Ics20Context>(
 // parse_channel_sequence parses the channel sequence from the channel identifier.
 fn parse_channel_sequence(channel_identifier: String) -> Result<u64, Ics20Error> {
 	// todo unwrap()
-	let channel_id = ibc::core::ics24_host::identifier::ChannelId::from_str(channel_identifier.as_str()).unwrap();
+	let channel_id =
+		ibc::core::ics24_host::identifier::ChannelId::from_str(channel_identifier.as_str())
+			.unwrap();
 	// todo unwrap()
 	let sequence = channel_id.as_str().split_once("channel-").unwrap().1;
 	// todo unwrap()
