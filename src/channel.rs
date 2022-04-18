@@ -373,14 +373,14 @@ impl<T: Config> ChannelReader for Context<T> {
 
 		let block_number = format!("{:?}", <frame_system::Pallet<T>>::block_number());
 		// todo map_err
-		let current_height = block_number
-			.parse()
-			.map_err(|e| panic!("{:?}, caused by {:?} from frame_system::Pallet", e, block_number));
+		let current_height: u64 = block_number
+			.parse().unwrap_or_default();
+
 		log::trace!(
 			"in channel: [host_height] >> host_height = {:?}",
-			Height::new(0, current_height.unwrap())
+			Height::new(0, current_height)
 		);
-		Height::new(0, current_height.unwrap())
+		Height::new(0, current_height)
 	}
 
 	/// Returns the current timestamp of the local chain.
@@ -522,8 +522,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		let ret = <PacketCommitmentKeys<T>>::try_mutate(|val| -> Result<(), Ics04Error> {
 			val.push((key.0.as_bytes().to_vec(), key.1.as_bytes().to_vec(), seq.clone()));
 			Ok(())
-		})
-		.map_err(|_| Ics04Error::invalid_store_packet_commitment_keys());
+		});
 
 		Ok(())
 	}
@@ -562,8 +561,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 			let ret = val.remove(index);
 			assert_eq!(ret, (key.0.as_bytes().to_vec(), key.1.as_bytes().to_vec(), seq.clone()));
 			Ok(())
-		})
-		.map_err(|_| Ics04Error::invalid_delete_packet_commitment_keys());
+		});
 
 		Ok(())
 	}
@@ -629,8 +627,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		let ret = <AcknowledgementsKeys<T>>::try_mutate(|val| -> Result<(), Ics04Error> {
 			val.push((key.0.as_bytes().to_vec(), key.1.as_bytes().to_vec(), seq));
 			Ok(())
-		})
-		.map_err(|_| Ics04Error::invalid_store_acknowledgements_keys());
+		});
 
 		Ok(())
 	}
@@ -658,7 +655,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		));
 
 		// remove acknowledgement keys
-		<AcknowledgementsKeys<T>>::try_mutate(|val| -> Result<(), Ics04Error> {
+		let ret = <AcknowledgementsKeys<T>>::try_mutate(|val| -> Result<(), Ics04Error> {
 			let index = val
 				.iter()
 				.position(|value| {
@@ -669,8 +666,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 			let ret = val.remove(index);
 			assert_eq!(&ret, &(key.0.as_bytes().to_vec(), key.1.as_bytes().to_vec(), seq.clone()));
 			Ok(())
-		})
-		.expect("delete packet acknowledgement keys error");
+		});
 
 		Ok(())
 	}
@@ -842,7 +838,6 @@ impl<T: Config> ChannelKeeper for Context<T> {
 				.map_err(|_| Ics04Error::ivalid_increase_channel_counter())?;
 			*val = new;
 			Ok(())
-		})
-		.map_err(|_| Ics04Error::ivalid_increase_channel_counter());
+		});
 	}
 }

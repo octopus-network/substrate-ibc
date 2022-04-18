@@ -22,7 +22,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 
 		if <Connections<T>>::contains_key(conn_id.as_bytes()) {
 			let data = <Connections<T>>::get(conn_id.as_bytes());
-			let ret = ConnectionEnd::decode_vec(&*data).unwrap();
+			let ret = ConnectionEnd::decode_vec(&*data).map_err(|_| Ics03Error::invalid_decode())?;
 			log::trace!("in connection : [connection_end] >>  connection_end = {:?}", ret);
 			Ok(ret)
 		} else {
@@ -37,11 +37,12 @@ impl<T: Config> ConnectionReader for Context<T> {
 		// ClientReader::client_state(self, client_id)
 		if <ClientStates<T>>::contains_key(client_id.as_bytes()) {
 			let data = <ClientStates<T>>::get(client_id.as_bytes());
+			let result = AnyClientState::decode_vec(&*data).map_err(|_| Ics03Error::invalid_decode())?;
 			log::trace!(
 				"in connection : [client_state] >> client_state: {:?}",
-				AnyClientState::decode_vec(&*data).unwrap()
+				result
 			);
-			Ok(AnyClientState::decode_vec(&*data).unwrap())
+			Ok(result)
 		} else {
 			log::trace!("in connection : [client_state] >> read client_state is None");
 
@@ -54,7 +55,6 @@ impl<T: Config> ConnectionReader for Context<T> {
 
 		let block_number = format!("{:?}", <frame_system::Pallet<T>>::block_number());
 		let current_height: u64 = block_number.parse().unwrap_or_default();
-		// let current_height = block_number;
 
 		<OldHeight<T>>::put(current_height);
 
@@ -89,7 +89,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 	fn commitment_prefix(&self) -> CommitmentPrefix {
 		log::trace!("in connection : [commitment_prefix] >> CommitmentPrefix = {:?}", "ibc");
 
-		"ibc".as_bytes().to_vec().try_into().unwrap()
+		"ibc".as_bytes().to_vec().try_into().unwrap_or_default()
 	}
 
 	fn client_consensus_state(
@@ -104,12 +104,12 @@ impl<T: Config> ConnectionReader for Context<T> {
 		);
 
 		// ClientReader::consensus_state(self, client_id, height)
-		let height = height.encode_vec().unwrap();
+		let height = height.encode_vec().map_err(|_| Ics03Error::invalid_encode())?;
 		let value = <ConsensusStates<T>>::get(client_id.as_bytes());
 
 		for item in value.iter() {
 			if item.0 == height {
-				let any_consensus_state = AnyConsensusState::decode_vec(&*item.1).unwrap();
+				let any_consensus_state = AnyConsensusState::decode_vec(&*item.1).map_err(|_| Ics03Error::invalid_decode())?;
 				return Ok(any_consensus_state)
 			}
 		}
@@ -133,12 +133,11 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 	fn increase_connection_counter(&mut self) {
 		log::trace!("in connection : [increase_connection_counter]");
 
-		<ConnectionCounter<T>>::try_mutate(|val| -> Result<(), &'static str> {
-			let new = val.checked_add(1).ok_or("Add connection counter error")?;
+		let ret = <ConnectionCounter<T>>::try_mutate(|val| -> Result<(), Ics03Error> {
+			let new = val.checked_add(1).ok_or("Add connection counter error").map_err(|_| Ics03Error::invalid_increment_connection_counter())?;
 			*val = new;
 			Ok(())
-		})
-		.expect("increase connection counter error");
+		});
 	}
 
 	fn store_connection(
@@ -159,19 +158,18 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 			log::trace!("in connection : [store_connection] >> before read Error");
 		}
 
-		let data = connection_end.encode_vec().unwrap();
+		let data = connection_end.encode_vec().map_err(|_| Ics03Error::invalid_decode())?;
 
 		<Connections<T>>::insert(connection_id.as_bytes().to_vec(), data);
 
-		<ConnectionsKeys<T>>::try_mutate(|val| -> Result<(), &'static str> {
+		let ret = <ConnectionsKeys<T>>::try_mutate(|val| -> Result<(), Ics03Error> {
 			if let Some(_value) = val.iter().find(|&x| x == connection_id.as_bytes()) {
 			} else {
 				val.push(connection_id.as_bytes().to_vec());
 			}
 
 			Ok(())
-		})
-		.expect("store connections keys error");
+		});
 
 		let temp = ConnectionReader::connection_end(self, &connection_id);
 		log::trace!("in connection : [store_connection] >> read store after: {:?}", temp);
