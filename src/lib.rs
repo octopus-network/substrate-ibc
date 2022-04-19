@@ -70,6 +70,9 @@ use ibc::{
 		ics02_client::client_state::AnyClientState, ics24_host::identifier::ChainId as ICS24ChainId,
 	},
 };
+use ibc::applications::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer;
+use ibc::core::ics24_host::identifier;
+
 pub use routing::ModuleCallbacks;
 use scale_info::{prelude::vec, TypeInfo};
 use serde::{Deserialize, Serialize};
@@ -732,8 +735,9 @@ pub mod pallet {
 					Event::TimeoutOnClosePacket(height.into(), packet.into())
 				},
 				ibc::events::IbcEvent::Empty(value) => Event::Empty(value.as_bytes().to_vec()),
-				ibc::events::IbcEvent::ChainError(value) =>
-					Event::ChainError(value.as_bytes().to_vec()),
+				ibc::events::IbcEvent::ChainError(value) => {
+					Event::ChainError(value.as_bytes().to_vec())
+				},
 				_ => unimplemented!(),
 			}
 		}
@@ -857,7 +861,7 @@ pub mod pallet {
 			if !<ClientStates<T>>::contains_key(client_id.clone()) {
 				log::error!("in update_client_state: {:?} client_state not found !", client_id_str);
 
-				return Err(Error::<T>::ClientIdNotFound.into())
+				return Err(Error::<T>::ClientIdNotFound.into());
 			} else {
 				// get client state from chain storage
 				let data = <ClientStates<T>>::get(client_id.clone());
@@ -998,7 +1002,7 @@ pub mod pallet {
 				Err(e) => {
 					log::error!("update the beefy light client failure! : {:?}", e);
 
-					return Err(Error::<T>::UpdateBeefyLightClientFailure.into())
+					return Err(Error::<T>::UpdateBeefyLightClientFailure.into());
 				},
 			}
 
@@ -1032,30 +1036,62 @@ pub mod pallet {
 			timeout_timestamp: Vec<u8>,
 		) -> DispatchResult {
 			//TODO: check and covert the input data to the correct format
-			let _sender = ensure_signed(origin)?;
-			// let msg = MsgTransfer {
-			// source_port: source_port.clone(),
-			// source_channel: source_channel.clone(),
-			// token: Some(ibc_proto::cosmos::base::v1beta1::Coin {
-			// 	token: "uatom".to_string(),
-			// 	amount: amount.to_string(),
-			// }),
-			// send: _sender.clone(),
-			// receiver: receiver.clone(),
-			// timeout_height: Height {
-			// 	revision_number: 0,
-			// 	revision_height: timeout_height,
-			// },
-			// timeout_timestamp: Timestamp {
-			// 	unix: timeout_timestamp.clone(),
-			// 	nanos: 0,
-			// },
+			// pub struct MsgTransfer {
+			// 	/// the port on which the packet will be sent
+			// 	pub source_port: PortId,
+			// 	/// the channel by which the packet will be sent
+			// 	pub source_channel: ChannelId,
+			// 	/// the tokens to be transferred
+			// 	pub token: Option<ibc_proto::cosmos::base::v1beta1::Coin>,
+			// 	/// the sender address
+			// 	pub sender: Signer,
+			// 	/// the recipient address on the destination chain
+			// 	pub receiver: Signer,
+			// 	/// Timeout height relative to the current block height.
+			// 	/// The timeout is disabled when set to 0.
+			// 	pub timeout_height: Height,
+			// 	/// Timeout timestamp relative to the current block timestamp.
+			// 	/// The timeout is disabled when set to 0.
+			// 	pub timeout_timestamp: Timestamp,
+			// }
 
-			//TODO: send to router
-			//let mut ctx = routing::Context { _pd: PhantomData::<T>, tmp };
-			// let result = ibc::ics26_routing::handler::deliver(&mut ctx, msg).unwrap();
-			//TODO: handle the result
-			// handle_result(result);
+			let _source_port = identifier::PortId::from_str(String::from_utf8(source_port).unwrap());
+			let _source_port = identifier::ChannelId::from_str(String::from_utf8(source_channel).unwrap());
+			
+			let _token = Some(ibc_proto::cosmos::base::v1beta1::Coin {
+				denom: String::from_utf8(token).unwrap(),
+				amount: amount.to_string(),
+			});
+
+			let _sender = ensure_signed(origin)?;
+			let _sender = Signer::new(format!("{}", _sender.clone()));
+			let _receiver = Signer::new(String::from_utf8(receiver).unwrap());
+
+			let _timeout_height = Height { revision_number: 0, revision_height: timeout_height };
+			let _timeout_timestamp = Timestamp::from_utf8(timeout_timestamp).unwrap();
+
+			let msg = MsgTransfer {
+				source_port: _source_port,
+				source_channel: _source_port,
+				token: _token,
+				sender: _sender,
+				receiver: _receiver,
+				timeout_height: _timeout_height,
+				timeout_timestamp: _timeout_timestamp,
+			}
+			.into();
+
+			// send to router
+			let mut ctx = routing::Context { _pd: PhantomData::<T>, 0 };
+			// let message = ibc_proto::google::protobuf::Any {
+			// 	type_url: String::from_utf8(message.type_url.clone()).unwrap(),
+			// 	value: message.value.clone(),
+			// };
+
+			let result = ibc::core::ics26_routing::handler::deliver(&mut ctx, msg.clone()).unwrap();
+			// handle the result
+			log::info!("result: {:?}", result);
+			Self::handle_result(&mut ctx, msg.clone(), result.0);
 
 			Ok(())
 		}
@@ -1086,6 +1122,8 @@ pub mod pallet {
 						let relayer_signer = get_signer(messages.clone());
 
 						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule::<T>::new();
+						// ics20_modlue.on_receive_packet(ctx, relayer_signer, value.clone().packet);
+						
 						// TODO: unwrap
 						let ack = ibc::core::ics26_routing::ibc_module::IBCModule::on_recv_packet(
 							&ics20_modlue,
@@ -1226,7 +1264,7 @@ pub mod pallet {
 
 					IbcEvent::OpenAckChannel(value) => {
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L241
-			
+
 						// let height = value.clone().height;
 						let port_id = value.clone().port_id;
 						let channel_id = value.clone().channel_id;
@@ -1542,24 +1580,30 @@ fn get_signer(message: ibc_proto::google::protobuf::Any) -> ibc::signer::Signer 
 			ibc::core::ics02_client::msgs::ClientMsg::UpgradeClient(val) => val.signer.clone(),
 		},
 		ibc::core::ics26_routing::msgs::Ics26Envelope::Ics3Msg(value) => match value {
-			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenInit(val) =>
-				val.signer.clone(),
-			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenTry(val) =>
-				val.signer.clone(),
-			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenAck(val) =>
-				val.signer.clone(),
-			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenConfirm(val) =>
-				val.signer.clone(),
+			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenInit(val) => {
+				val.signer.clone()
+			},
+			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenTry(val) => {
+				val.signer.clone()
+			},
+			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenAck(val) => {
+				val.signer.clone()
+			},
+			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenConfirm(val) => {
+				val.signer.clone()
+			},
 		},
 		ibc::core::ics26_routing::msgs::Ics26Envelope::Ics4ChannelMsg(value) => match value {
 			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelOpenInit(val) => val.signer.clone(),
 			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelOpenTry(val) => val.signer.clone(),
 			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelOpenAck(val) => val.signer.clone(),
-			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelOpenConfirm(val) =>
-				val.signer.clone(),
+			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelOpenConfirm(val) => {
+				val.signer.clone()
+			},
 			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelCloseInit(val) => val.signer.clone(),
-			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelCloseConfirm(val) =>
-				val.signer.clone(),
+			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelCloseConfirm(val) => {
+				val.signer.clone()
+			},
 		},
 		ibc::core::ics26_routing::msgs::Ics26Envelope::Ics4PacketMsg(value) => match value {
 			ibc::core::ics04_channel::msgs::PacketMsg::RecvPacket(val) => val.signer.clone(),
