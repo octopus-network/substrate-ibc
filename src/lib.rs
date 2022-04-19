@@ -1,5 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-// TODO to remove
+// todo need in future to remove
 #![allow(unreachable_code)]
 #![allow(unreachable_patterns)]
 #![allow(clippy::type_complexity)]
@@ -72,6 +72,7 @@ use ibc::{
 };
 use ibc::applications::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer;
 use ibc::core::ics24_host::identifier;
+use sp_runtime::DispatchError;
 
 pub use routing::ModuleCallbacks;
 use scale_info::{prelude::vec, TypeInfo};
@@ -139,6 +140,7 @@ pub mod pallet {
 			},
 			ics05_port::capabilities::Capability,
 			ics24_host::identifier::{ChannelId as IbcChannelId, PortId as IbcPortId},
+			ics26_routing::error::Error as Ics26Error,
 		},
 		events::IbcEvent,
 		signer::Signer,
@@ -497,7 +499,7 @@ pub mod pallet {
 						consensus_height.into(),
 					)
 				},
-				// TODO! Upgrade client events are not currently being used
+				// Upgrade client events are not currently being used
 				// UpgradeClient(
 				// 	height: Height,
 				// 	client_id: ClientId,
@@ -754,6 +756,30 @@ pub mod pallet {
 
 		/// client id not found
 		ClientIdNotFound,
+
+		/// Encode error
+		InvalidEncode,
+
+		/// Decode Error
+		InvalidDecode,
+
+		/// FromUtf8Error
+		InvalidFromUtf8,
+
+		/// ics26router error
+		Ics26Error,
+
+		/// invalid signer
+		InvalidSigner,
+
+		/// empty channel id
+		EmptyChannelId,
+
+		/// ics20 error
+		Ics20Error,
+
+		/// parse ibc packet error
+		InvalidPacket,
 	}
 
 	// // mock client state
@@ -803,19 +829,20 @@ pub mod pallet {
 		///         .await?;
 		/// ```
 		#[pallet::weight(0)]
-		pub fn deliver(origin: OriginFor<T>, message: Any, tmp: u8) -> DispatchResult {
+		pub fn deliver(origin: OriginFor<T>, message: Any, tmp: u8) -> DispatchResultWithPostInfo {
 			let _sender = ensure_signed(origin)?;
 			let mut ctx = routing::Context { _pd: PhantomData::<T>, tmp };
 			let message = ibc_proto::google::protobuf::Any {
-				type_url: String::from_utf8(message.type_url.clone()).unwrap(),
+				type_url: String::from_utf8(message.type_url.clone())
+					.map_err(|_| Error::<T>::InvalidFromUtf8)?,
 				value: message.value.clone(),
 			};
 
-			let result =
-				ibc::core::ics26_routing::handler::deliver(&mut ctx, message.clone()).unwrap();
+			let result = ibc::core::ics26_routing::handler::deliver(&mut ctx, message.clone())
+				.map_err(|_| Error::<T>::Ics26Error)?;
 
 			log::info!("result: {:?}", result);
-			Self::handle_result(&mut ctx, message.clone(), result.0);
+			let ret = Self::handle_result(&mut ctx, message.clone(), result.0)?;
 
 			// for event in result {
 			// 	log::info!("Event: {:?}", event);
@@ -824,7 +851,7 @@ pub mod pallet {
 			// 	Self::store_latest_height(event.clone());
 			// }
 
-			Ok(())
+			Ok(().into())
 		}
 
 		/// Update the MMR root stored in client_state
@@ -850,10 +877,12 @@ pub mod pallet {
 			let _who = ensure_signed(origin)?;
 
 			// check if the client id exist?
-			let client_id_str = String::from_utf8(client_id.clone()).unwrap();
+			let client_id_str =
+				String::from_utf8(client_id.clone()).map_err(|_| Error::<T>::InvalidFromUtf8)?;
 			log::trace!("update_client_state:  client id is {:?}", client_id_str);
 
-			let decode_received_mmr_root = help::MmrRoot::decode(&mut &mmr_root[..]).unwrap();
+			let decode_received_mmr_root =
+				help::MmrRoot::decode(&mut &mmr_root[..]).map_err(|_| Error::<T>::InvalidDecode)?;
 			log::trace!("update_client_state:  decode mmr root is {:?}", decode_received_mmr_root);
 
 			let mut client_state = ClientState::default();
@@ -865,7 +894,8 @@ pub mod pallet {
 			} else {
 				// get client state from chain storage
 				let data = <ClientStates<T>>::get(client_id.clone());
-				let any_client_state = AnyClientState::decode_vec(&*data).unwrap();
+				let any_client_state =
+					AnyClientState::decode_vec(&*data).map_err(|_| Error::<T>::InvalidDecode)?;
 				client_state = match any_client_state {
 					AnyClientState::Grandpa(value) => value,
 					_ => unimplemented!(),
@@ -938,19 +968,19 @@ pub mod pallet {
 
 					// save to chain
 					let any_client_state = AnyClientState::Grandpa(client_state.clone());
-					let data = any_client_state.encode_vec().unwrap();
+					let data =
+						any_client_state.encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
 					// store client states key-value
 					<ClientStates<T>>::insert(client_id.clone(), data);
 
 					// store client states keys
-					<ClientStatesKeys<T>>::try_mutate(|val| -> Result<(), &'static str> {
+					let _ = <ClientStatesKeys<T>>::try_mutate(|val| -> Result<(), &'static str> {
 						if let Some(_value) = val.iter().find(|&x| x == &client_id.clone()) {
 						} else {
 							val.push(client_id.clone());
 						}
 						Ok(())
-					})
-					.expect("store client_state keys error");
+					});
 
 					log::trace!("the updated client state is : {:?}", client_state);
 
@@ -971,18 +1001,18 @@ pub mod pallet {
 
 					log::trace!("in ibc-lib : [store_consensus_state] >> client_id: {:?}, height = {:?}, consensus_state = {:?}", client_id, height, any_consensus_state);
 
-					let height = height.encode_vec().unwrap();
-					let data = any_consensus_state.encode_vec().unwrap();
+					let height = height.encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
+					let data =
+						any_consensus_state.encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
 					if <ConsensusStates<T>>::contains_key(client_id.clone()) {
 						// if consensus_state is no empty use push insert an exist ConsensusStates
-						<ConsensusStates<T>>::try_mutate(
+						let _ = <ConsensusStates<T>>::try_mutate(
 							client_id,
 							|val| -> Result<(), &'static str> {
 								val.push((height, data));
 								Ok(())
 							},
-						)
-						.expect("store consensus state error");
+						);
 					} else {
 						// if consensus state is empty insert a new item.
 						<ConsensusStates<T>>::insert(client_id, vec![(height, data)]);
@@ -1103,15 +1133,18 @@ pub mod pallet {
 			ctx: &mut Ctx,
 			messages: ibc_proto::google::protobuf::Any,
 			result: Vec<IbcEvent>,
-		) where
+		) -> DispatchResult
+		where
 			Ctx: Ics20Context,
 		{
 			for event in result {
 				match event.clone() {
 					IbcEvent::SendPacket(value) => {
 						// refer to https://github.com/octopus-network/ibc-go/blob/f5962c3324ee7e69eeaa9918b65eb1b089da6095/modules/apps/transfer/keeper/msg_server.go#L16
-						//TODO: handle SendPacket
-						let _ = ics20_handler::handle_transfer::<Ctx, T>(ctx, value.clone().packet);
+
+						let ret =
+							ics20_handler::handle_transfer::<Ctx, T>(ctx, value.clone().packet)
+								.map_err(|_| Error::<T>::Ics20Error)?;
 
 						Self::deposit_event(event.clone().into());
 					},
@@ -1119,30 +1152,27 @@ pub mod pallet {
 					IbcEvent::ReceivePacket(value) => {
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L364
 
-						let relayer_signer = get_signer(messages.clone());
+						let relayer_signer = get_signer::<T>(messages.clone())
+							.map_err(|_| Error::<T>::InvalidSigner)?;
 
 						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule::<T>::new();
-						// ics20_modlue.on_receive_packet(ctx, relayer_signer, value.clone().packet);
-						
-						// TODO: unwrap
 						let ack = ibc::core::ics26_routing::ibc_module::IBCModule::on_recv_packet(
 							&ics20_modlue,
 							ctx,
 							value.clone().packet,
 							relayer_signer,
 						)
-						.unwrap();
+						.map_err(|_| Error::<T>::Ics20Error)?;
 
-						// TODO： handle write acknowledgement
 						let packet = value.packet;
-						// TODO: unwrap
+
 						let write_ack_event =
 							ibc::core::ics04_channel::handler::write_acknowledgement::process(
 								ctx,
 								packet.clone(),
 								ack.clone(),
 							)
-							.unwrap();
+							.map_err(|_| Error::<T>::Ics20Error)?;
 
 						// store write acknowledgement event
 						match write_ack_event.result {
@@ -1159,30 +1189,32 @@ pub mod pallet {
 							_ => unimplemented!(),
 						}
 
-						//TODO: emit write acknowledgement event
+						// Emit write acknowledgement event
 						Self::deposit_event(Event::<T>::WriteAcknowledgement(
 							Height::new(0, 0),
 							packet.into(),
 							ack,
 						));
 
-						//TODO: emit recv event
+						// Emit recv event
 						Self::deposit_event(event.clone().into());
 					},
 					IbcEvent::TimeoutPacket(value) => {
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L442
 
-						let relayer_signer = get_signer(messages.clone());
+						let relayer_signer = get_signer::<T>(messages.clone())
+							.map_err(|_| Error::<T>::InvalidSigner)?;
 
 						let ics20_module = ics20_ibc_module_impl::Ics20IBCModule::<T>::new();
-						// TODO: unwrap
+
 						let ret =
 							ibc::core::ics26_routing::ibc_module::IBCModule::on_timeout_packet(
 								&ics20_module,
 								ctx,
 								value.clone().packet,
 								relayer_signer,
-							);
+							)
+							.map_err(|_| Error::<T>::Ics20Error)?;
 
 						Self::deposit_event(event.clone().into());
 					},
@@ -1190,29 +1222,31 @@ pub mod pallet {
 					IbcEvent::AcknowledgePacket(value) => {
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L581
 
-						let relayer_signer = get_signer(messages.clone());
+						let relayer_signer = get_signer::<T>(messages.clone())
+							.map_err(|_| Error::<T>::InvalidSigner)?;
 
 						let ics20_module = ics20_ibc_module_impl::Ics20IBCModule::<T>::new();
-						// todo acknowledgement data
-						// TODO: unwrap
-						let ret = ibc::core::ics26_routing::ibc_module::IBCModule::on_acknowledgement_packet(&ics20_module, ctx, value.clone().packet, vec![], relayer_signer);
+
+						let ret = ibc::core::ics26_routing::ibc_module::IBCModule::on_acknowledgement_packet(&ics20_module, ctx, value.clone().packet, vec![], relayer_signer).map_err(|_| Error::<T>::Ics20Error)?;
 
 						Self::deposit_event(event.clone().into());
 					},
 
 					IbcEvent::OpenInitChannel(value) => {
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L163
-						let relayer_signer = get_signer(messages.clone());
+						let relayer_signer = get_signer::<T>(messages.clone())
+							.map_err(|_| Error::<T>::InvalidSigner)?;
 
 						let height = value.clone().height;
 						let port_id = value.clone().port_id;
-						let channel_id = value.clone().channel_id.unwrap();
+						let channel_id =
+							value.clone().channel_id.ok_or(Error::<T>::EmptyChannelId)?;
 						let connection_id = value.clone().connection_id;
 						let counterparty_port_id = value.clone().counterparty_port_id;
 						let counterparty_channel_id = value.clone().counterparty_channel_id;
 
 						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule::<T>::new();
-						// TODO: unwrap
+
 						let ret =
 							ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_init(
 								&ics20_modlue,
@@ -1227,7 +1261,8 @@ pub mod pallet {
 									channel_id: counterparty_channel_id,
 								},
 								Version::ics20(),
-							);
+							)
+							.map_err(|_| Error::<T>::Ics20Error)?;
 
 						Self::deposit_event(event.clone().into());
 					},
@@ -1237,27 +1272,30 @@ pub mod pallet {
 
 						let height = value.clone().height;
 						let port_id = value.clone().port_id;
-						let channel_id = value.clone().channel_id;
+						let channel_id =
+							value.clone().channel_id.ok_or(Error::<T>::EmptyChannelId)?;
 						let connection_id = value.clone().connection_id;
 						let counterparty_port_id = value.clone().counterparty_port_id;
 						let counterparty_channel_id = value.clone().counterparty_channel_id;
 
 						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule::<T>::new();
-						// TODO: unwrap
-						let ret = ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_try(
-							&ics20_modlue,
-							ctx,
-							Order::Unordered,
-							vec![connection_id],
-							port_id,
-							channel_id.unwrap(),
-							&Capability::default(), // todo
-							Counterparty {
-								port_id: counterparty_port_id,
-								channel_id: counterparty_channel_id,
-							},
-							Version::ics20(),
-						);
+
+						let ret =
+							ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_try(
+								&ics20_modlue,
+								ctx,
+								Order::Unordered,
+								vec![connection_id],
+								port_id,
+								channel_id,
+								&Capability::default(), // todo
+								Counterparty {
+									port_id: counterparty_port_id,
+									channel_id: counterparty_channel_id,
+								},
+								Version::ics20(),
+							)
+							.map_err(|_| Error::<T>::Ics20Error)?;
 
 						Self::deposit_event(event.clone().into());
 					},
@@ -1265,24 +1303,23 @@ pub mod pallet {
 					IbcEvent::OpenAckChannel(value) => {
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L241
 
-						// let height = value.clone().height;
 						let port_id = value.clone().port_id;
-						let channel_id = value.clone().channel_id;
-						// let connection_id = value.clone().connection_id;
-						// let counterparty_port_id = value.clone().counterparty_port_id;
-						// let counterparty_channel_id = value.clone().counterparty_channel_id;
+						let channel_id =
+							value.clone().channel_id.ok_or(Error::<T>::EmptyChannelId)?;
 
-						let relayer_signer = get_signer(messages.clone());
+						let relayer_signer = get_signer::<T>(messages.clone())
+							.map_err(|_| Error::<T>::InvalidSigner)?;
 
 						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule::<T>::new();
-						// TODO: unwrap
-						let ret = ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_ack(
-							&ics20_modlue,
-							ctx,
-							port_id,
-							channel_id.unwrap(),
-							Version::ics20(),
-						);
+						let ret =
+							ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_ack(
+								&ics20_modlue,
+								ctx,
+								port_id,
+								channel_id,
+								Version::ics20(),
+							)
+							.map_err(|_| Error::<T>::Ics20Error)?;
 
 						Self::deposit_event(event.clone().into());
 					},
@@ -1290,48 +1327,44 @@ pub mod pallet {
 					IbcEvent::OpenConfirmChannel(value) => {
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L277
 
-						// let height = value.clone().height;
 						let port_id = value.clone().port_id;
-						let channel_id = value.clone().channel_id;
-						// let connection_id = value.clone().connection_id;
-						// let counterparty_port_id = value.clone().counterparty_port_id;
-						// let counterparty_channel_id = value.clone().counterparty_channel_id;
+						let channel_id =
+							value.clone().channel_id.ok_or(Error::<T>::EmptyChannelId)?;
 
-						let relayer_signer = get_signer(messages.clone());
+						let relayer_signer = get_signer::<T>(messages.clone())
+							.map_err(|_| Error::<T>::InvalidSigner)?;
 
 						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule::<T>::new();
-						// TODO: unwrap
+
 						let ret =
 							ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_confirm(
 								&ics20_modlue,
 								ctx,
 								port_id,
-								channel_id.unwrap(),
-							);
+								channel_id,
+							)
+							.map_err(|_| Error::<T>::Ics20Error)?;
 
 						Self::deposit_event(event.clone().into());
 					},
 					IbcEvent::CloseInitChannel(value) => {
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L309
 
-						// let height = value.clone().height;
 						let port_id = value.clone().port_id;
 						let channel_id = value.clone().channel_id;
-						// let connection_id = value.clone().connection_id;
-						// let counterparty_port_id = value.clone().counterparty_port_id;
-						// let counterparty_channel_id = value.clone().counterparty_channel_id;
-
-						let relayer_signer = get_signer(messages.clone());
+						let relayer_signer = get_signer::<T>(messages.clone())
+							.map_err(|_| Error::<T>::InvalidSigner)?;
 
 						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule::<T>::new();
-						// TODO: unwrap
+
 						let ret =
 							ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_close_init(
 								&ics20_modlue,
 								ctx,
 								port_id,
 								channel_id,
-							);
+							)
+							.map_err(|_| Error::<T>::Ics20Error)?;
 
 						Self::deposit_event(event.clone().into());
 					},
@@ -1339,24 +1372,22 @@ pub mod pallet {
 					IbcEvent::CloseConfirmChannel(value) => {
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L336
 
-						// let height = value.clone().height;
 						let port_id = value.clone().port_id;
-						let channel_id = value.clone().channel_id;
-						// let connection_id = value.clone().connection_id;
-						// let counterparty_port_id = value.clone().counterparty_port_id;
-						// let counterparty_channel_id = value.clone().counterparty_channel_id;
+						let channel_id =
+							value.clone().channel_id.ok_or(Error::<T>::EmptyChannelId)?;
 
-						let relayer_signer = get_signer(messages.clone());
+						let relayer_signer = get_signer::<T>(messages.clone())
+							.map_err(|_| Error::<T>::InvalidSigner)?;
 
 						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule::<T>::new();
-						// TODO: unwrap
 						let ret =
 							ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_close_confirm(
 								&ics20_modlue,
 								ctx,
 								port_id,
-								channel_id.unwrap(),
-							);
+								channel_id,
+							)
+							.map_err(|_| Error::<T>::Ics20Error)?;
 
 						Self::deposit_event(event.clone().into());
 					},
@@ -1365,21 +1396,24 @@ pub mod pallet {
 					},
 				}
 			}
+			Ok(().into())
 		}
 
 		/// update the latest height of a client
-		fn store_latest_height(ibc_event: IbcEvent) {
+		fn store_latest_height(ibc_event: IbcEvent) -> DispatchResultWithPostInfo {
 			match ibc_event {
 				IbcEvent::Empty(_value) => {
 					log::warn!("ibc event: {}", "Empty");
 				},
 				IbcEvent::NewBlock(value) => {
-					let height = value.height().encode_vec().unwrap();
+					let height =
+						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
 					<LatestHeight<T>>::set(height);
 				},
 				IbcEvent::SendPacket(value) => {
 					// store height
-					let height = value.height().encode_vec().unwrap();
+					let height =
+						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
 					<LatestHeight<T>>::set(height);
 
 					// store send-packet
@@ -1394,7 +1428,11 @@ pub mod pallet {
 						timeout_timestamp: Timestamp::from(_value.packet.timeout_timestamp),
 						timeout_height: Height::from(_value.packet.timeout_height),
 					};
-					let packet = packet.to_ibc_packet().encode_vec().unwrap();
+					let packet = packet
+						.to_ibc_packet()
+						.map_err(|_| Error::<T>::InvalidPacket)?
+						.encode_vec()
+						.map_err(|_| Error::<T>::InvalidEncode)?;
 
 					let port_id = value.packet.source_port.as_bytes().to_vec();
 					let channel_id = value.packet.source_channel.as_bytes().to_vec();
@@ -1406,7 +1444,8 @@ pub mod pallet {
 				},
 				IbcEvent::WriteAcknowledgement(value) => {
 					// store height
-					let height = value.height().encode_vec().unwrap();
+					let height =
+						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
 					<LatestHeight<T>>::set(height);
 
 					// store ack
@@ -1419,81 +1458,104 @@ pub mod pallet {
 					// <WriteAckPacketEvent<T>>::insert((port_id, channel_id, sequence), write_ack);
 				},
 				IbcEvent::UpdateClient(value) => {
-					let height = value.height().encode_vec().unwrap();
+					let height =
+						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
 					<LatestHeight<T>>::set(height);
 				},
 				IbcEvent::ReceivePacket(value) => {
-					let height = value.height().encode_vec().unwrap();
+					let height =
+						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
 					<LatestHeight<T>>::set(height);
 				},
 				IbcEvent::CloseConfirmChannel(value) => {
-					let height = value.height().encode_vec().unwrap();
+					let height =
+						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
 					<LatestHeight<T>>::set(height);
 				},
 				IbcEvent::CreateClient(value) => {
-					let height = value.height().encode_vec().unwrap();
+					let height =
+						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
 					<LatestHeight<T>>::set(height);
 				},
 				IbcEvent::UpgradeClient(value) => {
-					let height = value.0.height.clone().encode_vec().unwrap();
+					let height = value
+						.0
+						.height
+						.clone()
+						.encode_vec()
+						.map_err(|_| Error::<T>::InvalidEncode)?;
 					<LatestHeight<T>>::set(height);
 				},
 				IbcEvent::ClientMisbehaviour(value) => {
-					let height = value.height().encode_vec().unwrap();
+					let height =
+						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
 					<LatestHeight<T>>::set(height);
 				},
 				IbcEvent::OpenInitConnection(value) => {
-					let height = value.height().encode_vec().unwrap();
+					let height =
+						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
 					<LatestHeight<T>>::set(height);
 				},
 				IbcEvent::OpenTryConnection(value) => {
-					let height = value.height().encode_vec().unwrap();
+					let height =
+						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
 					<LatestHeight<T>>::set(height);
 				},
 				IbcEvent::OpenAckConnection(value) => {
-					let height = value.height().encode_vec().unwrap();
+					let height =
+						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
 					<LatestHeight<T>>::set(height);
 				},
 				IbcEvent::OpenConfirmConnection(value) => {
-					let height = value.height().encode_vec().unwrap();
+					let height =
+						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
 					<LatestHeight<T>>::set(height);
 				},
 				IbcEvent::OpenInitChannel(value) => {
-					let height = value.height().encode_vec().unwrap();
+					let height =
+						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
 					<LatestHeight<T>>::set(height);
 				},
 				IbcEvent::OpenTryChannel(value) => {
-					let height = value.height().encode_vec().unwrap();
+					let height =
+						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
 					<LatestHeight<T>>::set(height);
 				},
 				IbcEvent::OpenAckChannel(value) => {
-					let height = value.height().encode_vec().unwrap();
+					let height =
+						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
 					<LatestHeight<T>>::set(height);
 				},
 				IbcEvent::OpenConfirmChannel(value) => {
-					let height = value.height().encode_vec().unwrap();
+					let height =
+						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
 					<LatestHeight<T>>::set(height);
 				},
 				IbcEvent::CloseInitChannel(value) => {
-					let height = value.height().encode_vec().unwrap();
+					let height =
+						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
 					<LatestHeight<T>>::set(height);
 				},
 				IbcEvent::AcknowledgePacket(value) => {
-					let height = value.height().encode_vec().unwrap();
+					let height =
+						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
 					<LatestHeight<T>>::set(height);
 				},
 				IbcEvent::TimeoutPacket(value) => {
-					let height = value.height().encode_vec().unwrap();
+					let height =
+						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
 					<LatestHeight<T>>::set(height);
 				},
 				IbcEvent::TimeoutOnClosePacket(value) => {
-					let height = value.height().encode_vec().unwrap();
+					let height =
+						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
 					<LatestHeight<T>>::set(height);
 				},
 				IbcEvent::ChainError(_value) => {
 					log::warn!("Ibc event: {}", "chainError");
 				},
 			}
+			Ok(().into())
 		}
 	}
 }
@@ -1519,7 +1581,7 @@ impl<T: Config> From<IBCFungibleTokenPacketData> for FungibleTokenPacketData<T> 
 	fn from(value: IBCFungibleTokenPacketData) -> Self {
 		Self {
 			denomination: value.denom.as_bytes().to_vec(),
-			amount: value.amount.parse::<u128>().unwrap(),
+			amount: value.amount.parse::<u128>().unwrap_or_default(),
 			sender: IbcId(value.sender.as_str().as_bytes().to_vec()).into_account(),
 			receiver: IbcId(value.receiver.as_str().as_bytes().to_vec()).into_account(),
 		}
@@ -1570,8 +1632,11 @@ impl TypeId for IbcId {
 	const TYPE_ID: [u8; 4] = *b"Ibcs";
 }
 
-fn get_signer(message: ibc_proto::google::protobuf::Any) -> ibc::signer::Signer {
-	let decode_message = ibc::core::ics26_routing::handler::decode(message).unwrap();
+fn get_signer<T: Config>(
+	message: ibc_proto::google::protobuf::Any,
+) -> Result<ibc::signer::Signer, DispatchError> {
+	let decode_message = ibc::core::ics26_routing::handler::decode(message)
+		.map_err(|_| Error::<T>::InvalidDecode)?;
 	let signer = match decode_message {
 		ibc::core::ics26_routing::msgs::Ics26Envelope::Ics2Msg(value) => match value {
 			ibc::core::ics02_client::msgs::ClientMsg::CreateClient(val) => val.signer.clone(),
@@ -1614,5 +1679,5 @@ fn get_signer(message: ibc_proto::google::protobuf::Any) -> ibc::signer::Signer 
 		ibc::core::ics26_routing::msgs::Ics26Envelope::Ics20Msg(value) => value.sender.clone(),
 	};
 
-	ibc::signer::Signer::new("ibc")
+	Ok(signer)
 }

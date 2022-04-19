@@ -31,16 +31,20 @@ use ibc_proto::ibc::core::channel::v1::{acknowledgement::Response, Acknowledgeme
 
 fn generate_escrow_account<T: Config>(
 	channel_id: ibc::core::ics24_host::identifier::ChannelId,
-) -> T::AccountId {
-	let channel_id_number =
-		channel_id.as_str().strip_prefix("channel-").unwrap().parse::<u64>().unwrap();
+) -> Result<T::AccountId, Ics20Error> {
+	let channel_id_number = channel_id
+		.as_str()
+		.strip_prefix("channel-")
+		.ok_or(Ics20Error::invalid_split())?
+		.parse::<u64>()
+		.map_err(|e| Ics20Error::invalid_parse())?;
 	let channel_id_number = format!("cha{:>05}", channel_id_number).as_bytes().to_vec();
 
 	let mut temp_value = [0u8; 8];
 	temp_value.copy_from_slice(&channel_id_number);
 	let escrow_account: T::AccountId = PalletId(temp_value).into_account();
 
-	escrow_account
+	Ok(escrow_account)
 }
 
 fn sender_chain_is_source(
@@ -117,25 +121,25 @@ where
 	Ctx: Ics20Context,
 {
 	let packet_data: IBCFungibleTokenPacketData =
-		serde_json::from_slice(packet.data.clone().as_slice()).map_err(Ics20Error::invalid_serde_ibc_fungible_token_packet_data)?;
+		serde_json::from_slice(packet.data.clone().as_slice())
+			.map_err(Ics20Error::invalid_serde_ibc_fungible_token_packet_data)?;
 	// the token denomination to be transferred
 	// get the token denomination
 	let token_denom = packet_data.clone().denom;
 
 	// get denom hash example "ibc/hash_number"
-	let denom_trace_hash = token_denom.split_once("/").unwrap().1.as_bytes();
+	let denom_trace_hash =
+		token_denom.split_once("/").ok_or(Ics20Error::invalid_split())?.1.as_bytes();
 
 	let full_denom_path;
 	if token_denom.starts_with("ibc/") {
-		// todo unwrap()
-		full_denom_path = ctx.get_denom_trace(denom_trace_hash).unwrap().get_full_denom_path().unwrap();
+		full_denom_path = ctx.get_denom_trace(denom_trace_hash)?.get_full_denom_path()?;
 	}
 
 	// get source_channel_id from packet
 	let source_channel = packet.source_channel.clone();
 	// get source_port_id  from packet
 	let source_port = packet.source_port.clone();
-
 
 	// convert IBC FungibleTokenPacketData to substrate FungibleTokenPacketData
 	let pallet_data: FungibleTokenPacketData<T> = packet_data.into();
@@ -145,7 +149,7 @@ where
 
 	if sender_chain_is_source(&source_port, &source_channel, &denomination) {
 		// determine escrow account
-		let escrow_account = generate_escrow_account::<T>(source_channel.clone());
+		let escrow_account = generate_escrow_account::<T>(source_channel.clone())?;
 		<EscrowAddresses<T>>::insert(
 			PortId::from(source_port),
 			ChannelId::from(source_channel),
@@ -157,25 +161,26 @@ where
 
 		// TODO
 		// how to deail with denomination
-		// TODO: unwrap()
-		let amount = amount.checked_into().unwrap();
-		// TODO: unwrap()
-		let ret = T::Currency::transfer(&sender, &escrow_account, amount, AllowDeath).unwrap();
+
+		let amount = amount.checked_into().ok_or(Ics20Error::invalid_convert_number())?;
+
+		let ret = T::Currency::transfer(&sender, &escrow_account, amount, AllowDeath)
+			.map_err(|_| Ics20Error::invalid_transfer())?;
 	} else {
 		// todo
 		// receiver is source chain, burn vouchers
 		// bank.BurnCoins(sender, denomination, amount)
 		// todo how to deail with denomination <> asset_id
 		// todo Assetid is default
-		// TODO : unwrap()
-		let amount = amount.checked_into().unwrap(); 
-		// TODO: unwrap()
+
+		let amount = amount.checked_into().ok_or(Ics20Error::invalid_convert_number())?;
+
 		let ret = <T::Assets as fungibles::Mutate<T::AccountId>>::burn_from(
 			T::AssetId::default(),
 			&sender,
 			amount,
 		)
-		.unwrap(); 
+		.map_err(|_| Ics20Error::invalid_burn())?;
 	}
 
 	Ok(())
@@ -231,11 +236,11 @@ where
 		let unprefixed_denom = &data.denom[0..voucher_prefix.len()];
 
 		let mut denom = unprefixed_denom.to_string();
-		// TODO: unwrap()
-		let denom_trace = parse_denom_trace(&denom).unwrap();
-		// TODO: unwrap()
+
+		let denom_trace = parse_denom_trace(&denom)?;
+
 		if denom_trace.path != "" {
-			denom = denom_trace.ibc_denom().unwrap();
+			denom = denom_trace.ibc_denom()?;
 		}
 
 		// TODO
@@ -251,16 +256,16 @@ where
 		// counterparty module or a bug: please open an issue on counterparty module") }
 
 		let pallet_data: FungibleTokenPacketData<T> = data.into();
-		// TODO: create escrow account by source_prot, and source channel
-		let escrow_account = generate_escrow_account::<T>(packet.source_channel.clone());
+		// create escrow account by source_prot, and source channel
+		let escrow_account = generate_escrow_account::<T>(packet.source_channel.clone())?;
 		<EscrowAddresses<T>>::insert(
 			PortId::from(packet.source_port),
 			ChannelId::from(packet.source_channel),
 			escrow_account.clone(),
 		);
 
-		// TODO: unwrap()
-		let amount = pallet_data.amount.checked_into().unwrap();
+		let amount =
+			pallet_data.amount.checked_into().ok_or(Ics20Error::invalid_convert_number())?;
 		let result =
 			T::Currency::transfer(&escrow_account, &pallet_data.receiver, amount, AllowDeath);
 		match result {
@@ -275,16 +280,14 @@ where
 		let denomination = data.clone().denom;
 		let prefixed_denomination = format!("{}{}", source_prefix, denomination);
 
-		let denom_trace = parse_denom_trace(&prefixed_denomination).unwrap();
+		let denom_trace = parse_denom_trace(&prefixed_denomination)?;
 
-		// TODO: unwrap()
-		let trace_hash = denom_trace.hash().unwrap();
+		let trace_hash = denom_trace.hash()?;
 		if !ctx.has_denom_trace(&trace_hash) {
 			let _ = ctx.set_denom_trace(&denom_trace);
 		}
 
-		// TODO: unwrap()
-		let voucher_denom = denom_trace.ibc_denom().unwrap();
+		let voucher_denom = denom_trace.ibc_denom()?;
 
 		// TODO
 		// voucher := sdk.NewCoin(voucherDenom, transferAmount)
@@ -303,10 +306,10 @@ where
 
 		let pallet_data: FungibleTokenPacketData<T> = data.into();
 
-		// TODO: unwrap()
-		let amount = pallet_data.amount.checked_into().unwrap();
+		let amount =
+			pallet_data.amount.checked_into().ok_or(Ics20Error::invalid_convert_number())?;
 		let result = <T::Assets as fungibles::Mutate<T::AccountId>>::mint_into(
-			T::AssetId::default(),
+			T::AssetId::default(), // TODO
 			&pallet_data.receiver,
 			amount,
 		);
@@ -377,8 +380,7 @@ fn refund_packet_token<Ctx, T: Config>(
 where
 	Ctx: Ics20Context,
 {
-	// TODO: unwrap()
-	let trace = parse_denom_trace(&data.denom).unwrap();
+	let trace = parse_denom_trace(&data.denom)?;
 
 	// // parse the transfer amount
 	// transferAmount, ok := sdk.NewIntFromString(data.Amount)
@@ -398,26 +400,28 @@ where
 	let pallet_data: FungibleTokenPacketData<T> = data.clone().into();
 
 	if sender_chain_is_source(&packet.source_port, &packet.source_channel, &data.denom) {
-		let escrow_account = generate_escrow_account::<T>(packet.source_channel.clone());
+		let escrow_account = generate_escrow_account::<T>(packet.source_channel.clone())?;
 		<EscrowAddresses<T>>::insert(
 			PortId::from(packet.source_port),
 			ChannelId::from(packet.source_channel),
 			escrow_account.clone(),
 		);
-		// TODO: unwrap()
-		let amount = pallet_data.amount.checked_into().unwrap();
-		// TODO: unwrap()
-		T::Currency::transfer(&escrow_account, &pallet_data.sender, amount, AllowDeath).unwrap();
+
+		let amount =
+			pallet_data.amount.checked_into().ok_or(Ics20Error::invalid_convert_number())?;
+
+		T::Currency::transfer(&escrow_account, &pallet_data.sender, amount, AllowDeath)
+			.map_err(|_| Ics20Error::invalid_transfer())?;
 	} else {
-		// TODO: unwrap()
-		let amount = pallet_data.amount.checked_into().unwrap();
-		// TODO: unwrap()
+		let amount =
+			pallet_data.amount.checked_into().ok_or(Ics20Error::invalid_convert_number())?;
+
 		<T::Assets as fungibles::Mutate<T::AccountId>>::mint_into(
-			T::AssetId::default(),
+			T::AssetId::default(), // TODO
 			&pallet_data.receiver,
 			amount,
 		)
-		.unwrap();
+		.map_err(|_| Ics20Error::invalid_mint())?;
 	}
 
 	Ok(())
@@ -435,11 +439,9 @@ where
 
 	let hex_hash = denom_split[1];
 
-	// TODO: unwrap()
-	let hash = denom_trace::parse_hex_hash(hex_hash).unwrap();
+	let hash = denom_trace::parse_hex_hash(hex_hash)?;
 
-	// TODO: unwrap()
-	let trace = ctx.get_denom_trace(&hash).unwrap();
+	let trace = ctx.get_denom_trace(&hash)?;
 
 	trace.get_full_denom_path()
 }

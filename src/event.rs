@@ -26,6 +26,21 @@ pub mod primitive {
 
 	use sp_runtime::RuntimeDebug;
 
+	use flex_error::{define_error, DisplayOnly, TraceError};
+	use tendermint_proto::Error as TendermintError;
+
+	define_error! {
+		#[derive(Debug, PartialEq, Eq)]
+		Error {
+			InvalidFromUtf8
+				| _ | { "invalid from utf8 error" },
+			InvalidDecode
+				| _ | { "invalid decode error" },
+			Identifier
+				| _ | { "invalid identifier "},
+		}
+	}
+
 	#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 	pub struct PortId(pub Vec<u8>);
 
@@ -37,9 +52,9 @@ pub mod primitive {
 	}
 
 	impl PortId {
-		pub fn to_ibc_port_id(self) -> IbcPortId {
-			let value = String::from_utf8(self.0).unwrap();
-			IbcPortId(value)
+		pub fn to_ibc_port_id(self) -> Result<IbcPortId, Error> {
+			let value = String::from_utf8(self.0).map_err(|_| Error::invalid_from_utf8())?;
+			Ok(IbcPortId(value))
 		}
 	}
 
@@ -54,9 +69,9 @@ pub mod primitive {
 	}
 
 	impl ChannelId {
-		pub fn to_ibc_channel_id(self) -> IbcChannelId {
-			let value = String::from_utf8(self.0).unwrap();
-			IbcChannelId(value)
+		pub fn to_ibc_channel_id(self) -> Result<IbcChannelId, Error> {
+			let value = String::from_utf8(self.0).map_err(|_| Error::invalid_from_utf8())?;
+			Ok(IbcChannelId(value))
 		}
 	}
 
@@ -125,9 +140,9 @@ pub mod primitive {
 	}
 
 	impl ClientId {
-		pub fn to_ibc_client_id(self) -> IbcClientId {
-			let value = String::from_utf8(self.0).unwrap();
-			IbcClientId(value)
+		pub fn to_ibc_client_id(self) -> Result<IbcClientId, Error> {
+			let value = String::from_utf8(self.0).map_err(|_| Error::invalid_from_utf8())?;
+			Ok(IbcClientId(value))
 		}
 	}
 
@@ -142,9 +157,9 @@ pub mod primitive {
 	}
 
 	impl ConnectionId {
-		pub fn to_ibc_connection_id(self) -> IbcConnectionId {
-			let value = String::from_utf8(self.0).unwrap();
-			IbcConnectionId(value)
+		pub fn to_ibc_connection_id(self) -> Result<IbcConnectionId, Error> {
+			let value = String::from_utf8(self.0).map_err(|_| Error::invalid_from_utf8())?;
+			Ok(IbcConnectionId(value))
 		}
 	}
 
@@ -161,9 +176,9 @@ pub mod primitive {
 	}
 
 	impl Timestamp {
-		pub fn to_ibc_timestamp(self) -> IbcTimestamp {
-			let value = String::from_utf8(self.time).unwrap();
-			IbcTimestamp::from_str(&value).unwrap()
+		pub fn to_ibc_timestamp(self) -> Result<IbcTimestamp, Error> {
+			let value = String::from_utf8(self.time).map_err(|_| Error::invalid_from_utf8())?;
+			Ok(IbcTimestamp::from_str(&value).map_err(|_| Error::identifier())?)
 		}
 	}
 
@@ -210,17 +225,17 @@ pub mod primitive {
 	}
 
 	impl Packet {
-		pub fn to_ibc_packet(self) -> IbcPacket {
-			IbcPacket {
+		pub fn to_ibc_packet(self) -> Result<IbcPacket, Error> {
+			Ok(IbcPacket {
 				sequence: self.sequence.to_ibc_sequence(),
-				source_port: self.source_port.to_ibc_port_id(),
-				source_channel: self.source_channel.to_ibc_channel_id(),
-				destination_port: self.destination_port.to_ibc_port_id(),
-				destination_channel: self.destination_channel.to_ibc_channel_id(),
+				source_port: self.source_port.to_ibc_port_id()?,
+				source_channel: self.source_channel.to_ibc_channel_id()?,
+				destination_port: self.destination_port.to_ibc_port_id()?,
+				destination_channel: self.destination_channel.to_ibc_channel_id()?,
 				data: self.data,
 				timeout_height: self.timeout_height.to_ibc_height(),
-				timeout_timestamp: self.timeout_timestamp.to_ibc_timestamp(),
-			}
+				timeout_timestamp: self.timeout_timestamp.to_ibc_timestamp()?,
+			})
 		}
 	}
 
@@ -252,22 +267,23 @@ pub mod primitive {
 	}
 
 	impl MmrRoot {
-		pub fn to_ibc_mmr_root(self) -> IbcMmrRoot {
+		pub fn to_ibc_mmr_root(self) -> Result<IbcMmrRoot, Error> {
 			let decode_validator_proofs: Vec<ValidatorMerkleProof> = self
 				.validator_merkle_proofs
 				.into_iter()
 				.map(|validator_proof| {
-					ValidatorMerkleProof::decode(&mut &validator_proof[..]).unwrap()
+					ValidatorMerkleProof::decode(&mut &validator_proof[..]).unwrap() // TODO
 				})
 				.collect();
-			IbcMmrRoot {
-				block_header: BlockHeader::decode(&mut &self.block_header[..]).unwrap(),
+			Ok(IbcMmrRoot {
+				block_header: BlockHeader::decode(&mut &self.block_header[..])
+					.map_err(|_| Error::invalid_decode())?,
 				signed_commitment: SignedCommitment::decode(&mut &self.signed_commitment[..])
-					.unwrap(),
+					.map_err(|_| Error::invalid_decode())?,
 				validator_merkle_proofs: decode_validator_proofs,
 				mmr_leaf: self.mmr_leaf,
 				mmr_leaf_proof: self.mmr_leaf_proof,
-			}
+			})
 		}
 	}
 
@@ -286,7 +302,6 @@ pub mod primitive {
 		fn from(val: IbcClientState) -> Self {
 			Self {
 				chain_id: val.chain_id.as_str().as_bytes().to_vec(),
-				// chain_id: val.chain_id,
 				block_number: val.block_number,
 				frozen_height: val.frozen_height.map(|val| val.into()),
 				block_header: BlockHeader::encode(&val.block_header),
@@ -297,17 +312,20 @@ pub mod primitive {
 	}
 
 	impl ClientState {
-		pub fn to_ibc_client_state(self) -> IbcClientState {
-			let chain_id_str = String::from_utf8(self.chain_id).unwrap();
-			IbcClientState {
-				chain_id: IbcChainId::from_str(&chain_id_str).unwrap(),
-				// chain_id: self.chain_id,
+		pub fn to_ibc_client_state(self) -> Result<IbcClientState, Error> {
+			let chain_id_str =
+				String::from_utf8(self.chain_id).map_err(|e| Error::invalid_from_utf8())?;
+			Ok(IbcClientState {
+				chain_id: IbcChainId::from_str(&chain_id_str).map_err(|_| Error::identifier())?,
 				block_number: self.block_number,
 				frozen_height: self.frozen_height.map(|value| value.to_ibc_height()),
-				block_header: BlockHeader::decode(&mut &self.block_header[..]).unwrap(),
-				latest_commitment: Commitment::decode(&mut &self.latest_commitment[..]).unwrap(),
-				validator_set: ValidatorSet::decode(&mut &self.validator_set[..]).unwrap(),
-			}
+				block_header: BlockHeader::decode(&mut &self.block_header[..])
+					.map_err(|_| Error::invalid_decode())?,
+				latest_commitment: Commitment::decode(&mut &self.latest_commitment[..])
+					.map_err(|_| Error::invalid_decode())?,
+				validator_set: ValidatorSet::decode(&mut &self.validator_set[..])
+					.map_err(|_| Error::invalid_decode())?,
+			})
 		}
 	}
 }

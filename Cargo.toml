@@ -33,6 +33,7 @@ prost-types = { version = "0.9.0", default-features = false }
 prost = { version = "0.9.0", default-features = false }
 serde_json = { version = "1.0", default-features = false }
 serde = { version = "1.0", default-features = false }
+flex-error = { version = "0.4.4", default-features = false }
 
 # ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/ics20", default-features = false }
 # ibc-proto = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/ics20", default-features = false }
@@ -73,7 +74,8 @@ std = [
 	'ibc-proto/std',
 	'beefy-light-client/std',
 	'serde_json/std',
-	'serde/std',
+	'serde/std',	
+	'flex-error/std',
 ]
 runtime-benchmarks = ["frame-benchmarking"]
 try-runtime = ["frame-support/try-runtime"]

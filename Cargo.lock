@@ -1499,6 +1499,7 @@ version = "3.0.0-pre.0"
 dependencies = [
  "beefy-light-client",
  "chrono",
+ "flex-error",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
