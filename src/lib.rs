@@ -793,6 +793,15 @@ pub mod pallet {
 
 		/// invalid signed_commitment
 		InvalidSignedCommitment,
+
+		/// invalid identifier
+		InvalidIdentifier,
+
+		/// invalid timestamp
+		InvalidTimestamp,
+
+		/// empty latest_commitment
+		EmptyLatestCommitment,
 	}
 
 	// // mock client state
@@ -968,7 +977,7 @@ pub mod pallet {
 					log::trace!("update the beefy light client sucesse! and the beefy light client state is : {:?} \n",light_client);
 
 					// update client_client block number and latest commitment
-					let latest_commitment = light_client.latest_commitment.unwrap();
+					let latest_commitment = light_client.latest_commitment.ok_or(Error::<T>::EmptyLatestCommitment)?;
 					client_state.block_number = latest_commitment.block_number;
 					client_state.latest_commitment = help::Commitment::from(latest_commitment);
 
@@ -1080,24 +1089,23 @@ pub mod pallet {
 		) -> DispatchResult {
 		
 			let _source_port =
-				identifier::PortId::from_str(&String::from_utf8(source_port).unwrap()).unwrap();
+				identifier::PortId::from_str(&String::from_utf8(source_port).map_err(|_| Error::<T>::InvalidFromUtf8)?).map_err(|_| Error::<T>::InvalidIdentifier)?;
 			let _source_channel =
-				identifier::ChannelId::from_str(&String::from_utf8(source_channel).unwrap())
-					.unwrap();
+				identifier::ChannelId::from_str(&String::from_utf8(source_channel).map_err(|_| Error::<T>::InvalidFromUtf8)?).map_err(|_| Error::<T>::InvalidIdentifier)?;
 
 			let _token = Some(ibc_proto::cosmos::base::v1beta1::Coin {
-				denom: String::from_utf8(token).unwrap(),
+				denom: String::from_utf8(token).map_err(|_| Error::<T>::InvalidFromUtf8)?,
 				amount: amount.to_string(),
 			});
 
 			let _sender = ensure_signed(origin)?;
 			let _sender = Signer::new(format!("{:?}", _sender.clone()));
-			let _receiver = Signer::new(String::from_utf8(receiver).unwrap());
+			let _receiver = Signer::new(String::from_utf8(receiver).map_err(|_| Error::<T>::InvalidFromUtf8)?);
 
 			let _timeout_height =
 				height::Height { revision_number: 0, revision_height: timeout_height };
 			let _timeout_timestamp =
-				timestamp::Timestamp::from_nanoseconds(timeout_timestamp).unwrap();
+				timestamp::Timestamp::from_nanoseconds(timeout_timestamp).map_err(|_| Error::<T>::InvalidTimestamp)?;
 
 			let msg = MsgTransfer {
 				source_port: _source_port,
@@ -1112,8 +1120,7 @@ pub mod pallet {
 			// send to router
 			let mut ctx = routing::Context { _pd: PhantomData::<T>, tmp: 0 };
 			let result =
-				ibc::core::ics26_routing::handler::deliver(&mut ctx, msg.clone().to_any()).unwrap();
-			// let result = ibc::core::ics26_routing::handler::dispatch(&mut ctx, Ics26Envelope::Ics20Msg(msg.clone())).unwrap();
+				ibc::core::ics26_routing::handler::deliver(&mut ctx, msg.clone().to_any()).map_err(|_| Error::<T>::Ics20Error)?;
 			// handle the result
 			log::info!("result: {:?}", result);
 			// let events = result.events
@@ -1443,15 +1450,6 @@ pub mod pallet {
 					let height =
 						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
 					<LatestHeight<T>>::set(height);
-
-					// store ack
-					// let port_id = value.packet.source_port.as_bytes().to_vec();
-					// let channel_id = value.packet.source_channel.as_bytes().to_vec();
-					// let sequence = u64::from(value.packet.sequence);
-					// let write_ack = value.encode_vec().unwrap();
-					// let _write_ack = WriteAcknowledgement::decode(&*write_ack.clone()).unwrap();
-					// // store.Set((portID, channelID, sequence), WriteAckEvent)
-					// <WriteAckPacketEvent<T>>::insert((port_id, channel_id, sequence), write_ack);
 				},
 				IbcEvent::UpdateClient(value) => {
 					let height =
