@@ -55,11 +55,20 @@ extern crate alloc;
 
 pub use pallet::*;
 
+use crate::alloc::string::ToString;
 use alloc::{format, string::String};
+use core::str::FromStr;
+
 use beefy_light_client::commitment;
 use codec::{Codec, Decode, Encode};
 use core::marker::PhantomData;
 use frame_system::ensure_signed;
+use ibc::applications::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer;
+use ibc::core::ics02_client::height;
+use ibc::core::ics24_host::identifier;
+use ibc::timestamp;
+use ibc::tx_msg::Msg;
+
 use ibc::{
 	clients::ics10_grandpa::{
 		client_state::ClientState,
@@ -70,6 +79,9 @@ use ibc::{
 		ics02_client::client_state::AnyClientState, ics24_host::identifier::ChainId as ICS24ChainId,
 	},
 };
+
+use ibc::core::ics26_routing::msgs::Ics26Envelope;
+
 use sp_runtime::DispatchError;
 
 pub use routing::ModuleCallbacks;
@@ -735,8 +747,9 @@ pub mod pallet {
 					Event::TimeoutOnClosePacket(height.into(), packet.into())
 				},
 				ibc::events::IbcEvent::Empty(value) => Event::Empty(value.as_bytes().to_vec()),
-				ibc::events::IbcEvent::ChainError(value) =>
-					Event::ChainError(value.as_bytes().to_vec()),
+				ibc::events::IbcEvent::ChainError(value) => {
+					Event::ChainError(value.as_bytes().to_vec())
+				},
 				_ => unimplemented!(),
 			}
 		}
@@ -890,7 +903,7 @@ pub mod pallet {
 			if !<ClientStates<T>>::contains_key(client_id.clone()) {
 				log::error!("in update_client_state: {:?} client_state not found !", client_id_str);
 
-				return Err(Error::<T>::ClientIdNotFound.into())
+				return Err(Error::<T>::ClientIdNotFound.into());
 			} else {
 				// get client state from chain storage
 				let data = <ClientStates<T>>::get(client_id.clone());
@@ -1032,7 +1045,7 @@ pub mod pallet {
 				Err(e) => {
 					log::error!("update the beefy light client failure! : {:?}", e);
 
-					return Err(Error::<T>::UpdateBeefyLightClientFailure.into())
+					return Err(Error::<T>::UpdateBeefyLightClientFailure.into());
 				},
 			}
 
@@ -1063,33 +1076,48 @@ pub mod pallet {
 			amount: u32,
 			receiver: Vec<u8>,
 			timeout_height: u64,
-			timeout_timestamp: Vec<u8>,
+			timeout_timestamp: u64,
 		) -> DispatchResult {
-			// check and covert the input data to the correct format
+		
+			let _source_port =
+				identifier::PortId::from_str(&String::from_utf8(source_port).unwrap()).unwrap();
+			let _source_channel =
+				identifier::ChannelId::from_str(&String::from_utf8(source_channel).unwrap())
+					.unwrap();
+
+			let _token = Some(ibc_proto::cosmos::base::v1beta1::Coin {
+				denom: String::from_utf8(token).unwrap(),
+				amount: amount.to_string(),
+			});
+
 			let _sender = ensure_signed(origin)?;
-			// let msg = MsgTransfer {
-			// source_port: source_port.clone(),
-			// source_channel: source_channel.clone(),
-			// token: Some(ibc_proto::cosmos::base::v1beta1::Coin {
-			// 	token: "uatom".to_string(),
-			// 	amount: amount.to_string(),
-			// }),
-			// send: _sender.clone(),
-			// receiver: receiver.clone(),
-			// timeout_height: Height {
-			// 	revision_number: 0,
-			// 	revision_height: timeout_height,
-			// },
-			// timeout_timestamp: Timestamp {
-			// 	unix: timeout_timestamp.clone(),
-			// 	nanos: 0,
-			// },
+			let _sender = Signer::new(format!("{:?}", _sender.clone()));
+			let _receiver = Signer::new(String::from_utf8(receiver).unwrap());
+
+			let _timeout_height =
+				height::Height { revision_number: 0, revision_height: timeout_height };
+			let _timeout_timestamp =
+				timestamp::Timestamp::from_nanoseconds(timeout_timestamp).unwrap();
+
+			let msg = MsgTransfer {
+				source_port: _source_port,
+				source_channel: _source_channel,
+				token: _token,
+				sender: _sender,
+				receiver: _receiver,
+				timeout_height: _timeout_height,
+				timeout_timestamp: _timeout_timestamp,
+			};
 
 			// send to router
-			//let mut ctx = routing::Context { _pd: PhantomData::<T>, tmp };
-			// let result = ibc::ics26_routing::handler::deliver(&mut ctx, msg).unwrap();
-			//handle the result
-			// handle_result(result);
+			let mut ctx = routing::Context { _pd: PhantomData::<T>, tmp: 0 };
+			let result =
+				ibc::core::ics26_routing::handler::deliver(&mut ctx, msg.clone().to_any()).unwrap();
+			// let result = ibc::core::ics26_routing::handler::dispatch(&mut ctx, Ics26Envelope::Ics20Msg(msg.clone())).unwrap();
+			// handle the result
+			log::info!("result: {:?}", result);
+			// let events = result.events
+			Self::handle_result(&mut ctx, msg.to_any(), result.0)?;
 
 			Ok(())
 		}
@@ -1613,24 +1641,30 @@ fn get_signer<T: Config>(
 			ibc::core::ics02_client::msgs::ClientMsg::UpgradeClient(val) => val.signer.clone(),
 		},
 		ibc::core::ics26_routing::msgs::Ics26Envelope::Ics3Msg(value) => match value {
-			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenInit(val) =>
-				val.signer.clone(),
-			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenTry(val) =>
-				val.signer.clone(),
-			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenAck(val) =>
-				val.signer.clone(),
-			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenConfirm(val) =>
-				val.signer.clone(),
+			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenInit(val) => {
+				val.signer.clone()
+			},
+			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenTry(val) => {
+				val.signer.clone()
+			},
+			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenAck(val) => {
+				val.signer.clone()
+			},
+			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenConfirm(val) => {
+				val.signer.clone()
+			},
 		},
 		ibc::core::ics26_routing::msgs::Ics26Envelope::Ics4ChannelMsg(value) => match value {
 			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelOpenInit(val) => val.signer.clone(),
 			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelOpenTry(val) => val.signer.clone(),
 			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelOpenAck(val) => val.signer.clone(),
-			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelOpenConfirm(val) =>
-				val.signer.clone(),
+			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelOpenConfirm(val) => {
+				val.signer.clone()
+			},
 			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelCloseInit(val) => val.signer.clone(),
-			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelCloseConfirm(val) =>
-				val.signer.clone(),
+			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelCloseConfirm(val) => {
+				val.signer.clone()
+			},
 		},
 		ibc::core::ics26_routing::msgs::Ics26Envelope::Ics4PacketMsg(value) => match value {
 			ibc::core::ics04_channel::msgs::PacketMsg::RecvPacket(val) => val.signer.clone(),
