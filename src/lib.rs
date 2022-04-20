@@ -777,6 +777,9 @@ pub mod pallet {
 
 		/// parse ibc packet error
 		InvalidPacket,
+
+		/// invalid signed_commitment
+		InvalidSignedCommitment,
 	}
 
 	// // mock client state
@@ -905,7 +908,7 @@ pub mod pallet {
 			}
 
 			let signed_commitment =
-				commitment::SignedCommitment::from(decode_received_mmr_root.signed_commitment);
+				commitment::SignedCommitment::try_from(decode_received_mmr_root.signed_commitment).map_err(|_| Error::<T>::InvalidSignedCommitment)?;
 			let rev_block_number = signed_commitment.commitment.block_number;
 			if rev_block_number <= client_state.latest_commitment.block_number {
 				log::trace!("receive mmr root block number({}) less than client_state.latest_commitment.block_number({})",

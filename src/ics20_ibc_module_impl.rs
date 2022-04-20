@@ -181,7 +181,7 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 
 		// only attempt the application logic if the packet data
 		// was successfully decoded
-		if acknowledgement.success() {
+		if acknowledgement.success().map_err(|e| Ics20Error::ics04_channel(e))? {
 			// handle recv packet
 			let result = ics20_handler::handle_recv_packet::<Ctx, T>(ctx, packet, data);
 			if let Err(err) = result {
