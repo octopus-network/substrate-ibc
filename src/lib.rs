@@ -55,11 +55,20 @@ extern crate alloc;
 
 pub use pallet::*;
 
+use crate::alloc::string::ToString;
 use alloc::{format, string::String};
+use core::str::FromStr;
+
 use beefy_light_client::commitment;
 use codec::{Codec, Decode, Encode};
 use core::marker::PhantomData;
 use frame_system::ensure_signed;
+use ibc::applications::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer;
+use ibc::core::ics02_client::height;
+use ibc::core::ics24_host::identifier;
+use ibc::timestamp;
+use ibc::tx_msg::Msg;
+
 use ibc::{
 	clients::ics10_grandpa::{
 		client_state::ClientState,
@@ -70,8 +79,9 @@ use ibc::{
 		ics02_client::client_state::AnyClientState, ics24_host::identifier::ChainId as ICS24ChainId,
 	},
 };
-use ibc::applications::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer;
-use ibc::core::ics24_host::identifier;
+
+use ibc::core::ics26_routing::msgs::Ics26Envelope;
+
 use sp_runtime::DispatchError;
 
 pub use routing::ModuleCallbacks;
@@ -1063,65 +1073,48 @@ pub mod pallet {
 			amount: u32,
 			receiver: Vec<u8>,
 			timeout_height: u64,
-			timeout_timestamp: Vec<u8>,
+			timeout_timestamp: u64,
 		) -> DispatchResult {
-			//TODO: check and covert the input data to the correct format
-			// pub struct MsgTransfer {
-			// 	/// the port on which the packet will be sent
-			// 	pub source_port: PortId,
-			// 	/// the channel by which the packet will be sent
-			// 	pub source_channel: ChannelId,
-			// 	/// the tokens to be transferred
-			// 	pub token: Option<ibc_proto::cosmos::base::v1beta1::Coin>,
-			// 	/// the sender address
-			// 	pub sender: Signer,
-			// 	/// the recipient address on the destination chain
-			// 	pub receiver: Signer,
-			// 	/// Timeout height relative to the current block height.
-			// 	/// The timeout is disabled when set to 0.
-			// 	pub timeout_height: Height,
-			// 	/// Timeout timestamp relative to the current block timestamp.
-			// 	/// The timeout is disabled when set to 0.
-			// 	pub timeout_timestamp: Timestamp,
-			// }
+		
+			let _source_port =
+				identifier::PortId::from_str(&String::from_utf8(source_port).unwrap()).unwrap();
+			let _source_channel =
+				identifier::ChannelId::from_str(&String::from_utf8(source_channel).unwrap())
+					.unwrap();
 
-			let _source_port = identifier::PortId::from_str(String::from_utf8(source_port).unwrap());
-			let _source_port = identifier::ChannelId::from_str(String::from_utf8(source_channel).unwrap());
-			
 			let _token = Some(ibc_proto::cosmos::base::v1beta1::Coin {
 				denom: String::from_utf8(token).unwrap(),
 				amount: amount.to_string(),
 			});
 
 			let _sender = ensure_signed(origin)?;
-			let _sender = Signer::new(format!("{}", _sender.clone()));
+			let _sender = Signer::new(format!("{:?}", _sender.clone()));
 			let _receiver = Signer::new(String::from_utf8(receiver).unwrap());
 
-			let _timeout_height = Height { revision_number: 0, revision_height: timeout_height };
-			let _timeout_timestamp = Timestamp::from_utf8(timeout_timestamp).unwrap();
+			let _timeout_height =
+				height::Height { revision_number: 0, revision_height: timeout_height };
+			let _timeout_timestamp =
+				timestamp::Timestamp::from_nanoseconds(timeout_timestamp).unwrap();
 
 			let msg = MsgTransfer {
 				source_port: _source_port,
-				source_channel: _source_port,
+				source_channel: _source_channel,
 				token: _token,
 				sender: _sender,
 				receiver: _receiver,
 				timeout_height: _timeout_height,
 				timeout_timestamp: _timeout_timestamp,
-			}
-			.into();
+			};
 
 			// send to router
-			let mut ctx = routing::Context { _pd: PhantomData::<T>, 0 };
-			// let message = ibc_proto::google::protobuf::Any {
-			// 	type_url: String::from_utf8(message.type_url.clone()).unwrap(),
-			// 	value: message.value.clone(),
-			// };
-
-			let result = ibc::core::ics26_routing::handler::deliver(&mut ctx, msg.clone()).unwrap();
+			let mut ctx = routing::Context { _pd: PhantomData::<T>, tmp: 0 };
+			let result =
+				ibc::core::ics26_routing::handler::deliver(&mut ctx, msg.clone().to_any()).unwrap();
+			// let result = ibc::core::ics26_routing::handler::dispatch(&mut ctx, Ics26Envelope::Ics20Msg(msg.clone())).unwrap();
 			// handle the result
 			log::info!("result: {:?}", result);
-			Self::handle_result(&mut ctx, msg.clone(), result.0);
+			// let events = result.events
+			Self::handle_result(&mut ctx, msg.to_any(), result.0)?;
 
 			Ok(())
 		}
