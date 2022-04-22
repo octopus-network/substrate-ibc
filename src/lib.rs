@@ -102,6 +102,9 @@ mod port;
 mod routing;
 pub mod transfer;
 
+// pub use temp router
+use crate::routing::MockRouter;
+
 use frame_support::{
 	sp_runtime::traits::{AtLeast32BitUnsigned, CheckedConversion},
 	sp_std::fmt::Debug,
@@ -854,10 +857,10 @@ pub mod pallet {
 		pub fn deliver(
 			origin: OriginFor<T>,
 			messages: Vec<Any>,
-			tmp: u8,
+			_tmp: u8,
 		) -> DispatchResultWithPostInfo {
 			let _sender = ensure_signed(origin)?;
-			let mut ctx = routing::Context { _pd: PhantomData::<T>, tmp };
+			let mut ctx = routing::Context::<T>::new();
 
 			let messages: Vec<ibc_proto::google::protobuf::Any> = messages
 				.into_iter()
@@ -867,15 +870,15 @@ pub mod pallet {
 				})
 				.collect();
 
-			let mut results: Vec<IbcEvent>  = vec![];
+			let mut results: Vec<IbcEvent> = vec![];
 			for (index, message) in messages.clone().into_iter().enumerate() {
-				
-				let (mut result, _) = ibc::core::ics26_routing::handler::deliver(&mut ctx, message.clone())
-					.map_err(|_| Error::<T>::Ics26Error)?;
-				
-				results.append(&mut result);
+				let (mut result, _) =
+					ibc::core::ics26_routing::handler::deliver(&mut ctx, message.clone())
+						.map_err(|_| Error::<T>::Ics26Error)?;
 
 				log::info!("result: {:?}", result);
+
+				results.append(&mut result);
 			}
 
 			let ret = Self::handle_result(&ctx, messages, results)?;
@@ -1131,9 +1134,10 @@ pub mod pallet {
 			};
 
 			// send to router
-			let mut ctx = routing::Context { _pd: PhantomData::<T>, tmp: 0 };
-			let (result, _) = ibc::core::ics26_routing::handler::deliver(&mut ctx, msg.clone().to_any())
-				.map_err(|_| Error::<T>::Ics20Error)?;
+			let mut ctx = routing::Context::<T>::new();
+			let (result, _) =
+				ibc::core::ics26_routing::handler::deliver(&mut ctx, msg.clone().to_any())
+					.map_err(|_| Error::<T>::Ics20Error)?;
 			// handle the result
 			log::info!("result: {:?}", result);
 			// let events = result.events

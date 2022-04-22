@@ -13,7 +13,7 @@ use ibc::core::{
 
 impl<T: Config> CapabilityReader for Context<T> {
 	fn get_capability(&self, _name: &CapabilityName) -> Result<Capability, Ics05Error> {
-		todo!()
+		unimplemented!()
 	}
 
 	fn authenticate_capability(
@@ -31,6 +31,8 @@ impl<T: Config> PortReader for Context<T> {
 		&self,
 		port_id: &PortId,
 	) -> Result<(ModuleId, PortCapability), Ics05Error> {
-		todo!()
+		// todo
+		let module_id = ModuleId::new(format!("ibcmodule").into()).unwrap();
+		Ok((module_id, Capability::new().into()))
 	}
 }

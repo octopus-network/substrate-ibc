@@ -474,7 +474,7 @@ impl<T: Config> ChannelReader for Context<T> {
 	}
 
 	fn max_expected_time_per_block(&self) -> Duration {
-		todo!()
+		Duration::from_secs(6)
 	}
 
 	/// Return the module_id along with the capability associated with a given (channel-id, port_id)
@@ -483,7 +483,9 @@ impl<T: Config> ChannelReader for Context<T> {
 		channel_id: &ChannelId,
 		port_id: &PortId,
 	) -> Result<(ModuleId, ChannelCapability), Ics04Error> {
-		todo!()
+		// todo
+		let module_id = ModuleId::new(format!("ibcmodule").into()).unwrap();
+		Ok((module_id, Capability::new().into()))
 	}
 }
 

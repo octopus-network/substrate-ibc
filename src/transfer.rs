@@ -44,6 +44,6 @@ impl<T: Config> Ics20Context for Context<T> {
 	}
 
 	fn get_port(&self) -> Result<PortId, Ics20Error> {
-		todo!()
+		Ok(PortId::transfer())
 	}
 }
