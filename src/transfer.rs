@@ -13,7 +13,7 @@ use ibc::{
 impl<T: Config> Ics20Context for Context<T> {
 	// GetDenomTrace retreives the full identifiers trace and base denomination from the store.
 	fn get_denom_trace(&self, denom_trace_hash: &[u8]) -> Result<DenomTrace, Ics20Error> {
-		log::trace!("in transfer : [denom trace hash] >> {:?}", denom_trace_hash);
+		log::trace!("in transfer : [denom trace hash]");
 
 		if <Denomination<T>>::contains_key(denom_trace_hash) {
 			let data = <Denomination<T>>::get(denom_trace_hash);
@@ -29,20 +29,21 @@ impl<T: Config> Ics20Context for Context<T> {
 
 	// HasDenomTrace checks if a the key with the given denomination trace hash exists on the store.
 	fn has_denom_trace(&self, denom_trace_hash: &[u8]) -> bool {
-		log::trace!("in transfer : [denom trace hash] >> {:?}", denom_trace_hash,);
+		log::trace!("in transfer : [denom trace hash]");
 
 		<Denomination<T>>::contains_key(denom_trace_hash)
 	}
 
 	// SetDenomTrace sets a new {trace hash -> denom trace} pair to the store.
 	fn set_denom_trace(&self, denom_trace: &DenomTrace) -> Result<(), Ics20Error> {
-		log::trace!("in transfer : [denom trace] >> {:?}", denom_trace);
+		log::trace!("in transfer : [denom trace]");
 
 		let data = denom_trace.encode_vec().map_err(|e| Ics20Error::invalid_encode(e))?;
 		<Denomination<T>>::insert(denom_trace.hash()?, data);
 		Ok(())
 	}
 
+	// todo
 	fn get_port(&self) -> Result<PortId, Ics20Error> {
 		Ok(PortId::transfer())
 	}

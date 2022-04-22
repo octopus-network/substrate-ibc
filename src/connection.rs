@@ -18,7 +18,7 @@ use ibc::{
 
 impl<T: Config> ConnectionReader for Context<T> {
 	fn connection_end(&self, conn_id: &ConnectionId) -> Result<ConnectionEnd, Ics03Error> {
-		log::trace!("in connection : [connection_end] >> connection_id = {:?}", conn_id);
+		log::trace!("in connection : [connection_end]");
 
 		if <Connections<T>>::contains_key(conn_id.as_bytes()) {
 			let data = <Connections<T>>::get(conn_id.as_bytes());
@@ -33,7 +33,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 	}
 
 	fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, Ics03Error> {
-		log::trace!("in connection : [client_state] >> client_id = {:?}", client_id);
+		log::trace!("in connection : [client_state]");
 
 		// ClientReader::client_state(self, client_id)
 		if <ClientStates<T>>::contains_key(client_id.as_bytes()) {
@@ -78,15 +78,14 @@ impl<T: Config> ConnectionReader for Context<T> {
 
 	fn connection_counter(&self) -> Result<u64, Ics03Error> {
 		log::trace!(
-			"in connection : [connection_counter] >> Connection_counter = {:?}",
-			<ConnectionCounter<T>>::get()
+			"in connection : [connection_counter]"
 		);
 
 		Ok(<ConnectionCounter<T>>::get())
 	}
 
 	fn commitment_prefix(&self) -> CommitmentPrefix {
-		log::trace!("in connection : [commitment_prefix] >> CommitmentPrefix = {:?}", "ibc");
+		log::trace!("in connection : [commitment_prefix]");
 
 		"ibc".as_bytes().to_vec().try_into().unwrap_or_default()
 	}
@@ -97,9 +96,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 		height: Height,
 	) -> Result<AnyConsensusState, Ics03Error> {
 		log::trace!(
-			"in connection : [client_consensus_state] client_id = {:?}, height = {:?}",
-			client_id,
-			height
+			"in connection : [client_consensus_state]"
 		);
 
 		// ClientReader::consensus_state(self, client_id, height)
@@ -121,7 +118,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 	}
 
 	fn host_consensus_state(&self, _height: Height) -> Result<AnyConsensusState, Ics03Error> {
-		log::trace!("in connection : [host_consensus_state] >> _height = {:?}", _height);
+		log::trace!("in connection : [host_consensus_state]");
 		let result = AnyConsensusState::Grandpa(GPConsensusState::from(Header::default()));
 
 		log::trace!("in connection : [host_consensus_state] >> any_consensus_state = {:?}", result);

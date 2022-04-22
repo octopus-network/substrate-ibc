@@ -20,7 +20,7 @@ use ibc::{
 
 impl<T: Config> ClientReader for Context<T> {
 	fn client_type(&self, client_id: &ClientId) -> Result<ClientType, Ics02Error> {
-		log::trace!("in client : [client_type] >> client_id = {:?}", client_id);
+		log::trace!("in client : [client_type]");
 
 		if <Clients<T>>::contains_key(client_id.as_bytes()) {
 			let data = <Clients<T>>::get(client_id.as_bytes());
@@ -38,7 +38,7 @@ impl<T: Config> ClientReader for Context<T> {
 	}
 
 	fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, Ics02Error> {
-		log::trace!("in client : [client_state] >> client_id = {:?}", client_id);
+		log::trace!("in client : [client_state]");
 
 		if <ClientStates<T>>::contains_key(client_id.as_bytes()) {
 			let data = <ClientStates<T>>::get(client_id.as_bytes());
@@ -58,9 +58,7 @@ impl<T: Config> ClientReader for Context<T> {
 		height: Height,
 	) -> Result<AnyConsensusState, Ics02Error> {
 		log::trace!(
-			"in client : [consensus_state] >> client_id = {:?}, height = {:?}",
-			client_id,
-			height
+			"in client : [consensus_state]"
 		);
 
 		let mut values = <ConsensusStates<T>>::get(client_id.as_bytes());
@@ -94,9 +92,7 @@ impl<T: Config> ClientReader for Context<T> {
 		height: Height,
 	) -> Result<Option<AnyConsensusState>, Ics02Error> {
 		log::trace!(
-			"in client : [next_consensus_state] >> client_id = {:?}, height = {:?}",
-			client_id,
-			height
+			"in client : [next_consensus_state]"
 		);
 
 		let mut values = <ConsensusStates<T>>::get(client_id.as_bytes());
@@ -132,9 +128,7 @@ impl<T: Config> ClientReader for Context<T> {
 		height: Height,
 	) -> Result<Option<AnyConsensusState>, Ics02Error> {
 		log::trace!(
-			"in client : [next_consensus_state] >> client_id = {:?}, height = {:?}",
-			client_id,
-			height
+			"in client : [next_consensus_state]"
 		);
 
 		let mut values = <ConsensusStates<T>>::get(client_id.as_bytes());
@@ -194,8 +188,7 @@ impl<T: Config> ClientReader for Context<T> {
 
 	fn client_counter(&self) -> Result<u64, Ics02Error> {
 		log::trace!(
-			"in client : [client_counter] >> client_counter: {:?}",
-			<ClientCounter<T>>::get()
+			"in client : [client_counter]"
 		);
 
 		Ok(<ClientCounter<T>>::get())

@@ -32,9 +32,7 @@ use ibc::{
 impl<T: Config> ChannelReader for Context<T> {
 	fn channel_end(&self, port_channel_id: &(PortId, ChannelId)) -> Result<ChannelEnd, Ics04Error> {
 		log::trace!(
-			"in channel : [channel_end] >> port_id = {:?}, channel_id = {:?}",
-			port_channel_id.0,
-			port_channel_id.1
+			"in channel : [channel_end]"
 		);
 
 		let data = <Channels<T>>::get(port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes());
@@ -48,7 +46,7 @@ impl<T: Config> ChannelReader for Context<T> {
 	}
 
 	fn connection_end(&self, connection_id: &ConnectionId) -> Result<ConnectionEnd, Ics04Error> {
-		log::trace!("in channel : [connection_end] >> connection_id = {:?}", connection_id);
+		log::trace!("in channel : [connection_end]");
 
 		let data = <Connections<T>>::get(connection_id.as_bytes());
 
@@ -64,7 +62,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		&self,
 		conn_id: &ConnectionId,
 	) -> Result<Vec<(PortId, ChannelId)>, Ics04Error> {
-		log::trace!("in channel : [connection_channels] >> connection_id : {:?}", conn_id);
+		log::trace!("in channel : [connection_channels]");
 
 		if <ChannelsConnection<T>>::contains_key(conn_id.as_bytes()) {
 			let port_and_channel_id = <ChannelsConnection<T>>::get(conn_id.as_bytes());
@@ -96,7 +94,7 @@ impl<T: Config> ChannelReader for Context<T> {
 	}
 
 	fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, Ics04Error> {
-		log::trace!("in channel : [client_state] >> client_id = {:?}", client_id);
+		log::trace!("in channel : [client_state]");
 
 		let data = <ClientStates<T>>::get(client_id.as_bytes());
 
@@ -113,9 +111,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		height: Height,
 	) -> Result<AnyConsensusState, Ics04Error> {
 		log::trace!(
-			"in channel : [client_consensus_state] >> client_id = {:?}, height = {:?}",
-			client_id,
-			height
+			"in channel : [client_consensus_state]"
 		);
 
 		let height = height.encode_vec().map_err(|_| Ics04Error::invalid_encode())?;
@@ -143,7 +139,7 @@ impl<T: Config> ChannelReader for Context<T> {
 	}
 
 	fn authenticated_capability(&self, port_id: &PortId) -> Result<ChannelCapability, Ics04Error> {
-		log::trace!("in channel : [authenticated_capability] >> port_id: {:?}", port_id);
+		log::trace!("in channel : [authenticated_capability]");
 
 		match PortReader::lookup_module_by_port(self, port_id) {
 			Ok((_, key)) =>
@@ -163,9 +159,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		port_channel_id: &(PortId, ChannelId),
 	) -> Result<Sequence, Ics04Error> {
 		log::trace!(
-			"in channel : [get_next_sequence] >> port_id = {:?}, channel_id =  {:?}",
-			port_channel_id.0,
-			port_channel_id.1
+			"in channel : [get_next_sequence]"
 		);
 
 		let sequence =
@@ -180,9 +174,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		port_channel_id: &(PortId, ChannelId),
 	) -> Result<Sequence, Ics04Error> {
 		log::trace!(
-			"in channel : [get_next_sequence_recv] >> port_id = {:?}, channel_id = {:?}",
-			port_channel_id.0,
-			port_channel_id.1
+			"in channel : [get_next_sequence_recv]"
 		);
 
 		let sequence =
@@ -197,9 +189,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		port_channel_id: &(PortId, ChannelId),
 	) -> Result<Sequence, Ics04Error> {
 		log::trace!(
-			"in channel : [get_next_sequence_ack] >> port_id = {:?}, channel_id = {:?}",
-			port_channel_id.0,
-			port_channel_id.1
+			"in channel : [get_next_sequence_ack]"
 		);
 
 		let sequence =
@@ -214,8 +204,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		&self,
 		key: &(PortId, ChannelId, Sequence),
 	) -> Result<String, Ics04Error> {
-		log::trace!("in channel : [get_packet_commitment] >> port_id = {:?}, channel_id = {:?}, sequence = {:?}",
-			key.0, key.1, key.2
+		log::trace!("in channel : [get_packet_commitment]"
 		);
 
 		let sequence = u64::from(key.2);
@@ -244,8 +233,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		&self,
 		key: &(PortId, ChannelId, Sequence),
 	) -> Result<Receipt, Ics04Error> {
-		log::trace!("in channel : [get_packet_receipt] >> port_id = {:?}, channel_id = {:?}, sequence = {:?}",
-			key.0, key.1, key.2
+		log::trace!("in channel : [get_packet_receipt]"
 		);
 
 		let sequence = u64::from(key.2);
@@ -275,8 +263,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		&self,
 		key: &(PortId, ChannelId, Sequence),
 	) -> Result<String, Ics04Error> {
-		log::trace!("in channel : [get_packet_acknowledgement] >> port_id = {:?}, channel_id = {:?}, sequence = {:?}",
-			key.0, key.1, key.2
+		log::trace!("in channel : [get_packet_acknowledgement]"
 		);
 
 		let seq = u64::from(key.2);
@@ -303,7 +290,7 @@ impl<T: Config> ChannelReader for Context<T> {
 
 	/// A hashing function for packet commitments
 	fn hash(&self, value: String) -> String {
-		log::trace!("in channel: [hash] >> value = {:?}", value);
+		log::trace!("in channel: [hash]");
 
 		let r = sp_io::hashing::sha2_256(value.as_bytes());
 
@@ -345,7 +332,7 @@ impl<T: Config> ChannelReader for Context<T> {
 
 	/// Returns the `AnyConsensusState` for the given identifier `height`.
 	fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Ics04Error> {
-		log::trace!("in channel: [host_consensus_state] >> height = {:?}", height);
+		log::trace!("in channel: [host_consensus_state]");
 
 		ConnectionReader::host_consensus_state(self, height).map_err(Ics04Error::ics03_connection)
 	}
@@ -364,9 +351,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		height: Height,
 	) -> Result<Timestamp, Ics04Error> {
 		log::trace!(
-			"in channel: [client_update_time] >> client_id = {:?}, height = {:?}",
-			client_id,
-			height
+			"in channel: [client_update_time]"
 		);
 
 		if <ClientProcessedTimes<T>>::contains_key(
@@ -392,6 +377,9 @@ impl<T: Config> ChannelReader for Context<T> {
 		client_id: &ClientId,
 		height: Height,
 	) -> Result<Height, Ics04Error> {
+		log::trace!(
+			"in channel: [client_update_height]"
+		);
 		if <ClientProcessedHeights<T>>::contains_key(
 			client_id.as_bytes(),
 			height.encode_vec().map_err(|_| Ics04Error::invalid_encode())?,
@@ -413,13 +401,15 @@ impl<T: Config> ChannelReader for Context<T> {
 	/// `ChannelKeeper::increase_channel_counter`.
 	fn channel_counter(&self) -> Result<u64, Ics04Error> {
 		log::trace!(
-			"in channel: [channel_counter] >> channel_counter = {:?}",
-			<Pallet<T> as Store>::ChannelCounter::get()
+			"in channel: [channel_counter]"
 		);
 		Ok(<Pallet<T> as Store>::ChannelCounter::get())
 	}
 
 	fn max_expected_time_per_block(&self) -> Duration {
+		log::trace!(
+			"in channel: [max_expected_time_per_block]"
+		);
 		Duration::from_secs(6)
 	}
 
@@ -429,6 +419,9 @@ impl<T: Config> ChannelReader for Context<T> {
 		channel_id: &ChannelId,
 		port_id: &PortId,
 	) -> Result<(ModuleId, ChannelCapability), Ics04Error> {
+		log::trace!(
+			"in channel: [lookup_module_by_channel]"
+		);
 		// todo
 		let module_id = ModuleId::new(format!("ibcmodule").into()).unwrap();
 		Ok((module_id, Capability::new().into()))

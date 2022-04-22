@@ -13,6 +13,8 @@ use ibc::core::{
 
 impl<T: Config> CapabilityReader for Context<T> {
 	fn get_capability(&self, _name: &CapabilityName) -> Result<Capability, Ics05Error> {
+		log::trace!("in port: [get_capability]");
+
 		unimplemented!()
 	}
 
@@ -21,6 +23,7 @@ impl<T: Config> CapabilityReader for Context<T> {
 		_name: &CapabilityName,
 		_capability: &Capability,
 	) -> Result<(), Ics05Error> {
+		log::trace!("in port: [authenticate_capability]");
 		Ok(())
 	}
 }
@@ -31,6 +34,7 @@ impl<T: Config> PortReader for Context<T> {
 		&self,
 		port_id: &PortId,
 	) -> Result<(ModuleId, PortCapability), Ics05Error> {
+		log::trace!("in port: [lookup_module_by_port]");
 		// todo
 		let module_id = ModuleId::new(format!("ibcmodule").into()).unwrap();
 		Ok((module_id, Capability::new().into()))
