@@ -146,34 +146,22 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		connection_id: ConnectionId,
 		connection_end: &ConnectionEnd,
 	) -> Result<(), Ics03Error> {
-		log::trace!(
-			"in connection : [store_connection] >> connection_id: {:?}, connection_end: {:?}",
-			connection_id,
-			connection_end
-		);
-
-		let temp = ConnectionReader::connection_end(self, &connection_id);
-		if let Ok(value) = temp {
-			log::trace!("in connection : [store_connection] >> read store before: {:?}", value);
-		} else {
-			log::trace!("in connection : [store_connection] >> before read Error");
-		}
+		log::trace!("in connection : [store_connection]");
 
 		let data = connection_end.encode_vec().map_err(|e| Ics03Error::invalid_encode(e))?;
 
+		// store connection end
 		<Connections<T>>::insert(connection_id.as_bytes().to_vec(), data);
 
+		// store connection id vector for rpc
 		let ret = <ConnectionsKeys<T>>::try_mutate(|val| -> Result<(), Ics03Error> {
 			if let Some(_value) = val.iter().find(|&x| x == connection_id.as_bytes()) {
 			} else {
 				val.push(connection_id.as_bytes().to_vec());
 			}
-
 			Ok(())
 		});
 
-		let temp = ConnectionReader::connection_end(self, &connection_id);
-		log::trace!("in connection : [store_connection] >> read store after: {:?}", temp);
 		Ok(())
 	}
 
@@ -182,12 +170,7 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		connection_id: ConnectionId,
 		client_id: &ClientId,
 	) -> Result<(), Ics03Error> {
-		log::trace!(
-			"in connection : [store_connection_to_client] >> connection_id = {:?},\
-		 client_id = {:?}",
-			connection_id,
-			client_id
-		);
+		log::trace!("in connection : [store_connection_to_client]");
 
 		<ConnectionClient<T>>::insert(
 			client_id.as_bytes().to_vec(),

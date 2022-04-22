@@ -9,28 +9,14 @@
 #![allow(unused_imports)]
 #![allow(unused_variables)]
 
-//! # IBC Module
-//!
-//! This module implements the standard [IBC protocol](https://github.com/cosmos/ics).
-//!
-//! ## Overview
+//! # Overview
 //!
 //! The goal of this pallet is to allow the blockchains built on Substrate to gain the ability to
 //! interact with other chains in a trustees way via IBC protocol
 //!
-//! This project is currently in an early stage and will eventually be submitted to upstream.
-//!
-//! The pallet implements the chain specific logic of [ICS spec](https://github.com/cosmos/ibc/tree/ee71d0640c23ec4e05e924f52f557b5e06c1d82f),  and is integrated with [ibc-rs](https://github.com/informalsystems/ibc-rs), which implements the generic cross-chain logic in [ICS spec](https://github.com/cosmos/ibc/tree/ee71d0640c23ec4e05e924f52f557b5e06c1d82f).
-//!
-//! The chain specific logic of the modules in ICS spec implemented::
-//! * ics-002-client-semantics
-//! * ics-003-connection-semantics
-//! * ics-004-channel-and-packet-semantics
-//! * ics-005-port-allocation
-//! * ics-010-grandpa-client
-//! * ics-018-relayer-algorithms
-//! * ics-025-handler-interface
-//! * ics-026-routing-module
+//! The pallet implements the chain specific logic of [ICS spec](https://github.com/cosmos/ibc/tree/ee71d0640c23ec4e05e924f52f557b5e06c1d82f),  
+//! and is integrated with [ibc-rs](https://github.com/informalsystems/ibc-rs),
+//! which implements the generic cross-chain logic in [ICS spec](https://github.com/cosmos/ibc/tree/ee71d0640c23ec4e05e924f52f557b5e06c1d82f).
 //!
 //! ### Terminology
 //!
@@ -47,9 +33,6 @@
 //!
 //! * `deliver` - `ibc::ics26_routing::handler::deliver` Receives datagram transmitted from
 //!   relayers/users, and pass to ICS26 router to look for the correct handler.
-//!
-//! ## Usage
-//! Please refer to section "How to Interact with the Pallet" in the repository's README.md
 
 extern crate alloc;
 
@@ -101,9 +84,6 @@ mod ics20_ibc_module_impl;
 mod port;
 mod routing;
 pub mod transfer;
-
-// pub use temp router
-use crate::routing::MockRouter;
 
 use frame_support::{
 	sp_runtime::traits::{AtLeast32BitUnsigned, CheckedConversion},
@@ -163,11 +143,13 @@ pub mod pallet {
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
-		/// Because this pallet emits events, it depends on the runtime's definition of an event.
+		/// The overarching event type.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
-		type ModuleCallbacks: routing::ModuleCallbacks;
-		type TimeProvider: UnixTime;
 
+		type ModuleCallbacks: routing::ModuleCallbacks;
+
+		type TimeProvider: UnixTime;
+		/// Currency type of the runtime
 		type Currency: Currency<Self::AccountId>;
 
 		type AssetId: Member
@@ -207,7 +189,7 @@ pub mod pallet {
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
-	/// client_id vector
+	/// vector client id for rpc
 	pub type ClientStatesKeys<T: Config> = StorageValue<_, Vec<Vec<u8>>, ValueQuery>;
 
 	#[pallet::storage]
@@ -244,7 +226,7 @@ pub mod pallet {
 	pub type Connections<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
-	/// connection_id vector
+	/// vector connection id for rpc
 	pub type ConnectionsKeys<T: Config> = StorageValue<_, Vec<Vec<u8>>, ValueQuery>;
 
 	#[pallet::storage]
@@ -260,7 +242,7 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
-	/// vector of (port_id, channel_id)
+	/// vector of (port id, channel id) for rpc
 	pub type ChannelsKeys<T: Config> = StorageValue<_, Vec<(Vec<u8>, Vec<u8>)>, ValueQuery>;
 
 	#[pallet::storage]
@@ -270,39 +252,18 @@ pub mod pallet {
 
 	#[pallet::storage]
 	/// (port_id, channel_id) => sequence
-	pub type NextSequenceSend<T: Config> = StorageDoubleMap<
-		_,
-		Blake2_128Concat,
-		Vec<u8>,
-		Blake2_128Concat,
-		Vec<u8>,
-		Vec<u8>,
-		ValueQuery,
-	>;
+	pub type NextSequenceSend<T: Config> =
+		StorageDoubleMap<_, Blake2_128Concat, Vec<u8>, Blake2_128Concat, Vec<u8>, u64, ValueQuery>;
 
 	#[pallet::storage]
 	/// (port_id, channel_id) => sequence
-	pub type NextSequenceRecv<T: Config> = StorageDoubleMap<
-		_,
-		Blake2_128Concat,
-		Vec<u8>,
-		Blake2_128Concat,
-		Vec<u8>,
-		Vec<u8>,
-		ValueQuery,
-	>;
+	pub type NextSequenceRecv<T: Config> =
+		StorageDoubleMap<_, Blake2_128Concat, Vec<u8>, Blake2_128Concat, Vec<u8>, u64, ValueQuery>;
 
 	#[pallet::storage]
 	/// (port_id, channel_id) => sequence
-	pub type NextSequenceAck<T: Config> = StorageDoubleMap<
-		_,
-		Blake2_128Concat,
-		Vec<u8>,
-		Blake2_128Concat,
-		Vec<u8>,
-		Vec<u8>,
-		ValueQuery,
-	>;
+	pub type NextSequenceAck<T: Config> =
+		StorageDoubleMap<_, Blake2_128Concat, Vec<u8>, Blake2_128Concat, Vec<u8>, u64, ValueQuery>;
 
 	#[pallet::storage]
 	/// (port_id, channel_id, sequence) => hash of acknowledgement
@@ -311,16 +272,16 @@ pub mod pallet {
 		(
 			NMapKey<Blake2_128Concat, Vec<u8>>,
 			NMapKey<Blake2_128Concat, Vec<u8>>,
-			NMapKey<Blake2_128Concat, Vec<u8>>,
+			NMapKey<Blake2_128Concat, u64>,
 		),
 		Vec<u8>,
 		ValueQuery,
 	>;
 
 	#[pallet::storage]
-	/// vector of (port_identifier, channel_identifier, sequence)
+	/// vector of (port_identifier, channel_identifier, sequence) for rpc
 	pub type AcknowledgementsKeys<T: Config> =
-		StorageValue<_, Vec<(Vec<u8>, Vec<u8>, Vec<u8>)>, ValueQuery>;
+		StorageValue<_, Vec<(Vec<u8>, Vec<u8>, u64)>, ValueQuery>;
 
 	#[pallet::storage]
 	/// client_id => client_type
@@ -352,7 +313,7 @@ pub mod pallet {
 		(
 			NMapKey<Blake2_128Concat, Vec<u8>>,
 			NMapKey<Blake2_128Concat, Vec<u8>>,
-			NMapKey<Blake2_128Concat, Vec<u8>>,
+			NMapKey<Blake2_128Concat, u64>,
 		),
 		Vec<u8>,
 		ValueQuery,
@@ -365,16 +326,16 @@ pub mod pallet {
 		(
 			NMapKey<Blake2_128Concat, Vec<u8>>,
 			NMapKey<Blake2_128Concat, Vec<u8>>,
-			NMapKey<Blake2_128Concat, Vec<u8>>,
+			NMapKey<Blake2_128Concat, u64>,
 		),
 		Vec<u8>,
 		ValueQuery,
 	>;
 
 	#[pallet::storage]
-	/// vector of (port_id, channel_id, sequence)
+	/// vector of (port_id, channel_id, sequence) for rpc
 	pub type PacketCommitmentKeys<T: Config> =
-		StorageValue<_, Vec<(Vec<u8>, Vec<u8>, Vec<u8>)>, ValueQuery>;
+		StorageValue<_, Vec<(Vec<u8>, Vec<u8>, u64)>, ValueQuery>;
 
 	#[pallet::storage]
 	/// (height, port_id, channel_id, sequence) => sendpacket event

@@ -208,11 +208,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 		client_id: ClientId,
 		client_type: ClientType,
 	) -> Result<(), Ics02Error> {
-		log::info!(
-			"in client : [store_client_type] >> client id = {:?}, client_type = {:?}",
-			client_id,
-			client_type
-		);
+		log::info!("in client : [store_client_type]");
 
 		let client_id = client_id.as_bytes().to_vec();
 		let client_type = client_type.as_str().encode();
@@ -235,11 +231,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 		client_id: ClientId,
 		client_state: AnyClientState,
 	) -> Result<(), Ics02Error> {
-		log::trace!(
-			"in client : [store_client_state] >> client_id: {:?}, client_state = {:?}",
-			client_id,
-			client_state
-		);
+		log::trace!("in client : [store_client_state]");
 
 		let data = client_state.encode_vec().map_err(|e| Ics02Error::invalid_encode(e))?;
 		// store client states key-value
@@ -263,8 +255,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 		height: Height,
 		consensus_state: AnyConsensusState,
 	) -> Result<(), Ics02Error> {
-		log::trace!("in client : [store_consensus_state] >> client_id: {:?}, height = {:?}, consensus_state = {:?}",
-			client_id, height, consensus_state);
+		log::trace!("in client : [store_consensus_state]");
 
 		let height = height.encode_vec().map_err(|e| Ics02Error::invalid_encode(e))?;
 		let data = consensus_state.encode_vec().map_err(|e| Ics02Error::invalid_encode(e))?;
@@ -284,12 +275,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 		height: Height,
 		timestamp: Timestamp,
 	) -> Result<(), Ics02Error> {
-		log::trace!(
-			"in client: [store_update_time] >> client_id: {:?}, height: {:?}, timestamp: {:?}",
-			client_id,
-			height,
-			timestamp
-		);
+		log::trace!("in client: [store_update_time]");
 
 		let encode_timestamp = serde_json::to_string(&timestamp)
 			.map_err(|e| Ics02Error::invalid_serde_json_encode(e))?
@@ -310,12 +296,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 		height: Height,
 		host_height: Height,
 	) -> Result<(), Ics02Error> {
-		log::trace!(
-			"in client: [store_update_height] >> client_id: {:?}, height: {:?}, host_height: {:?}",
-			client_id,
-			height,
-			host_height
-		);
+		log::trace!("in client: [store_update_height]");
 
 		<ClientProcessedHeights<T>>::insert(
 			client_id.as_bytes(),
