@@ -766,6 +766,37 @@ pub mod pallet {
 
 		/// empty latest_commitment
 		EmptyLatestCommitment,
+
+		/// send packet error
+		SendPacketError,
+
+		/// ReceivePacket error
+		ReceivePacketError,
+
+		/// TimeoutPacket error 
+		TimeoutPacketError,
+
+		/// AcknowledgePacket error 
+		AcknowledgePacketError,
+
+		/// OpenInitChannel error 
+		OpenInitChannelError,
+
+		/// OpenTryChannel error
+		OpenTryChannelError,
+
+		/// OpenAckChannel error
+		OpenAckChannelError,
+
+		/// OpenConfirmChannel error 
+		OpenConfirmChannelError,
+
+		/// CloseInitChannel error 
+		CloseInitChannelError,
+
+		/// CloseConfirmChannel error 
+		CloseConfirmChannelError,
+
 	}
 
 	// // mock client state
@@ -1098,7 +1129,7 @@ pub mod pallet {
 			let mut ctx = routing::Context::<T>::new();
 			let (result, _) =
 				ibc::core::ics26_routing::handler::deliver(&mut ctx, msg.clone().to_any())
-					.map_err(|_| Error::<T>::Ics20Error)?;
+					.map_err(|_| Error::<T>::Ics26Error)?;
 			// handle the result
 			log::info!("result: {:?}", result);
 			// let events = result.events
@@ -1124,8 +1155,7 @@ pub mod pallet {
 						// refer to https://github.com/octopus-network/ibc-go/blob/f5962c3324ee7e69eeaa9918b65eb1b089da6095/modules/apps/transfer/keeper/msg_server.go#L16
 
 						let ret =
-							ics20_handler::handle_transfer::<Ctx, T>(ctx, value.clone().packet)
-								.map_err(|_| Error::<T>::Ics20Error)?;
+							ics20_handler::handle_transfer::<Ctx, T>(ctx, value.clone().packet).unwrap();
 
 						Self::deposit_event(event.clone().into());
 					},
@@ -1143,7 +1173,7 @@ pub mod pallet {
 							value.clone().packet,
 							relayer_signer,
 						)
-						.map_err(|_| Error::<T>::Ics20Error)?;
+						.map_err(|_| Error::<T>::ReceivePacketError)?;
 
 						let packet = value.packet;
 
@@ -1153,7 +1183,7 @@ pub mod pallet {
 								packet.clone(),
 								ack.clone(),
 							)
-							.map_err(|_| Error::<T>::Ics20Error)?;
+							.map_err(|_| Error::<T>::ReceivePacketError)?;
 
 						// store write acknowledgement event
 						match write_ack_event.result {
@@ -1195,7 +1225,7 @@ pub mod pallet {
 								value.clone().packet,
 								relayer_signer,
 							)
-							.map_err(|_| Error::<T>::Ics20Error)?;
+							.map_err(|_| Error::<T>::TimeoutPacketError)?;
 
 						Self::deposit_event(event.clone().into());
 					},
@@ -1208,7 +1238,7 @@ pub mod pallet {
 
 						let ics20_module = ics20_ibc_module_impl::Ics20IBCModule::<T>::new();
 
-						let ret = ibc::core::ics26_routing::ibc_module::IBCModule::on_acknowledgement_packet(&ics20_module, ctx, value.clone().packet, vec![], relayer_signer).map_err(|_| Error::<T>::Ics20Error)?;
+						let ret = ibc::core::ics26_routing::ibc_module::IBCModule::on_acknowledgement_packet(&ics20_module, ctx, value.clone().packet, vec![], relayer_signer).map_err(|_| Error::<T>::AcknowledgePacketError)?;
 
 						Self::deposit_event(event.clone().into());
 					},
@@ -1243,7 +1273,7 @@ pub mod pallet {
 								},
 								Version::ics20(),
 							)
-							.map_err(|_| Error::<T>::Ics20Error)?;
+							.map_err(|_| Error::<T>::OpenInitChannelError)?;
 
 						Self::deposit_event(event.clone().into());
 					},
@@ -1276,7 +1306,7 @@ pub mod pallet {
 								},
 								Version::ics20(),
 							)
-							.map_err(|_| Error::<T>::Ics20Error)?;
+							.map_err(|_| Error::<T>::OpenTryChannelError)?;
 
 						Self::deposit_event(event.clone().into());
 					},
@@ -1300,7 +1330,7 @@ pub mod pallet {
 								channel_id,
 								Version::ics20(),
 							)
-							.map_err(|_| Error::<T>::Ics20Error)?;
+							.map_err(|_| Error::<T>::OpenAckChannelError)?;
 
 						Self::deposit_event(event.clone().into());
 					},
@@ -1324,7 +1354,7 @@ pub mod pallet {
 								port_id,
 								channel_id,
 							)
-							.map_err(|_| Error::<T>::Ics20Error)?;
+							.map_err(|_| Error::<T>::OpenConfirmChannelError)?;
 
 						Self::deposit_event(event.clone().into());
 					},
@@ -1345,7 +1375,7 @@ pub mod pallet {
 								port_id,
 								channel_id,
 							)
-							.map_err(|_| Error::<T>::Ics20Error)?;
+							.map_err(|_| Error::<T>::CloseInitChannelError)?;
 
 						Self::deposit_event(event.clone().into());
 					},
@@ -1368,7 +1398,7 @@ pub mod pallet {
 								port_id,
 								channel_id,
 							)
-							.map_err(|_| Error::<T>::Ics20Error)?;
+							.map_err(|_| Error::<T>::CloseConfirmChannelError)?;
 
 						Self::deposit_event(event.clone().into());
 					},
