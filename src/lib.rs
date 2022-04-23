@@ -92,6 +92,8 @@ use frame_support::{
 	PalletId,
 };
 
+pub(crate) const LOG_TARGET: &'static str = "runtime::pallet-ibc";
+
 /// A struct corresponds to `Any` in crate "prost-types", used in ibc-rs.
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub struct Any {
@@ -712,8 +714,9 @@ pub mod pallet {
 					Event::TimeoutOnClosePacket(height.into(), packet.into())
 				},
 				ibc::events::IbcEvent::Empty(value) => Event::Empty(value.as_bytes().to_vec()),
-				ibc::events::IbcEvent::ChainError(value) =>
-					Event::ChainError(value.as_bytes().to_vec()),
+				ibc::events::IbcEvent::ChainError(value) => {
+					Event::ChainError(value.as_bytes().to_vec())
+				},
 				_ => unimplemented!(),
 			}
 		}
@@ -897,24 +900,29 @@ pub mod pallet {
 			client_id: Vec<u8>,
 			mmr_root: Vec<u8>,
 		) -> DispatchResultWithPostInfo {
-			log::trace!("update_client_state: update_client_state request.");
+			log::trace!(target: LOG_TARGET, "update_client_state: update_client_state request.");
 			let _who = ensure_signed(origin)?;
 
 			// check if the client id exist?
 			let client_id_str =
 				String::from_utf8(client_id.clone()).map_err(|_| Error::<T>::InvalidFromUtf8)?;
-			log::trace!("update_client_state:  client id is {:?}", client_id_str);
-
+			log::trace!(target: LOG_TARGET,"update_client_state:  client id is {:?}", client_id_str);
+			
 			let decode_received_mmr_root =
 				help::MmrRoot::decode(&mut &mmr_root[..]).map_err(|_| Error::<T>::InvalidDecode)?;
-			log::trace!("update_client_state:  decode mmr root is {:?}", decode_received_mmr_root);
+			log::trace!(
+				target: LOG_TARGET,
+				"update_client_state:  decode mmr root is {:?}",
+				decode_received_mmr_root
+			);
+			
 
 			let mut client_state = ClientState::default();
 
 			if !<ClientStates<T>>::contains_key(client_id.clone()) {
 				log::error!("in update_client_state: {:?} client_state not found !", client_id_str);
 
-				return Err(Error::<T>::ClientIdNotFound.into())
+				return Err(Error::<T>::ClientIdNotFound.into());
 			} else {
 				// get client state from chain storage
 				let data = <ClientStates<T>>::get(client_id.clone());
@@ -925,7 +933,7 @@ pub mod pallet {
 					_ => unimplemented!(),
 				};
 
-				log::trace!(
+				log::trace!(target: LOG_TARGET,
 					"in update_client_state: get client_state from chain storage: {:?}",
 					client_state
 				);
@@ -936,7 +944,7 @@ pub mod pallet {
 					.map_err(|_| Error::<T>::InvalidSignedCommitment)?;
 			let rev_block_number = signed_commitment.commitment.block_number;
 			if rev_block_number <= client_state.latest_commitment.block_number {
-				log::trace!("receive mmr root block number({}) less than client_state.latest_commitment.block_number({})",
+				log::trace!(target: LOG_TARGET,"receive mmr root block number({}) less than client_state.latest_commitment.block_number({})",
 				rev_block_number,client_state.latest_commitment.block_number);
 
 				return Err(Error::<T>::ReceiveMmrRootBlockNumberLessThanClientStateLatestCommitmentBlockNumber.into());
@@ -947,7 +955,7 @@ pub mod pallet {
 				validator_set: client_state.validator_set.clone().into(),
 				in_process_state: None,
 			};
-			log::trace!(
+			log::trace!(target: LOG_TARGET,
 				"build new beefy_light_client from client_state store in chain \n {:?}",
 				light_client
 			);
@@ -1008,7 +1016,7 @@ pub mod pallet {
 						Ok(())
 					});
 
-					log::trace!("the updated client state is : {:?}", client_state);
+					log::trace!(target: LOG_TARGET,"the updated client state is : {:?}", client_state);
 
 					use ibc::{
 						clients::ics10_grandpa::consensus_state::ConsensusState as GPConsensusState,
@@ -1025,7 +1033,7 @@ pub mod pallet {
 						revision_height: client_state.block_number as u64,
 					};
 
-					log::trace!("in ibc-lib : [store_consensus_state] >> client_id: {:?}, height = {:?}, consensus_state = {:?}", client_id, height, any_consensus_state);
+					log::trace!(target: LOG_TARGET,"in ibc-lib : [store_consensus_state] >> client_id: {:?}, height = {:?}, consensus_state = {:?}", client_id, height, any_consensus_state);
 
 					let height = height.encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
 					let data =
@@ -1056,9 +1064,9 @@ pub mod pallet {
 					));
 				},
 				Err(e) => {
-					log::error!("update the beefy light client failure! : {:?}", e);
+					log::error!(target: LOG_TARGET,"update the beefy light client failure! : {:?}", e);
 
-					return Err(Error::<T>::UpdateBeefyLightClientFailure.into())
+					return Err(Error::<T>::UpdateBeefyLightClientFailure.into());
 				},
 			}
 
@@ -1648,24 +1656,30 @@ fn get_signer<T: Config>(
 			ibc::core::ics02_client::msgs::ClientMsg::UpgradeClient(val) => val.signer.clone(),
 		},
 		ibc::core::ics26_routing::msgs::Ics26Envelope::Ics3Msg(value) => match value {
-			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenInit(val) =>
-				val.signer.clone(),
-			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenTry(val) =>
-				val.signer.clone(),
-			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenAck(val) =>
-				val.signer.clone(),
-			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenConfirm(val) =>
-				val.signer.clone(),
+			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenInit(val) => {
+				val.signer.clone()
+			},
+			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenTry(val) => {
+				val.signer.clone()
+			},
+			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenAck(val) => {
+				val.signer.clone()
+			},
+			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenConfirm(val) => {
+				val.signer.clone()
+			},
 		},
 		ibc::core::ics26_routing::msgs::Ics26Envelope::Ics4ChannelMsg(value) => match value {
 			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelOpenInit(val) => val.signer.clone(),
 			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelOpenTry(val) => val.signer.clone(),
 			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelOpenAck(val) => val.signer.clone(),
-			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelOpenConfirm(val) =>
-				val.signer.clone(),
+			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelOpenConfirm(val) => {
+				val.signer.clone()
+			},
 			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelCloseInit(val) => val.signer.clone(),
-			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelCloseConfirm(val) =>
-				val.signer.clone(),
+			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelCloseConfirm(val) => {
+				val.signer.clone()
+			},
 		},
 		ibc::core::ics26_routing::msgs::Ics26Envelope::Ics4PacketMsg(value) => match value {
 			ibc::core::ics04_channel::msgs::PacketMsg::RecvPacket(val) => val.signer.clone(),
