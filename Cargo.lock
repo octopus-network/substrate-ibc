@@ -1520,6 +1520,7 @@ dependencies = [
  "sp-keyring",
  "sp-runtime",
  "sp-std 4.0.0-dev",
+ "sp-tracing",
  "substrate-wasm-builder",
  "tendermint-proto",
 ]

@@ -854,31 +854,36 @@ pub mod pallet {
 			messages: Vec<Any>,
 			_tmp: u8,
 		) -> DispatchResultWithPostInfo {
-			let _sender = ensure_signed(origin)?;
-			let mut ctx = routing::Context::<T>::new();
-
-			let messages: Vec<ibc_proto::google::protobuf::Any> = messages
-				.into_iter()
-				.map(|message| ibc_proto::google::protobuf::Any {
-					type_url: String::from_utf8(message.type_url.clone()).unwrap(),
-					value: message.value.clone(),
+			sp_tracing::within_span!(
+				sp_tracing::Level::TRACE, "validate_transaction";
+				{
+					let _sender = ensure_signed(origin)?;
+					let mut ctx = routing::Context::<T>::new();
+		
+					let messages: Vec<ibc_proto::google::protobuf::Any> = messages
+						.into_iter()
+						.map(|message| ibc_proto::google::protobuf::Any {
+							type_url: String::from_utf8(message.type_url.clone()).unwrap(),
+							value: message.value.clone(),
+						})
+						.collect();
+		
+					let mut results: Vec<IbcEvent> = vec![];
+					for (index, message) in messages.clone().into_iter().enumerate() {
+						let (mut result, _) =
+							ibc::core::ics26_routing::handler::deliver(&mut ctx, message.clone())
+								.map_err(|_| Error::<T>::Ics26Error)?;
+		
+						log::info!("result: {:?}", result);
+		
+						results.append(&mut result);
+					}
+		
+					let ret = Self::handle_result(&ctx, messages, results)?;
+		
+					Ok(().into())
 				})
-				.collect();
-
-			let mut results: Vec<IbcEvent> = vec![];
-			for (index, message) in messages.clone().into_iter().enumerate() {
-				let (mut result, _) =
-					ibc::core::ics26_routing::handler::deliver(&mut ctx, message.clone())
-						.map_err(|_| Error::<T>::Ics26Error)?;
-
-				log::info!("result: {:?}", result);
-
-				results.append(&mut result);
-			}
-
-			let ret = Self::handle_result(&ctx, messages, results)?;
-
-			Ok(().into())
+			
 		}
 
 		/// Update the MMR root stored in client_state
