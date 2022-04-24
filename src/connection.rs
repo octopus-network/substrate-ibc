@@ -107,7 +107,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 			if item.0 == height {
 				let any_consensus_state = AnyConsensusState::decode_vec(&*item.1)
 					.map_err(|e| Ics03Error::invalid_decode(e))?;
-				return Ok(any_consensus_state);
+				return Ok(any_consensus_state)
 			}
 		}
 

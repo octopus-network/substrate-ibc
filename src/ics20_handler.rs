@@ -19,6 +19,7 @@ use ibc::{
 };
 
 use frame_support::{
+	pallet_prelude::DispatchResult,
 	sp_runtime::traits::{AtLeast32BitUnsigned, CheckedConversion},
 	sp_std::fmt::Debug,
 	traits::{tokens::fungibles, Currency, ExistenceRequirement::AllowDeath},
@@ -31,13 +32,14 @@ use ibc_proto::ibc::core::channel::v1::{acknowledgement::Response, Acknowledgeme
 
 fn generate_escrow_account<T: Config>(
 	channel_id: ibc::core::ics24_host::identifier::ChannelId,
-) -> Result<T::AccountId, Ics20Error> {
+) -> Result<T::AccountId, Error<T>> {
 	let channel_id_number = channel_id
 		.as_str()
 		.strip_prefix("channel-")
-		.ok_or(Ics20Error::invalid_split())?
+		.ok_or(Error::<T>::InvalidParse)?
 		.parse::<u64>()
-		.map_err(|e| Ics20Error::invalid_parse())?;
+		.map_err(|e| Error::<T>::InvalidParse)?;
+
 	let channel_id_number = format!("cha{:>05}", channel_id_number).as_bytes().to_vec();
 
 	let mut temp_value = [0u8; 8];
@@ -116,7 +118,10 @@ fn get_denom_prefix(port_id: &IbcPortId, channel_id: &IbcChannelId) -> String {
 /// ibc-go implementation refer to https://github.com/octopus-network/ibc-go/blob/e40cdec6a3413fb3c8ea2a7ccad5e363ecd5a695/modules/apps/transfer/keeper/relay.go#L51
 /// pallet-asset lock refer to https://github.com/octopus-network/octopus-pallets/blob/main/appchain/src/lib.rs#L676
 /// pallet-asset burn refer to https://github.com/octopus-network/octopus-pallets/blob/main/appchain/src/lib.rs#L731
-pub fn handle_transfer<Ctx, T: Config>(ctx: &Ctx, packet: IbcPacket) -> Result<(), Ics20Error>
+pub fn handle_transfer<Ctx, T: Config>(
+	ctx: &Ctx,
+	packet: IbcPacket,
+) -> Result<(), sp_runtime::DispatchError>
 where
 	Ctx: Ics20Context,
 {
@@ -124,7 +129,7 @@ where
 
 	let packet_data: IBCFungibleTokenPacketData =
 		serde_json::from_slice(packet.data.clone().as_slice())
-			.map_err(Ics20Error::invalid_serde_ibc_fungible_token_packet_data)?;
+			.map_err(|_| Error::<T>::SerdeIBCFungibleTokenPacketDataError)?;
 	log::info!("🤮ics20_handle transfer packet data = {:?}", packet_data);
 
 	// the token denomination to be transferred
@@ -169,11 +174,10 @@ where
 		// TODO
 		// how to deail with denomination
 
-		let amount = amount.checked_into().ok_or(Ics20Error::invalid_convert_number())?;
+		let amount = amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
 		log::info!("🤮ics20_handle transfer amount = {:?}", amount);
 
-		let ret = T::Currency::transfer(&sender, &escrow_account, amount, AllowDeath)
-			.map_err(|_| Ics20Error::invalid_transfer())?;
+		T::Currency::transfer(&sender, &escrow_account, amount, AllowDeath)?;
 	} else {
 		// todo
 		// receiver is source chain, burn vouchers
@@ -181,16 +185,15 @@ where
 		// todo how to deail with denomination <> asset_id
 		// todo Assetid is default
 
-		let amount = amount.checked_into().ok_or(Ics20Error::invalid_convert_number())?;
+		let amount = amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
 
 		log::info!("🤮ics20_handle transfer amount = {:?}", amount);
 
-		let ret = <T::Assets as fungibles::Mutate<T::AccountId>>::burn_from(
+		<T::Assets as fungibles::Mutate<T::AccountId>>::burn_from(
 			T::AssetId::default(),
 			&sender,
 			amount,
-		)
-		.map_err(|_| Ics20Error::invalid_burn())?;
+		)?;
 	}
 
 	Ok(())
@@ -208,14 +211,11 @@ pub fn handle_recv_packet<Ctx, T: Config>(
 	ctx: &Ctx,
 	packet: IbcPacket,
 	data: IBCFungibleTokenPacketData,
-) -> Result<FungibleTokenPacketAcknowledgement, Ics20Error>
+) -> Result<FungibleTokenPacketAcknowledgement, sp_runtime::DispatchError>
 where
 	Ctx: Ics20Context,
 {
-	match data.validate_basic() {
-		Ok(()) => (),
-		Err(error) => return Err(Ics20Error::invalid_validation(error)),
-	}
+	data.validate_basic().map_err(|_| Error::<T>::InvalidValidation)?;
 
 	// TODO
 	// if !k.GetReceiveEnabled(ctx) {
@@ -251,11 +251,12 @@ where
 		let mut denom = unprefixed_denom.to_string();
 		log::info!("🤮ics20_handle handle_recv_packet denom = {:?}", denom);
 
-		let denom_trace = parse_denom_trace(&denom)?;
+		let denom_trace =
+			parse_denom_trace(&denom).map_err(|_| Error::<T>::ParseDenomTraceError)?;
 		log::info!("🤮ics20_handle handle_recv_packet denom_trace = {:?}", denom_trace);
 
 		if denom_trace.path != "" {
-			denom = denom_trace.ibc_denom()?;
+			denom = denom_trace.ibc_denom().map_err(|_| Error::<T>::GetIbcDenomError)?;
 		}
 		log::info!("🤮ics20_handle handle_recv_packet denom = {:?}", denom);
 
@@ -282,8 +283,7 @@ where
 			escrow_account.clone(),
 		);
 
-		let amount =
-			pallet_data.amount.checked_into().ok_or(Ics20Error::invalid_convert_number())?;
+		let amount = pallet_data.amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
 
 		log::info!("🤮ics20_handle handle_recv_packet amount = {:?}", amount);
 
@@ -291,11 +291,10 @@ where
 			T::Currency::transfer(&escrow_account, &pallet_data.receiver, amount, AllowDeath);
 		match result {
 			Ok(_) => {},
-			Err(_err) => {
+			Err(_err) =>
 				ack = FungibleTokenPacketAcknowledgement::Err(FungibleTokenPacketError {
 					error: "transfer coin failed".to_string(),
-				})
-			},
+				}),
 		}
 	} else {
 		let source_prefix = get_denom_prefix(&packet.source_port, &packet.source_channel);
@@ -307,15 +306,16 @@ where
 			"🤮ics20_handle handle_recv_packet prefixed_denomination = {:?}",
 			prefixed_denomination
 		);
-		let denom_trace = parse_denom_trace(&prefixed_denomination)?;
+		let denom_trace = parse_denom_trace(&prefixed_denomination)
+			.map_err(|_| Error::<T>::ParseDenomTraceError)?;
 		log::info!("🤮ics20_handle handle_recv_packet denom_trace = {:?}", denom_trace);
 
-		let trace_hash = denom_trace.hash()?;
+		let trace_hash = denom_trace.hash().unwrap(); // todo
 		if !ctx.has_denom_trace(&trace_hash) {
 			let _ = ctx.set_denom_trace(&denom_trace);
 		}
 
-		let voucher_denom = denom_trace.ibc_denom()?;
+		let voucher_denom = denom_trace.ibc_denom().map_err(|_| Error::<T>::GetIbcDenomError)?;
 		log::info!("🤮ics20_handle handle_recv_packet voucher_denom = {:?}", voucher_denom);
 
 		// TODO
@@ -335,8 +335,7 @@ where
 
 		let pallet_data: FungibleTokenPacketData<T> = data.into();
 
-		let amount =
-			pallet_data.amount.checked_into().ok_or(Ics20Error::invalid_convert_number())?;
+		let amount = pallet_data.amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
 
 		log::info!("🤮ics20_handle handle_recv_packet amount = {:?}", amount);
 		let result = <T::Assets as fungibles::Mutate<T::AccountId>>::mint_into(
@@ -346,11 +345,10 @@ where
 		);
 		match result {
 			Ok(()) => {},
-			Err(_) => {
+			Err(_) =>
 				ack = FungibleTokenPacketAcknowledgement::Err(FungibleTokenPacketError {
 					error: "mint coins failed".to_string(),
-				})
-			},
+				}),
 		}
 	}
 
@@ -364,7 +362,7 @@ pub fn handle_timeout_packet<Ctx, T: Config>(
 	ctx: &Ctx,
 	packet: IbcPacket,
 	data: IBCFungibleTokenPacketData,
-) -> Result<(), Ics20Error>
+) -> Result<(), sp_runtime::DispatchError>
 where
 	Ctx: Ics20Context,
 {
@@ -383,16 +381,16 @@ pub fn handle_ack_packet<Ctx, T: Config>(
 	packet: IbcPacket,
 	data: IBCFungibleTokenPacketData,
 	acknowledgement: Acknowledgement,
-) -> Result<(), Ics20Error>
+) -> Result<(), sp_runtime::DispatchError>
 where
 	Ctx: Ics20Context,
 {
-	let response = acknowledgement.response.ok_or(Ics20Error::acknowledgement_response_empty())?;
+	let response = acknowledgement.response.ok_or(Error::<T>::AcknowledgementResponseEmpty)?;
 
 	match response {
 		Response::Error(e) => {
 			log::trace!(target:"runtime::pallet-ibc","in ics20_handler : handle ack packet error >> {:?}", e);
-			return refund_packet_token::<Ctx, T>(ctx, packet, data);
+			return refund_packet_token::<Ctx, T>(ctx, packet, data)
 		},
 		Response::Result(ret) => Ok(()),
 	}
@@ -408,11 +406,11 @@ fn refund_packet_token<Ctx, T: Config>(
 	ctx: &Ctx,
 	packet: IbcPacket,
 	data: IBCFungibleTokenPacketData,
-) -> Result<(), Ics20Error>
+) -> Result<(), sp_runtime::DispatchError>
 where
 	Ctx: Ics20Context,
 {
-	let trace = parse_denom_trace(&data.denom)?;
+	let trace = parse_denom_trace(&data.denom).map_err(|_| Error::<T>::ParseDenomTraceError)?;
 	log::info!("🤮ics20_handle refund_packet_token trace = {:?}", trace);
 	// // parse the transfer amount
 	// transferAmount, ok := sdk.NewIntFromString(data.Amount)
@@ -441,23 +439,19 @@ where
 			escrow_account.clone(),
 		);
 
-		let amount =
-			pallet_data.amount.checked_into().ok_or(Ics20Error::invalid_convert_number())?;
+		let amount = pallet_data.amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
 
 		log::info!("🤮ics20_handle refund_packet_token amount = {:?}", amount);
-		T::Currency::transfer(&escrow_account, &pallet_data.sender, amount, AllowDeath)
-			.map_err(|_| Ics20Error::invalid_transfer())?;
+		T::Currency::transfer(&escrow_account, &pallet_data.sender, amount, AllowDeath)?;
 	} else {
-		let amount =
-			pallet_data.amount.checked_into().ok_or(Ics20Error::invalid_convert_number())?;
+		let amount = pallet_data.amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
 
 		log::info!("🤮ics20_handle refund_packet_token amount = {:?}", amount);
 		<T::Assets as fungibles::Mutate<T::AccountId>>::mint_into(
 			T::AssetId::default(), // TODO
 			&pallet_data.receiver,
 			amount,
-		)
-		.map_err(|_| Ics20Error::invalid_mint())?;
+		)?;
 	}
 
 	Ok(())

@@ -185,7 +185,7 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 			// handle recv packet
 			let result = ics20_handler::handle_recv_packet::<Ctx, T>(ctx, packet, data);
 			if let Err(err) = result {
-				acknowledgement = Acknowledgement::new_error(format!("{}", err));
+				acknowledgement = Acknowledgement::new_error(format!("handle rev packet error"));
 			}
 		}
 
@@ -211,7 +211,7 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 		let data = FungibleTokenPacketData::decode(&mut &packet.data[..])
 			.map_err(|e| Ics20Error::invalid_decode(e))?;
 
-		let ret = ics20_handler::handle_ack_packet::<Ctx, T>(ctx, packet, data, ack.into())?;
+		let ret = ics20_handler::handle_ack_packet::<Ctx, T>(ctx, packet, data, ack.into());
 
 		Ok(())
 	}
@@ -231,7 +231,7 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 			.map_err(|e| Ics20Error::invalid_decode(e))?;
 
 		// handle ack packet/refund tokens
-		let ret = ics20_handler::handle_timeout_packet::<Ctx, T>(ctx, packet, data)?;
+		let ret = ics20_handler::handle_timeout_packet::<Ctx, T>(ctx, packet, data);
 
 		Ok(())
 	}

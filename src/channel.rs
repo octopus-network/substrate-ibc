@@ -87,9 +87,9 @@ impl<T: Config> ChannelReader for Context<T> {
 				"in channel : [connection_channels] >> Vector<(PortId, ChannelId)> =  {:?}",
 				result
 			);
-			return Ok(result);
+			return Ok(result)
 		} else {
-			return Err(Ics04Error::connection_not_open(conn_id.clone()));
+			return Err(Ics04Error::connection_not_open(conn_id.clone()))
 		}
 	}
 
@@ -125,7 +125,7 @@ impl<T: Config> ChannelReader for Context<T> {
 					"in channel: [client_consensus_state] >> any consensus state = {:?}",
 					any_consensus_state
 				);
-				return Ok(any_consensus_state);
+				return Ok(any_consensus_state)
 			}
 		}
 		log::trace!(target:"runtime::pallet-ibc",
@@ -142,16 +142,14 @@ impl<T: Config> ChannelReader for Context<T> {
 		log::trace!(target:"runtime::pallet-ibc","in channel : [authenticated_capability]");
 
 		match PortReader::lookup_module_by_port(self, port_id) {
-			Ok((_, key)) => {
+			Ok((_, key)) =>
 				if !PortReader::authenticate(self, port_id.clone(), &key) {
 					Err(Ics04Error::invalid_port_capability())
 				} else {
 					Ok(Capability::from(key).into())
-				}
-			},
-			Err(e) if e.detail() == Ics05Error::unknown_port(port_id.clone()).detail() => {
-				Err(Ics04Error::no_port_capability(port_id.clone()))
-			},
+				},
+			Err(e) if e.detail() == Ics05Error::unknown_port(port_id.clone()).detail() =>
+				Err(Ics04Error::no_port_capability(port_id.clone())),
 			Err(_) => Err(Ics04Error::implementation_specific()),
 		}
 	}
@@ -327,8 +325,8 @@ impl<T: Config> ChannelReader for Context<T> {
 		// let time = T::TimeProvider::now();
 		// let ts = Timestamp::from_nanoseconds(time.as_nanos() as u64)
 		// 	.map_err(|e| panic!("{:?}, caused by {:?} from pallet timestamp_pallet", e, time));
-		// log::trace!(target:"runtime::pallet-ibc","in channel: [host_timestamp] >> host_timestamp = {:?}",
-		// ts.clone().unwrap()); ts.unwrap()
+		// log::trace!(target:"runtime::pallet-ibc","in channel: [host_timestamp] >> host_timestamp
+		// = {:?}", ts.clone().unwrap()); ts.unwrap()
 		ClientReader::host_timestamp(self)
 	}
 
