@@ -31,7 +31,7 @@ use ibc::{
 
 impl<T: Config> ChannelReader for Context<T> {
 	fn channel_end(&self, port_channel_id: &(PortId, ChannelId)) -> Result<ChannelEnd, Ics04Error> {
-		log::trace!(
+		log::trace!(target:"runtime::pallet-ibc",
 			"in channel : [channel_end]"
 		);
 
@@ -41,19 +41,19 @@ impl<T: Config> ChannelReader for Context<T> {
 			Ics04Error::channel_not_found(port_channel_id.clone().0, port_channel_id.clone().1)
 		})?;
 
-		log::trace!("in channel : [channel_end] >> channel_end = {:?}", channel_end);
+		log::trace!(target:"runtime::pallet-ibc","in channel : [channel_end] >> channel_end = {:?}", channel_end);
 		Ok(channel_end)
 	}
 
 	fn connection_end(&self, connection_id: &ConnectionId) -> Result<ConnectionEnd, Ics04Error> {
-		log::trace!("in channel : [connection_end]");
+		log::trace!(target:"runtime::pallet-ibc","in channel : [connection_end]");
 
 		let data = <Connections<T>>::get(connection_id.as_bytes());
 
 		let ret = ConnectionEnd::decode_vec(&*data)
 			.map_err(|_| Ics04Error::connection_not_open(connection_id.clone()))?;
 
-		log::trace!("In channel : [connection_end] >> connection_end = {:?}", ret);
+		log::trace!(target:"runtime::pallet-ibc","In channel : [connection_end] >> connection_end = {:?}", ret);
 		Ok(ret)
 	}
 
@@ -62,7 +62,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		&self,
 		conn_id: &ConnectionId,
 	) -> Result<Vec<(PortId, ChannelId)>, Ics04Error> {
-		log::trace!("in channel : [connection_channels]");
+		log::trace!(target:"runtime::pallet-ibc","in channel : [connection_channels]");
 
 		if <ChannelsConnection<T>>::contains_key(conn_id.as_bytes()) {
 			let port_and_channel_id = <ChannelsConnection<T>>::get(conn_id.as_bytes());
@@ -83,25 +83,25 @@ impl<T: Config> ChannelReader for Context<T> {
 				result.push((port_id, channel_id));
 			}
 
-			log::trace!(
+			log::trace!(target:"runtime::pallet-ibc",
 				"in channel : [connection_channels] >> Vector<(PortId, ChannelId)> =  {:?}",
 				result
 			);
-			return Ok(result)
+			return Ok(result);
 		} else {
-			return Err(Ics04Error::connection_not_open(conn_id.clone()))
+			return Err(Ics04Error::connection_not_open(conn_id.clone()));
 		}
 	}
 
 	fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, Ics04Error> {
-		log::trace!("in channel : [client_state]");
+		log::trace!(target:"runtime::pallet-ibc","in channel : [client_state]");
 
 		let data = <ClientStates<T>>::get(client_id.as_bytes());
 
 		let any_consensus_state = AnyClientState::decode_vec(&*data)
 			.map_err(|_| Ics04Error::frozen_client(client_id.clone()))?;
 
-		log::trace!("in channel : [client_state] >> Any client state: {:?}", any_consensus_state);
+		log::trace!(target:"runtime::pallet-ibc","in channel : [client_state] >> Any client state: {:?}", any_consensus_state);
 		Ok(any_consensus_state)
 	}
 
@@ -110,7 +110,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		client_id: &ClientId,
 		height: Height,
 	) -> Result<AnyConsensusState, Ics04Error> {
-		log::trace!(
+		log::trace!(target:"runtime::pallet-ibc",
 			"in channel : [client_consensus_state]"
 		);
 
@@ -121,14 +121,14 @@ impl<T: Config> ChannelReader for Context<T> {
 			if item.0 == height {
 				let any_consensus_state = AnyConsensusState::decode_vec(&*item.1)
 					.map_err(|e| Ics04Error::invalid_decode(e))?;
-				log::trace!(
+				log::trace!(target:"runtime::pallet-ibc",
 					"in channel: [client_consensus_state] >> any consensus state = {:?}",
 					any_consensus_state
 				);
-				return Ok(any_consensus_state)
+				return Ok(any_consensus_state);
 			}
 		}
-		log::trace!(
+		log::trace!(target:"runtime::pallet-ibc",
 			"in channel : [client_consensus_state] >> read about client_id consensus_state error"
 		);
 
@@ -139,17 +139,19 @@ impl<T: Config> ChannelReader for Context<T> {
 	}
 
 	fn authenticated_capability(&self, port_id: &PortId) -> Result<ChannelCapability, Ics04Error> {
-		log::trace!("in channel : [authenticated_capability]");
+		log::trace!(target:"runtime::pallet-ibc","in channel : [authenticated_capability]");
 
 		match PortReader::lookup_module_by_port(self, port_id) {
-			Ok((_, key)) =>
+			Ok((_, key)) => {
 				if !PortReader::authenticate(self, port_id.clone(), &key) {
 					Err(Ics04Error::invalid_port_capability())
 				} else {
 					Ok(Capability::from(key).into())
-				},
-			Err(e) if e.detail() == Ics05Error::unknown_port(port_id.clone()).detail() =>
-				Err(Ics04Error::no_port_capability(port_id.clone())),
+				}
+			},
+			Err(e) if e.detail() == Ics05Error::unknown_port(port_id.clone()).detail() => {
+				Err(Ics04Error::no_port_capability(port_id.clone()))
+			},
 			Err(_) => Err(Ics04Error::implementation_specific()),
 		}
 	}
@@ -158,14 +160,14 @@ impl<T: Config> ChannelReader for Context<T> {
 		&self,
 		port_channel_id: &(PortId, ChannelId),
 	) -> Result<Sequence, Ics04Error> {
-		log::trace!(
+		log::trace!(target:"runtime::pallet-ibc",
 			"in channel : [get_next_sequence]"
 		);
 
 		let sequence =
 			<NextSequenceSend<T>>::get(port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes());
 
-		log::trace!("in channel : [get_next_sequence] >> sequence  = {:?}", sequence);
+		log::trace!(target:"runtime::pallet-ibc","in channel : [get_next_sequence] >> sequence  = {:?}", sequence);
 		Ok(Sequence::from(sequence))
 	}
 
@@ -173,14 +175,14 @@ impl<T: Config> ChannelReader for Context<T> {
 		&self,
 		port_channel_id: &(PortId, ChannelId),
 	) -> Result<Sequence, Ics04Error> {
-		log::trace!(
+		log::trace!(target:"runtime::pallet-ibc",
 			"in channel : [get_next_sequence_recv]"
 		);
 
 		let sequence =
 			<NextSequenceRecv<T>>::get(port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes());
 
-		log::trace!("in channel : [get_next_sequence_recv] >> sequence = {:?}", sequence);
+		log::trace!(target:"runtime::pallet-ibc","in channel : [get_next_sequence_recv] >> sequence = {:?}", sequence);
 		Ok(Sequence::from(sequence))
 	}
 
@@ -188,14 +190,14 @@ impl<T: Config> ChannelReader for Context<T> {
 		&self,
 		port_channel_id: &(PortId, ChannelId),
 	) -> Result<Sequence, Ics04Error> {
-		log::trace!(
+		log::trace!(target:"runtime::pallet-ibc",
 			"in channel : [get_next_sequence_ack]"
 		);
 
 		let sequence =
 			<NextSequenceAck<T>>::get(port_channel_id.0.as_bytes(), port_channel_id.1.as_bytes());
 
-		log::trace!("in channel : [get_next_sequence_ack] >> sequence = {}", sequence);
+		log::trace!(target:"runtime::pallet-ibc","in channel : [get_next_sequence_ack] >> sequence = {}", sequence);
 		Ok(Sequence::from(sequence))
 	}
 
@@ -204,7 +206,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		&self,
 		key: &(PortId, ChannelId, Sequence),
 	) -> Result<String, Ics04Error> {
-		log::trace!("in channel : [get_packet_commitment]"
+		log::trace!(target:"runtime::pallet-ibc","in channel : [get_packet_commitment]"
 		);
 
 		let sequence = u64::from(key.2);
@@ -216,13 +218,13 @@ impl<T: Config> ChannelReader for Context<T> {
 				Vec::<u8>::decode(&mut data).map_err(|e| Ics04Error::invalid_codec_decode(e))?;
 			let result =
 				String::from_utf8(data.clone()).map_err(|e| Ics04Error::invalid_from_utf8(e))?;
-			log::trace!(
+			log::trace!(target:"runtime::pallet-ibc",
 				"in channel : [get_packet_commitment] >> packet_commitment = {:?}, packet_commitment_vec = {:?}",
 				result, data
 			);
 			Ok(result)
 		} else {
-			log::trace!(
+			log::trace!(target:"runtime::pallet-ibc",
 				"in channel : [get_packet_commitment] >> read get packet commitment return None"
 			);
 			Err(Ics04Error::packet_commitment_not_found(key.2))
@@ -233,7 +235,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		&self,
 		key: &(PortId, ChannelId, Sequence),
 	) -> Result<Receipt, Ics04Error> {
-		log::trace!("in channel : [get_packet_receipt]"
+		log::trace!(target:"runtime::pallet-ibc","in channel : [get_packet_receipt]"
 		);
 
 		let sequence = u64::from(key.2);
@@ -250,10 +252,10 @@ impl<T: Config> ChannelReader for Context<T> {
 				"Ok" => Receipt::Ok,
 				_ => unreachable!(),
 			};
-			log::trace!("in channel : [get_packet_receipt] >> packet_receipt = {:?}", data);
+			log::trace!(target:"runtime::pallet-ibc","in channel : [get_packet_receipt] >> packet_receipt = {:?}", data);
 			Ok(data)
 		} else {
-			log::trace!("in channel : [get_packet_receipt] >> read get packet receipt not found");
+			log::trace!(target:"runtime::pallet-ibc","in channel : [get_packet_receipt] >> read get packet receipt not found");
 			Err(Ics04Error::packet_receipt_not_found(key.2))
 		}
 	}
@@ -263,7 +265,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		&self,
 		key: &(PortId, ChannelId, Sequence),
 	) -> Result<String, Ics04Error> {
-		log::trace!("in channel : [get_packet_acknowledgement]"
+		log::trace!(target:"runtime::pallet-ibc","in channel : [get_packet_acknowledgement]"
 		);
 
 		let seq = u64::from(key.2);
@@ -275,13 +277,13 @@ impl<T: Config> ChannelReader for Context<T> {
 				Vec::<u8>::decode(&mut data).map_err(|e| Ics04Error::invalid_codec_decode(e))?;
 			let result =
 				String::from_utf8(data.clone()).map_err(|e| Ics04Error::invalid_from_utf8(e))?;
-			log::trace!(
+			log::trace!(target:"runtime::pallet-ibc",
 				"in channel : [get_packet_acknowledgement] >> packet_acknowledgement = {:?}",
 				result
 			);
 			Ok(result)
 		} else {
-			log::trace!(
+			log::trace!(target:"runtime::pallet-ibc",
 				"in channel : [get_packet_acknowledgement] >> get acknowledgement not found"
 			);
 			Err(Ics04Error::packet_acknowledgement_not_found(key.2))
@@ -290,7 +292,7 @@ impl<T: Config> ChannelReader for Context<T> {
 
 	/// A hashing function for packet commitments
 	fn hash(&self, value: String) -> String {
-		log::trace!("in channel: [hash]");
+		log::trace!(target:"runtime::pallet-ibc","in channel: [hash]");
 
 		let r = sp_io::hashing::sha2_256(value.as_bytes());
 
@@ -298,19 +300,19 @@ impl<T: Config> ChannelReader for Context<T> {
 		for item in r.iter() {
 			tmp.push_str(&format!("{:02x}", item));
 		}
-		log::trace!("in channel: [hash] >> result = {:?}", tmp.clone());
+		log::trace!(target:"runtime::pallet-ibc","in channel: [hash] >> result = {:?}", tmp.clone());
 		tmp
 	}
 
 	/// Returns the current height of the local chain.
 	fn host_height(&self) -> Height {
-		log::trace!("in channel: [host_height]");
+		log::trace!(target:"runtime::pallet-ibc","in channel: [host_height]");
 
 		let block_number = format!("{:?}", <frame_system::Pallet<T>>::block_number());
 
 		let current_height: u64 = block_number.parse().unwrap_or_default();
 
-		log::trace!(
+		log::trace!(target:"runtime::pallet-ibc",
 			"in channel: [host_height] >> host_height = {:?}",
 			Height::new(0, current_height)
 		);
@@ -319,26 +321,26 @@ impl<T: Config> ChannelReader for Context<T> {
 
 	/// Returns the current timestamp of the local chain.
 	fn host_timestamp(&self) -> Timestamp {
-		log::trace!("in channel: [host_timestamp]");
+		log::trace!(target:"runtime::pallet-ibc","in channel: [host_timestamp]");
 
 		// use frame_support::traits::UnixTime;
 		// let time = T::TimeProvider::now();
 		// let ts = Timestamp::from_nanoseconds(time.as_nanos() as u64)
 		// 	.map_err(|e| panic!("{:?}, caused by {:?} from pallet timestamp_pallet", e, time));
-		// log::trace!("in channel: [host_timestamp] >> host_timestamp = {:?}",
+		// log::trace!(target:"runtime::pallet-ibc","in channel: [host_timestamp] >> host_timestamp = {:?}",
 		// ts.clone().unwrap()); ts.unwrap()
 		ClientReader::host_timestamp(self)
 	}
 
 	/// Returns the `AnyConsensusState` for the given identifier `height`.
 	fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Ics04Error> {
-		log::trace!("in channel: [host_consensus_state]");
+		log::trace!(target:"runtime::pallet-ibc","in channel: [host_consensus_state]");
 
 		ConnectionReader::host_consensus_state(self, height).map_err(Ics04Error::ics03_connection)
 	}
 
 	fn pending_host_consensus_state(&self) -> Result<AnyConsensusState, Ics04Error> {
-		log::trace!("in channel: [pending_host_consensus_stata]");
+		log::trace!(target:"runtime::pallet-ibc","in channel: [pending_host_consensus_stata]");
 
 		ClientReader::pending_host_consensus_state(self)
 			.map_err(|e| Ics04Error::ics03_connection(ICS03Error::ics02_client(e)))
@@ -350,7 +352,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		client_id: &ClientId,
 		height: Height,
 	) -> Result<Timestamp, Ics04Error> {
-		log::trace!(
+		log::trace!(target:"runtime::pallet-ibc",
 			"in channel: [client_update_time]"
 		);
 
@@ -377,7 +379,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		client_id: &ClientId,
 		height: Height,
 	) -> Result<Height, Ics04Error> {
-		log::trace!(
+		log::trace!(target:"runtime::pallet-ibc",
 			"in channel: [client_update_height]"
 		);
 		if <ClientProcessedHeights<T>>::contains_key(
@@ -400,14 +402,14 @@ impl<T: Config> ChannelReader for Context<T> {
 	/// The value of this counter should increase only via method
 	/// `ChannelKeeper::increase_channel_counter`.
 	fn channel_counter(&self) -> Result<u64, Ics04Error> {
-		log::trace!(
+		log::trace!(target:"runtime::pallet-ibc",
 			"in channel: [channel_counter]"
 		);
 		Ok(<Pallet<T> as Store>::ChannelCounter::get())
 	}
 
 	fn max_expected_time_per_block(&self) -> Duration {
-		log::trace!(
+		log::trace!(target:"runtime::pallet-ibc",
 			"in channel: [max_expected_time_per_block]"
 		);
 		Duration::from_secs(6)
@@ -419,7 +421,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		channel_id: &ChannelId,
 		port_id: &PortId,
 	) -> Result<(ModuleId, ChannelCapability), Ics04Error> {
-		log::trace!(
+		log::trace!(target:"runtime::pallet-ibc",
 			"in channel: [lookup_module_by_channel]"
 		);
 		// todo
@@ -436,7 +438,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		heigh: Height,
 		data: Vec<u8>,
 	) -> Result<(), Ics04Error> {
-		log::trace!("in channel: [store_packet_commitment]");
+		log::trace!(target:"runtime::pallet-ibc","in channel: [store_packet_commitment]");
 
 		let input = format!("{:?},{:?},{:?}", timestamp, heigh, data);
 		let sequence = u64::from(key.2);
@@ -460,7 +462,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		&mut self,
 		key: (PortId, ChannelId, Sequence),
 	) -> Result<(), Ics04Error> {
-		log::trace!("in channel: [delete_packet_commitment]");
+		log::trace!(target:"runtime::pallet-ibc","in channel: [delete_packet_commitment]");
 
 		let sequence = u64::from(key.2);
 
@@ -492,7 +494,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		key: (PortId, ChannelId, Sequence),
 		receipt: Receipt,
 	) -> Result<(), Ics04Error> {
-		log::trace!("in channel: [store_packet_receipt]");
+		log::trace!(target:"runtime::pallet-ibc","in channel: [store_packet_receipt]");
 
 		let receipt = match receipt {
 			Receipt::Ok => "Ok".encode(),
@@ -513,7 +515,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		key: (PortId, ChannelId, Sequence),
 		ack: Vec<u8>,
 	) -> Result<(), Ics04Error> {
-		log::trace!("in channel: [store_packet_acknowledgement]");
+		log::trace!(target:"runtime::pallet-ibc","in channel: [store_packet_acknowledgement]");
 
 		let ack = format!("{:?}", ack);
 		let sequence = u64::from(key.2);
@@ -537,7 +539,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		&mut self,
 		key: (PortId, ChannelId, Sequence),
 	) -> Result<(), Ics04Error> {
-		log::trace!("in channel: [delete_packet_acknowledgement]");
+		log::trace!(target:"runtime::pallet-ibc","in channel: [delete_packet_acknowledgement]");
 
 		let sequence = u64::from(key.2);
 
@@ -569,7 +571,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		conn_id: ConnectionId,
 		port_channel_id: &(PortId, ChannelId),
 	) -> Result<(), Ics04Error> {
-		log::trace!("in channel: [store_connection_channels]");
+		log::trace!(target:"runtime::pallet-ibc","in channel: [store_connection_channels]");
 
 		let conn_id = conn_id.as_bytes().to_vec();
 
@@ -577,7 +579,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 			(port_channel_id.0.as_bytes().to_vec(), port_channel_id.1.as_bytes().to_vec());
 
 		if <ChannelsConnection<T>>::contains_key(conn_id.clone()) {
-			log::trace!("in channel: [store_connection_channels] >> insert port_channel_id");
+			log::trace!(target:"runtime::pallet-ibc","in channel: [store_connection_channels] >> insert port_channel_id");
 			// if connection_identifier exist
 			let ret =
 				<ChannelsConnection<T>>::try_mutate(conn_id, |val| -> Result<(), Ics04Error> {
@@ -587,7 +589,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 				.map_err(|_| Ics04Error::invalid_store_channels_connection());
 		} else {
 			// if connection_identifier no exist
-			log::trace!("in channel: [store_connection_channels] >> init ChannelsConnection");
+			log::trace!(target:"runtime::pallet-ibc","in channel: [store_connection_channels] >> init ChannelsConnection");
 			let temp_connection_channels = vec![port_channel_id];
 			<ChannelsConnection<T>>::insert(conn_id, temp_connection_channels);
 		}
@@ -601,7 +603,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		port_channel_id: (PortId, ChannelId),
 		channel_end: &ChannelEnd,
 	) -> Result<(), Ics04Error> {
-		log::trace!("in channel: [store_channel]");
+		log::trace!(target:"runtime::pallet-ibc","in channel: [store_channel]");
 
 		let channel_end = channel_end.encode_vec().map_err(|_| Ics04Error::invalid_encode())?;
 
@@ -636,7 +638,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		port_channel_id: (PortId, ChannelId),
 		seq: Sequence,
 	) -> Result<(), Ics04Error> {
-		log::trace!("in channel: [store_next_sequence_send]");
+		log::trace!(target:"runtime::pallet-ibc","in channel: [store_next_sequence_send]");
 
 		let sequence = u64::from(seq);
 
@@ -654,7 +656,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		port_channel_id: (PortId, ChannelId),
 		seq: Sequence,
 	) -> Result<(), Ics04Error> {
-		log::trace!("in channel: [store_next_sequence_recv]");
+		log::trace!(target:"runtime::pallet-ibc","in channel: [store_next_sequence_recv]");
 
 		let sequence = u64::from(seq);
 
@@ -672,7 +674,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		port_channel_id: (PortId, ChannelId),
 		seq: Sequence,
 	) -> Result<(), Ics04Error> {
-		log::trace!("in channel: [store_next_sequence_ack]");
+		log::trace!(target:"runtime::pallet-ibc","in channel: [store_next_sequence_ack]");
 
 		let sequence = u64::from(seq);
 
@@ -689,7 +691,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 	/// Increases the counter which keeps track of how many channels have been created.
 	/// Should never fail.
 	fn increase_channel_counter(&mut self) {
-		log::trace!("in channel: [increase_channel_counter]");
+		log::trace!(target:"runtime::pallet-ibc","in channel: [increase_channel_counter]");
 
 		let ret = <ChannelCounter<T>>::try_mutate(|val| -> Result<(), Ics04Error> {
 			let new = val.checked_add(1).ok_or(Ics04Error::ivalid_increase_channel_counter())?;

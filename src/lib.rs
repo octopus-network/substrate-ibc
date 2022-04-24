@@ -985,7 +985,7 @@ pub mod pallet {
 
 			match result {
 				Ok(_) => {
-					log::trace!("update the beefy light client sucesse! and the beefy light client state is : {:?} \n",light_client);
+					log::trace!(target:"runtime::pallet-ibc","update the beefy light client sucesse! and the beefy light client state is : {:?} \n",light_client);
 
 					// update client_client block number and latest commitment
 					let latest_commitment =
@@ -1161,6 +1161,7 @@ pub mod pallet {
 				match event.clone() {
 					IbcEvent::SendPacket(value) => {
 						// refer to https://github.com/octopus-network/ibc-go/blob/f5962c3324ee7e69eeaa9918b65eb1b089da6095/modules/apps/transfer/keeper/msg_server.go#L16
+						log::trace!(target: LOG_TARGET,"send packet is : {:?}", value.packet);
 
 						let ret =
 							ics20_handler::handle_transfer::<Ctx, T>(ctx, value.clone().packet).unwrap();
@@ -1170,7 +1171,7 @@ pub mod pallet {
 
 					IbcEvent::ReceivePacket(value) => {
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L364
-
+						log::trace!(target: LOG_TARGET,"receive packet is : {:?}", value.packet);
 						let relayer_signer = get_signer::<T>(messages[index].clone())
 							.map_err(|_| Error::<T>::InvalidSigner)?;
 
@@ -1220,7 +1221,7 @@ pub mod pallet {
 					},
 					IbcEvent::TimeoutPacket(value) => {
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L442
-
+						log::trace!(target: LOG_TARGET,"timeout packet is : {:?}", value.packet);
 						let relayer_signer = get_signer::<T>(messages[index].clone())
 							.map_err(|_| Error::<T>::InvalidSigner)?;
 
@@ -1240,7 +1241,7 @@ pub mod pallet {
 
 					IbcEvent::AcknowledgePacket(value) => {
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L581
-
+						log::trace!(target: LOG_TARGET,"ack packet is : {:?}", value.packet);
 						let relayer_signer = get_signer::<T>(messages[index].clone())
 							.map_err(|_| Error::<T>::InvalidSigner)?;
 
