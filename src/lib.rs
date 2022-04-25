@@ -135,6 +135,7 @@ pub mod pallet {
 		core::{
 			ics04_channel::{
 				channel::{Counterparty, Order},
+				context::ChannelKeeper,
 				events::WriteAcknowledgement,
 				Version,
 			},
@@ -145,7 +146,6 @@ pub mod pallet {
 		events::IbcEvent,
 		signer::Signer,
 	};
-	use ibc::core::ics04_channel::context::ChannelKeeper;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -557,7 +557,6 @@ pub mod pallet {
 
 		/// invalid_validation
 		InvalidValidation,
-
 	}
 
 	// // mock client state
@@ -613,35 +612,34 @@ pub mod pallet {
 			_tmp: u8,
 		) -> DispatchResultWithPostInfo {
 			sp_tracing::within_span!(
-				sp_tracing::Level::TRACE, "validate_transaction";
-				{
-					let _sender = ensure_signed(origin)?;
-					let mut ctx = routing::Context::<T>::new();
-		
-					let messages: Vec<ibc_proto::google::protobuf::Any> = messages
-						.into_iter()
-						.map(|message| ibc_proto::google::protobuf::Any {
-							type_url: String::from_utf8(message.type_url.clone()).unwrap(),
-							value: message.value.clone(),
-						})
-						.collect();
-		
-					let mut results: Vec<IbcEvent> = vec![];
-					for (index, message) in messages.clone().into_iter().enumerate() {
-						let (mut result, _) =
-							ibc::core::ics26_routing::handler::deliver(&mut ctx, message.clone())
-								.map_err(|_| Error::<T>::Ics26Error)?;
-		
-						log::info!("result: {:?}", result);
-		
-						results.append(&mut result);
-					}
-		
-					let ret = Self::handle_result(&ctx, messages, results)?;
-		
-					Ok(().into())
-				})
-			
+			sp_tracing::Level::TRACE, "validate_transaction";
+			{
+				let _sender = ensure_signed(origin)?;
+				let mut ctx = routing::Context::<T>::new();
+
+				let messages: Vec<ibc_proto::google::protobuf::Any> = messages
+					.into_iter()
+					.map(|message| ibc_proto::google::protobuf::Any {
+						type_url: String::from_utf8(message.type_url.clone()).unwrap(),
+						value: message.value.clone(),
+					})
+					.collect();
+
+				let mut results: Vec<IbcEvent> = vec![];
+				for (index, message) in messages.clone().into_iter().enumerate() {
+					let (mut result, _) =
+						ibc::core::ics26_routing::handler::deliver(&mut ctx, message.clone())
+							.map_err(|_| Error::<T>::Ics26Error)?;
+
+					log::info!("result: {:?}", result);
+
+					results.append(&mut result);
+				}
+
+				let ret = Self::handle_result(&ctx, messages, results)?;
+
+				Ok(().into())
+			})
 		}
 
 		/// Update the MMR root stored in client_state
@@ -732,15 +730,15 @@ pub mod pallet {
 			// send to router
 			let mut ctx = routing::Context::<T>::new();
 			let send_transfer_result = ibc::applications::ics20_fungible_token_transfer::relay_application_logic::send_transfer::send_transfer(&ctx, msg.clone()).map_err(|_| Error::<T>::SendPacketError)?;
-			
+
 			ctx.store_packet_result(send_transfer_result.result)
-					.map_err(|_| Error::<T>::SendPacketError)?;
-			
+				.map_err(|_| Error::<T>::SendPacketError)?;
+
 			let send_transfer_result_event = send_transfer_result.events;
-			
+
 			// handle the result
 			log::info!("result: {:?}", send_transfer_result_event);
-			
+
 			Self::handle_result(&mut ctx, vec![msg.to_any()], send_transfer_result_event)?;
 
 			Ok(())
