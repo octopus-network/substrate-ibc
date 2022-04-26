@@ -17,23 +17,6 @@
 //! The pallet implements the chain specific logic of [ICS spec](https://github.com/cosmos/ibc/tree/ee71d0640c23ec4e05e924f52f557b5e06c1d82f),  
 //! and is integrated with [ibc-rs](https://github.com/informalsystems/ibc-rs),
 //! which implements the generic cross-chain logic in [ICS spec](https://github.com/cosmos/ibc/tree/ee71d0640c23ec4e05e924f52f557b5e06c1d82f).
-//!
-//! ### Terminology
-//!
-//! Please refer to [IBC Terminology](https://github.com/cosmos/ibc/blob/a983dd86815175969099d041906f6a14643e51ef/ibc/1_IBC_TERMINOLOGY.md).
-//!
-//! ### Goals
-//!
-//! This IBC module handles authentication, transport, and ordering of structured data packets
-//! relayed between modules on separate machines.
-//!
-//! ## Interface
-//!
-//! ###  Public Functions
-//!
-//! * `deliver` - `ibc::ics26_routing::handler::deliver` Receives datagram transmitted from
-//!   relayers/users, and pass to ICS26 router to look for the correct handler.
-
 extern crate alloc;
 
 pub use pallet::*;
@@ -148,6 +131,10 @@ pub mod pallet {
 		},
 		events::IbcEvent,
 		signer::Signer,
+	};
+	use ibc::{
+		clients::ics10_grandpa::consensus_state::ConsensusState as GPConsensusState,
+		core::ics02_client::client_consensus::AnyConsensusState,
 	};
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
@@ -402,57 +389,53 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		NewBlock(Height),
-
+		/// emit new block event
+		NewBlock(Height),	
+		/// emit create client event
 		CreateClient(Height, ClientId, ClientType, Height),
+		/// emit updte client event
 		UpdateClient(Height, ClientId, ClientType, Height),
+		/// emit update client state event
 		UpdateClientState(Height, EventClientState),
+		/// emit upgrade client event
 		UpgradeClient(Height, ClientId, ClientType, Height),
+		/// emit client misbehaviour event
 		ClientMisbehaviour(Height, ClientId, ClientType, Height),
+		/// emit open init connection event
 		OpenInitConnection(Height, Option<ConnectionId>, ClientId, Option<ConnectionId>, ClientId),
+		/// emit open try connection event
 		OpenTryConnection(Height, Option<ConnectionId>, ClientId, Option<ConnectionId>, ClientId),
+		/// emit open ack connection event
 		OpenAckConnection(Height, Option<ConnectionId>, ClientId, Option<ConnectionId>, ClientId),
-		OpenConfirmConnection(
-			Height,
-			Option<ConnectionId>,
-			ClientId,
-			Option<ConnectionId>,
-			ClientId,
-		),
+		/// emit open confirm connection event
+		OpenConfirmConnection(Height, Option<ConnectionId>, ClientId, Option<ConnectionId>, ClientId),
+		/// emit open init channel event
 		OpenInitChannel(Height, PortId, Option<ChannelId>, ConnectionId, PortId, Option<ChannelId>),
+		/// emit open try channel event
 		OpenTryChannel(Height, PortId, Option<ChannelId>, ConnectionId, PortId, Option<ChannelId>),
+		/// emit open ack channel event
 		OpenAckChannel(Height, PortId, Option<ChannelId>, ConnectionId, PortId, Option<ChannelId>),
-		OpenConfirmChannel(
-			Height,
-			PortId,
-			Option<ChannelId>,
-			ConnectionId,
-			PortId,
-			Option<ChannelId>,
-		),
-		CloseInitChannel(
-			Height,
-			PortId,
-			Option<ChannelId>,
-			ConnectionId,
-			PortId,
-			Option<ChannelId>,
-		),
-		CloseConfirmChannel(
-			Height,
-			PortId,
-			Option<ChannelId>,
-			ConnectionId,
-			PortId,
-			Option<ChannelId>,
-		),
+		/// emit open confirm channel event
+		OpenConfirmChannel( Height, PortId, Option<ChannelId>, ConnectionId, PortId, Option<ChannelId>),
+		/// emit close init channel event 
+		CloseInitChannel( Height, PortId, Option<ChannelId>, ConnectionId, PortId, Option<ChannelId>),
+		/// emit close confirm channel event
+		CloseConfirmChannel( Height, PortId, Option<ChannelId>, ConnectionId, PortId, Option<ChannelId>),
+		/// emit send packet event
 		SendPacket(Height, Packet),
+		/// emit receive packet
 		ReceivePacket(Height, Packet),
+		/// emit write acknowledgement packet event
 		WriteAcknowledgement(Height, Packet, Vec<u8>),
+		/// emit acknowledgement packet event
 		AcknowledgePacket(Height, Packet),
+		/// emit timeout packet event
 		TimeoutPacket(Height, Packet),
+		/// emit timeout on close packet event
 		TimeoutOnClosePacket(Height, Packet),
+		/// emit empty event
 		Empty(Vec<u8>),
+		/// emit chain error event
 		ChainError(Vec<u8>),
 	}
 
@@ -468,100 +451,68 @@ pub mod pallet {
 	pub enum Error<T> {
 		/// update the beefy light client failure!
 		UpdateBeefyLightClientFailure,
-
 		/// receive mmr root block number less than client_state.latest_commitment.block_number
 		ReceiveMmrRootBlockNumberLessThanClientStateLatestCommitmentBlockNumber,
-
 		/// client id not found
 		ClientIdNotFound,
-
 		/// Encode error
 		InvalidEncode,
-
 		/// Decode Error
 		InvalidDecode,
-
 		/// FromUtf8Error
 		InvalidFromUtf8,
-
 		/// ics26router error
 		Ics26Error,
-
 		/// invalid signer
 		InvalidSigner,
-
 		/// empty channel id
 		EmptyChannelId,
-
 		/// ics20 error
 		Ics20Error,
-
 		/// parse ibc packet error
 		InvalidPacket,
-
 		/// invalid signed_commitment
 		InvalidSignedCommitment,
-
 		/// invalid identifier
 		InvalidIdentifier,
-
 		/// invalid timestamp
 		InvalidTimestamp,
-
 		/// empty latest_commitment
 		EmptyLatestCommitment,
-
 		/// send packet error
 		SendPacketError,
-
 		/// ReceivePacket error
 		ReceivePacketError,
-
 		/// TimeoutPacket error
 		TimeoutPacketError,
-
 		/// AcknowledgePacket error
 		AcknowledgePacketError,
-
 		/// OpenInitChannel error
 		OpenInitChannelError,
-
 		/// OpenTryChannel error
 		OpenTryChannelError,
-
 		/// OpenAckChannel error
 		OpenAckChannelError,
-
 		/// OpenConfirmChannel error
 		OpenConfirmChannelError,
-
 		/// CloseInitChannel error
 		CloseInitChannelError,
-
 		/// CloseConfirmChannel error
 		CloseConfirmChannelError,
-
 		/// AmountOverflow
 		AmountOverflow,
-
 		// Serde IBCFungibleTokenPacketData error
 		SerdeIBCFungibleTokenPacketDataError,
-
 		/// Invalid parse
 		InvalidParse,
-
 		/// parse denom trace error
 		ParseDenomTraceError,
-
 		/// acknowledgement_response_empty
 		AcknowledgementResponseEmpty,
-
 		/// Get Ibc denom Error
 		GetIbcDenomError,
-
 		/// invalid_validation
 		InvalidValidation,
-
 		/// store packet result error 
 		StorePacketResultError,
 	}
@@ -573,19 +524,6 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		/// This function acts as an entry for all of the IBC request(except MMR root update).
 		/// I.e., create clients, update clients, handshakes to create channels, ...etc
-		///
-		/// Example of invoking this function via subxt
-		///
-		/// ```ignore
-		///     let api = client.to_runtime_api::<ibc_node::RuntimeApi<ibc_node::DefaultConfig>>();
-		///
-		///     let result = api
-		///         .tx()
-		///         .ibc()
-		///         .deliver(msg, 0)
-		///         .sign_and_submit(&signer)
-		///         .await?;
-		/// ```
 		#[pallet::weight(0)]
 		pub fn deliver(
 			origin: OriginFor<T>,
@@ -625,17 +563,6 @@ pub mod pallet {
 
 		/// Update the MMR root stored in client_state
 		/// Example of invoking this function via subxt
-		///
-		/// ```ignore
-		///     let api = client.to_runtime_api::<ibc_node::RuntimeApi<ibc_node::DefaultConfig>>();
-		///
-		///     let result = api
-		///         .tx()
-		///         .ibc()
-		///         .update_client_state(encode_client_id, encode_mmr_root)
-		///         .sign_and_submit(&signer)
-		///         .await?;
-		/// ```
 		#[pallet::weight(0)]
 		pub fn update_client_state(
 			origin: OriginFor<T>,
@@ -649,20 +576,6 @@ pub mod pallet {
 		}
 
 		/// Transfer interface for user test by explore
-		///
-		///
-		/// Example of invoking this function via subxt
-		///
-		/// ```ignore
-		///     let api = client.to_runtime_api::<ibc_node::RuntimeApi<ibc_node::DefaultConfig>>();
-		///
-		///     let result = api
-		///         .tx()
-		///         .ibc()
-		///         .transfer(msg, 0)
-		///         .sign_and_submit(&signer)
-		///         .await?;
-		/// ```
 		#[pallet::weight(0)]
 		pub fn transfer(
 			origin: OriginFor<T>,
@@ -1015,156 +928,6 @@ pub mod pallet {
 			Ok(().into())
 		}
 
-		/// update the latest height of a client
-		fn store_latest_height(ibc_event: IbcEvent) -> DispatchResultWithPostInfo {
-			match ibc_event {
-				IbcEvent::Empty(_value) => {
-					log::warn!("ibc event: {}", "Empty");
-				},
-				IbcEvent::NewBlock(value) => {
-					let height =
-						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
-					<LatestHeight<T>>::set(height);
-				},
-				IbcEvent::SendPacket(value) => {
-					// store height
-					let height =
-						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
-					<LatestHeight<T>>::set(height);
-
-					// store send-packet
-					let _value = value.clone();
-					let packet = Packet {
-						sequence: Sequence::from(_value.packet.sequence),
-						source_channel: ChannelId::from(_value.packet.source_channel),
-						source_port: PortId::from(_value.packet.source_port),
-						destination_channel: ChannelId::from(_value.packet.destination_channel),
-						destination_port: PortId::from(_value.packet.destination_port),
-						data: _value.packet.data,
-						timeout_timestamp: Timestamp::from(_value.packet.timeout_timestamp),
-						timeout_height: Height::from(_value.packet.timeout_height),
-					};
-					let packet = packet
-						.to_ibc_packet()
-						.map_err(|_| Error::<T>::InvalidPacket)?
-						.encode_vec()
-						.map_err(|_| Error::<T>::InvalidEncode)?;
-
-					let port_id = value.packet.source_port.as_bytes().to_vec();
-					let channel_id = value.packet.source_channel.as_bytes().to_vec();
-
-					<SendPacketEvent<T>>::insert(
-						(port_id, channel_id, u64::from(value.packet.sequence)),
-						packet,
-					);
-				},
-				IbcEvent::WriteAcknowledgement(value) => {
-					// store height
-					let height =
-						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
-					<LatestHeight<T>>::set(height);
-				},
-				IbcEvent::UpdateClient(value) => {
-					let height =
-						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
-					<LatestHeight<T>>::set(height);
-				},
-				IbcEvent::ReceivePacket(value) => {
-					let height =
-						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
-					<LatestHeight<T>>::set(height);
-				},
-				IbcEvent::CloseConfirmChannel(value) => {
-					let height =
-						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
-					<LatestHeight<T>>::set(height);
-				},
-				IbcEvent::CreateClient(value) => {
-					let height =
-						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
-					<LatestHeight<T>>::set(height);
-				},
-				IbcEvent::UpgradeClient(value) => {
-					let height = value
-						.0
-						.height
-						.clone()
-						.encode_vec()
-						.map_err(|_| Error::<T>::InvalidEncode)?;
-					<LatestHeight<T>>::set(height);
-				},
-				IbcEvent::ClientMisbehaviour(value) => {
-					let height =
-						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
-					<LatestHeight<T>>::set(height);
-				},
-				IbcEvent::OpenInitConnection(value) => {
-					let height =
-						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
-					<LatestHeight<T>>::set(height);
-				},
-				IbcEvent::OpenTryConnection(value) => {
-					let height =
-						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
-					<LatestHeight<T>>::set(height);
-				},
-				IbcEvent::OpenAckConnection(value) => {
-					let height =
-						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
-					<LatestHeight<T>>::set(height);
-				},
-				IbcEvent::OpenConfirmConnection(value) => {
-					let height =
-						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
-					<LatestHeight<T>>::set(height);
-				},
-				IbcEvent::OpenInitChannel(value) => {
-					let height =
-						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
-					<LatestHeight<T>>::set(height);
-				},
-				IbcEvent::OpenTryChannel(value) => {
-					let height =
-						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
-					<LatestHeight<T>>::set(height);
-				},
-				IbcEvent::OpenAckChannel(value) => {
-					let height =
-						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
-					<LatestHeight<T>>::set(height);
-				},
-				IbcEvent::OpenConfirmChannel(value) => {
-					let height =
-						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
-					<LatestHeight<T>>::set(height);
-				},
-				IbcEvent::CloseInitChannel(value) => {
-					let height =
-						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
-					<LatestHeight<T>>::set(height);
-				},
-				IbcEvent::AcknowledgePacket(value) => {
-					let height =
-						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
-					<LatestHeight<T>>::set(height);
-				},
-				IbcEvent::TimeoutPacket(value) => {
-					let height =
-						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
-					<LatestHeight<T>>::set(height);
-				},
-				IbcEvent::TimeoutOnClosePacket(value) => {
-					let height =
-						value.height().encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
-					<LatestHeight<T>>::set(height);
-				},
-				IbcEvent::ChainError(_value) => {
-					log::warn!("Ibc event: {}", "chainError");
-				},
-			}
-			Ok(().into())
-		}
-
 		/// inner update mmr root
 		fn inner_update_mmr_root(
 			client_id: Vec<u8>,
@@ -1221,6 +984,7 @@ pub mod pallet {
 			let signed_commitment =
 				commitment::SignedCommitment::try_from(decode_received_mmr_root.signed_commitment)
 					.map_err(|_| Error::<T>::InvalidSignedCommitment)?;
+					
 			let rev_block_number = signed_commitment.commitment.block_number;
 			if rev_block_number <= client_state.latest_commitment.block_number {
 				log::trace!(target: LOG_TARGET,"receive mmr root block number({}) less than client_state.latest_commitment.block_number({})",
@@ -1322,6 +1086,7 @@ pub mod pallet {
 					let height = height.encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
 					let data =
 						any_consensus_state.encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
+
 					if <ConsensusStates<T>>::contains_key(client_id.clone()) {
 						// if consensus_state is no empty use push insert an exist
 						// ConsensusStates
