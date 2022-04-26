@@ -150,18 +150,30 @@ where
 
 	// get source_channel_id from packet
 	let source_channel = packet.source_channel.clone();
+	log::info!("🤮ics20_handle transfer source_channel = {:?}", source_channel);
+
 	// get source_port_id  from packet
 	let source_port = packet.source_port.clone();
+	log::info!("🤮ics20_handle transfer source_port = {:?}", source_port);
 
 	// convert IBC FungibleTokenPacketData to substrate FungibleTokenPacketData
 	let pallet_data: FungibleTokenPacketData<T> = packet_data.into();
-	let denomination = token_denom;
-	let amount = pallet_data.amount;
-	let sender = pallet_data.sender;
+	// log::info!("🤮ics20_handle transfer pallet_data = {:?}", pallet_data);
 
+	let denomination = token_denom;
+	log::info!("🤮ics20_handle transfer denomination = {:?}", denomination);
+	
+	let amount = pallet_data.amount;
+	log::info!("🤮ics20_handle transfer amount = {:?}", amount);
+	
+	let sender = pallet_data.sender;
+	log::info!("🤮ics20_handle transfer sendr = {:?}", sender);
+	
 	if sender_chain_is_source(&source_port, &source_channel, &denomination) {
 		// determine escrow account
 		let escrow_account = generate_escrow_account::<T>(source_channel.clone())?;
+		log::info!("🤮ics20_handle transfer escrow_account = {:?}", escrow_account);
+
 		<EscrowAddresses<T>>::insert(
 			PortId::from(source_port),
 			ChannelId::from(source_channel),
@@ -178,6 +190,8 @@ where
 		log::info!("🤮ics20_handle transfer amount = {:?}", amount);
 
 		T::Currency::transfer(&sender, &escrow_account, amount, AllowDeath)?;
+
+		log::info!("🔥🔥🔥🔥🔥ics20_handle_transfer: escrow source tokens (assumed to fail if balance insufficient), Success!!!");
 	} else {
 		// todo
 		// receiver is source chain, burn vouchers
@@ -194,6 +208,8 @@ where
 			&sender,
 			amount,
 		)?;
+
+		log::info!("🔥🔥🔥🔥🔥ics20_handle_transfer: receiver is source chain, burn vouchers, Success!!!!!");
 	}
 
 	Ok(())
@@ -213,7 +229,7 @@ pub fn handle_recv_packet<Ctx, T: Config>(
 	data: IBCFungibleTokenPacketData,
 ) -> Result<FungibleTokenPacketAcknowledgement, sp_runtime::DispatchError>
 where
-	Ctx: Ics20Context,
+	Ctx: Ics20Context
 {
 	data.validate_basic().map_err(|_| Error::<T>::InvalidValidation)?;
 
@@ -245,6 +261,7 @@ where
 	) {
 		let voucher_prefix = get_denom_prefix(&packet.source_port, &packet.source_channel);
 		log::info!("🤮ics20_handle handle_recv_packet voucher_prefix = {:?}", voucher_prefix);
+
 		let unprefixed_denom = &data.denom[0..voucher_prefix.len()];
 		log::info!("🤮ics20_handle handle_recv_packet unprefixed_denom = {:?}", unprefixed_denom);
 
@@ -273,10 +290,11 @@ where
 		// counterparty module or a bug: please open an issue on counterparty module") }
 
 		let pallet_data: FungibleTokenPacketData<T> = data.into();
-		// log::info!("🤮ics20_handle handle_recv_packet pallet_data = {:?}", pallet_data);
+	
 		// create escrow account by source_prot, and source channel
 		let escrow_account = generate_escrow_account::<T>(packet.source_channel.clone())?;
 		log::info!("🤮ics20_handle handle_recv_packet escrow_account = {:?}", escrow_account);
+		
 		<EscrowAddresses<T>>::insert(
 			PortId::from(packet.source_port),
 			ChannelId::from(packet.source_channel),
@@ -284,7 +302,6 @@ where
 		);
 
 		let amount = pallet_data.amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
-
 		log::info!("🤮ics20_handle handle_recv_packet amount = {:?}", amount);
 
 		let result =
@@ -296,21 +313,24 @@ where
 					error: "transfer coin failed".to_string(),
 				}),
 		}
+		log::info!("🔥🔥🔥🔥🔥ics20_handle_recv_transfer: unescrow tokens to receiver (assumed to fail if balance insufficient), success!!");
 	} else {
 		let source_prefix = get_denom_prefix(&packet.source_port, &packet.source_channel);
 		log::info!("🤮ics20_handle handle_recv_packet source_prefix = {:?}", source_prefix);
-		let denomination = data.clone().denom;
-		let prefixed_denomination = format!("{}{}", source_prefix, denomination);
 
-		log::info!(
-			"🤮ics20_handle handle_recv_packet prefixed_denomination = {:?}",
-			prefixed_denomination
-		);
+		let denomination = data.clone().denom;
+		log::info!("🤮ics20_handle handle_recv_packet denomination = {:?}", denomination);
+
+		let prefixed_denomination = format!("{}{}", source_prefix, denomination);
+		log::info!("🤮ics20_handle handle_recv_packet prefixed_denomination = {:?}", prefixed_denomination);
+
 		let denom_trace = parse_denom_trace(&prefixed_denomination)
 			.map_err(|_| Error::<T>::ParseDenomTraceError)?;
 		log::info!("🤮ics20_handle handle_recv_packet denom_trace = {:?}", denom_trace);
 
 		let trace_hash = denom_trace.hash().unwrap(); // todo
+		log::info!("🤮ics20_handle handle_recv_packet trace_hash = {:?}", trace_hash);
+
 		if !ctx.has_denom_trace(&trace_hash) {
 			let _ = ctx.set_denom_trace(&denom_trace);
 		}
@@ -336,8 +356,8 @@ where
 		let pallet_data: FungibleTokenPacketData<T> = data.into();
 
 		let amount = pallet_data.amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
-
 		log::info!("🤮ics20_handle handle_recv_packet amount = {:?}", amount);
+
 		let result = <T::Assets as fungibles::Mutate<T::AccountId>>::mint_into(
 			T::AssetId::default(), // TODO
 			&pallet_data.receiver,
@@ -350,6 +370,7 @@ where
 					error: "mint coins failed".to_string(),
 				}),
 		}
+		log::info!("🔥🔥🔥🔥🔥ics20_handle_recv_transfer:  sender was source, mint vouchers to receiver (assumed to fail if balance insufficient), success!!");
 	}
 
 	Ok(ack)
@@ -367,6 +388,7 @@ where
 	Ctx: Ics20Context,
 {
 	log::trace!(target:"runtime::pallet-ibc","in ics20_handler : handle timeout packet !");
+
 	refund_packet_token::<Ctx, T>(ctx, packet, data)
 }
 
@@ -433,6 +455,7 @@ where
 	if sender_chain_is_source(&packet.source_port, &packet.source_channel, &data.denom) {
 		let escrow_account = generate_escrow_account::<T>(packet.source_channel.clone())?;
 		log::info!("🤮ics20_handle refund_packet_token escrow_account = {:?}", escrow_account);
+
 		<EscrowAddresses<T>>::insert(
 			PortId::from(packet.source_port),
 			ChannelId::from(packet.source_channel),
@@ -440,18 +463,22 @@ where
 		);
 
 		let amount = pallet_data.amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
-
 		log::info!("🤮ics20_handle refund_packet_token amount = {:?}", amount);
+
 		T::Currency::transfer(&escrow_account, &pallet_data.sender, amount, AllowDeath)?;
+		
+		log::info!("🔥🔥🔥🔥🔥ics20_refund_packet_token transfer successful!!");
 	} else {
 		let amount = pallet_data.amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
-
 		log::info!("🤮ics20_handle refund_packet_token amount = {:?}", amount);
+
 		<T::Assets as fungibles::Mutate<T::AccountId>>::mint_into(
 			T::AssetId::default(), // TODO
 			&pallet_data.receiver,
 			amount,
 		)?;
+
+		log::info!("🔥🔥🔥🔥🔥ics20_refund_packet_token mint_into successful!!");
 	}
 
 	Ok(())

@@ -98,6 +98,9 @@ use frame_support::{
 
 pub(crate) const LOG_TARGET: &'static str = "runtime::pallet-ibc";
 
+type BalanceOf<T> =
+	<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+
 /// A struct corresponds to `Any` in crate "prost-types", used in ibc-rs.
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub struct Any {
@@ -156,6 +159,7 @@ pub mod pallet {
 		type ModuleCallbacks: routing::ModuleCallbacks;
 
 		type TimeProvider: UnixTime;
+
 		/// Currency type of the runtime
 		type Currency: Currency<Self::AccountId>;
 
@@ -557,33 +561,10 @@ pub mod pallet {
 
 		/// invalid_validation
 		InvalidValidation,
+
+		/// store packet result error 
+		StorePacketResultError,
 	}
-
-	// // mock client state
-	// fn mock_client_state() -> ClientState {
-	// 	// mock light client
-	// 	let public_keys = vec![String::from(
-	// 		"0x020a1091341fe5664bfa1782d5e04779689068c916b04cb365ec3153755684d9a1",
-	// 	) /* Alice */];
-	// 	let lc = beefy_light_client::new(public_keys);
-	// 	log::info!("mock beefy light client: {:?}", lc);
-
-	// 	//mock client state
-	// 	let epoch_number = 10;
-	// 	// let chain_id = ICS24ChainId::new(String::from("chainA"), epoch_number);
-	// 	let chain_id = ICS24ChainId::new(String::from("chainA"), epoch_number);
-	// 	let client_state = ClientState {
-	// 		chain_id,
-	// 		block_number: u32::default(),
-	// 		frozen_height: None,
-	// 		block_header: BlockHeader::default(),
-	// 		latest_commitment: Commitment::default(),
-	// 		validator_set: lc.validator_set.into(),
-	// 	};
-	// 	log::info!("mock client_state : {:?}", client_state);
-
-	// 	client_state
-	// }
 
 	/// Dispatchable functions allows users to interact with the pallet and invoke state changes.
 	/// These functions materialize as "extrinsic", which are often compared to transactions.
@@ -688,54 +669,64 @@ pub mod pallet {
 			source_port: Vec<u8>,
 			source_channel: Vec<u8>,
 			token: Vec<u8>,
-			amount: u32,
+			amount: u128,
 			receiver: Vec<u8>,
 			timeout_height: u64,
 			timeout_timestamp: u64,
 		) -> DispatchResult {
 			sp_tracing::within_span!(
-				sp_tracing::Level::TRACE, "deliver";
+				sp_tracing::Level::TRACE, "transfer";
 				{
-					let _source_port = identifier::PortId::from_str(
+					let source_port = identifier::PortId::from_str(
 						&String::from_utf8(source_port).map_err(|_| Error::<T>::InvalidFromUtf8)?,
 					)
 					.map_err(|_| Error::<T>::InvalidIdentifier)?;
-					let _source_channel = identifier::ChannelId::from_str(
+					log::info!("transfer : source_port: {}", source_port);
+
+					let source_channel = identifier::ChannelId::from_str(
 						&String::from_utf8(source_channel).map_err(|_| Error::<T>::InvalidFromUtf8)?,
 					)
 					.map_err(|_| Error::<T>::InvalidIdentifier)?;
+					log::info!("transfer : source_channel : {}", source_channel);
 
-					let _token = Some(ibc_proto::cosmos::base::v1beta1::Coin {
+					let token = Some(ibc_proto::cosmos::base::v1beta1::Coin {
 						denom: String::from_utf8(token).map_err(|_| Error::<T>::InvalidFromUtf8)?,
 						amount: amount.to_string(),
 					});
+					log::info!("transfer : token : {:?}", token);
 
-					let _sender = ensure_signed(origin)?;
-					let _sender = Signer::new(format!("{:?}", _sender.clone()));
-					let _receiver =
+					let sender = ensure_signed(origin)?;
+					let sender = Signer::new(format!("{:?}", sender));
+					log::info!("transfer : sender : {}", sender);
+
+					let receiver =
 						Signer::new(String::from_utf8(receiver).map_err(|_| Error::<T>::InvalidFromUtf8)?);
+					log::info!("transfer : receiver : {}", receiver);
 
-					let _timeout_height =
+					let timeout_height =
 						height::Height { revision_number: 0, revision_height: timeout_height };
-					let _timeout_timestamp = timestamp::Timestamp::from_nanoseconds(timeout_timestamp)
-						.map_err(|_| Error::<T>::InvalidTimestamp)?;
+					log::info!("transfer : timeout height : {}", timeout_height);
 
+					let timeout_timestamp = timestamp::Timestamp::from_nanoseconds(timeout_timestamp)
+						.map_err(|_| Error::<T>::InvalidTimestamp)?;
+					log::info!("transfer : timeout timestamp : {}", timeout_timestamp);
+					
 					let msg = MsgTransfer {
-						source_port: _source_port,
-						source_channel: _source_channel,
-						token: _token,
-						sender: _sender,
-						receiver: _receiver,
-						timeout_height: _timeout_height,
-						timeout_timestamp: _timeout_timestamp,
+						source_port,
+						source_channel,
+						token,
+						sender,
+						receiver,
+						timeout_height,
+						timeout_timestamp,
 					};
 
 					// send to router
 					let mut ctx = routing::Context::<T>::new();
-					let send_transfer_result = ibc::applications::ics20_fungible_token_transfer::relay_application_logic::send_transfer::send_transfer(&ctx, msg.clone()).map_err(|_| Error::<T>::SendPacketError)?;
+					let send_transfer_result = ibc::applications::ics20_fungible_token_transfer::relay_application_logic::send_transfer::send_transfer(&ctx, msg.clone()).unwrap();
 
 					ctx.store_packet_result(send_transfer_result.result)
-						.map_err(|_| Error::<T>::SendPacketError)?;
+						.map_err(|_| Error::<T>::StorePacketResultError)?;
 
 					let send_transfer_result_event = send_transfer_result.events;
 
@@ -1381,7 +1372,6 @@ pub struct FungibleTokenPacketData<T: Config> {
 	pub denomination: Vec<u8>,
 	// the token amount to be transferred
 	pub amount: u128,
-	// pub amount: T::AssetBalance,
 	// the sender address
 	pub sender: T::AccountId,
 	// the recipient address on the destination chain
@@ -1390,7 +1380,7 @@ pub struct FungibleTokenPacketData<T: Config> {
 
 use ibc::applications::ics20_fungible_token_transfer::msgs::fungible_token_packet_data::FungibleTokenPacketData as IBCFungibleTokenPacketData;
 
-impl<T: Config> From<IBCFungibleTokenPacketData> for FungibleTokenPacketData<T> {
+impl<T: Config > From<IBCFungibleTokenPacketData> for FungibleTokenPacketData<T> {
 	fn from(value: IBCFungibleTokenPacketData) -> Self {
 		Self {
 			denomination: value.denom.as_bytes().to_vec(),
