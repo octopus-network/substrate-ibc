@@ -35,6 +35,7 @@ prost = { version = "0.9.0", default-features = false }
 serde_json = { version = "1.0", default-features = false }
 serde = { version = "1.0", default-features = false }
 flex-error = { version = "0.4.4", default-features = false }
+hex = {version = "0.4.0", default-features = false }
 
 # ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/ics20", default-features = false }
 # ibc-proto = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/ics20", default-features = false }
@@ -78,6 +79,7 @@ std = [
 	'serde_json/std',
 	'serde/std',	
 	'flex-error/std',
+	'hex/std',
 ]
 runtime-benchmarks = ["frame-benchmarking"]
 try-runtime = ["frame-support/try-runtime"]

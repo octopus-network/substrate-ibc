@@ -608,8 +608,12 @@ pub mod pallet {
 					});
 					log::info!("transfer : token : {:?}", token);
 
-					let sender = ensure_signed(origin)?;
-					let sender = Signer::new(format!("{:?}", sender));
+					let sender: T::AccountId = ensure_signed(origin)?;
+					let encode_sender = T::AccountId::encode(&sender);
+					let hex_sender = hex::encode(encode_sender);
+					log::info!("transfer : hex sender : 0x{}", hex_sender);
+					
+					let sender = Signer::from(hex_sender);
 					log::info!("transfer : sender : {}", sender);
 
 					let receiver =
@@ -1150,8 +1154,8 @@ impl<T: Config > From<IBCFungibleTokenPacketData> for FungibleTokenPacketData<T>
 		Self {
 			denomination: value.denom.as_bytes().to_vec(),
 			amount: value.amount.parse::<u128>().unwrap_or_default(),
-			sender: IbcId(value.sender.as_str().as_bytes().to_vec()).into_account(),
-			receiver: IbcId(value.receiver.as_str().as_bytes().to_vec()).into_account(),
+			sender: T::AccountId::decode(&mut value.sender.as_str().as_bytes()).unwrap(),
+			receiver: T::AccountId::decode(&mut value.receiver.as_str().as_bytes()).unwrap(),
 		}
 	}
 }
