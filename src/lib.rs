@@ -1151,11 +1151,17 @@ use ibc::applications::ics20_fungible_token_transfer::msgs::fungible_token_packe
 
 impl<T: Config > From<IBCFungibleTokenPacketData> for FungibleTokenPacketData<T> {
 	fn from(value: IBCFungibleTokenPacketData) -> Self {
+		use core::str;
+		use hex::FromHex;
+
+		let sender = <Vec<u8>>::from_hex(value.sender.as_str()).unwrap();
+		let receiver = <Vec<u8>>::from_hex(value.receiver.as_str()).unwrap();
+
 		Self {
 			denomination: value.denom.as_bytes().to_vec(),
 			amount: value.amount.parse::<u128>().unwrap_or_default(),
-			sender: T::AccountId::decode(&mut value.sender.as_str().as_bytes()).unwrap(),
-			receiver: T::AccountId::decode(&mut value.receiver.as_str().as_bytes()).unwrap(),
+			sender: T::AccountId::decode(&mut sender.as_ref()).unwrap(),
+			receiver: T::AccountId::decode(&mut receiver.as_ref()).unwrap(),
 		}
 	}
 }

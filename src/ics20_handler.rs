@@ -189,6 +189,11 @@ where
 		let amount = amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
 		log::info!("🤮ics20_handle transfer amount = {:?}", amount);
 
+		log::info!("🤮ics20_handle transfer free_balance = {:?}", T::Currency::free_balance(&sender));
+		log::info!("🤮ics20_handle transfer total_balance = {:?}", T::Currency::total_balance(&sender));
+		log::info!("🤮ics20_handle total_issuance = {:?}", T::Currency::total_issuance());
+		log::info!("🤮ics20_handle minimum_balance = {:?}", T::Currency::minimum_balance());
+
 		T::Currency::transfer(&sender, &escrow_account, amount, AllowDeath)?;
 
 		log::info!("🔥🔥🔥🔥🔥ics20_handle_transfer: escrow source tokens (assumed to fail if balance insufficient), Success!!!");
@@ -202,6 +207,11 @@ where
 		let amount = amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
 
 		log::info!("🤮ics20_handle transfer amount = {:?}", amount);
+
+		log::info!("🤮ics20_handle transfer free_balance = {:?}", T::Currency::free_balance(&sender));
+		log::info!("🤮ics20_handle transfer total_balance = {:?}", T::Currency::total_balance(&sender));
+		log::info!("🤮ics20_handle total_issuance = {:?}", T::Currency::total_issuance());
+		log::info!("🤮ics20_handle minimum_balance = {:?}", T::Currency::minimum_balance());
 
 		<T::Assets as fungibles::Mutate<T::AccountId>>::burn_from(
 			T::AssetId::default(),
@@ -304,6 +314,11 @@ where
 		let amount = pallet_data.amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
 		log::info!("🤮ics20_handle handle_recv_packet amount = {:?}", amount);
 
+		log::info!("🤮ics20_handle transfer free_balance = {:?}", T::Currency::free_balance(&escrow_account));
+		log::info!("🤮ics20_handle transfer total_balance = {:?}", T::Currency::total_balance(&escrow_account));
+		log::info!("🤮ics20_handle total_issuance = {:?}", T::Currency::total_issuance());
+		log::info!("🤮ics20_handle minimum_balance = {:?}", T::Currency::minimum_balance());
+
 		let result =
 			T::Currency::transfer(&escrow_account, &pallet_data.receiver, amount, AllowDeath);
 		match result {
@@ -355,12 +370,19 @@ where
 
 		let pallet_data: FungibleTokenPacketData<T> = data.into();
 
+		let receiver = pallet_data.receiver;
+
 		let amount = pallet_data.amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
 		log::info!("🤮ics20_handle handle_recv_packet amount = {:?}", amount);
 
+		log::info!("🤮ics20_handle transfer free_balance = {:?}", T::Currency::free_balance(&receiver));
+		log::info!("🤮ics20_handle transfer total_balance = {:?}", T::Currency::total_balance(&receiver));
+		log::info!("🤮ics20_handle total_issuance = {:?}", T::Currency::total_issuance());
+		log::info!("🤮ics20_handle minimum_balance = {:?}", T::Currency::minimum_balance());
+
 		let result = <T::Assets as fungibles::Mutate<T::AccountId>>::mint_into(
 			T::AssetId::default(), // TODO
-			&pallet_data.receiver,
+			&receiver,
 			amount,
 		);
 		match result {
