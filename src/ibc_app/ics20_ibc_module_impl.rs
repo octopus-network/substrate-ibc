@@ -1,5 +1,5 @@
-use crate::*;
 use super::ics20_handler;
+use crate::*;
 use core::str::FromStr;
 use ibc::{
 	applications::ics20_fungible_token_transfer::{

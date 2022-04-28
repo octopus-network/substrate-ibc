@@ -1,7 +1,8 @@
-use crate::*;
-use crate::context::Context;
+use crate::{
+	context::{Context, MockRouter},
+	*,
+};
 use ibc::core::ics26_routing::context::Ics26Context;
-use crate::context::MockRouter;
 
 impl<T: Config> Ics26Context for Context<T> {
 	type Router = MockRouter;
@@ -16,4 +17,3 @@ impl<T: Config> Ics26Context for Context<T> {
 		&mut self.router
 	}
 }
-

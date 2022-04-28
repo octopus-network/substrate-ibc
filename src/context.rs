@@ -1,4 +1,3 @@
-
 use crate::*;
 use ibc::{
 	applications::ics20_fungible_token_transfer::{
@@ -24,8 +23,6 @@ use alloc::{
 };
 use ibc::core::ics26_routing::context::{Module, ModuleId};
 use scale_info::TypeInfo;
-
-
 
 #[derive(Debug, Default)]
 struct IbcModule;

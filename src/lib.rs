@@ -57,10 +57,10 @@ use sp_runtime::{traits::AccountIdConversion, RuntimeDebug, TypeId};
 use sp_std::prelude::*;
 use tendermint_proto::Protobuf;
 
-pub mod event;
-pub mod ibc_core;
-pub mod ibc_app;
 pub mod context;
+pub mod event;
+pub mod ibc_app;
+pub mod ibc_core;
 
 use crate::context::Context;
 
@@ -695,9 +695,11 @@ pub mod pallet {
 						// refer to https://github.com/octopus-network/ibc-go/blob/f5962c3324ee7e69eeaa9918b65eb1b089da6095/modules/apps/transfer/keeper/msg_server.go#L16
 						log::trace!(target: LOG_TARGET, "send packet is : {:?}", value.packet);
 
-						let ret =
-							ibc_app::ics20_handler::handle_transfer::<Ctx, T>(ctx, value.clone().packet)
-								.unwrap();
+						let ret = ibc_app::ics20_handler::handle_transfer::<Ctx, T>(
+							ctx,
+							value.clone().packet,
+						)
+						.unwrap();
 
 						Self::deposit_event(event.clone().into());
 					},
