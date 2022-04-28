@@ -51,22 +51,20 @@ use ibc::core::ics26_routing::msgs::Ics26Envelope;
 
 use sp_runtime::DispatchError;
 
-pub use routing::ModuleCallbacks;
 use scale_info::{prelude::vec, TypeInfo};
 use serde::{Deserialize, Serialize};
 use sp_runtime::{traits::AccountIdConversion, RuntimeDebug, TypeId};
 use sp_std::prelude::*;
 use tendermint_proto::Protobuf;
 
-mod channel;
-mod client;
-mod connection;
 pub mod event;
-mod ics20_handler;
-mod ics20_ibc_module_impl;
-mod port;
-mod routing;
-pub mod transfer;
+pub mod ibc_core;
+pub mod ibc_app;
+pub mod context;
+
+use crate::context::Context;
+
+use crate::ibc_app::ics20_ibc_module_impl::Ics20IBCModule;
 
 use event::primitive::{
 	ChannelId, ClientId, ClientState as EventClientState, ClientType, ConnectionId, Height, Packet,
@@ -140,8 +138,6 @@ pub mod pallet {
 	pub trait Config: frame_system::Config {
 		/// The overarching event type.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
-
-		type ModuleCallbacks: routing::ModuleCallbacks;
 
 		type TimeProvider: UnixTime;
 
@@ -559,7 +555,7 @@ pub mod pallet {
 			sp_tracing::Level::TRACE, "deliver";
 			{
 				let _sender = ensure_signed(origin)?;
-				let mut ctx = routing::Context::<T>::new();
+				let mut ctx = Context::<T>::new();
 
 				let messages: Vec<ibc_proto::google::protobuf::Any> = messages
 					.into_iter()
@@ -664,7 +660,7 @@ pub mod pallet {
 					};
 
 					// send to router
-					let mut ctx = routing::Context::<T>::new();
+					let mut ctx = Context::<T>::new();
 					let send_transfer_result = ibc::applications::ics20_fungible_token_transfer::relay_application_logic::send_transfer::send_transfer(&ctx, msg.clone()).unwrap();
 
 					ctx.store_packet_result(send_transfer_result.result)
@@ -700,7 +696,7 @@ pub mod pallet {
 						log::trace!(target: LOG_TARGET, "send packet is : {:?}", value.packet);
 
 						let ret =
-							ics20_handler::handle_transfer::<Ctx, T>(ctx, value.clone().packet)
+							ibc_app::ics20_handler::handle_transfer::<Ctx, T>(ctx, value.clone().packet)
 								.unwrap();
 
 						Self::deposit_event(event.clone().into());
@@ -712,7 +708,7 @@ pub mod pallet {
 						let relayer_signer = get_signer::<T>(messages[index].clone())
 							.map_err(|_| Error::<T>::InvalidSigner)?;
 
-						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule::<T>::new();
+						let ics20_modlue = Ics20IBCModule::<T>::new();
 						let ack = ibc::core::ics26_routing::ibc_module::IBCModule::on_recv_packet(
 							&ics20_modlue,
 							ctx,
@@ -762,7 +758,7 @@ pub mod pallet {
 						let relayer_signer = get_signer::<T>(messages[index].clone())
 							.map_err(|_| Error::<T>::InvalidSigner)?;
 
-						let ics20_module = ics20_ibc_module_impl::Ics20IBCModule::<T>::new();
+						let ics20_module = Ics20IBCModule::<T>::new();
 
 						let ret =
 							ibc::core::ics26_routing::ibc_module::IBCModule::on_timeout_packet(
@@ -782,7 +778,7 @@ pub mod pallet {
 						let relayer_signer = get_signer::<T>(messages[index].clone())
 							.map_err(|_| Error::<T>::InvalidSigner)?;
 
-						let ics20_module = ics20_ibc_module_impl::Ics20IBCModule::<T>::new();
+						let ics20_module = Ics20IBCModule::<T>::new();
 
 						let ret = ibc::core::ics26_routing::ibc_module::IBCModule::on_acknowledgement_packet(&ics20_module, ctx, value.clone().packet, vec![], relayer_signer).map_err(|_| Error::<T>::AcknowledgePacketError)?;
 
@@ -802,7 +798,7 @@ pub mod pallet {
 						let counterparty_port_id = value.clone().counterparty_port_id;
 						let counterparty_channel_id = value.clone().counterparty_channel_id;
 
-						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule::<T>::new();
+						let ics20_modlue = Ics20IBCModule::<T>::new();
 
 						let ret =
 							ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_init(
@@ -835,7 +831,7 @@ pub mod pallet {
 						let counterparty_port_id = value.clone().counterparty_port_id;
 						let counterparty_channel_id = value.clone().counterparty_channel_id;
 
-						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule::<T>::new();
+						let ics20_modlue = Ics20IBCModule::<T>::new();
 
 						let ret =
 							ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_try(
@@ -867,7 +863,7 @@ pub mod pallet {
 						let relayer_signer = get_signer::<T>(messages[index].clone())
 							.map_err(|_| Error::<T>::InvalidSigner)?;
 
-						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule::<T>::new();
+						let ics20_modlue = Ics20IBCModule::<T>::new();
 						let ret =
 							ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_ack(
 								&ics20_modlue,
@@ -891,7 +887,7 @@ pub mod pallet {
 						let relayer_signer = get_signer::<T>(messages[index].clone())
 							.map_err(|_| Error::<T>::InvalidSigner)?;
 
-						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule::<T>::new();
+						let ics20_modlue = Ics20IBCModule::<T>::new();
 
 						let ret =
 							ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_confirm(
@@ -912,7 +908,7 @@ pub mod pallet {
 						let relayer_signer = get_signer::<T>(messages[index].clone())
 							.map_err(|_| Error::<T>::InvalidSigner)?;
 
-						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule::<T>::new();
+						let ics20_modlue = Ics20IBCModule::<T>::new();
 
 						let ret =
 							ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_close_init(
@@ -936,7 +932,7 @@ pub mod pallet {
 						let relayer_signer = get_signer::<T>(messages[index].clone())
 							.map_err(|_| Error::<T>::InvalidSigner)?;
 
-						let ics20_modlue = ics20_ibc_module_impl::Ics20IBCModule::<T>::new();
+						let ics20_modlue = Ics20IBCModule::<T>::new();
 						let ret =
 							ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_close_confirm(
 								&ics20_modlue,

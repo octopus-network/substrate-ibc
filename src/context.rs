@@ -1,4 +1,5 @@
-use super::*;
+
+use crate::*;
 use ibc::{
 	applications::ics20_fungible_token_transfer::{
 		context::Ics20Context, error::Error as ICS20Error, msgs::denom_trace::DenomTrace,
@@ -24,22 +25,7 @@ use alloc::{
 use ibc::core::ics26_routing::context::{Module, ModuleId};
 use scale_info::TypeInfo;
 
-#[derive(Clone)]
-pub struct Context<T: Config> {
-	pub _pd: PhantomData<T>,
-	pub router: MockRouter,
-}
 
-impl<T: Config> Context<T> {
-	pub fn new() -> Self {
-		let r = MockRouterBuilder::default()
-			.add_route("ibcmodule".parse().unwrap(), IbcModule::default())
-			.unwrap()
-			.build();
-
-		Self { _pd: PhantomData::default(), router: r }
-	}
-}
 
 #[derive(Debug, Default)]
 struct IbcModule;
@@ -94,18 +80,19 @@ impl ibc::core::ics26_routing::context::Router for MockRouter {
 	}
 }
 
-impl<T: Config> Ics26Context for Context<T> {
-	type Router = MockRouter;
-
-	fn router(&self) -> &Self::Router {
-		log::trace!(target:"runtime::pallet-ibc","in routing: [route]");
-		&self.router
-	}
-
-	fn router_mut(&mut self) -> &mut Self::Router {
-		log::trace!(target:"runtime::pallet-ibc","in routing: [router_mut]");
-		&mut self.router
-	}
+#[derive(Clone)]
+pub struct Context<T: Config> {
+	pub _pd: PhantomData<T>,
+	pub router: MockRouter,
 }
 
-pub trait ModuleCallbacks {}
+impl<T: Config> Context<T> {
+	pub fn new() -> Self {
+		let r = MockRouterBuilder::default()
+			.add_route("ibcmodule".parse().unwrap(), IbcModule::default())
+			.unwrap()
+			.build();
+
+		Self { _pd: PhantomData::default(), router: r }
+	}
+}
