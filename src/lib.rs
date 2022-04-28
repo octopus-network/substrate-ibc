@@ -743,6 +743,7 @@ pub mod pallet {
 						.unwrap();
 
 						Self::deposit_event(event.clone().into());
+						store_send_packet::<T>(&value);
 					},
 
 					IbcEvent::ReceivePacket(value) => {
@@ -791,6 +792,17 @@ pub mod pallet {
 							packet.into(),
 							ack,
 						));
+
+						// write ack acknowledgement
+						let write_ack_event =
+							if let IbcEvent::WriteAcknowledgement(write_ack_event) =
+								write_ack_event.events.first().unwrap()
+							{
+								write_ack_event
+							} else {
+								todo!()
+							};
+						store_write_ack::<T>(&write_ack_event);
 
 						// Emit recv event
 						Self::deposit_event(event.clone().into());
@@ -1195,6 +1207,47 @@ pub mod pallet {
 			Ok(().into())
 		}
 	}
+}
+
+fn store_send_packet<T: Config>(send_packet_event: &ibc::core::ics04_channel::events::SendPacket) {
+	use crate::event::primitive::Sequence;
+
+	// store send-packet
+	let send_packet_event = send_packet_event.clone();
+	let packet = Packet {
+		sequence: Sequence::from(send_packet_event.packet.sequence),
+		source_channel: ChannelId::from(send_packet_event.packet.source_channel.clone()),
+		source_port: PortId::from(send_packet_event.packet.source_port.clone()),
+		destination_channel: ChannelId::from(send_packet_event.packet.destination_channel.clone()),
+		destination_port: PortId::from(send_packet_event.packet.destination_port),
+		data: send_packet_event.packet.data,
+		timeout_timestamp: Timestamp::from(send_packet_event.packet.timeout_timestamp),
+		timeout_height: Height::from(send_packet_event.packet.timeout_height),
+	};
+	let packet = packet.to_ibc_packet().unwrap().encode_vec().unwrap();
+
+	let port_id = send_packet_event.packet.source_port.as_bytes().to_vec();
+	let channel_id = send_packet_event.packet.source_channel.as_bytes().to_vec();
+
+	<SendPacketEvent<T>>::insert(
+		(port_id, channel_id, u64::from(send_packet_event.packet.sequence)),
+		packet,
+	);
+}
+
+fn store_write_ack<T: Config>(
+	write_ack_event: &ibc::core::ics04_channel::events::WriteAcknowledgement,
+) {
+	use ibc::core::ics04_channel::events::WriteAcknowledgement;
+
+	// store ack
+	let port_id = write_ack_event.packet.source_port.as_bytes().to_vec();
+	let channel_id = write_ack_event.packet.source_channel.as_bytes().to_vec();
+	let sequence = u64::from(write_ack_event.packet.sequence);
+	let write_ack = write_ack_event.encode_vec().unwrap();
+	let _write_ack = WriteAcknowledgement::decode(&*write_ack.clone()).unwrap();
+	// store.Set((portID, channelID, sequence), WriteAckEvent)
+	<WriteAckPacketEvent<T>>::insert((port_id, channel_id, sequence), write_ack);
 }
 
 impl<T: Config> AssetIdAndNameProvider<T::AssetId> for Pallet<T> {
