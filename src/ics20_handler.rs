@@ -138,7 +138,7 @@ where
 	log::info!("🤮ics20_handle transfer token_denom = {:?}", token_denom);
 
 	// get denom hash example "ibc/hash_number"
-	// let denom_trace_hash =
+	// let  denom_trace_hash =
 	// token_denom.split_once("/").ok_or(Ics20Error::invalid_split())?.1.as_bytes();
 	// log::info!("🤮ics20_handle transfer denom_trace_hash = {:?}", denom_trace_hash);
 
@@ -162,13 +162,13 @@ where
 
 	let denomination = token_denom;
 	log::info!("🤮ics20_handle transfer denomination = {:?}", denomination);
-	
+
 	let amount = pallet_data.amount;
 	log::info!("🤮ics20_handle transfer amount = {:?}", amount);
-	
+
 	let sender = pallet_data.sender;
 	log::info!("🤮ics20_handle transfer sendr = {:?}", sender);
-	
+
 	if sender_chain_is_source(&source_port, &source_channel, &denomination) {
 		// determine escrow account
 		let escrow_account = generate_escrow_account::<T>(source_channel.clone())?;
@@ -189,8 +189,14 @@ where
 		let amount = amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
 		log::info!("🤮ics20_handle transfer amount = {:?}", amount);
 
-		log::info!("🤮ics20_handle transfer free_balance = {:?}", T::Currency::free_balance(&sender));
-		log::info!("🤮ics20_handle transfer total_balance = {:?}", T::Currency::total_balance(&sender));
+		log::info!(
+			"🤮ics20_handle transfer free_balance = {:?}",
+			T::Currency::free_balance(&sender)
+		);
+		log::info!(
+			"🤮ics20_handle transfer total_balance = {:?}",
+			T::Currency::total_balance(&sender)
+		);
 		log::info!("🤮ics20_handle total_issuance = {:?}", T::Currency::total_issuance());
 		log::info!("🤮ics20_handle minimum_balance = {:?}", T::Currency::minimum_balance());
 
@@ -208,8 +214,14 @@ where
 
 		log::info!("🤮ics20_handle transfer amount = {:?}", amount);
 
-		log::info!("🤮ics20_handle transfer free_balance = {:?}", T::Currency::free_balance(&sender));
-		log::info!("🤮ics20_handle transfer total_balance = {:?}", T::Currency::total_balance(&sender));
+		log::info!(
+			"🤮ics20_handle transfer free_balance = {:?}",
+			T::Currency::free_balance(&sender)
+		);
+		log::info!(
+			"🤮ics20_handle transfer total_balance = {:?}",
+			T::Currency::total_balance(&sender)
+		);
 		log::info!("🤮ics20_handle total_issuance = {:?}", T::Currency::total_issuance());
 		log::info!("🤮ics20_handle minimum_balance = {:?}", T::Currency::minimum_balance());
 
@@ -239,7 +251,7 @@ pub fn handle_recv_packet<Ctx, T: Config>(
 	data: IBCFungibleTokenPacketData,
 ) -> Result<FungibleTokenPacketAcknowledgement, sp_runtime::DispatchError>
 where
-	Ctx: Ics20Context
+	Ctx: Ics20Context,
 {
 	data.validate_basic().map_err(|_| Error::<T>::InvalidValidation)?;
 
@@ -300,11 +312,11 @@ where
 		// counterparty module or a bug: please open an issue on counterparty module") }
 
 		let pallet_data: FungibleTokenPacketData<T> = data.into();
-	
+
 		// create escrow account by source_prot, and source channel
 		let escrow_account = generate_escrow_account::<T>(packet.source_channel.clone())?;
 		log::info!("🤮ics20_handle handle_recv_packet escrow_account = {:?}", escrow_account);
-		
+
 		<EscrowAddresses<T>>::insert(
 			PortId::from(packet.source_port),
 			ChannelId::from(packet.source_channel),
@@ -314,8 +326,14 @@ where
 		let amount = pallet_data.amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
 		log::info!("🤮ics20_handle handle_recv_packet amount = {:?}", amount);
 
-		log::info!("🤮ics20_handle transfer free_balance = {:?}", T::Currency::free_balance(&escrow_account));
-		log::info!("🤮ics20_handle transfer total_balance = {:?}", T::Currency::total_balance(&escrow_account));
+		log::info!(
+			"🤮ics20_handle transfer free_balance = {:?}",
+			T::Currency::free_balance(&escrow_account)
+		);
+		log::info!(
+			"🤮ics20_handle transfer total_balance = {:?}",
+			T::Currency::total_balance(&escrow_account)
+		);
 		log::info!("🤮ics20_handle total_issuance = {:?}", T::Currency::total_issuance());
 		log::info!("🤮ics20_handle minimum_balance = {:?}", T::Currency::minimum_balance());
 
@@ -337,7 +355,10 @@ where
 		log::info!("🤮ics20_handle handle_recv_packet denomination = {:?}", denomination);
 
 		let prefixed_denomination = format!("{}{}", source_prefix, denomination);
-		log::info!("🤮ics20_handle handle_recv_packet prefixed_denomination = {:?}", prefixed_denomination);
+		log::info!(
+			"🤮ics20_handle handle_recv_packet prefixed_denomination = {:?}",
+			prefixed_denomination
+		);
 
 		let denom_trace = parse_denom_trace(&prefixed_denomination)
 			.map_err(|_| Error::<T>::ParseDenomTraceError)?;
@@ -375,8 +396,14 @@ where
 		let amount = pallet_data.amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
 		log::info!("🤮ics20_handle handle_recv_packet amount = {:?}", amount);
 
-		log::info!("🤮ics20_handle transfer free_balance = {:?}", T::Currency::free_balance(&receiver));
-		log::info!("🤮ics20_handle transfer total_balance = {:?}", T::Currency::total_balance(&receiver));
+		log::info!(
+			"🤮ics20_handle transfer free_balance = {:?}",
+			T::Currency::free_balance(&receiver)
+		);
+		log::info!(
+			"🤮ics20_handle transfer total_balance = {:?}",
+			T::Currency::total_balance(&receiver)
+		);
 		log::info!("🤮ics20_handle total_issuance = {:?}", T::Currency::total_issuance());
 		log::info!("🤮ics20_handle minimum_balance = {:?}", T::Currency::minimum_balance());
 
@@ -488,7 +515,7 @@ where
 		log::info!("🤮ics20_handle refund_packet_token amount = {:?}", amount);
 
 		T::Currency::transfer(&escrow_account, &pallet_data.sender, amount, AllowDeath)?;
-		
+
 		log::info!("🔥🔥🔥🔥🔥ics20_refund_packet_token transfer successful!!");
 	} else {
 		let amount = pallet_data.amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;

@@ -118,7 +118,9 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use ibc::{
 		applications::ics20_fungible_token_transfer::context::Ics20Context,
+		clients::ics10_grandpa::consensus_state::ConsensusState as GPConsensusState,
 		core::{
+			ics02_client::client_consensus::AnyConsensusState,
 			ics04_channel::{
 				channel::{Counterparty, Order},
 				context::ChannelKeeper,
@@ -131,10 +133,6 @@ pub mod pallet {
 		},
 		events::IbcEvent,
 		signer::Signer,
-	};
-	use ibc::{
-		clients::ics10_grandpa::consensus_state::ConsensusState as GPConsensusState,
-		core::ics02_client::client_consensus::AnyConsensusState,
 	};
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
@@ -390,7 +388,7 @@ pub mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// emit new block event
-		NewBlock(Height),	
+		NewBlock(Height),
 		/// emit create client event
 		CreateClient(Height, ClientId, ClientType, Height),
 		/// emit updte client event
@@ -408,7 +406,13 @@ pub mod pallet {
 		/// emit open ack connection event
 		OpenAckConnection(Height, Option<ConnectionId>, ClientId, Option<ConnectionId>, ClientId),
 		/// emit open confirm connection event
-		OpenConfirmConnection(Height, Option<ConnectionId>, ClientId, Option<ConnectionId>, ClientId),
+		OpenConfirmConnection(
+			Height,
+			Option<ConnectionId>,
+			ClientId,
+			Option<ConnectionId>,
+			ClientId,
+		),
 		/// emit open init channel event
 		OpenInitChannel(Height, PortId, Option<ChannelId>, ConnectionId, PortId, Option<ChannelId>),
 		/// emit open try channel event
@@ -416,11 +420,32 @@ pub mod pallet {
 		/// emit open ack channel event
 		OpenAckChannel(Height, PortId, Option<ChannelId>, ConnectionId, PortId, Option<ChannelId>),
 		/// emit open confirm channel event
-		OpenConfirmChannel( Height, PortId, Option<ChannelId>, ConnectionId, PortId, Option<ChannelId>),
-		/// emit close init channel event 
-		CloseInitChannel( Height, PortId, Option<ChannelId>, ConnectionId, PortId, Option<ChannelId>),
+		OpenConfirmChannel(
+			Height,
+			PortId,
+			Option<ChannelId>,
+			ConnectionId,
+			PortId,
+			Option<ChannelId>,
+		),
+		/// emit close init channel event
+		CloseInitChannel(
+			Height,
+			PortId,
+			Option<ChannelId>,
+			ConnectionId,
+			PortId,
+			Option<ChannelId>,
+		),
 		/// emit close confirm channel event
-		CloseConfirmChannel( Height, PortId, Option<ChannelId>, ConnectionId, PortId, Option<ChannelId>),
+		CloseConfirmChannel(
+			Height,
+			PortId,
+			Option<ChannelId>,
+			ConnectionId,
+			PortId,
+			Option<ChannelId>,
+		),
 		/// emit send packet event
 		SendPacket(Height, Packet),
 		/// emit receive packet
@@ -513,7 +538,7 @@ pub mod pallet {
 		GetIbcDenomError,
 		/// invalid_validation
 		InvalidValidation,
-		/// store packet result error 
+		/// store packet result error
 		StorePacketResultError,
 	}
 
@@ -612,7 +637,7 @@ pub mod pallet {
 					let encode_sender = T::AccountId::encode(&sender);
 					let hex_sender = hex::encode(encode_sender);
 					log::info!("transfer : hex sender : 0x{}", hex_sender);
-					
+
 					let sender = Signer::from(hex_sender);
 					log::info!("transfer : sender : {}", sender);
 
@@ -627,7 +652,7 @@ pub mod pallet {
 					let timeout_timestamp = timestamp::Timestamp::from_nanoseconds(timeout_timestamp)
 						.map_err(|_| Error::<T>::InvalidTimestamp)?;
 					log::info!("transfer : timeout timestamp : {}", timeout_timestamp);
-					
+
 					let msg = MsgTransfer {
 						source_port,
 						source_channel,
@@ -967,7 +992,7 @@ pub mod pallet {
 					client_id_str
 				);
 
-				return Err(Error::<T>::ClientIdNotFound.into());
+				return Err(Error::<T>::ClientIdNotFound.into())
 			} else {
 				// get client state from chain storage
 				let data = <ClientStates<T>>::get(client_id.clone());
@@ -988,7 +1013,7 @@ pub mod pallet {
 			let signed_commitment =
 				commitment::SignedCommitment::try_from(decode_received_mmr_root.signed_commitment)
 					.map_err(|_| Error::<T>::InvalidSignedCommitment)?;
-					
+
 			let rev_block_number = signed_commitment.commitment.block_number;
 			if rev_block_number <= client_state.latest_commitment.block_number {
 				log::trace!(target: LOG_TARGET,"receive mmr root block number({}) less than client_state.latest_commitment.block_number({})",
@@ -1124,7 +1149,7 @@ pub mod pallet {
 						e
 					);
 
-					return Err(Error::<T>::UpdateBeefyLightClientFailure.into());
+					return Err(Error::<T>::UpdateBeefyLightClientFailure.into())
 				},
 			}
 
@@ -1149,7 +1174,7 @@ pub struct FungibleTokenPacketData<T: Config> {
 
 use ibc::applications::ics20_fungible_token_transfer::msgs::fungible_token_packet_data::FungibleTokenPacketData as IBCFungibleTokenPacketData;
 
-impl<T: Config > From<IBCFungibleTokenPacketData> for FungibleTokenPacketData<T> {
+impl<T: Config> From<IBCFungibleTokenPacketData> for FungibleTokenPacketData<T> {
 	fn from(value: IBCFungibleTokenPacketData) -> Self {
 		use core::str;
 		use hex::FromHex;
@@ -1223,30 +1248,24 @@ fn get_signer<T: Config>(
 			ibc::core::ics02_client::msgs::ClientMsg::UpgradeClient(val) => val.signer.clone(),
 		},
 		ibc::core::ics26_routing::msgs::Ics26Envelope::Ics3Msg(value) => match value {
-			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenInit(val) => {
-				val.signer.clone()
-			},
-			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenTry(val) => {
-				val.signer.clone()
-			},
-			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenAck(val) => {
-				val.signer.clone()
-			},
-			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenConfirm(val) => {
-				val.signer.clone()
-			},
+			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenInit(val) =>
+				val.signer.clone(),
+			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenTry(val) =>
+				val.signer.clone(),
+			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenAck(val) =>
+				val.signer.clone(),
+			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenConfirm(val) =>
+				val.signer.clone(),
 		},
 		ibc::core::ics26_routing::msgs::Ics26Envelope::Ics4ChannelMsg(value) => match value {
 			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelOpenInit(val) => val.signer.clone(),
 			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelOpenTry(val) => val.signer.clone(),
 			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelOpenAck(val) => val.signer.clone(),
-			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelOpenConfirm(val) => {
-				val.signer.clone()
-			},
+			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelOpenConfirm(val) =>
+				val.signer.clone(),
 			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelCloseInit(val) => val.signer.clone(),
-			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelCloseConfirm(val) => {
-				val.signer.clone()
-			},
+			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelCloseConfirm(val) =>
+				val.signer.clone(),
 		},
 		ibc::core::ics26_routing::msgs::Ics26Envelope::Ics4PacketMsg(value) => match value {
 			ibc::core::ics04_channel::msgs::PacketMsg::RecvPacket(val) => val.signer.clone(),
