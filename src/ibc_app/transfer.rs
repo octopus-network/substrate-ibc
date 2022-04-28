@@ -18,8 +18,7 @@ impl<T: Config> Ics20Context for Context<T> {
 
 		if <Denomination<T>>::contains_key(denom_trace_hash) {
 			let data = <Denomination<T>>::get(denom_trace_hash);
-			let denom_trace =
-				DenomTrace::decode_vec(&data).map_err(|e| Ics20Error::invalid_decode(e))?;
+			let denom_trace = DenomTrace::decode_vec(&data).map_err(Ics20Error::invalid_decode)?;
 			log::trace!(target:"runtime::pallet-ibc","in transfer : [denom trace] >> {:?}", denom_trace);
 			Ok(denom_trace)
 		} else {
@@ -39,7 +38,7 @@ impl<T: Config> Ics20Context for Context<T> {
 	fn set_denom_trace(&self, denom_trace: &DenomTrace) -> Result<(), Ics20Error> {
 		log::trace!(target:"runtime::pallet-ibc","in transfer : [denom trace]");
 
-		let data = denom_trace.encode_vec().map_err(|e| Ics20Error::invalid_encode(e))?;
+		let data = denom_trace.encode_vec().map_err(Ics20Error::invalid_encode)?;
 		<Denomination<T>>::insert(denom_trace.hash()?, data);
 		Ok(())
 	}

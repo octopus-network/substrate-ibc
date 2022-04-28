@@ -127,9 +127,8 @@ where
 {
 	log::info!("🤮ics20_handle transfer packet = {:?}", packet);
 
-	let packet_data: IBCFungibleTokenPacketData =
-		serde_json::from_slice(packet.data.clone().as_slice())
-			.map_err(|_| Error::<T>::SerdeIBCFungibleTokenPacketDataError)?;
+	let packet_data: IBCFungibleTokenPacketData = serde_json::from_slice(packet.data.as_slice())
+		.map_err(|_| Error::<T>::SerdeIBCFungibleTokenPacketDataError)?;
 	log::info!("🤮ics20_handle transfer packet data = {:?}", packet_data);
 
 	// the token denomination to be transferred
@@ -153,7 +152,7 @@ where
 	log::info!("🤮ics20_handle transfer source_channel = {:?}", source_channel);
 
 	// get source_port_id  from packet
-	let source_port = packet.source_port.clone();
+	let source_port = packet.source_port;
 	log::info!("🤮ics20_handle transfer source_port = {:?}", source_port);
 
 	// convert IBC FungibleTokenPacketData to substrate FungibleTokenPacketData
@@ -276,11 +275,7 @@ where
 	let mut ack = FungibleTokenPacketAcknowledgement::new();
 	log::info!("🤮ics20_handle handle_recv_packet ack = {:?}", ack);
 
-	if receiver_chain_is_source(
-		&packet.source_port.clone(),
-		&packet.source_channel.clone(),
-		&data.denom,
-	) {
+	if receiver_chain_is_source(&packet.source_port, &packet.source_channel, &data.denom) {
 		let voucher_prefix = get_denom_prefix(&packet.source_port, &packet.source_channel);
 		log::info!("🤮ics20_handle handle_recv_packet voucher_prefix = {:?}", voucher_prefix);
 
@@ -294,7 +289,7 @@ where
 			parse_denom_trace(&denom).map_err(|_| Error::<T>::ParseDenomTraceError)?;
 		log::info!("🤮ics20_handle handle_recv_packet denom_trace = {:?}", denom_trace);
 
-		if denom_trace.path != "" {
+		if !denom_trace.path.is_empty() {
 			denom = denom_trace.ibc_denom().map_err(|_| Error::<T>::GetIbcDenomError)?;
 		}
 		log::info!("🤮ics20_handle handle_recv_packet denom = {:?}", denom);
@@ -461,7 +456,7 @@ where
 	match response {
 		Response::Error(e) => {
 			log::trace!(target:"runtime::pallet-ibc","in ics20_handler : handle ack packet error >> {:?}", e);
-			return refund_packet_token::<Ctx, T>(ctx, packet, data)
+			refund_packet_token::<Ctx, T>(ctx, packet, data)
 		},
 		Response::Result(ret) => Ok(()),
 	}
@@ -541,7 +536,7 @@ where
 	Ctx: Ics20Context,
 {
 	// trim the denomination prefix, by default "ibc/"
-	let denom_split = denom.split("/").collect::<Vec<&str>>();
+	let denom_split = denom.split('/').collect::<Vec<&str>>();
 
 	log::info!("🤮ics20_handle denom_path_from_hash denom_split = {:?}", denom_split);
 	let hex_hash = denom_split[1];

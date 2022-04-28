@@ -178,7 +178,7 @@ pub mod primitive {
 	impl Timestamp {
 		pub fn to_ibc_timestamp(self) -> Result<IbcTimestamp, Error> {
 			let value = String::from_utf8(self.time).map_err(|_| Error::invalid_from_utf8())?;
-			Ok(IbcTimestamp::from_str(&value).map_err(|_| Error::identifier())?)
+			IbcTimestamp::from_str(&value).map_err(|_| Error::identifier())
 		}
 	}
 

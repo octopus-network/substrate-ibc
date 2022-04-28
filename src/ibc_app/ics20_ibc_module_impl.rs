@@ -30,6 +30,12 @@ impl<T: Config> Ics20IBCModule<T> {
 	}
 }
 
+impl<T: Config> Default for Ics20IBCModule<T> {
+	fn default() -> Self {
+		Self::new()
+	}
+}
+
 impl<T: Config> IBCModule for Ics20IBCModule<T> {
 	// OnChanOpenInit implements the IBCModule interface
 	// refter to https://github.com/octopus-network/ibc-go/blob/ac46ac06084f586a460b092b2b293a321b7c43d6/modules/apps/transfer/ibc_module.go#L64
@@ -177,19 +183,19 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 
 		// build FungibleTokenPacketData
 		let data = FungibleTokenPacketData::decode(&mut &packet.data[..])
-			.map_err(|e| Ics20Error::invalid_decode(e))?;
+			.map_err(Ics20Error::invalid_decode)?;
 
 		// only attempt the application logic if the packet data
 		// was successfully decoded
-		if acknowledgement.success().map_err(|e| Ics20Error::ics04_channel(e))? {
+		if acknowledgement.success().map_err(Ics20Error::ics04_channel)? {
 			// handle recv packet
 			let result = ics20_handler::handle_recv_packet::<Ctx, T>(ctx, packet, data);
 			if let Err(err) = result {
-				acknowledgement = Acknowledgement::new_error(format!("handle rev packet error"));
+				acknowledgement = Acknowledgement::new_error("handle rev packet error".to_string());
 			}
 		}
 
-		let ack = acknowledgement.encode_vec().map_err(|e| Ics20Error::invalid_encode(e))?;
+		let ack = acknowledgement.encode_vec().map_err(Ics20Error::invalid_encode)?;
 		Ok(ack)
 	}
 
@@ -206,10 +212,10 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 		Ctx: Ics20Context,
 	{
 		let ack = Acknowledgement::decode(&mut &acknowledgement[..])
-			.map_err(|e| Ics20Error::invalid_decode(e))?;
+			.map_err(Ics20Error::invalid_decode)?;
 
 		let data = FungibleTokenPacketData::decode(&mut &packet.data[..])
-			.map_err(|e| Ics20Error::invalid_decode(e))?;
+			.map_err(Ics20Error::invalid_decode)?;
 
 		let ret = ics20_handler::handle_ack_packet::<Ctx, T>(ctx, packet, data, ack.into());
 
@@ -228,7 +234,7 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 		Ctx: Ics20Context,
 	{
 		let data = FungibleTokenPacketData::decode(&mut &packet.data[..])
-			.map_err(|e| Ics20Error::invalid_decode(e))?;
+			.map_err(Ics20Error::invalid_decode)?;
 
 		// handle ack packet/refund tokens
 		let ret = ics20_handler::handle_timeout_packet::<Ctx, T>(ctx, packet, data);
@@ -273,7 +279,11 @@ fn parse_channel_sequence(channel_identifier: String) -> Result<u64, Ics20Error>
 		ibc::core::ics24_host::identifier::ChannelId::from_str(channel_identifier.as_str())
 			.map_err(|e| Ics20Error::invalid_channel_id(channel_identifier, e))?;
 
-	let sequence = channel_id.as_str().split_once("channel-").ok_or(Ics20Error::invalid_split())?.1;
+	let sequence = channel_id
+		.as_str()
+		.split_once("channel-")
+		.ok_or_else(Ics20Error::invalid_split)?
+		.1;
 
 	let sequence = sequence.parse::<u64>().map_err(|_| Ics20Error::invalid_parse())?;
 

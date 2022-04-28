@@ -70,15 +70,14 @@ impl<T: Config> ChannelReader for Context<T> {
 			let mut result = vec![];
 
 			for item in port_and_channel_id.iter() {
-				let port_id = String::from_utf8(item.0.clone())
-					.map_err(|e| Ics04Error::invalid_from_utf8(e))?;
 				let port_id =
-					PortId::from_str(port_id.as_str()).map_err(|e| Ics04Error::identifier(e))?;
+					String::from_utf8(item.0.clone()).map_err(Ics04Error::invalid_from_utf8)?;
+				let port_id = PortId::from_str(port_id.as_str()).map_err(Ics04Error::identifier)?;
 
-				let channel_id = String::from_utf8(item.1.clone())
-					.map_err(|e| Ics04Error::invalid_from_utf8(e))?;
-				let channel_id = ChannelId::from_str(channel_id.as_str())
-					.map_err(|e| Ics04Error::identifier(e))?;
+				let channel_id =
+					String::from_utf8(item.1.clone()).map_err(Ics04Error::invalid_from_utf8)?;
+				let channel_id =
+					ChannelId::from_str(channel_id.as_str()).map_err(Ics04Error::identifier)?;
 
 				result.push((port_id, channel_id));
 			}
@@ -87,9 +86,9 @@ impl<T: Config> ChannelReader for Context<T> {
 				"in channel : [connection_channels] >> Vector<(PortId, ChannelId)> =  {:?}",
 				result
 			);
-			return Ok(result)
+			Ok(result)
 		} else {
-			return Err(Ics04Error::connection_not_open(conn_id.clone()))
+			Err(Ics04Error::connection_not_open(conn_id.clone()))
 		}
 	}
 
@@ -119,8 +118,8 @@ impl<T: Config> ChannelReader for Context<T> {
 
 		for item in value.iter() {
 			if item.0 == height {
-				let any_consensus_state = AnyConsensusState::decode_vec(&*item.1)
-					.map_err(|e| Ics04Error::invalid_decode(e))?;
+				let any_consensus_state =
+					AnyConsensusState::decode_vec(&*item.1).map_err(Ics04Error::invalid_decode)?;
 				log::trace!(target:"runtime::pallet-ibc",
 					"in channel: [client_consensus_state] >> any consensus state = {:?}",
 					any_consensus_state
@@ -212,10 +211,8 @@ impl<T: Config> ChannelReader for Context<T> {
 		if <PacketCommitment<T>>::contains_key((key.0.as_bytes(), key.1.as_bytes(), sequence)) {
 			let data = <PacketCommitment<T>>::get((key.0.as_bytes(), key.1.as_bytes(), sequence));
 			let mut data: &[u8] = &data;
-			let data =
-				Vec::<u8>::decode(&mut data).map_err(|e| Ics04Error::invalid_codec_decode(e))?;
-			let result =
-				String::from_utf8(data.clone()).map_err(|e| Ics04Error::invalid_from_utf8(e))?;
+			let data = Vec::<u8>::decode(&mut data).map_err(Ics04Error::invalid_codec_decode)?;
+			let result = String::from_utf8(data.clone()).map_err(Ics04Error::invalid_from_utf8)?;
 			log::trace!(target:"runtime::pallet-ibc",
 				"in channel : [get_packet_commitment] >> packet_commitment = {:?}, packet_commitment_vec = {:?}",
 				result, data
@@ -238,13 +235,11 @@ impl<T: Config> ChannelReader for Context<T> {
 
 		let sequence = u64::from(key.2);
 
-		if <PacketReceipt<T>>::contains_key((key.0.as_bytes(), key.1.as_bytes(), sequence.clone()))
-		{
+		if <PacketReceipt<T>>::contains_key((key.0.as_bytes(), key.1.as_bytes(), sequence)) {
 			let data = <PacketReceipt<T>>::get((key.0.as_bytes(), key.1.as_bytes(), sequence));
 			let mut data: &[u8] = &data;
-			let data =
-				Vec::<u8>::decode(&mut data).map_err(|e| Ics04Error::invalid_codec_decode(e))?;
-			let data = String::from_utf8(data).map_err(|e| Ics04Error::invalid_from_utf8(e))?;
+			let data = Vec::<u8>::decode(&mut data).map_err(Ics04Error::invalid_codec_decode)?;
+			let data = String::from_utf8(data).map_err(Ics04Error::invalid_from_utf8)?;
 
 			let data = match data.as_ref() {
 				"Ok" => Receipt::Ok,
@@ -268,13 +263,11 @@ impl<T: Config> ChannelReader for Context<T> {
 
 		let seq = u64::from(key.2);
 
-		if <Acknowledgements<T>>::contains_key((key.0.as_bytes(), key.1.as_bytes(), seq.clone())) {
+		if <Acknowledgements<T>>::contains_key((key.0.as_bytes(), key.1.as_bytes(), seq)) {
 			let data = <Acknowledgements<T>>::get((key.0.as_bytes(), key.1.as_bytes(), seq));
 			let mut data: &[u8] = &data;
-			let data =
-				Vec::<u8>::decode(&mut data).map_err(|e| Ics04Error::invalid_codec_decode(e))?;
-			let result =
-				String::from_utf8(data.clone()).map_err(|e| Ics04Error::invalid_from_utf8(e))?;
+			let data = Vec::<u8>::decode(&mut data).map_err(Ics04Error::invalid_codec_decode)?;
+			let result = String::from_utf8(data).map_err(Ics04Error::invalid_from_utf8)?;
 			log::trace!(target:"runtime::pallet-ibc",
 				"in channel : [get_packet_acknowledgement] >> packet_acknowledgement = {:?}",
 				result
@@ -362,10 +355,9 @@ impl<T: Config> ChannelReader for Context<T> {
 				client_id.as_bytes(),
 				height.encode_vec().map_err(|_| Ics04Error::invalid_encode())?,
 			);
-			let timestamp =
-				String::from_utf8(time).map_err(|e| Ics04Error::invalid_from_utf8(e))?;
-			let time: Timestamp = serde_json::from_str(&timestamp)
-				.map_err(|e| Ics04Error::invalid_serde_json_decode(e))?;
+			let timestamp = String::from_utf8(time).map_err(Ics04Error::invalid_from_utf8)?;
+			let time: Timestamp =
+				serde_json::from_str(&timestamp).map_err(Ics04Error::invalid_serde_json_decode)?;
 			Ok(time)
 		} else {
 			Err(Ics04Error::processed_time_not_found(client_id.clone(), height))
@@ -389,7 +381,7 @@ impl<T: Config> ChannelReader for Context<T> {
 				height.encode_vec().map_err(|_| Ics04Error::invalid_encode())?,
 			);
 			let host_height =
-				Height::decode(&mut &host_height[..]).map_err(|e| Ics04Error::invalid_decode(e))?;
+				Height::decode(&mut &host_height[..]).map_err(Ics04Error::invalid_decode)?;
 			Ok(host_height)
 		} else {
 			Err(Ics04Error::processed_height_not_found(client_id.clone(), height))
@@ -423,7 +415,7 @@ impl<T: Config> ChannelReader for Context<T> {
 			"in channel: [lookup_module_by_channel]"
 		);
 		// todo
-		let module_id = ModuleId::new(format!("ibcmodule").into()).unwrap();
+		let module_id = ModuleId::new("ibcmodule".to_string().into()).unwrap();
 		Ok((module_id, Capability::new().into()))
 	}
 }
@@ -444,7 +436,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		// inser packet commitment key-value
 		<PacketCommitment<T>>::insert(
 			(key.0.as_bytes().to_vec(), key.1.as_bytes().to_vec(), sequence),
-			ChannelReader::hash(self, input.clone()).encode(),
+			ChannelReader::hash(self, input).encode(),
 		);
 
 		// insert packet commitment keys
@@ -478,7 +470,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 				.position(|value| {
 					value == &(key.0.as_bytes().to_vec(), key.1.as_bytes().to_vec(), sequence)
 				})
-				.ok_or(Ics04Error::packet_commitment_keys_not_found())?;
+				.ok_or_else(Ics04Error::packet_commitment_keys_not_found)?;
 			let ret = val.remove(index);
 			assert_eq!(ret, (key.0.as_bytes().to_vec(), key.1.as_bytes().to_vec(), sequence));
 			Ok(())
@@ -555,7 +547,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 				.position(|value| {
 					value == &(key.0.as_bytes().to_vec(), key.1.as_bytes().to_vec(), sequence)
 				})
-				.ok_or(Ics04Error::acknowledgements_keys_not_found())?;
+				.ok_or_else(Ics04Error::acknowledgements_keys_not_found)?;
 			let ret = val.remove(index);
 			assert_eq!(&ret, &(key.0.as_bytes().to_vec(), key.1.as_bytes().to_vec(), sequence));
 			Ok(())
@@ -692,7 +684,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		log::trace!(target:"runtime::pallet-ibc","in channel: [increase_channel_counter]");
 
 		let ret = <ChannelCounter<T>>::try_mutate(|val| -> Result<(), Ics04Error> {
-			let new = val.checked_add(1).ok_or(Ics04Error::ivalid_increase_channel_counter())?;
+			let new = val.checked_add(1).ok_or_else(Ics04Error::ivalid_increase_channel_counter)?;
 			*val = new;
 			Ok(())
 		});

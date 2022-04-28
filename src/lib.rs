@@ -8,6 +8,7 @@
 #![allow(unused_assignments)]
 #![allow(unused_imports)]
 #![allow(unused_variables)]
+#![allow(clippy::too_many_arguments)]
 
 //! # Overview
 //!
@@ -59,10 +60,18 @@ use tendermint_proto::Protobuf;
 
 pub mod context;
 pub mod event;
+// ibc protocol application store impl
 pub mod ibc_app;
+// ibc protocol core store impl
 pub mod ibc_core;
+pub mod ibc_help;
+pub mod utils;
 
-use crate::context::Context;
+use crate::{
+	context::Context,
+	ibc_help::{event_from_ibc_event, get_signer},
+	utils::AssetIdAndNameProvider,
+};
 
 use crate::ibc_app::ics20_ibc_module_impl::Ics20IBCModule;
 
@@ -77,7 +86,7 @@ use frame_support::{
 	PalletId,
 };
 
-pub(crate) const LOG_TARGET: &'static str = "runtime::pallet-ibc";
+pub(crate) const LOG_TARGET: &str = "runtime::pallet-ibc";
 
 type BalanceOf<T> =
 	<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
@@ -169,6 +178,8 @@ pub mod pallet {
 			AssetId = Self::AssetId,
 			Balance = Self::AssetBalance,
 		>;
+
+		type AssetIdByName: AssetIdAndNameProvider<Self::AssetId>;
 	}
 
 	#[pallet::pallet]
@@ -379,6 +390,32 @@ pub mod pallet {
 		ValueQuery,
 	>;
 
+	#[pallet::storage]
+	/// key-value asserid with asset name
+	pub type AssetIdByName<T: Config> =
+		StorageMap<_, Twox64Concat, Vec<u8>, T::AssetId, ValueQuery>;
+
+	#[pallet::genesis_config]
+	pub struct GenesisConfig<T: Config> {
+		pub asset_id_by_name: Vec<(String, T::AssetId)>,
+	}
+
+	#[cfg(feature = "std")]
+	impl<T: Config> Default for GenesisConfig<T> {
+		fn default() -> Self {
+			Self { asset_id_by_name: Vec::new() }
+		}
+	}
+
+	#[pallet::genesis_build]
+	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+		fn build(&self) {
+			for (token_id, id) in self.asset_id_by_name.iter() {
+				<AssetIdByName<T>>::insert(token_id.as_bytes(), id);
+			}
+		}
+	}
+
 	/// Substrate IBC event list
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -536,6 +573,10 @@ pub mod pallet {
 		InvalidValidation,
 		/// store packet result error
 		StorePacketResultError,
+		/// invalid token id
+		InvalidTokenId,
+		/// wrong assert id
+		WrongAssetId,
 	}
 
 	/// Dispatchable functions allows users to interact with the pallet and invoke state changes.
@@ -561,7 +602,7 @@ pub mod pallet {
 					.into_iter()
 					.map(|message| ibc_proto::google::protobuf::Any {
 						type_url: String::from_utf8(message.type_url.clone()).unwrap(),
-						value: message.value.clone(),
+						value: message.value,
 					})
 					.collect();
 
@@ -671,7 +712,7 @@ pub mod pallet {
 					// handle the result
 					log::info!("result: {:?}", send_transfer_result_event);
 
-					Self::handle_result(&mut ctx, vec![msg.to_any()], send_transfer_result_event)?;
+					Self::handle_result(&ctx, vec![msg.to_any()], send_transfer_result_event)?;
 
 					Ok(())
 				}
@@ -952,7 +993,7 @@ pub mod pallet {
 					},
 				}
 			}
-			Ok(().into())
+			Ok(())
 		}
 
 		/// inner update mmr root
@@ -1156,6 +1197,26 @@ pub mod pallet {
 	}
 }
 
+impl<T: Config> AssetIdAndNameProvider<T::AssetId> for Pallet<T> {
+	type Err = Error<T>;
+
+	fn try_get_asset_id(name: impl AsRef<[u8]>) -> Result<<T as Config>::AssetId, Self::Err> {
+		let asset_id = <AssetIdByName<T>>::try_get(name.as_ref().to_vec());
+		match asset_id {
+			Ok(id) => Ok(id),
+			_ => Err(Error::<T>::InvalidTokenId),
+		}
+	}
+
+	fn try_get_asset_name(asset_id: T::AssetId) -> Result<Vec<u8>, Self::Err> {
+		let token_id = <AssetIdByName<T>>::iter().find(|p| p.1 == asset_id).map(|p| p.0);
+		match token_id {
+			Some(id) => Ok(id),
+			_ => Err(Error::<T>::WrongAssetId),
+		}
+	}
+}
+
 /// FungibleTokenPacketData defines a struct for the packet payload
 /// See FungibleTokenPacketData spec: https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer#data-structures
 #[derive(Decode, Encode, Debug, PartialEq)]
@@ -1201,9 +1262,21 @@ impl FungibleTokenPacketAcknowledgement {
 	}
 }
 
+impl Default for FungibleTokenPacketAcknowledgement {
+	fn default() -> Self {
+		Self::new()
+	}
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FungibleTokenPacketSuccess {
 	result: AQ,
+}
+
+impl Default for FungibleTokenPacketSuccess {
+	fn default() -> Self {
+		Self::new()
+	}
 }
 
 impl FungibleTokenPacketSuccess {
@@ -1223,319 +1296,4 @@ struct AQ;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FungibleTokenPacketError {
 	pub error: String,
-}
-
-/// A pallet identifier. These are per pallet and should be stored in a registry somewhere.
-#[derive(Clone, Eq, PartialEq, Encode, Decode, TypeInfo)]
-pub struct IbcId(pub Vec<u8>);
-
-impl TypeId for IbcId {
-	const TYPE_ID: [u8; 4] = *b"Ibcs";
-}
-
-fn get_signer<T: Config>(
-	message: ibc_proto::google::protobuf::Any,
-) -> Result<ibc::signer::Signer, DispatchError> {
-	let decode_message = ibc::core::ics26_routing::handler::decode(message)
-		.map_err(|_| Error::<T>::InvalidDecode)?;
-	let signer = match decode_message {
-		ibc::core::ics26_routing::msgs::Ics26Envelope::Ics2Msg(value) => match value {
-			ibc::core::ics02_client::msgs::ClientMsg::CreateClient(val) => val.signer.clone(),
-			ibc::core::ics02_client::msgs::ClientMsg::UpdateClient(val) => val.signer.clone(),
-			ibc::core::ics02_client::msgs::ClientMsg::Misbehaviour(val) => val.signer.clone(),
-			ibc::core::ics02_client::msgs::ClientMsg::UpgradeClient(val) => val.signer.clone(),
-		},
-		ibc::core::ics26_routing::msgs::Ics26Envelope::Ics3Msg(value) => match value {
-			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenInit(val) =>
-				val.signer.clone(),
-			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenTry(val) =>
-				val.signer.clone(),
-			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenAck(val) =>
-				val.signer.clone(),
-			ibc::core::ics03_connection::msgs::ConnectionMsg::ConnectionOpenConfirm(val) =>
-				val.signer.clone(),
-		},
-		ibc::core::ics26_routing::msgs::Ics26Envelope::Ics4ChannelMsg(value) => match value {
-			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelOpenInit(val) => val.signer.clone(),
-			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelOpenTry(val) => val.signer.clone(),
-			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelOpenAck(val) => val.signer.clone(),
-			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelOpenConfirm(val) =>
-				val.signer.clone(),
-			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelCloseInit(val) => val.signer.clone(),
-			ibc::core::ics04_channel::msgs::ChannelMsg::ChannelCloseConfirm(val) =>
-				val.signer.clone(),
-		},
-		ibc::core::ics26_routing::msgs::Ics26Envelope::Ics4PacketMsg(value) => match value {
-			ibc::core::ics04_channel::msgs::PacketMsg::RecvPacket(val) => val.signer.clone(),
-			ibc::core::ics04_channel::msgs::PacketMsg::AckPacket(val) => val.signer.clone(),
-			ibc::core::ics04_channel::msgs::PacketMsg::ToPacket(val) => val.signer.clone(),
-			ibc::core::ics04_channel::msgs::PacketMsg::ToClosePacket(val) => val.signer.clone(),
-		},
-		ibc::core::ics26_routing::msgs::Ics26Envelope::Ics20Msg(value) => value.sender.clone(),
-	};
-
-	Ok(signer)
-}
-
-fn event_from_ibc_event<T: Config>(value: ibc::events::IbcEvent) -> Event<T> {
-	match value {
-		ibc::events::IbcEvent::NewBlock(value) => Event::NewBlock(value.height.into()),
-		ibc::events::IbcEvent::CreateClient(value) => {
-			let height = value.0.height;
-			let client_id = value.0.client_id;
-			let client_type = value.0.client_type;
-			let consensus_height = value.0.consensus_height;
-			Event::CreateClient(
-				height.into(),
-				client_id.into(),
-				client_type.into(),
-				consensus_height.into(),
-			)
-		},
-		ibc::events::IbcEvent::UpdateClient(value) => {
-			let height = value.common.height;
-			let client_id = value.common.client_id;
-			let client_type = value.common.client_type;
-			let consensus_height = value.common.consensus_height;
-			Event::UpdateClient(
-				height.into(),
-				client_id.into(),
-				client_type.into(),
-				consensus_height.into(),
-			)
-		},
-		// Upgrade client events are not currently being used
-		// UpgradeClient(
-		// 	height: Height,
-		// 	client_id: ClientId,
-		// 	client_type: ClientType,
-		// 	consensus_height: Height,
-		// )
-		ibc::events::IbcEvent::UpgradeClient(value) => {
-			let height = value.0.height;
-			let client_id = value.0.client_id;
-			let client_type = value.0.client_type;
-			let consensus_height = value.0.consensus_height;
-			Event::UpgradeClient(
-				height.into(),
-				client_id.into(),
-				client_type.into(),
-				consensus_height.into(),
-			)
-		},
-		ibc::events::IbcEvent::ClientMisbehaviour(value) => {
-			let height = value.0.height;
-			let client_id = value.0.client_id;
-			let client_type = value.0.client_type;
-			let consensus_height = value.0.consensus_height;
-			Event::ClientMisbehaviour(
-				height.into(),
-				client_id.into(),
-				client_type.into(),
-				consensus_height.into(),
-			)
-		},
-		ibc::events::IbcEvent::OpenInitConnection(value) => {
-			let height = value.attributes().height;
-			let connection_id: Option<ConnectionId> =
-				value.attributes().connection_id.clone().map(|val| val.into());
-			let client_id = value.attributes().client_id.clone();
-			let counterparty_connection_id: Option<ConnectionId> =
-				value.attributes().counterparty_connection_id.clone().map(|val| val.into());
-
-			let counterparty_client_id = value.attributes().counterparty_client_id.clone();
-			Event::OpenInitConnection(
-				height.into(),
-				connection_id,
-				client_id.into(),
-				counterparty_connection_id,
-				counterparty_client_id.into(),
-			)
-		},
-		ibc::events::IbcEvent::OpenTryConnection(value) => {
-			let height = value.attributes().height;
-			let connection_id: Option<ConnectionId> =
-				value.attributes().connection_id.clone().map(|val| val.into());
-			let client_id = value.attributes().client_id.clone();
-			let counterparty_connection_id: Option<ConnectionId> =
-				value.attributes().counterparty_connection_id.clone().map(|val| val.into());
-
-			let counterparty_client_id = value.attributes().counterparty_client_id.clone();
-			Event::OpenTryConnection(
-				height.into(),
-				connection_id,
-				client_id.into(),
-				counterparty_connection_id,
-				counterparty_client_id.into(),
-			)
-		},
-		ibc::events::IbcEvent::OpenAckConnection(value) => {
-			let height = value.attributes().height;
-			let connection_id: Option<ConnectionId> =
-				value.attributes().connection_id.clone().map(|val| val.into());
-			let client_id = value.attributes().client_id.clone();
-			let counterparty_connection_id: Option<ConnectionId> =
-				value.attributes().counterparty_connection_id.clone().map(|val| val.into());
-
-			let counterparty_client_id = value.attributes().counterparty_client_id.clone();
-			Event::OpenAckConnection(
-				height.into(),
-				connection_id,
-				client_id.into(),
-				counterparty_connection_id,
-				counterparty_client_id.into(),
-			)
-		},
-		ibc::events::IbcEvent::OpenConfirmConnection(value) => {
-			let height = value.attributes().height;
-			let connection_id: Option<ConnectionId> =
-				value.attributes().connection_id.clone().map(|val| val.into());
-			let client_id = value.attributes().client_id.clone();
-			let counterparty_connection_id: Option<ConnectionId> =
-				value.attributes().counterparty_connection_id.clone().map(|val| val.into());
-
-			let counterparty_client_id = value.attributes().counterparty_client_id.clone();
-			Event::OpenConfirmConnection(
-				height.into(),
-				connection_id,
-				client_id.into(),
-				counterparty_connection_id,
-				counterparty_client_id.into(),
-			)
-		},
-		ibc::events::IbcEvent::OpenInitChannel(value) => {
-			let height = value.height.clone();
-			let port_id = value.port_id.clone();
-			let channel_id: Option<ChannelId> = value.channel_id.clone().map(|val| val.into());
-			let connection_id = value.connection_id.clone();
-			let counterparty_port_id = value.counterparty_port_id.clone();
-			let counterparty_channel_id: Option<ChannelId> =
-				value.channel_id.clone().map(|val| val.into());
-			Event::OpenInitChannel(
-				height.into(),
-				port_id.into(),
-				channel_id,
-				connection_id.into(),
-				counterparty_port_id.into(),
-				counterparty_channel_id,
-			)
-		},
-		ibc::events::IbcEvent::OpenTryChannel(value) => {
-			let height = value.height.clone();
-			let port_id = value.port_id.clone();
-			let channel_id: Option<ChannelId> = value.channel_id.clone().map(|val| val.into());
-			let connection_id = value.connection_id.clone();
-			let counterparty_port_id = value.counterparty_port_id.clone();
-			let counterparty_channel_id: Option<ChannelId> =
-				value.channel_id.clone().map(|val| val.into());
-			Event::OpenTryChannel(
-				height.into(),
-				port_id.into(),
-				channel_id,
-				connection_id.into(),
-				counterparty_port_id.into(),
-				counterparty_channel_id,
-			)
-		},
-		ibc::events::IbcEvent::OpenAckChannel(value) => {
-			let height = value.height.clone();
-			let port_id = value.port_id.clone();
-			let channel_id: Option<ChannelId> = value.channel_id.clone().map(|val| val.into());
-			let connection_id = value.connection_id.clone();
-			let counterparty_port_id = value.counterparty_port_id.clone();
-			let counterparty_channel_id: Option<ChannelId> =
-				value.channel_id.clone().map(|val| val.into());
-			Event::OpenAckChannel(
-				height.into(),
-				port_id.into(),
-				channel_id,
-				connection_id.into(),
-				counterparty_port_id.into(),
-				counterparty_channel_id,
-			)
-		},
-		ibc::events::IbcEvent::OpenConfirmChannel(value) => {
-			let height = value.height.clone();
-			let port_id = value.port_id.clone();
-			let channel_id: Option<ChannelId> = value.channel_id.clone().map(|val| val.into());
-			let connection_id = value.connection_id.clone();
-			let counterparty_port_id = value.counterparty_port_id;
-			let counterparty_channel_id: Option<ChannelId> = value.channel_id.map(|val| val.into());
-			Event::OpenConfirmChannel(
-				height.into(),
-				port_id.into(),
-				channel_id,
-				connection_id.into(),
-				counterparty_port_id.into(),
-				counterparty_channel_id,
-			)
-		},
-		ibc::events::IbcEvent::CloseInitChannel(value) => {
-			let height = value.height.clone();
-			let port_id = value.port_id.clone();
-			let channel_id: Option<ChannelId> = Some(value.channel_id.clone().into());
-			let connection_id = value.connection_id.clone();
-			let counterparty_port_id = value.counterparty_port_id;
-			let counterparty_channel_id: Option<ChannelId> =
-				value.counterparty_channel_id.map(|val| val.into());
-			Event::CloseInitChannel(
-				height.into(),
-				port_id.into(),
-				channel_id,
-				connection_id.into(),
-				counterparty_port_id.into(),
-				counterparty_channel_id,
-			)
-		},
-		ibc::events::IbcEvent::CloseConfirmChannel(value) => {
-			let height = value.height.clone();
-			let port_id = value.port_id.clone();
-			let channel_id: Option<ChannelId> = value.channel_id.clone().map(|val| val.into());
-			let connection_id = value.connection_id.clone();
-			let counterparty_port_id = value.counterparty_port_id.clone();
-			let counterparty_channel_id: Option<ChannelId> = value.channel_id.map(|val| val.into());
-			Event::CloseConfirmChannel(
-				height.into(),
-				port_id.into(),
-				channel_id,
-				connection_id.into(),
-				counterparty_port_id.into(),
-				counterparty_channel_id,
-			)
-		},
-		ibc::events::IbcEvent::SendPacket(value) => {
-			let height = value.height;
-			let packet = value.packet;
-			Event::SendPacket(height.into(), packet.into())
-		},
-		ibc::events::IbcEvent::ReceivePacket(value) => {
-			let height = value.height;
-			let packet = value.packet;
-			Event::ReceivePacket(height.into(), packet.into())
-		},
-		ibc::events::IbcEvent::WriteAcknowledgement(value) => {
-			let height = value.height;
-			let packet = value.packet;
-			let ack = value.ack;
-			Event::WriteAcknowledgement(height.into(), packet.into(), ack)
-		},
-		ibc::events::IbcEvent::AcknowledgePacket(value) => {
-			let height = value.height;
-			let packet = value.packet;
-			Event::AcknowledgePacket(height.into(), packet.into())
-		},
-		ibc::events::IbcEvent::TimeoutPacket(value) => {
-			let height = value.height;
-			let packet = value.packet;
-			Event::TimeoutPacket(height.into(), packet.into())
-		},
-		ibc::events::IbcEvent::TimeoutOnClosePacket(value) => {
-			let height = value.height;
-			let packet = value.packet;
-			Event::TimeoutOnClosePacket(height.into(), packet.into())
-		},
-		ibc::events::IbcEvent::Empty(value) => Event::Empty(value.as_bytes().to_vec()),
-		ibc::events::IbcEvent::ChainError(value) => Event::ChainError(value.as_bytes().to_vec()),
-		_ => unimplemented!(),
-	}
 }

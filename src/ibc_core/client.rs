@@ -25,9 +25,8 @@ impl<T: Config> ClientReader for Context<T> {
 		if <Clients<T>>::contains_key(client_id.as_bytes()) {
 			let data = <Clients<T>>::get(client_id.as_bytes());
 			let mut data: &[u8] = &data;
-			let data =
-				Vec::<u8>::decode(&mut data).map_err(|e| Ics02Error::invalid_codec_decode(e))?;
-			let data = String::from_utf8(data).map_err(|e| Ics02Error::invalid_from_utf8(e))?;
+			let data = Vec::<u8>::decode(&mut data).map_err(Ics02Error::invalid_codec_decode)?;
+			let data = String::from_utf8(data).map_err(Ics02Error::invalid_from_utf8)?;
 			let client_type = ClientType::from_str(&data)
 				.map_err(|e| Ics02Error::unknown_client_type(e.to_string()))?;
 			Ok(client_type)
@@ -42,8 +41,7 @@ impl<T: Config> ClientReader for Context<T> {
 
 		if <ClientStates<T>>::contains_key(client_id.as_bytes()) {
 			let data = <ClientStates<T>>::get(client_id.as_bytes());
-			let result =
-				AnyClientState::decode_vec(&*data).map_err(|e| Ics02Error::invalid_decode(e))?;
+			let result = AnyClientState::decode_vec(&*data).map_err(Ics02Error::invalid_decode)?;
 			log::trace!(target:"runtime::pallet-ibc","in client : [client_state] >> any client_state: {:?}", result);
 			Ok(result)
 		} else {
@@ -69,12 +67,12 @@ impl<T: Config> ClientReader for Context<T> {
 		});
 
 		for item in values.iter() {
-			let item_height = Height::decode(&mut &item.0.clone()[..])
-				.map_err(|e| Ics02Error::invalid_decode(e))?;
+			let item_height =
+				Height::decode(&mut &item.0.clone()[..]).map_err(Ics02Error::invalid_decode)?;
 
 			if item_height == height {
-				let any_consensus_state = AnyConsensusState::decode_vec(&*item.1)
-					.map_err(|e| Ics02Error::invalid_decode(e))?;
+				let any_consensus_state =
+					AnyConsensusState::decode_vec(&*item.1).map_err(Ics02Error::invalid_decode)?;
 				log::trace!(target:"runtime::pallet-ibc",
 					"in client : [consensus_state] >> any consensus state = {:?}",
 					any_consensus_state
@@ -103,12 +101,12 @@ impl<T: Config> ClientReader for Context<T> {
 		});
 
 		for item in values.iter() {
-			let item_height = Height::decode(&mut &item.0.clone()[..])
-				.map_err(|e| Ics02Error::invalid_decode(e))?;
+			let item_height =
+				Height::decode(&mut &item.0.clone()[..]).map_err(Ics02Error::invalid_decode)?;
 
 			if item_height < height {
-				let any_consensus_state = AnyConsensusState::decode_vec(&*item.1)
-					.map_err(|e| Ics02Error::invalid_decode(e))?;
+				let any_consensus_state =
+					AnyConsensusState::decode_vec(&*item.1).map_err(Ics02Error::invalid_decode)?;
 				log::trace!(target:"runtime::pallet-ibc",
 					"in client : [consensus_state] >> any consensus state = {:?}",
 					any_consensus_state
@@ -139,12 +137,12 @@ impl<T: Config> ClientReader for Context<T> {
 		});
 
 		for item in values.iter() {
-			let item_height = Height::decode(&mut &item.0.clone()[..])
-				.map_err(|e| Ics02Error::invalid_decode(e))?;
+			let item_height =
+				Height::decode(&mut &item.0.clone()[..]).map_err(Ics02Error::invalid_decode)?;
 
 			if item_height > height {
-				let any_consensus_state = AnyConsensusState::decode_vec(&*item.1)
-					.map_err(|e| Ics02Error::invalid_decode(e))?;
+				let any_consensus_state =
+					AnyConsensusState::decode_vec(&*item.1).map_err(Ics02Error::invalid_decode)?;
 				log::trace!(target:"runtime::pallet-ibc",
 					"in client : [consensus_state] >> any consensus state = {:?}",
 					any_consensus_state
@@ -213,7 +211,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 		log::info!("in client : [increase_client_counter]");
 
 		let ret = <ClientCounter<T>>::try_mutate(|val| -> Result<(), Ics02Error> {
-			let new = val.checked_add(1).ok_or(Ics02Error::invalid_increase_client_counter())?;
+			let new = val.checked_add(1).ok_or_else(Ics02Error::invalid_increase_client_counter)?;
 			*val = new;
 			Ok(())
 		});
@@ -226,7 +224,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 	) -> Result<(), Ics02Error> {
 		log::trace!(target:"runtime::pallet-ibc","in client : [store_client_state]");
 
-		let data = client_state.encode_vec().map_err(|e| Ics02Error::invalid_encode(e))?;
+		let data = client_state.encode_vec().map_err(Ics02Error::invalid_encode)?;
 		// store client states key-value
 		<ClientStates<T>>::insert(client_id.as_bytes().to_vec(), data);
 
@@ -250,8 +248,8 @@ impl<T: Config> ClientKeeper for Context<T> {
 	) -> Result<(), Ics02Error> {
 		log::trace!(target:"runtime::pallet-ibc","in client : [store_consensus_state]");
 
-		let height = height.encode_vec().map_err(|e| Ics02Error::invalid_encode(e))?;
-		let data = consensus_state.encode_vec().map_err(|e| Ics02Error::invalid_encode(e))?;
+		let height = height.encode_vec().map_err(Ics02Error::invalid_encode)?;
+		let data = consensus_state.encode_vec().map_err(Ics02Error::invalid_encode)?;
 		if <ConsensusStates<T>>::contains_key(client_id.as_bytes()) {
 			// todo
 			// consensus_state is stored after mmr root updated
@@ -271,12 +269,12 @@ impl<T: Config> ClientKeeper for Context<T> {
 		log::trace!(target:"runtime::pallet-ibc","in client: [store_update_time]");
 
 		let encode_timestamp = serde_json::to_string(&timestamp)
-			.map_err(|e| Ics02Error::invalid_serde_json_encode(e))?
+			.map_err(Ics02Error::invalid_serde_json_encode)?
 			.as_bytes()
 			.to_vec();
 		<ClientProcessedTimes<T>>::insert(
 			client_id.as_bytes(),
-			height.encode_vec().map_err(|e| Ics02Error::invalid_encode(e))?,
+			height.encode_vec().map_err(Ics02Error::invalid_encode)?,
 			encode_timestamp,
 		);
 
@@ -293,8 +291,8 @@ impl<T: Config> ClientKeeper for Context<T> {
 
 		<ClientProcessedHeights<T>>::insert(
 			client_id.as_bytes(),
-			height.encode_vec().map_err(|e| Ics02Error::invalid_encode(e))?,
-			host_height.encode_vec().map_err(|e| Ics02Error::invalid_encode(e))?,
+			height.encode_vec().map_err(Ics02Error::invalid_encode)?,
+			host_height.encode_vec().map_err(Ics02Error::invalid_encode)?,
 		);
 
 		Ok(())

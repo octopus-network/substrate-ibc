@@ -93,3 +93,9 @@ impl<T: Config> Context<T> {
 		Self { _pd: PhantomData::default(), router: r }
 	}
 }
+
+impl<T: Config> Default for Context<T> {
+	fn default() -> Self {
+		Self::new()
+	}
+}

@@ -22,8 +22,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 
 		if <Connections<T>>::contains_key(conn_id.as_bytes()) {
 			let data = <Connections<T>>::get(conn_id.as_bytes());
-			let ret =
-				ConnectionEnd::decode_vec(&*data).map_err(|e| Ics03Error::invalid_decode(e))?;
+			let ret = ConnectionEnd::decode_vec(&*data).map_err(Ics03Error::invalid_decode)?;
 			log::trace!(target:"runtime::pallet-ibc","in connection : [connection_end] >>  connection_end = {:?}", ret);
 			Ok(ret)
 		} else {
@@ -38,8 +37,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 		// ClientReader::client_state(self, client_id)
 		if <ClientStates<T>>::contains_key(client_id.as_bytes()) {
 			let data = <ClientStates<T>>::get(client_id.as_bytes());
-			let result =
-				AnyClientState::decode_vec(&*data).map_err(|e| Ics03Error::invalid_decode(e))?;
+			let result = AnyClientState::decode_vec(&*data).map_err(Ics03Error::invalid_decode)?;
 			log::trace!(target:"runtime::pallet-ibc","in connection : [client_state] >> client_state: {:?}", result);
 			Ok(result)
 		} else {
@@ -100,13 +98,13 @@ impl<T: Config> ConnectionReader for Context<T> {
 		);
 
 		// ClientReader::consensus_state(self, client_id, height)
-		let height = height.encode_vec().map_err(|e| Ics03Error::invalid_encode(e))?;
+		let height = height.encode_vec().map_err(Ics03Error::invalid_encode)?;
 		let value = <ConsensusStates<T>>::get(client_id.as_bytes());
 
 		for item in value.iter() {
 			if item.0 == height {
-				let any_consensus_state = AnyConsensusState::decode_vec(&*item.1)
-					.map_err(|e| Ics03Error::invalid_decode(e))?;
+				let any_consensus_state =
+					AnyConsensusState::decode_vec(&*item.1).map_err(Ics03Error::invalid_decode)?;
 				return Ok(any_consensus_state)
 			}
 		}
@@ -131,8 +129,9 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		log::trace!(target:"runtime::pallet-ibc","in connection : [increase_connection_counter]");
 
 		let ret = <ConnectionCounter<T>>::try_mutate(|val| -> Result<(), Ics03Error> {
-			let new =
-				val.checked_add(1).ok_or(Ics03Error::invalid_increment_connection_counter())?;
+			let new = val
+				.checked_add(1)
+				.ok_or_else(Ics03Error::invalid_increment_connection_counter)?;
 			*val = new;
 			Ok(())
 		});
@@ -145,7 +144,7 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 	) -> Result<(), Ics03Error> {
 		log::trace!(target:"runtime::pallet-ibc","in connection : [store_connection]");
 
-		let data = connection_end.encode_vec().map_err(|e| Ics03Error::invalid_encode(e))?;
+		let data = connection_end.encode_vec().map_err(Ics03Error::invalid_encode)?;
 
 		// store connection end
 		<Connections<T>>::insert(connection_id.as_bytes().to_vec(), data);
