@@ -495,6 +495,14 @@ pub mod pallet {
 		Empty(Vec<u8>),
 		/// emit chain error event
 		ChainError(Vec<u8>),
+		/// emit escrow token
+		EscrowToken(T::AccountId, T::AccountId, BalanceOf<T>),
+		/// emit burn token
+		BurnToken(T::AssetId, T::AccountId, T::AssetBalance),
+		/// unescrow token
+		UnEscrowToken(T::AccountId, T::AccountId, BalanceOf<T>),
+		/// mint token
+		MintToken(T::AssetId, T::AccountId, T::AssetBalance),
 	}
 
 	/// Convert events of ibc-rs to the corresponding events in substrate-ibc
