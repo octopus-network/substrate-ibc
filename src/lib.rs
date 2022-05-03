@@ -686,8 +686,8 @@ pub mod pallet {
 					let sender = Signer::from(hex_sender);
 					log::info!("transfer : sender : {}", sender);
 
-					let receiver =
-						Signer::new(String::from_utf8(receiver).map_err(|_| Error::<T>::InvalidFromUtf8)?);
+					let receiver = String::from_utf8(receiver).map_err(|_| Error::<T>::InvalidFromUtf8)?;
+					let receiver = Signer::new(receiver);
 					log::info!("transfer : receiver : {}", receiver);
 
 					let timeout_height =
