@@ -688,9 +688,10 @@ pub mod pallet {
 					let sender = Signer::from(hex_sender);
 					log::info!(target: LOG_TARGET,"transfer : sender : {}", sender);
 
-					let receiver =
-						Signer::new(String::from_utf8(receiver).map_err(|_| Error::<T>::InvalidFromUtf8)?);
+					let receiver = String::from_utf8(receiver).map_err(|_| Error::<T>::InvalidFromUtf8)?;
+					let receiver = Signer::new(receiver);
 					log::info!(target: LOG_TARGET,"transfer : receiver : {}", receiver);
+
 
 					let timeout_height =
 						height::Height { revision_number: 0, revision_height: timeout_height };
@@ -727,6 +728,26 @@ pub mod pallet {
 					Ok(())
 				}
 			)
+		}
+
+		#[pallet::weight(0)]
+		pub fn delete_send_packet_event(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
+			log::trace!(target: LOG_TARGET, "delete_send_packet_event");
+
+			let _who = ensure_signed(origin)?;
+			<SendPacketEvent<T>>::drain();
+
+			Ok(().into())
+		}
+
+		#[pallet::weight(0)]
+		pub fn delete_ack_packet_event(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
+			log::trace!(target: LOG_TARGET, "delete_ack_packet_event");
+
+			let _who = ensure_signed(origin)?;
+			<WriteAckPacketEvent<T>>::drain();
+
+			Ok(().into())
 		}
 	}
 
@@ -771,6 +792,9 @@ pub mod pallet {
 						)
 						.map_err(|_| Error::<T>::ReceivePacketError)?;
 
+						// Emit recv event
+						Self::deposit_event(event.clone().into());
+
 						let packet = value.packet;
 
 						let write_ack_event =
@@ -781,20 +805,20 @@ pub mod pallet {
 							)
 							.map_err(|_| Error::<T>::ReceivePacketError)?;
 
-						// store write acknowledgement event
-						match write_ack_event.result {
-							ibc::core::ics04_channel::packet::PacketResult::WriteAck(value) => {
-								<WriteAckPacketEvent<T>>::insert(
-									(
-										value.port_id.as_bytes().to_vec(),
-										value.channel_id.as_bytes().to_vec(),
-										u64::from(value.seq),
-									),
-									ack.clone(),
-								);
-							},
-							_ => unimplemented!(),
-						}
+						// // store write acknowledgement event
+						// match write_ack_event.result {
+						// 	ibc::core::ics04_channel::packet::PacketResult::WriteAck(value) => {
+						// 		<WriteAckPacketEvent<T>>::insert(
+						// 			(
+						// 				value.port_id.as_bytes().to_vec(),
+						// 				value.channel_id.as_bytes().to_vec(),
+						// 				u64::from(value.seq),
+						// 			),
+						// 			ack.clone(),
+						// 		);
+						// 	},
+						// 	_ => unimplemented!(),
+						// }
 
 						// Emit write acknowledgement event
 						Self::deposit_event(Event::<T>::WriteAcknowledgement(
@@ -813,9 +837,6 @@ pub mod pallet {
 								todo!()
 							};
 						store_write_ack::<T>(&write_ack_event);
-
-						// Emit recv event
-						Self::deposit_event(event.clone().into());
 					},
 					IbcEvent::TimeoutPacket(value) => {
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L442
@@ -1016,7 +1037,7 @@ pub mod pallet {
 						Self::deposit_event(event.clone().into());
 					},
 					_ => {
-						log::warn!(target: LOG_TARGET,"Unhandled event: {:?}", event);
+						log::warn!(target: LOG_TARGET, "Unhandled event: {:?}", event);
 						Self::deposit_event(event.clone().into());
 					},
 				}
