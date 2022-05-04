@@ -614,6 +614,8 @@ pub mod pallet {
 					})
 					.collect();
 
+				log::trace!(target: LOG_TARGET, "received deliver : {:?} ", messages);
+
 				let mut results: Vec<IbcEvent> = vec![];
 				for (index, message) in messages.clone().into_iter().enumerate() {
 					let (mut result, _) =
@@ -664,39 +666,39 @@ pub mod pallet {
 						&String::from_utf8(source_port).map_err(|_| Error::<T>::InvalidFromUtf8)?,
 					)
 					.map_err(|_| Error::<T>::InvalidIdentifier)?;
-					log::info!("transfer : source_port: {}", source_port);
+					log::info!(target: LOG_TARGET,"transfer : source_port: {}", source_port);
 
 					let source_channel = identifier::ChannelId::from_str(
 						&String::from_utf8(source_channel).map_err(|_| Error::<T>::InvalidFromUtf8)?,
 					)
 					.map_err(|_| Error::<T>::InvalidIdentifier)?;
-					log::info!("transfer : source_channel : {}", source_channel);
+					log::info!(target: LOG_TARGET,"transfer : source_channel : {}", source_channel);
 
 					let token = Some(ibc_proto::cosmos::base::v1beta1::Coin {
 						denom: String::from_utf8(token).map_err(|_| Error::<T>::InvalidFromUtf8)?,
 						amount: amount.to_string(),
 					});
-					log::info!("transfer : token : {:?}", token);
+					log::info!(target: LOG_TARGET,"transfer : token : {:?}", token);
 
 					let sender: T::AccountId = ensure_signed(origin)?;
 					let encode_sender = T::AccountId::encode(&sender);
 					let hex_sender = hex::encode(encode_sender);
-					log::info!("transfer : hex sender : 0x{}", hex_sender);
+					log::info!(target: LOG_TARGET,"transfer : hex sender : 0x{}", hex_sender);
 
 					let sender = Signer::from(hex_sender);
-					log::info!("transfer : sender : {}", sender);
+					log::info!(target: LOG_TARGET,"transfer : sender : {}", sender);
 
 					let receiver =
 						Signer::new(String::from_utf8(receiver).map_err(|_| Error::<T>::InvalidFromUtf8)?);
-					log::info!("transfer : receiver : {}", receiver);
+					log::info!(target: LOG_TARGET,"transfer : receiver : {}", receiver);
 
 					let timeout_height =
 						height::Height { revision_number: 0, revision_height: timeout_height };
-					log::info!("transfer : timeout height : {}", timeout_height);
+					log::info!(target: LOG_TARGET,"transfer : timeout height : {}", timeout_height);
 
 					let timeout_timestamp = timestamp::Timestamp::from_nanoseconds(timeout_timestamp)
 						.map_err(|_| Error::<T>::InvalidTimestamp)?;
-					log::info!("transfer : timeout timestamp : {}", timeout_timestamp);
+					log::info!(target: LOG_TARGET,"transfer : timeout timestamp : {}", timeout_timestamp);
 
 					let msg = MsgTransfer {
 						source_port,
@@ -718,7 +720,7 @@ pub mod pallet {
 					let send_transfer_result_event = send_transfer_result.events;
 
 					// handle the result
-					log::info!("result: {:?}", send_transfer_result_event);
+					log::info!(target: LOG_TARGET,"result: {:?}", send_transfer_result_event);
 
 					Self::handle_result(&ctx, vec![msg.to_any()], send_transfer_result_event)?;
 
@@ -849,6 +851,7 @@ pub mod pallet {
 					},
 
 					IbcEvent::OpenInitChannel(value) => {
+						log::trace!(target: LOG_TARGET, "open init channel : {:?}", value);
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L163
 						let relayer_signer = get_signer::<T>(messages[index].clone())
 							.map_err(|_| Error::<T>::InvalidSigner)?;
@@ -884,6 +887,7 @@ pub mod pallet {
 					},
 
 					IbcEvent::OpenTryChannel(value) => {
+						log::trace!(target: LOG_TARGET, "open try channel : {:?}", value);
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L203
 
 						let height = value.clone().height;
@@ -917,6 +921,7 @@ pub mod pallet {
 					},
 
 					IbcEvent::OpenAckChannel(value) => {
+						log::trace!(target: LOG_TARGET, "open ack channel : {:?}", value);
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L241
 
 						let port_id = value.clone().port_id;
@@ -941,6 +946,7 @@ pub mod pallet {
 					},
 
 					IbcEvent::OpenConfirmChannel(value) => {
+						log::trace!(target: LOG_TARGET, "open confirm channel : {:?}", value);
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L277
 
 						let port_id = value.clone().port_id;
@@ -964,6 +970,7 @@ pub mod pallet {
 						Self::deposit_event(event.clone().into());
 					},
 					IbcEvent::CloseInitChannel(value) => {
+						log::trace!(target: LOG_TARGET, "close init channel : {:?}", value);
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L309
 
 						let port_id = value.clone().port_id;
@@ -986,6 +993,7 @@ pub mod pallet {
 					},
 
 					IbcEvent::CloseConfirmChannel(value) => {
+						log::trace!(target: LOG_TARGET, "close confirm channel : {:?}", value);
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L336
 
 						let port_id = value.clone().port_id;
@@ -1008,7 +1016,7 @@ pub mod pallet {
 						Self::deposit_event(event.clone().into());
 					},
 					_ => {
-						log::warn!("Unhandled event: {:?}", event);
+						log::warn!(target: LOG_TARGET,"Unhandled event: {:?}", event);
 						Self::deposit_event(event.clone().into());
 					},
 				}
@@ -1051,7 +1059,7 @@ pub mod pallet {
 					client_id_str
 				);
 
-				return Err(Error::<T>::ClientIdNotFound.into())
+				return Err(Error::<T>::ClientIdNotFound.into());
 			} else {
 				// get client state from chain storage
 				let data = <ClientStates<T>>::get(client_id.clone());
@@ -1208,7 +1216,7 @@ pub mod pallet {
 						e
 					);
 
-					return Err(Error::<T>::UpdateBeefyLightClientFailure.into())
+					return Err(Error::<T>::UpdateBeefyLightClientFailure.into());
 				},
 			}
 
