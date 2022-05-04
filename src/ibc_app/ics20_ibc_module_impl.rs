@@ -56,7 +56,7 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 		let ret = validate_transfer_channel_params(ctx, order, port_id, channel_id)?;
 
 		if version != Version::ics20() {
-			return Err(Ics20Error::invalid_version(version, Version::ics20()));
+			return Err(Ics20Error::invalid_version(version, Version::ics20()))
 		}
 
 		// todo
@@ -87,7 +87,7 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 		let ret = validate_transfer_channel_params(ctx, order, port_id, channel_id)?;
 
 		if counterparty_version != Version::ics20() {
-			return Err(Ics20Error::invalid_version(counterparty_version, Version::ics20()));
+			return Err(Ics20Error::invalid_version(counterparty_version, Version::ics20()))
 		}
 
 		// todo
@@ -117,7 +117,7 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 		Ctx: Ics20Context,
 	{
 		if counterparty_version != Version::ics20() {
-			return Err(Ics20Error::invalid_version(counterparty_version, Version::ics20()));
+			return Err(Ics20Error::invalid_version(counterparty_version, Version::ics20()))
 		}
 		Ok(())
 	}
@@ -183,10 +183,7 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 		let mut acknowledgement = Acknowledgement::new_success(default_ack_value);
 		log::trace!(target:  "runtime::pallet-ibc", "on_recv_packet impl --> init acknowledgement : {:?}", acknowledgement);
 		// build FungibleTokenPacketData
-		// let data = FungibleTokenPacketData::decode(&mut &packet.data[..])
-		// 	.map_err(Ics20Error::invalid_decode)?;
-	    let data = FungibleTokenPacketData::decode(&mut &packet.data[..]).unwrap();
-		
+		let data: FungibleTokenPacketData = serde_json::from_str(&packet.data).map_err(Ics20Error::invalid_decode)?;
 		log::trace!(target:  "runtime::pallet-ibc", "on_recv_packet impl --> fungible token packet data: {:?}", data);
 		// only attempt the application logic if the packet data
 		// was successfully decoded
@@ -218,8 +215,7 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 		let ack = Acknowledgement::decode(&mut &acknowledgement[..])
 			.map_err(Ics20Error::invalid_decode)?;
 
-		let data = FungibleTokenPacketData::decode(&mut &packet.data[..])
-			.map_err(Ics20Error::invalid_decode)?;
+		let data: FungibleTokenPacketData = serde_json::from_str(&packet.data).map_err(Ics20Error::invalid_decode)?;
 
 		let ret = ics20_handler::handle_ack_packet::<Ctx, T>(ctx, packet, data, ack.into());
 
@@ -237,8 +233,7 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 	where
 		Ctx: Ics20Context,
 	{
-		let data = FungibleTokenPacketData::decode(&mut &packet.data[..])
-			.map_err(Ics20Error::invalid_decode)?;
+		let data: FungibleTokenPacketData = serde_json::from_str(&packet.data).map_err(Ics20Error::invalid_decode)?;
 
 		// handle ack packet/refund tokens
 		let ret = ics20_handler::handle_timeout_packet::<Ctx, T>(ctx, packet, data);
@@ -261,17 +256,17 @@ fn validate_transfer_channel_params<Ctx: Ics20Context>(
 	let channel_sequence = parse_channel_sequence(channel_id.0)?;
 
 	if channel_sequence > u32::MAX.into() {
-		return Err(Ics20Error::overflow_channel_sequence(channel_sequence, u32::MAX.into()));
+		return Err(Ics20Error::overflow_channel_sequence(channel_sequence, u32::MAX.into()))
 	}
 
 	if order != Order::Unordered {
-		return Err(Ics20Error::invalid_equal_order(Order::Unordered, order));
+		return Err(Ics20Error::invalid_equal_order(Order::Unordered, order))
 	}
 
 	// Require portID is the portID transfer module is bound to
 	let bound_port = ctx.get_port()?;
 	if bound_port != port_id {
-		return Err(Ics20Error::invalid_equal_port_id(bound_port, port_id));
+		return Err(Ics20Error::invalid_equal_port_id(bound_port, port_id))
 	}
 
 	Ok(())
