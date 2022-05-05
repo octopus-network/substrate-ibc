@@ -765,7 +765,11 @@ pub mod pallet {
 				match event.clone() {
 					IbcEvent::SendPacket(value) => {
 						// refer to https://github.com/octopus-network/ibc-go/blob/f5962c3324ee7e69eeaa9918b65eb1b089da6095/modules/apps/transfer/keeper/msg_server.go#L16
-						log::trace!(target: LOG_TARGET, "send packet is : {:?}", value.packet);
+						log::trace!(
+							target: LOG_TARGET,
+							"[handle_result] send packet is : {:?}",
+							value.packet
+						);
 
 						let ret = ibc_app::ics20_handler::handle_transfer::<Ctx, T>(
 							ctx,
@@ -779,7 +783,11 @@ pub mod pallet {
 
 					IbcEvent::ReceivePacket(value) => {
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L364
-						log::trace!(target: LOG_TARGET, "receive packet is : {:?}", value.packet);
+						log::trace!(
+							target: LOG_TARGET,
+							"[handle_result] receive packet is : {:?}",
+							value.packet
+						);
 						let relayer_signer = get_signer::<T>(messages[index].clone())
 							.map_err(|_| Error::<T>::InvalidSigner)?;
 
@@ -840,7 +848,11 @@ pub mod pallet {
 					},
 					IbcEvent::TimeoutPacket(value) => {
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L442
-						log::trace!(target: LOG_TARGET, "timeout packet is : {:?}", value.packet);
+						log::trace!(
+							target: LOG_TARGET,
+							"[handle_result] timeout packet is : {:?}",
+							value.packet
+						);
 						let relayer_signer = get_signer::<T>(messages[index].clone())
 							.map_err(|_| Error::<T>::InvalidSigner)?;
 
@@ -860,7 +872,11 @@ pub mod pallet {
 
 					IbcEvent::AcknowledgePacket(value) => {
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L581
-						log::trace!(target: LOG_TARGET, "ack packet is : {:?}", value.packet);
+						log::trace!(
+							target: LOG_TARGET,
+							"[handle_result] ack packet is : {:?}",
+							value.packet
+						);
 						let relayer_signer = get_signer::<T>(messages[index].clone())
 							.map_err(|_| Error::<T>::InvalidSigner)?;
 
@@ -872,7 +888,11 @@ pub mod pallet {
 					},
 
 					IbcEvent::OpenInitChannel(value) => {
-						log::trace!(target: LOG_TARGET, "open init channel : {:?}", value);
+						log::trace!(
+							target: LOG_TARGET,
+							"[handle_result] open init channel : {:?}",
+							value
+						);
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L163
 						let relayer_signer = get_signer::<T>(messages[index].clone())
 							.map_err(|_| Error::<T>::InvalidSigner)?;
@@ -908,7 +928,11 @@ pub mod pallet {
 					},
 
 					IbcEvent::OpenTryChannel(value) => {
-						log::trace!(target: LOG_TARGET, "open try channel : {:?}", value);
+						log::trace!(
+							target: LOG_TARGET,
+							"[handle_result] open try channel : {:?}",
+							value
+						);
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L203
 
 						let height = value.clone().height;
@@ -942,7 +966,11 @@ pub mod pallet {
 					},
 
 					IbcEvent::OpenAckChannel(value) => {
-						log::trace!(target: LOG_TARGET, "open ack channel : {:?}", value);
+						log::trace!(
+							target: LOG_TARGET,
+							"[handle_result] open ack channel : {:?}",
+							value
+						);
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L241
 
 						let port_id = value.clone().port_id;
@@ -967,7 +995,11 @@ pub mod pallet {
 					},
 
 					IbcEvent::OpenConfirmChannel(value) => {
-						log::trace!(target: LOG_TARGET, "open confirm channel : {:?}", value);
+						log::trace!(
+							target: LOG_TARGET,
+							"[handle_result] open confirm channel : {:?}",
+							value
+						);
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L277
 
 						let port_id = value.clone().port_id;
@@ -991,7 +1023,11 @@ pub mod pallet {
 						Self::deposit_event(event.clone().into());
 					},
 					IbcEvent::CloseInitChannel(value) => {
-						log::trace!(target: LOG_TARGET, "close init channel : {:?}", value);
+						log::trace!(
+							target: LOG_TARGET,
+							"[handle_result] close init channel : {:?}",
+							value
+						);
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L309
 
 						let port_id = value.clone().port_id;
@@ -1014,7 +1050,11 @@ pub mod pallet {
 					},
 
 					IbcEvent::CloseConfirmChannel(value) => {
-						log::trace!(target: LOG_TARGET, "close confirm channel : {:?}", value);
+						log::trace!(
+							target: LOG_TARGET,
+							"[handle_result] close confirm channel : {:?}",
+							value
+						);
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L336
 
 						let port_id = value.clone().port_id;
@@ -1037,7 +1077,11 @@ pub mod pallet {
 						Self::deposit_event(event.clone().into());
 					},
 					_ => {
-						log::warn!(target: LOG_TARGET, "Unhandled event: {:?}", event);
+						log::warn!(
+							target: LOG_TARGET,
+							"[handle_result] Unhandled event: {:?}",
+							event
+						);
 						Self::deposit_event(event.clone().into());
 					},
 				}
