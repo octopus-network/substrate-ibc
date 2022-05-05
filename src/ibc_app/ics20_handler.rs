@@ -64,11 +64,11 @@ fn receiver_chain_is_source(
 ) -> bool {
 	let voucher_prefix = get_denom_prefix(source_port, source_channel);
 
-	voucher_prefix.starts_with(denom)
+	denom.starts_with(voucher_prefix.as_str())
 }
 
 fn get_denom_prefix(port_id: &IbcPortId, channel_id: &IbcChannelId) -> String {
-	format!("{}/{}", port_id, channel_id)
+	format!("{}/{}/", port_id, channel_id)
 }
 
 // // GetPrefixedDenom returns the denomination with the portID and channelID prefixed
