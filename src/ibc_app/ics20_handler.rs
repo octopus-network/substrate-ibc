@@ -200,8 +200,14 @@ where
 
 		log::info!("🔥🔥🔥🔥🔥ics20_handle handle_transfer: escrow source tokens (assumed to fail if balance insufficient), Success!!!");
 	} else {
-		let amount = amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
+		// send token is {port_id}/{channel_id}/denom
+		let prefix = get_denom_prefix(&source_port, &source_channel);
+		log::info!("🤮ics20_handle handle_transfer prefix = {:?}", prefix);
 
+		let denomination = str_denomination[prefix.len()..].as_bytes().to_vec();
+		log::info!("🤮ics20_handle handle_transfer denomination = {:?}", denomination);
+	
+		let amount = amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
 		log::info!("🤮ics20_handle handle_transfer amount = {:?}", amount);
 
 		log::info!(
@@ -259,6 +265,7 @@ where
 	log::info!("🤮ics20_handle handle_recv_packet ack = {:?}", ack);
 
 	if receiver_chain_is_source(&packet.source_port, &packet.source_channel, &data.denom) {
+		
 		// let voucher_prefix = get_denom_prefix(&packet.source_port, &packet.source_channel);
 		// log::info!("🤮ics20_handle handle_recv_packet voucher_prefix = {:?}", voucher_prefix);
 
@@ -279,6 +286,9 @@ where
 		// log::info!("🤮ics20_handle handle_recv_packet denom = {:?}", denom);
 
 		let pallet_data: FungibleTokenPacketData<T> = data.into();
+
+		// todo
+		// assert corss token equal nativae token
 
 		// create escrow account by source_prot, and source channel
 		let escrow_account = generate_escrow_account::<T>(packet.source_channel.clone())?;
@@ -462,7 +472,8 @@ where
 
 	let pallet_data: FungibleTokenPacketData<T> = data.clone().into();
 	let denomination = pallet_data.denomination;
-	// log::info!("🤮ics20_handle refund_packet_token pallet_data = {:?}", pallet_data);
+	let str_denomination = String::from_utf8(pallet_data.denomination).unwrap();
+	log::info!("🤮ics20_handle refund_packet_token str_denomination = {:?}", str_denomination);
 
 	if sender_chain_is_source(&packet.source_port, &packet.source_channel, &data.denom) {
 		let escrow_account = generate_escrow_account::<T>(packet.source_channel.clone())?;
@@ -483,6 +494,12 @@ where
 
 		log::info!("🔥🔥🔥🔥🔥ics20_handle refund_packet_token transfer successful!!");
 	} else {
+		let prefix = get_denom_prefix(&source_port, &source_channel);
+		log::info!("🤮ics20_handle refund_packet_token prefix = {:?}", prefix);
+
+		let denomination = str_denomination[prefix.len()..].as_bytes().to_vec();
+		log::info!("🤮ics20_handle refund_packet_token denomination = {:?}", denomination);
+
 		let amount = pallet_data.amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
 		log::info!("🤮ics20_handle refund_packet_token amount = {:?}", amount);
 
