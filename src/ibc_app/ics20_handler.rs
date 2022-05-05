@@ -471,17 +471,22 @@ where
 	// log::info!("🤮ics20_handle refund_packet_token trace = {:?}", trace);
 
 	let pallet_data: FungibleTokenPacketData<T> = data.clone().into();
-	let denomination = pallet_data.denomination;
+	let denomination = pallet_data.denomination.clone();
 	let str_denomination = String::from_utf8(pallet_data.denomination).unwrap();
 	log::info!("🤮ics20_handle refund_packet_token str_denomination = {:?}", str_denomination);
 
-	if sender_chain_is_source(&packet.source_port, &packet.source_channel, &data.denom) {
-		let escrow_account = generate_escrow_account::<T>(packet.source_channel.clone())?;
+	let source_port = packet.source_port;
+	log::info!("🤮ics20_handle refund_packet_token source_prot = {:?}", source_port);
+	let source_channel = packet.source_channel;
+	log::info!("🤮ics20_handle refund_packet_token source_channel = {:?}", source_channel);
+
+	if sender_chain_is_source(&source_port, &source_channel, &str_denomination) {
+		let escrow_account = generate_escrow_account::<T>(source_channel.clone())?;
 		log::info!("🤮ics20_handle refund_packet_token escrow_account = {:?}", escrow_account);
 
 		<EscrowAddresses<T>>::insert(
-			PortId::from(packet.source_port),
-			ChannelId::from(packet.source_channel),
+			PortId::from(source_port),
+			ChannelId::from(source_channel),
 			escrow_account.clone(),
 		);
 
