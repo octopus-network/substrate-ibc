@@ -838,8 +838,11 @@ pub mod pallet {
 						// }
 
 						// Emit write acknowledgement event
+						// todo this
+						let block_number = format!("{:?}", <frame_system::Pallet<T>>::block_number());
+						let current_height: u64 = block_number.parse().unwrap_or_default();
 						Self::deposit_event(Event::<T>::WriteAcknowledgement(
-							Height::new(0, 0),
+							Height::new(0, current_height),
 							packet.into(),
 							ack,
 						));

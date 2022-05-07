@@ -299,8 +299,8 @@ impl<T: Config> ChannelReader for Context<T> {
 	fn host_height(&self) -> Height {
 		log::trace!(target:"runtime::pallet-ibc","in channel: [host_height]");
 
+		//todo this can improve
 		let block_number = format!("{:?}", <frame_system::Pallet<T>>::block_number());
-
 		let current_height: u64 = block_number.parse().unwrap_or_default();
 
 		log::trace!(target:"runtime::pallet-ibc",
