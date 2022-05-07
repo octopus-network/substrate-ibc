@@ -618,9 +618,18 @@ pub mod pallet {
 
 				let mut results: Vec<IbcEvent> = vec![];
 				for (index, message) in messages.clone().into_iter().enumerate() {
-					let (mut result, _) =
-						ibc::core::ics26_routing::handler::deliver(&mut ctx, message.clone())
-							.map_err(|_| Error::<T>::Ics26Error)?;
+					
+					let mut result = Vec::new();
+					match ibc::core::ics26_routing::handler::deliver(&mut ctx, message.clone()) {
+						Ok(value) => {
+							log::trace!(target: LOG_TARGET, "deliver event  : {:?} ", value.0);
+							result = value.0;
+							
+						}
+						Err(error) => {
+							log::trace!(target: LOG_TARGET, "deliver error  : {:?} ", error);
+						}
+					};
 
 					log::info!("result: {:?}", result);
 
