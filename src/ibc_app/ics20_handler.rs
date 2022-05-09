@@ -33,7 +33,7 @@ use ibc_proto::ibc::core::channel::v1::{acknowledgement::Response, Acknowledgeme
 fn generate_escrow_account<T: Config>(
 	channel_id: ibc::core::ics24_host::identifier::ChannelId,
 ) -> Result<T::AccountId, Error<T>> {
-	let channel_id_number = channel_id
+	let channel_id_number = format!("{}", channel_id)
 		.as_str()
 		.strip_prefix("channel-")
 		.ok_or(Error::<T>::InvalidParse)?
@@ -191,8 +191,14 @@ where
 			"🤮ics20_handle handle_transfer total_balance = {:?}",
 			T::Currency::total_balance(&sender)
 		);
-		log::info!("🤮ics20_handle handle_transfer total_issuance = {:?}", T::Currency::total_issuance());
-		log::info!("🤮ics20_handle handle_transfer minimum_balance = {:?}", T::Currency::minimum_balance());
+		log::info!(
+			"🤮ics20_handle handle_transfer total_issuance = {:?}",
+			T::Currency::total_issuance()
+		);
+		log::info!(
+			"🤮ics20_handle handle_transfer minimum_balance = {:?}",
+			T::Currency::minimum_balance()
+		);
 
 		T::Currency::transfer(&sender, &escrow_account, amount, AllowDeath)?;
 
@@ -206,7 +212,7 @@ where
 
 		let denomination = str_denomination[prefix.len()..].as_bytes().to_vec();
 		log::info!("🤮ics20_handle handle_transfer denomination = {:?}", denomination);
-	
+
 		let amount = amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
 		log::info!("🤮ics20_handle handle_transfer amount = {:?}", amount);
 
@@ -218,14 +224,21 @@ where
 			"🤮ics20_handle handle_transfer total_balance = {:?}",
 			T::Currency::total_balance(&sender)
 		);
-		log::info!("🤮ics20_handle handle_transfer total_issuance = {:?}", T::Currency::total_issuance());
-		log::info!("🤮ics20_handle handle_transfer minimum_balance = {:?}", T::Currency::minimum_balance());
+		log::info!(
+			"🤮ics20_handle handle_transfer total_issuance = {:?}",
+			T::Currency::total_issuance()
+		);
+		log::info!(
+			"🤮ics20_handle handle_transfer minimum_balance = {:?}",
+			T::Currency::minimum_balance()
+		);
 
 		// get assert id buy denomination
 		if let Ok(token_id) = T::AssetIdByName::try_get_asset_id(denomination) {
 			log::info!("🤮ics20_handle handle_transfer token_id = {:?}", token_id);
 
-			let token_name = T::AssetIdByName::try_get_asset_name(token_id).map_err(|_| Error::<T>::WrongAssetId)?;
+			let token_name = T::AssetIdByName::try_get_asset_name(token_id)
+				.map_err(|_| Error::<T>::WrongAssetId)?;
 			let token_name = String::from_utf8(token_name).unwrap();
 			log::info!("🤮ics20_handle handle_transfer token_name = {:?}", token_name);
 
@@ -233,10 +246,9 @@ where
 			Pallet::<T>::deposit_event(Event::<T>::BurnToken(token_id, sender, amount));
 
 			log::info!("🔥🔥🔥🔥🔥ics20_handle handle_transfer: receiver is source chain, burn vouchers, Success!!!!!");
-		}else {
+		} else {
 			log::info!("🤮🤮🤮🤮🤮🤮🤮🤮🤮🤮🤮🤮ics20_handle handle_transfer wrong get asset id");
 		}
-		
 	}
 
 	Ok(())
@@ -265,7 +277,6 @@ where
 	log::info!("🤮ics20_handle handle_recv_packet ack = {:?}", ack);
 
 	if receiver_chain_is_source(&packet.source_port, &packet.source_channel, &data.denom) {
-		
 		// let voucher_prefix = get_denom_prefix(&packet.source_port, &packet.source_channel);
 		// log::info!("🤮ics20_handle handle_recv_packet voucher_prefix = {:?}", voucher_prefix);
 
@@ -311,8 +322,14 @@ where
 			"🤮ics20_handle handle_recv_packet total_balance = {:?}",
 			T::Currency::total_balance(&escrow_account)
 		);
-		log::info!("🤮ics20_handle handle_recv_packet total_issuance = {:?}", T::Currency::total_issuance());
-		log::info!("🤮ics20_handle handle_recv_packet minimum_balance = {:?}", T::Currency::minimum_balance());
+		log::info!(
+			"🤮ics20_handle handle_recv_packet total_issuance = {:?}",
+			T::Currency::total_issuance()
+		);
+		log::info!(
+			"🤮ics20_handle handle_recv_packet minimum_balance = {:?}",
+			T::Currency::minimum_balance()
+		);
 
 		let result =
 			T::Currency::transfer(&escrow_account, &pallet_data.receiver, amount, AllowDeath);
@@ -377,18 +394,26 @@ where
 			"🤮ics20_handle handle_recv_packet total_balance = {:?}",
 			T::Currency::total_balance(&receiver)
 		);
-		log::info!("🤮ics20_handle  handle_recv_packet total_issuance = {:?}", T::Currency::total_issuance());
-		log::info!("🤮ics20_handle handle_recv_packet minimum_balance = {:?}", T::Currency::minimum_balance());
+		log::info!(
+			"🤮ics20_handle  handle_recv_packet total_issuance = {:?}",
+			T::Currency::total_issuance()
+		);
+		log::info!(
+			"🤮ics20_handle handle_recv_packet minimum_balance = {:?}",
+			T::Currency::minimum_balance()
+		);
 
 		if let Ok(token_id) = T::AssetIdByName::try_get_asset_id(denomination) {
 			log::info!("🤮ics20_handle handle_recv_packet token_id = {:?}", token_id);
 
-			let token_name = T::AssetIdByName::try_get_asset_name(token_id).map_err(|_| Error::<T>::WrongAssetId)?;
+			let token_name = T::AssetIdByName::try_get_asset_name(token_id)
+				.map_err(|_| Error::<T>::WrongAssetId)?;
 			let token_name = String::from_utf8(token_name).unwrap();
 			log::info!("🤮ics20_handle handle_recv_packet token_name = {:?}", token_name);
 
-			let result =
-			<T::Assets as fungibles::Mutate<T::AccountId>>::mint_into(token_id, &receiver, amount);
+			let result = <T::Assets as fungibles::Mutate<T::AccountId>>::mint_into(
+				token_id, &receiver, amount,
+			);
 			match result {
 				Ok(()) => {},
 				Err(_) =>
@@ -403,9 +428,6 @@ where
 		} else {
 			log::info!("🤮🤮🤮🤮🤮🤮🤮🤮🤮ics20_handle handle_recv_packet wrong get asset id");
 		}
-		
-
-		
 	}
 
 	Ok(ack)
@@ -495,7 +517,11 @@ where
 
 		T::Currency::transfer(&escrow_account, &pallet_data.sender, amount, AllowDeath)?;
 
-		Pallet::<T>::deposit_event(Event::<T>::UnEscrowToken(escrow_account, pallet_data.sender, amount));
+		Pallet::<T>::deposit_event(Event::<T>::UnEscrowToken(
+			escrow_account,
+			pallet_data.sender,
+			amount,
+		));
 
 		log::info!("🔥🔥🔥🔥🔥ics20_handle refund_packet_token transfer successful!!");
 	} else {
@@ -511,7 +537,8 @@ where
 		if let Ok(token_id) = T::AssetIdByName::try_get_asset_id(denomination) {
 			log::info!("🤮ics20_handle refund_packet_token token_id = {:?}", token_id);
 
-			let token_name = T::AssetIdByName::try_get_asset_name(token_id).map_err(|_| Error::<T>::WrongAssetId)?;
+			let token_name = T::AssetIdByName::try_get_asset_name(token_id)
+				.map_err(|_| Error::<T>::WrongAssetId)?;
 			let token_name = String::from_utf8(token_name).unwrap();
 			log::info!("🤮ics20_handle refund_packet_token token_name = {:?}", token_name);
 
@@ -520,15 +547,19 @@ where
 				&pallet_data.receiver,
 				amount,
 			)?;
-	
-			Pallet::<T>::deposit_event(Event::<T>::MintToken(token_id, pallet_data.receiver, amount));
-	
+
+			Pallet::<T>::deposit_event(Event::<T>::MintToken(
+				token_id,
+				pallet_data.receiver,
+				amount,
+			));
+
 			log::info!("🔥🔥🔥🔥🔥ics20_refund_packet_token mint_into successful!!");
 		} else {
-			log::info!("🤮🤮🤮🤮🤮🤮🤮🤮🤮🤮🤮🤮🤮ics20_handle refund_packet_token wrong get asset id");
+			log::info!(
+				"🤮🤮🤮🤮🤮🤮🤮🤮🤮🤮🤮🤮🤮ics20_handle refund_packet_token wrong get asset id"
+			);
 		}
-
-		
 	}
 
 	Ok(())

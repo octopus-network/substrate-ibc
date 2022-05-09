@@ -183,7 +183,8 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 		let mut acknowledgement = Acknowledgement::new_success(default_ack_value);
 		log::trace!(target:  "runtime::pallet-ibc", "on_recv_packet impl --> init acknowledgement : {:?}", acknowledgement);
 		// build FungibleTokenPacketData
-		let data: FungibleTokenPacketData = serde_json::from_slice(&packet.data).map_err(Ics20Error::invalid_serde_ibc_fungible_token_packet_data)?;
+		let data: FungibleTokenPacketData = serde_json::from_slice(&packet.data)
+			.map_err(Ics20Error::invalid_serde_ibc_fungible_token_packet_data)?;
 		log::trace!(target:  "runtime::pallet-ibc", "on_recv_packet impl --> fungible token packet data: {:?}", data);
 		// only attempt the application logic if the packet data
 		// was successfully decoded
@@ -215,7 +216,8 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 		let ack = Acknowledgement::decode(&mut &acknowledgement[..])
 			.map_err(Ics20Error::invalid_decode)?;
 
-		let data: FungibleTokenPacketData = serde_json::from_slice(&packet.data).map_err(Ics20Error::invalid_serde_ibc_fungible_token_packet_data)?;
+		let data: FungibleTokenPacketData = serde_json::from_slice(&packet.data)
+			.map_err(Ics20Error::invalid_serde_ibc_fungible_token_packet_data)?;
 
 		let ret = ics20_handler::handle_ack_packet::<Ctx, T>(ctx, packet, data, ack.into());
 
@@ -233,7 +235,8 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 	where
 		Ctx: Ics20Context,
 	{
-		let data: FungibleTokenPacketData = serde_json::from_slice(&packet.data).map_err(Ics20Error::invalid_serde_ibc_fungible_token_packet_data)?;
+		let data: FungibleTokenPacketData = serde_json::from_slice(&packet.data)
+			.map_err(Ics20Error::invalid_serde_ibc_fungible_token_packet_data)?;
 
 		// handle ack packet/refund tokens
 		let ret = ics20_handler::handle_timeout_packet::<Ctx, T>(ctx, packet, data);
@@ -253,7 +256,7 @@ fn validate_transfer_channel_params<Ctx: Ics20Context>(
 ) -> Result<(), Ics20Error> {
 	// NOTE: for escrow address security only 2^32 channels are allowed to be created
 	// Issue: https://github.com/cosmos/cosmos-sdk/issues/7737
-	let channel_sequence = parse_channel_sequence(channel_id.0)?;
+	let channel_sequence = parse_channel_sequence(channel_id)?;
 
 	if channel_sequence > u32::MAX.into() {
 		return Err(Ics20Error::overflow_channel_sequence(channel_sequence, u32::MAX.into()))
@@ -273,12 +276,10 @@ fn validate_transfer_channel_params<Ctx: Ics20Context>(
 }
 
 // parse_channel_sequence parses the channel sequence from the channel identifier.
-fn parse_channel_sequence(channel_identifier: String) -> Result<u64, Ics20Error> {
-	let channel_id =
-		ibc::core::ics24_host::identifier::ChannelId::from_str(channel_identifier.as_str())
-			.map_err(|e| Ics20Error::invalid_channel_id(channel_identifier, e))?;
+fn parse_channel_sequence(channel_identifier: ChannelId) -> Result<u64, Ics20Error> {
+	let channel_identifier = format!("{}", channel_identifier);
 
-	let sequence = channel_id
+	let sequence = channel_identifier
 		.as_str()
 		.split_once("channel-")
 		.ok_or_else(Ics20Error::invalid_split)?

@@ -48,6 +48,8 @@ use ibc::{
 	},
 };
 
+use ibc::core::ics24_host::identifier::ChannelId as IbcChannelId;
+
 use ibc::core::ics26_routing::msgs::Ics26Envelope;
 
 use sp_runtime::DispatchError;
@@ -618,13 +620,13 @@ pub mod pallet {
 
 				let mut results: Vec<IbcEvent> = vec![];
 				for (index, message) in messages.clone().into_iter().enumerate() {
-					
+
 					let mut result = Vec::new();
 					match ibc::core::ics26_routing::handler::deliver(&mut ctx, message.clone()) {
 						Ok(value) => {
 							log::trace!(target: LOG_TARGET, "deliver event  : {:?} ", value.0);
 							result = value.0;
-							
+
 						}
 						Err(error) => {
 							log::trace!(target: LOG_TARGET, "deliver error  : {:?} ", error);
@@ -839,7 +841,8 @@ pub mod pallet {
 
 						// Emit write acknowledgement event
 						// todo this
-						let block_number = format!("{:?}", <frame_system::Pallet<T>>::block_number());
+						let block_number =
+							format!("{:?}", <frame_system::Pallet<T>>::block_number());
 						let current_height: u64 = block_number.parse().unwrap_or_default();
 						Self::deposit_event(Event::<T>::WriteAcknowledgement(
 							Height::new(0, current_height),
@@ -1136,7 +1139,7 @@ pub mod pallet {
 					client_id_str
 				);
 
-				return Err(Error::<T>::ClientIdNotFound.into());
+				return Err(Error::<T>::ClientIdNotFound.into())
 			} else {
 				// get client state from chain storage
 				let data = <ClientStates<T>>::get(client_id.clone());
@@ -1293,7 +1296,7 @@ pub mod pallet {
 						e
 					);
 
-					return Err(Error::<T>::UpdateBeefyLightClientFailure.into());
+					return Err(Error::<T>::UpdateBeefyLightClientFailure.into())
 				},
 			}
 
@@ -1320,7 +1323,7 @@ fn store_send_packet<T: Config>(send_packet_event: &ibc::core::ics04_channel::ev
 	let packet = packet.to_ibc_packet().unwrap().encode_vec().unwrap();
 
 	let port_id = send_packet_event.packet.source_port.as_bytes().to_vec();
-	let channel_id = send_packet_event.packet.source_channel.as_bytes().to_vec();
+	let channel_id = from_channel_id_to_vec(send_packet_event.packet.source_channel);
 
 	<SendPacketEvent<T>>::insert(
 		(port_id, channel_id, u64::from(send_packet_event.packet.sequence)),
@@ -1335,7 +1338,7 @@ fn store_write_ack<T: Config>(
 
 	// store ack
 	let port_id = write_ack_event.packet.source_port.as_bytes().to_vec();
-	let channel_id = write_ack_event.packet.source_channel.as_bytes().to_vec();
+	let channel_id = from_channel_id_to_vec(write_ack_event.packet.source_channel);
 	let sequence = u64::from(write_ack_event.packet.sequence);
 	let write_ack = write_ack_event.encode_vec().unwrap();
 	let _write_ack = WriteAcknowledgement::decode(&*write_ack.clone()).unwrap();
@@ -1442,4 +1445,8 @@ struct AQ;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FungibleTokenPacketError {
 	pub error: String,
+}
+
+pub fn from_channel_id_to_vec(value: IbcChannelId) -> Vec<u8> {
+	format!("{}", value).as_bytes().to_vec()
 }
