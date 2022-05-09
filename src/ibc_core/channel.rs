@@ -230,8 +230,7 @@ impl<T: Config> ChannelReader for Context<T> {
 				from_channel_id_to_vec(key.1),
 				sequence,
 			));
-			let mut data: &[u8] = &data;
-			let data = Vec::<u8>::decode(&mut data).map_err(Ics04Error::invalid_codec_decode)?;
+			
 			let packet_commitment = IbcPacketCommitment::from(data);
 
 			log::trace!(target:"runtime::pallet-ibc",
@@ -299,8 +298,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		)) {
 			let data =
 				<Acknowledgements<T>>::get((key.0.as_bytes(), from_channel_id_to_vec(key.1), seq));
-			let mut data: &[u8] = &data;
-			let data = Vec::<u8>::decode(&mut data).map_err(Ics04Error::invalid_codec_decode)?;
+			
 			let acknowledgement = IbcAcknowledgementCommitment::from(data);
 			log::trace!(target:"runtime::pallet-ibc",
 				"in channel : [get_packet_acknowledgement] >> packet_acknowledgement = {:?}",
