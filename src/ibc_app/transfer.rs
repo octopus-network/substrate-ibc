@@ -39,7 +39,7 @@ impl<T: Config> Ics20Context for Context<T> {
 		log::trace!(target:"runtime::pallet-ibc","in transfer : [denom trace]");
 
 		let data = denom_trace.encode_vec().map_err(Ics20Error::invalid_encode)?;
-		// let encode_denom_hash = denom_trace.hash().encode();
+
 		<Denomination<T>>::insert(denom_trace.hash(), data);
 		Ok(())
 	}

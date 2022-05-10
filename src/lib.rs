@@ -824,21 +824,6 @@ pub mod pallet {
 							)
 							.map_err(|_| Error::<T>::ReceivePacketError)?;
 
-						// // store write acknowledgement event
-						// match write_ack_event.result {
-						// 	ibc::core::ics04_channel::packet::PacketResult::WriteAck(value) => {
-						// 		<WriteAckPacketEvent<T>>::insert(
-						// 			(
-						// 				value.port_id.as_bytes().to_vec(),
-						// 				value.channel_id.as_bytes().to_vec(),
-						// 				u64::from(value.seq),
-						// 			),
-						// 			ack.clone(),
-						// 		);
-						// 	},
-						// 	_ => unimplemented!(),
-						// }
-
 						// Emit write acknowledgement event
 						// todo this
 						let block_number =
