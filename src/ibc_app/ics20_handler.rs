@@ -133,35 +133,30 @@ where
 
 	// the token denomination to be transferred
 	// get the token denomination
-	let token_denom = packet_data.clone().denom;
-	log::info!("🤮ics20_handle handle_transfer token_denom = {:?}", token_denom);
-
-	// get denom hash example "ibc/hash_number"
-	// let  denom_trace_hash =
-	// token_denom.split_once("/").ok_or(Ics20Error::invalid_split())?.1.as_bytes();
-	// log::info!("🤮ics20_handle transfer denom_trace_hash = {:?}", denom_trace_hash);
-
-	// let full_denom_path;
-	// if token_denom.starts_with("ibc/") {
-	// full_denom_path = ctx.get_denom_trace(denom_trace_hash)?.get_full_denom_path()?;
-	// }
-	// log::info!("🤮ics20_handle transfer full denom path  = {:?}", full_denom_path);
+	// let token_denom = packet_data.clone().denom;
+	// log::info!("🤮ics20_handle handle_transfer token_denom = {:?}", token_denom);
 
 	// get source_channel_id from packet
 	let source_channel = packet.source_channel.clone();
 	log::info!("🤮ics20_handle handle_transfer source_channel = {:?}", source_channel);
 
 	// get source_port_id  from packet
-	let source_port = packet.source_port;
+	let source_port = packet.source_port.clone();
 	log::info!("🤮ics20_handle handle_transfer source_port = {:?}", source_port);
 
 	// convert IBC FungibleTokenPacketData to substrate FungibleTokenPacketData
 	let pallet_data: FungibleTokenPacketData<T> = packet_data.into();
-	// log::info!("🤮ics20_handle transfer pallet_data = {:?}", pallet_data);
-
+	
 	let denomination = pallet_data.denomination.clone();
-	let str_denomination = String::from_utf8(pallet_data.denomination).unwrap();
-	log::info!("🤮ics20_handle handle_transfer denomination = {:?}", denomination);
+	// NOTE: denomination and hex hash correctness checked during msg.ValidateBasic
+	let mut full_denom_path = String::from_utf8(pallet_data.denomination).unwrap();
+	log::info!("🤮ics20_handle handle_transfer full_denom_path = {:?}", full_denom_path);
+
+	// deconstruct the token denomination into the denomination trace info
+	// to determine if the sender is the source chain
+	if full_denom_path.starts_with("ibc/") {
+		full_denom_path = denom_path_from_hash(ctx, full_denom_path.clone()).map_err(|_| Error::<T>::GetIbcDenomError)?;
+	}
 
 	let amount = pallet_data.amount;
 	log::info!("🤮ics20_handle handle_transfer amount = {:?}", amount);
@@ -169,7 +164,26 @@ where
 	let sender = pallet_data.sender;
 	log::info!("🤮ics20_handle handle_transfer sendr = {:?}", sender);
 
-	if sender_chain_is_source(&source_port, &source_channel, &str_denomination) {
+	if sender_chain_is_source(&source_port, &source_channel, &full_denom_path) {
+
+		// todo this different with ibc-go
+		let source_prefix = get_denom_prefix(&packet.source_port, &packet.source_channel);
+		log::info!("🤮ics20_handle handle_transfer source_prefix = {:?}", source_prefix);
+		// prefixedDenom := sourcePrefix + data.Denom
+		let prefix_denom = format!("{}{}", source_prefix, full_denom_path);
+		log::info!("🤮ics20_handle handle_transfer prefix_denom = {:?}", prefix_denom);
+
+		let denom_trace = parse_denom_trace(&prefix_denom).map_err(|_| Error::<T>::GetIbcDenomError)?;
+		log::info!("🤮ics20_handle handle_transfer denom_trace = {:?}", denom_trace);
+		let trace_hash = denom_trace.hash();
+
+		log::info!("🤮ics20_handle handle_transfer trace_hash = {:?}", trace_hash);
+
+		if !ctx.has_denom_trace(&trace_hash) {
+			ctx.set_denom_trace(&denom_trace);
+			log::info!("🤮ics20_handle handle_transfer set_denom_trace");
+		}
+
 		// determine escrow account
 		let escrow_account = generate_escrow_account::<T>(source_channel.clone())?;
 		log::info!("🤮ics20_handle handle_transfer escrow_account = {:?}", escrow_account);
@@ -207,10 +221,15 @@ where
 		log::info!("🔥🔥🔥🔥🔥ics20_handle handle_transfer: escrow source tokens (assumed to fail if balance insufficient), Success!!!");
 	} else {
 		// send token is {port_id}/{channel_id}/denom
-		let prefix = get_denom_prefix(&source_port, &source_channel);
+		// this port_id is destination_port
+		// this channel_id is destination_channel is destination_channel
+		let destination_port = packet.destination_port;
+		let destination_channel = packet.destination_channel;
+		let prefix = get_denom_prefix(&destination_port, &destination_channel);
 		log::info!("🤮ics20_handle handle_transfer prefix = {:?}", prefix);
 
-		let denomination = str_denomination[prefix.len()..].as_bytes().to_vec();
+		// get base denom
+		let denomination = full_denom_path[prefix.len()..].as_bytes().to_vec();
 		log::info!("🤮ics20_handle handle_transfer denomination = {:?}", denomination);
 
 		let amount = amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
@@ -276,30 +295,20 @@ where
 	let mut ack = FungibleTokenPacketAcknowledgement::new();
 	log::info!("🤮ics20_handle handle_recv_packet ack = {:?}", ack);
 
-	if receiver_chain_is_source(&packet.source_port, &packet.source_channel, &data.denom) {
-		// let voucher_prefix = get_denom_prefix(&packet.source_port, &packet.source_channel);
-		// log::info!("🤮ics20_handle handle_recv_packet voucher_prefix = {:?}", voucher_prefix);
+	// TODO  This different with ibc-go and spec
+	// NOTE: denomination and hex hash correctness checked during msg.ValidateBasic
+	let mut full_denom_path = data.denom.clone();
+	log::info!("🤮ics20_handle handle_recv_packet full_denom_path = {:?}", full_denom_path);
 
-		// let unprefixed_denom = &data.denom[0..voucher_prefix.len()];
-		// log::info!("🤮ics20_handle handle_recv_packet unprefixed_denom = {:?}",
-		// unprefixed_denom);
+	// deconstruct the token denomination into the denomination trace info
+	// to determine if the sender is the source chain
+	if full_denom_path.starts_with("ibc/") {
+		full_denom_path = denom_path_from_hash(ctx, full_denom_path.clone()).map_err(|_| Error::<T>::GetIbcDenomError)?;
+	}
 
-		// let mut denom = unprefixed_denom.to_string();
-		// log::info!("🤮ics20_handle handle_recv_packet denom = {:?}", denom);
-
-		// let denom_trace =
-		// 	parse_denom_trace(&denom).map_err(|_| Error::<T>::ParseDenomTraceError)?;
-		// log::info!("🤮ics20_handle handle_recv_packet denom_trace = {:?}", denom_trace);
-
-		// if !denom_trace.path.is_empty() {
-		// 	denom = denom_trace.ibc_denom().map_err(|_| Error::<T>::GetIbcDenomError)?;
-		// }
-		// log::info!("🤮ics20_handle handle_recv_packet denom = {:?}", denom);
-
+	if receiver_chain_is_source(&packet.source_port, &packet.source_channel, &full_denom_path) {
+	
 		let pallet_data: FungibleTokenPacketData<T> = data.into();
-
-		// todo
-		// assert corss token equal nativae token
 
 		// create escrow account by source_prot, and source channel
 		let escrow_account = generate_escrow_account::<T>(packet.source_channel.clone())?;
@@ -349,37 +358,32 @@ where
 
 		log::info!("🔥🔥🔥🔥🔥ics20_handle handle_recv_packet: unescrow tokens to receiver (assumed to fail if balance insufficient), success!!");
 	} else {
-		// let source_prefix = get_denom_prefix(&packet.source_port, &packet.source_channel);
-		// log::info!("🤮ics20_handle handle_recv_packet source_prefix = {:?}", source_prefix);
-
-		// let denomination = data.clone().denom;
-		// log::info!("🤮ics20_handle handle_recv_packet denomination = {:?}", denomination);
-
-		// let prefixed_denomination = format!("{}{}", source_prefix, denomination);
-		// log::info!(
-		// 	"🤮ics20_handle handle_recv_packet prefixed_denomination = {:?}",
-		// 	prefixed_denomination
-		// );
-
-		// let denom_trace = parse_denom_trace(&prefixed_denomination)
-		// 	.map_err(|_| Error::<T>::ParseDenomTraceError)?;
-		// log::info!("🤮ics20_handle handle_recv_packet denom_trace = {:?}", denom_trace);
-
-		// let trace_hash = denom_trace.hash().unwrap(); // todo
-		// log::info!("🤮ics20_handle handle_recv_packet trace_hash = {:?}", trace_hash);
-
-		// if !ctx.has_denom_trace(&trace_hash) {
-		// 	let _ = ctx.set_denom_trace(&denom_trace);
-		// }
-
-		// let voucher_denom = denom_trace.ibc_denom().map_err(|_| Error::<T>::GetIbcDenomError)?;
-		// log::info!("🤮ics20_handle handle_recv_packet voucher_denom = {:?}", voucher_denom);
-
+		// sender chain is the source, mint vouchers
 		let pallet_data: FungibleTokenPacketData<T> = data.into();
 
 		let denomination = pallet_data.denomination.clone();
+		// TODO add for test display
 		let str_denomination = String::from_utf8(pallet_data.denomination).unwrap();
 		log::info!("🤮ics20_handle handle_recv_packet str_denomination = {:?}", str_denomination);
+
+		// since SendPacket did not prefix the denomination, we must prefix denomination here
+		let source_prefix = get_denom_prefix(&packet.source_port, &packet.source_channel);
+		log::info!("🤮ics20_handle handle_recv_packet source_prefix = {:?}", source_prefix);
+		// prefixedDenom := sourcePrefix + data.Denom
+		let prefix_denom = format!("{}{}", source_prefix, str_denomination);
+		log::info!("🤮ics20_handle handle_recv_packet prefix_denom = {:?}", prefix_denom);
+
+		let denom_trace = parse_denom_trace(&prefix_denom).map_err(|_| Error::<T>::GetIbcDenomError)?;
+		log::info!("🤮ics20_handle handle_recv_packet denom_trace = {:?}", denom_trace);
+		let trace_hash = denom_trace.hash();
+		log::info!("🤮ics20_handle handle_recv_packet trace_hash = {:?}", trace_hash);
+
+		if !ctx.has_denom_trace(&trace_hash) {
+
+			ctx.set_denom_trace(&denom_trace);
+			log::info!("🤮ics20_handle handle_recv_packet set denom trace");
+
+		}
 
 		let receiver = pallet_data.receiver;
 
@@ -406,6 +410,7 @@ where
 		if let Ok(token_id) = T::AssetIdByName::try_get_asset_id(denomination) {
 			log::info!("🤮ics20_handle handle_recv_packet token_id = {:?}", token_id);
 
+			// TODO add this for test
 			let token_name = T::AssetIdByName::try_get_asset_name(token_id)
 				.map_err(|_| Error::<T>::WrongAssetId)?;
 			let token_name = String::from_utf8(token_name).unwrap();
@@ -502,7 +507,18 @@ where
 	let source_channel = packet.source_channel;
 	log::info!("🤮ics20_handle refund_packet_token source_channel = {:?}", source_channel);
 
-	if sender_chain_is_source(&source_port, &source_channel, &str_denomination) {
+	// TODO  This different with ibc-go and spec
+	// NOTE: denomination and hex hash correctness checked during msg.ValidateBasic
+	let mut full_denom_path = str_denomination.clone();
+	log::info!("🤮ics20_handle refund_packet_token full_denom_path = {:?}", full_denom_path);
+
+	// deconstruct the token denomination into the denomination trace info
+	// to determine if the sender is the source chain
+	if full_denom_path.starts_with("ibc/") {
+		full_denom_path = denom_path_from_hash(ctx, full_denom_path.clone()).map_err(|_| Error::<T>::GetIbcDenomError)?;
+	}
+
+	if sender_chain_is_source(&source_port, &source_channel, &full_denom_path) {
 		let escrow_account = generate_escrow_account::<T>(source_channel.clone())?;
 		log::info!("🤮ics20_handle refund_packet_token escrow_account = {:?}", escrow_account);
 
@@ -525,10 +541,12 @@ where
 
 		log::info!("🔥🔥🔥🔥🔥ics20_handle refund_packet_token transfer successful!!");
 	} else {
-		let prefix = get_denom_prefix(&source_port, &source_channel);
+		let destination_port = packet.destination_port;
+		let destination_channel = packet.destination_channel;
+		let prefix = get_denom_prefix(&destination_port, &destination_channel);
 		log::info!("🤮ics20_handle refund_packet_token prefix = {:?}", prefix);
 
-		let denomination = str_denomination[prefix.len()..].as_bytes().to_vec();
+		let denomination = full_denom_path[prefix.len()..].as_bytes().to_vec();
 		log::info!("🤮ics20_handle refund_packet_token denomination = {:?}", denomination);
 
 		let amount = pallet_data.amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
@@ -585,5 +603,5 @@ where
 	let trace = ctx.get_denom_trace(&hash)?;
 	log::info!("🤮ics20_handle denom_path_from_hash trace = {:?}", trace);
 
-	trace.get_full_denom_path()
+	Ok(trace.get_full_denom_path())
 }
