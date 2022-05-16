@@ -1,6 +1,7 @@
 use crate::*;
 use alloc::string::ToString;
 use core::str::FromStr;
+use log::{error, info, trace, warn};
 
 use crate::context::Context;
 use ibc::{
@@ -20,7 +21,7 @@ use ibc::{
 
 impl<T: Config> ClientReader for Context<T> {
 	fn client_type(&self, client_id: &ClientId) -> Result<ClientType, Ics02Error> {
-		log::trace!(target:"runtime::pallet-ibc","in client : [client_type]");
+		trace!(target:"runtime::pallet-ibc","in client : [client_type]");
 
 		if <Clients<T>>::contains_key(client_id.as_bytes()) {
 			let data = <Clients<T>>::get(client_id.as_bytes());
@@ -31,21 +32,22 @@ impl<T: Config> ClientReader for Context<T> {
 				.map_err(|e| Ics02Error::unknown_client_type(e.to_string()))?;
 			Ok(client_type)
 		} else {
-			log::trace!(target:"runtime::pallet-ibc","in client : [client_type] >> read client_type is None");
+			trace!(target:"runtime::pallet-ibc","in client : [client_type] >> read client_type is None");
 			Err(Ics02Error::client_not_found(client_id.clone()))
 		}
 	}
 
 	fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, Ics02Error> {
-		log::trace!(target:"runtime::pallet-ibc","in client : [client_state]");
+		trace!(target:"runtime::pallet-ibc","in client : [client_state]");
 
 		if <ClientStates<T>>::contains_key(client_id.as_bytes()) {
 			let data = <ClientStates<T>>::get(client_id.as_bytes());
 			let result = AnyClientState::decode_vec(&*data).map_err(Ics02Error::invalid_decode)?;
-			log::trace!(target:"runtime::pallet-ibc","in client : [client_state] >> any client_state: {:?}", result);
+			trace!(target:"runtime::pallet-ibc","in client : [client_state] >> any client_state: {:?}", result);
+
 			Ok(result)
 		} else {
-			log::trace!(target:"runtime::pallet-ibc","in client : [client_state] >> read any client state is None");
+			trace!(target:"runtime::pallet-ibc","in client : [client_state] >> read any client state is None");
 			Err(Ics02Error::client_not_found(client_id.clone()))
 		}
 	}
@@ -55,7 +57,7 @@ impl<T: Config> ClientReader for Context<T> {
 		client_id: &ClientId,
 		height: Height,
 	) -> Result<AnyConsensusState, Ics02Error> {
-		log::trace!(target:"runtime::pallet-ibc",
+		trace!(target:"runtime::pallet-ibc",
 			"in client : [consensus_state]"
 		);
 
@@ -73,7 +75,7 @@ impl<T: Config> ClientReader for Context<T> {
 			if item_height == height {
 				let any_consensus_state =
 					AnyConsensusState::decode_vec(&*item.1).map_err(Ics02Error::invalid_decode)?;
-				log::trace!(target:"runtime::pallet-ibc",
+				trace!(target:"runtime::pallet-ibc",
 					"in client : [consensus_state] >> any consensus state = {:?}",
 					any_consensus_state
 				);
@@ -89,7 +91,7 @@ impl<T: Config> ClientReader for Context<T> {
 		client_id: &ClientId,
 		height: Height,
 	) -> Result<Option<AnyConsensusState>, Ics02Error> {
-		log::trace!(target:"runtime::pallet-ibc",
+		trace!(target:"runtime::pallet-ibc",
 			"in client : [next_consensus_state]"
 		);
 
@@ -107,7 +109,7 @@ impl<T: Config> ClientReader for Context<T> {
 			if item_height < height {
 				let any_consensus_state =
 					AnyConsensusState::decode_vec(&*item.1).map_err(Ics02Error::invalid_decode)?;
-				log::trace!(target:"runtime::pallet-ibc",
+				trace!(target:"runtime::pallet-ibc",
 					"in client : [consensus_state] >> any consensus state = {:?}",
 					any_consensus_state
 				);
@@ -125,7 +127,7 @@ impl<T: Config> ClientReader for Context<T> {
 		client_id: &ClientId,
 		height: Height,
 	) -> Result<Option<AnyConsensusState>, Ics02Error> {
-		log::trace!(target:"runtime::pallet-ibc",
+		trace!(target:"runtime::pallet-ibc",
 			"in client : [next_consensus_state]"
 		);
 
@@ -143,7 +145,7 @@ impl<T: Config> ClientReader for Context<T> {
 			if item_height > height {
 				let any_consensus_state =
 					AnyConsensusState::decode_vec(&*item.1).map_err(Ics02Error::invalid_decode)?;
-				log::trace!(target:"runtime::pallet-ibc",
+				trace!(target:"runtime::pallet-ibc",
 					"in client : [consensus_state] >> any consensus state = {:?}",
 					any_consensus_state
 				);
@@ -157,11 +159,11 @@ impl<T: Config> ClientReader for Context<T> {
 	}
 
 	fn host_height(&self) -> Height {
-		log::trace!(target:"runtime::pallet-ibc","in client : [host_height]");
+		trace!(target:"runtime::pallet-ibc","in client : [host_height]");
 		let block_number = format!("{:?}", <frame_system::Pallet<T>>::block_number());
 		let current_height: u64 = block_number.parse().unwrap_or_default();
 
-		log::trace!(target:"runtime::pallet-ibc",
+		trace!(target:"runtime::pallet-ibc",
 			"in channel: [host_height] >> host_height = {:?}",
 			Height::new(0, current_height)
 		);
@@ -169,7 +171,7 @@ impl<T: Config> ClientReader for Context<T> {
 	}
 
 	fn host_consensus_state(&self, _height: Height) -> Result<AnyConsensusState, Ics02Error> {
-		log::trace!(target:"runtime::pallet-ibc","in client : [consensus_state]");
+		trace!(target:"runtime::pallet-ibc","in client : [consensus_state]");
 
 		Ok(AnyConsensusState::Grandpa(
 			ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
@@ -177,7 +179,7 @@ impl<T: Config> ClientReader for Context<T> {
 	}
 
 	fn pending_host_consensus_state(&self) -> Result<AnyConsensusState, Ics02Error> {
-		log::trace!(target:"runtime::pallet-ibc","in client: [pending_host_consensus_state]");
+		trace!(target:"runtime::pallet-ibc","in client: [pending_host_consensus_state]");
 
 		Ok(AnyConsensusState::Grandpa(
 			ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
@@ -185,7 +187,7 @@ impl<T: Config> ClientReader for Context<T> {
 	}
 
 	fn client_counter(&self) -> Result<u64, Ics02Error> {
-		log::trace!(target:"runtime::pallet-ibc",
+		trace!(target:"runtime::pallet-ibc",
 			"in client : [client_counter]"
 		);
 
@@ -199,7 +201,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 		client_id: ClientId,
 		client_type: ClientType,
 	) -> Result<(), Ics02Error> {
-		log::info!("in client : [store_client_type]");
+		info!("in client : [store_client_type]");
 
 		let client_id = client_id.as_bytes().to_vec();
 		let client_type = client_type.as_str().encode();
@@ -208,7 +210,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 	}
 
 	fn increase_client_counter(&mut self) {
-		log::info!("in client : [increase_client_counter]");
+		info!("in client : [increase_client_counter]");
 
 		let ret = <ClientCounter<T>>::try_mutate(|val| -> Result<(), Ics02Error> {
 			let new = val.checked_add(1).ok_or_else(Ics02Error::invalid_increase_client_counter)?;
@@ -222,7 +224,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 		client_id: ClientId,
 		client_state: AnyClientState,
 	) -> Result<(), Ics02Error> {
-		log::trace!(target:"runtime::pallet-ibc","in client : [store_client_state]");
+		trace!(target:"runtime::pallet-ibc","in client : [store_client_state]");
 
 		let data = client_state.encode_vec().map_err(Ics02Error::invalid_encode)?;
 		// store client states key-value
@@ -246,7 +248,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 		height: Height,
 		consensus_state: AnyConsensusState,
 	) -> Result<(), Ics02Error> {
-		log::trace!(target:"runtime::pallet-ibc","in client : [store_consensus_state]");
+		trace!(target:"runtime::pallet-ibc","in client : [store_consensus_state]");
 
 		let height = height.encode_vec().map_err(Ics02Error::invalid_encode)?;
 		let data = consensus_state.encode_vec().map_err(Ics02Error::invalid_encode)?;
@@ -266,7 +268,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 		height: Height,
 		timestamp: Timestamp,
 	) -> Result<(), Ics02Error> {
-		log::trace!(target:"runtime::pallet-ibc","in client: [store_update_time]");
+		trace!(target:"runtime::pallet-ibc","in client: [store_update_time]");
 
 		let encode_timestamp = serde_json::to_string(&timestamp)
 			.map_err(Ics02Error::invalid_serde_json_encode)?
@@ -287,7 +289,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 		height: Height,
 		host_height: Height,
 	) -> Result<(), Ics02Error> {
-		log::trace!(target:"runtime::pallet-ibc","in client: [store_update_height]");
+		trace!(target:"runtime::pallet-ibc","in client: [store_update_height]");
 
 		<ClientProcessedHeights<T>>::insert(
 			client_id.as_bytes(),

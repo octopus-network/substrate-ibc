@@ -1,4 +1,11 @@
 use crate::*;
+use alloc::{
+	borrow::{Borrow, Cow, ToOwned},
+	collections::BTreeMap,
+	sync::Arc,
+};
+use scale_info::TypeInfo;
+
 use ibc::{
 	applications::ics20_fungible_token_transfer::{
 		context::Ics20Context, error::Error as ICS20Error, msgs::denom_trace::DenomTrace,
@@ -11,18 +18,9 @@ use ibc::{
 		},
 		ics05_port::capabilities::ChannelCapability,
 		ics24_host::identifier::{ChannelId, ConnectionId, PortId},
-		ics26_routing::context::{Ics26Context, ModuleOutput, RouterBuilder},
+		ics26_routing::context::{Ics26Context, Module, ModuleId, ModuleOutput, RouterBuilder},
 	},
 };
-
-use crate::alloc::borrow::ToOwned;
-use alloc::{
-	borrow::{Borrow, Cow},
-	collections::BTreeMap,
-	sync::Arc,
-};
-use ibc::core::ics26_routing::context::{Module, ModuleId};
-use scale_info::TypeInfo;
 
 #[derive(Debug, Default)]
 struct IbcModule;

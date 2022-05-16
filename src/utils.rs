@@ -1,4 +1,5 @@
 use alloc::vec::Vec;
+
 pub trait AssetIdAndNameProvider<AssetId> {
 	type Err;
 

@@ -1,6 +1,8 @@
 use super::ics20_handler;
 use crate::*;
 use core::str::FromStr;
+use log::{error, info, trace, warn};
+
 use ibc::{
 	applications::ics20_fungible_token_transfer::{
 		context::Ics20Context, error::Error as Ics20Error,
@@ -159,16 +161,17 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 	where
 		Ctx: Ics20Context,
 	{
-		log::trace!(target:  "runtime::pallet-ibc", "on_recv_packet impl --> packet: {:?}", packet);
-		// 	ack := channeltypes.NewResultAcknowledgement([]byte{byte(1)})
-		let default_ack_value = vec![1];
+		trace!(target:  "runtime::pallet-ibc", "on_recv_packet impl --> packet: {:?}", packet);
+
 		// construct Acknowledgement
-		let mut acknowledgement = Acknowledgement::new_success(default_ack_value);
-		log::trace!(target:  "runtime::pallet-ibc", "on_recv_packet impl --> init acknowledgement : {:?}", acknowledgement);
+		let mut acknowledgement = Acknowledgement::new_success(vec![1]);
+		trace!(target:  "runtime::pallet-ibc", "on_recv_packet impl --> init acknowledgement : {:?}", acknowledgement);
+
 		// build FungibleTokenPacketData
 		let data: FungibleTokenPacketData = serde_json::from_slice(&packet.data)
 			.map_err(Ics20Error::invalid_serde_ibc_fungible_token_packet_data)?;
-		log::trace!(target:  "runtime::pallet-ibc", "on_recv_packet impl --> fungible token packet data: {:?}", data);
+		trace!(target:  "runtime::pallet-ibc", "on_recv_packet impl --> fungible token packet data: {:?}", data);
+
 		// only attempt the application logic if the packet data
 		// was successfully decoded
 		if acknowledgement.success().map_err(Ics20Error::ics04_channel)? {
@@ -176,7 +179,7 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 			let result = ics20_handler::handle_recv_packet::<Ctx, T>(ctx, packet, data);
 			if let Err(err) = result {
 				acknowledgement = Acknowledgement::new_error("handle rev packet error".to_string());
-				log::trace!(target:  "runtime::pallet-ibc", "on_recv_packet impl --> handle recv packet error : {:?}", err);
+				trace!(target:  "runtime::pallet-ibc", "on_recv_packet impl --> handle recv packet error : {:?}", err);
 			}
 		}
 
