@@ -834,7 +834,7 @@ pub mod pallet {
 							} else {
 								todo!()
 							};
-						store_write_ack::<T>(&write_ack_event);
+						store_write_ack::<T>(write_ack_event);
 					},
 					IbcEvent::TimeoutPacket(value) => {
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L442
@@ -1287,9 +1287,9 @@ fn store_send_packet<T: Config>(send_packet_event: &ibc::core::ics04_channel::ev
 	let send_packet_event = send_packet_event.clone();
 	let packet = Packet {
 		sequence: Sequence::from(send_packet_event.packet.sequence),
-		source_channel: ChannelId::from(send_packet_event.packet.source_channel.clone()),
+		source_channel: ChannelId::from(send_packet_event.packet.source_channel),
 		source_port: PortId::from(send_packet_event.packet.source_port.clone()),
-		destination_channel: ChannelId::from(send_packet_event.packet.destination_channel.clone()),
+		destination_channel: ChannelId::from(send_packet_event.packet.destination_channel),
 		destination_port: PortId::from(send_packet_event.packet.destination_port),
 		data: send_packet_event.packet.data,
 		timeout_timestamp: Timestamp::from(send_packet_event.packet.timeout_timestamp),
@@ -1316,7 +1316,7 @@ fn store_write_ack<T: Config>(
 	let channel_id = from_channel_id_to_vec(write_ack_event.packet.source_channel);
 	let sequence = u64::from(write_ack_event.packet.sequence);
 	let write_ack = write_ack_event.encode_vec().unwrap();
-	let _write_ack = WriteAcknowledgement::decode(&*write_ack.clone()).unwrap();
+	let _write_ack = WriteAcknowledgement::decode(&*write_ack).unwrap();
 	// store.Set((portID, channelID, sequence), WriteAckEvent)
 	<WriteAckPacketEvent<T>>::insert((port_id, channel_id, sequence), write_ack);
 }

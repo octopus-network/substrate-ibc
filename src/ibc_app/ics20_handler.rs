@@ -124,7 +124,7 @@ where
 	trace!("🤮ics20_handle handle_transfer packet data = {:?}", packet_data);
 
 	// get source_channel_id from packet
-	let source_channel = packet.source_channel.clone();
+	let source_channel = packet.source_channel;
 	trace!("🤮ics20_handle handle_transfer source_channel = {:?}", source_channel);
 
 	// get source_port_id  from packet
@@ -173,7 +173,7 @@ where
 		}
 
 		// determine escrow account
-		let escrow_account = generate_escrow_account::<T>(source_channel.clone())?;
+		let escrow_account = generate_escrow_account::<T>(source_channel)?;
 		trace!("🤮ics20_handle handle_transfer escrow_account = {:?}", escrow_account);
 
 		<EscrowAddresses<T>>::insert(
@@ -265,7 +265,7 @@ where
 		let pallet_data: FungibleTokenPacketData<T> = data.into();
 
 		// create escrow account by source_prot, and source channel
-		let escrow_account = generate_escrow_account::<T>(packet.source_channel.clone())?;
+		let escrow_account = generate_escrow_account::<T>(packet.source_channel)?;
 		trace!("🤮ics20_handle handle_recv_packet escrow_account = {:?}", escrow_account);
 
 		<EscrowAddresses<T>>::insert(
@@ -415,7 +415,7 @@ fn refund_packet_token<Ctx, T: Config>(
 where
 	Ctx: Ics20Context,
 {
-	let pallet_data: FungibleTokenPacketData<T> = data.clone().into();
+	let pallet_data: FungibleTokenPacketData<T> = data.into();
 	let denomination = pallet_data.denomination.clone();
 	let str_denomination = String::from_utf8(pallet_data.denomination).unwrap();
 	trace!("🤮ics20_handle refund_packet_token str_denomination = {:?}", str_denomination);
@@ -428,7 +428,7 @@ where
 
 	// TODO  This different with ibc-go and spec
 	// NOTE: denomination and hex hash correctness checked during msg.ValidateBasic
-	let mut full_denom_path = str_denomination.clone();
+	let mut full_denom_path = str_denomination;
 	trace!("🤮ics20_handle refund_packet_token full_denom_path = {:?}", full_denom_path);
 
 	// deconstruct the token denomination into the denomination trace info
@@ -439,7 +439,7 @@ where
 	}
 
 	if sender_chain_is_source(&source_port, &source_channel, &full_denom_path) {
-		let escrow_account = generate_escrow_account::<T>(source_channel.clone())?;
+		let escrow_account = generate_escrow_account::<T>(source_channel)?;
 		trace!("🤮ics20_handle refund_packet_token escrow_account = {:?}", escrow_account);
 
 		<EscrowAddresses<T>>::insert(

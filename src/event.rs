@@ -65,7 +65,7 @@ pub mod primitive {
 
 	impl PortId {
 		pub fn to_ibc_port_id(self) -> Result<IbcPortId, Error> {
-			let value = String::from_utf8(self.0).map_err(|e| Error::invalid_from_utf8(e))?;
+			let value = String::from_utf8(self.0).map_err(Error::invalid_from_utf8)?;
 			Ok(IbcPortId(value))
 		}
 	}
@@ -82,8 +82,8 @@ pub mod primitive {
 
 	impl ChannelId {
 		pub fn to_ibc_channel_id(self) -> Result<IbcChannelId, Error> {
-			let value = String::from_utf8(self.0).map_err(|e| Error::invalid_from_utf8(e))?;
-			Ok(IbcChannelId::from_str(&value).map_err(|e| Error::validation_failed(e))?)
+			let value = String::from_utf8(self.0).map_err(Error::invalid_from_utf8)?;
+			IbcChannelId::from_str(&value).map_err(Error::validation_failed)
 		}
 	}
 
@@ -153,7 +153,7 @@ pub mod primitive {
 
 	impl ClientId {
 		pub fn to_ibc_client_id(self) -> Result<IbcClientId, Error> {
-			let value = String::from_utf8(self.0).map_err(|e| Error::invalid_from_utf8(e))?;
+			let value = String::from_utf8(self.0).map_err(Error::invalid_from_utf8)?;
 			Ok(IbcClientId(value))
 		}
 	}
@@ -170,7 +170,7 @@ pub mod primitive {
 
 	impl ConnectionId {
 		pub fn to_ibc_connection_id(self) -> Result<IbcConnectionId, Error> {
-			let value = String::from_utf8(self.0).map_err(|e| Error::invalid_from_utf8(e))?;
+			let value = String::from_utf8(self.0).map_err(Error::invalid_from_utf8)?;
 			Ok(IbcConnectionId(value))
 		}
 	}
@@ -189,8 +189,8 @@ pub mod primitive {
 
 	impl Timestamp {
 		pub fn to_ibc_timestamp(self) -> Result<IbcTimestamp, Error> {
-			let value = String::from_utf8(self.time).map_err(|e| Error::invalid_from_utf8(e))?;
-			IbcTimestamp::from_str(&value).map_err(|e| Error::parse_timestamp_failed(e))
+			let value = String::from_utf8(self.time).map_err(Error::invalid_from_utf8)?;
+			IbcTimestamp::from_str(&value).map_err(Error::parse_timestamp_failed)
 		}
 	}
 
@@ -289,9 +289,9 @@ pub mod primitive {
 				.collect();
 			Ok(IbcMmrRoot {
 				block_header: BlockHeader::decode(&mut &self.block_header[..])
-					.map_err(|e| Error::invalid_decode(e))?,
+					.map_err(Error::invalid_decode)?,
 				signed_commitment: SignedCommitment::decode(&mut &self.signed_commitment[..])
-					.map_err(|e| Error::invalid_decode(e))?,
+					.map_err(Error::invalid_decode)?,
 				validator_merkle_proofs: decode_validator_proofs,
 				mmr_leaf: self.mmr_leaf,
 				mmr_leaf_proof: self.mmr_leaf_proof,
@@ -326,18 +326,17 @@ pub mod primitive {
 	impl ClientState {
 		pub fn to_ibc_client_state(self) -> Result<IbcClientState, Error> {
 			let chain_id_str =
-				String::from_utf8(self.chain_id).map_err(|e| Error::invalid_from_utf8(e))?;
+				String::from_utf8(self.chain_id).map_err(Error::invalid_from_utf8)?;
 			Ok(IbcClientState {
-				chain_id: IbcChainId::from_str(&chain_id_str)
-					.map_err(|e| Error::invalid_chain_id(e))?,
+				chain_id: IbcChainId::from_str(&chain_id_str).map_err(Error::invalid_chain_id)?,
 				block_number: self.block_number,
 				frozen_height: self.frozen_height.map(|value| value.to_ibc_height()),
 				block_header: BlockHeader::decode(&mut &self.block_header[..])
-					.map_err(|e| Error::invalid_decode(e))?,
+					.map_err(Error::invalid_decode)?,
 				latest_commitment: Commitment::decode(&mut &self.latest_commitment[..])
-					.map_err(|e| Error::invalid_decode(e))?,
+					.map_err(Error::invalid_decode)?,
 				validator_set: ValidatorSet::decode(&mut &self.validator_set[..])
-					.map_err(|e| Error::invalid_decode(e))?,
+					.map_err(Error::invalid_decode)?,
 			})
 		}
 	}
