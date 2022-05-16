@@ -59,7 +59,6 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 			return Err(Ics20Error::invalid_version(version, Version::ics20()))
 		}
 
-
 		Ok(())
 	}
 
@@ -84,7 +83,6 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 		if counterparty_version != Version::ics20() {
 			return Err(Ics20Error::invalid_version(counterparty_version, Version::ics20()))
 		}
-
 
 		Ok(Version::ics20())
 	}

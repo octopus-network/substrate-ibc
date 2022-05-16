@@ -785,8 +785,7 @@ pub mod pallet {
 						let ret = ibc_app::ics20_handler::handle_transfer::<Ctx, T>(
 							ctx,
 							value.clone().packet,
-						)
-						.unwrap();
+						)?;
 
 						Self::deposit_event(event.clone().into());
 						store_send_packet::<T>(&value);

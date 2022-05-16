@@ -319,10 +319,6 @@ impl<T: Config> ChannelReader for Context<T> {
 
 		let result = sp_io::hashing::sha2_256(&value).to_vec();
 
-		// let mut tmp = String::new();
-		// for item in r.iter() {
-		// 	tmp.push_str(&format!("{:02x}", item));
-		// }
 		log::trace!(target:"runtime::pallet-ibc","in channel: [hash] >> result = {:?}", result);
 		result
 	}
