@@ -299,7 +299,7 @@ where
 		let pallet_data: FungibleTokenPacketData<T> = data.into();
 
 		let denomination = pallet_data.denomination.clone();
-		// TODO add for test display
+		
 		let str_denomination = String::from_utf8(pallet_data.denomination).unwrap();
 		trace!("🤮ics20_handle handle_recv_packet str_denomination = {:?}", str_denomination);
 
@@ -331,7 +331,7 @@ where
 		if let Ok(token_id) = T::AssetIdByName::try_get_asset_id(denomination) {
 			trace!("🤮ics20_handle handle_recv_packet token_id = {:?}", token_id);
 
-			// TODO add this for test
+			
 			let token_name = T::AssetIdByName::try_get_asset_name(token_id)
 				.map_err(|_| Error::<T>::WrongAssetId)?;
 			let token_name = String::from_utf8(token_name).unwrap();
