@@ -27,6 +27,7 @@ use ibc::{
 			context::PortReader,
 			error::Error as Ics05Error,
 		},
+		ics23_commitment::commitment::CommitmentRoot,
 		ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
 		ics26_routing::context::ModuleId,
 	},
@@ -121,42 +122,44 @@ impl<T: Config> ChannelReader for Context<T> {
 			"in channel : [client_consensus_state]"
 		);
 
-		let height = height.encode_vec().map_err(|_| Ics04Error::invalid_encode())?;
+		let enc_height = height.encode_vec().map_err(|_| Ics04Error::invalid_encode())?;
 		let value = <ConsensusStates<T>>::get(client_id.as_bytes());
 
 		for item in value.iter() {
-			if item.0 == height {
+			if item.0 == enc_height {
 				let any_consensus_state =
 					AnyConsensusState::decode_vec(&*item.1).map_err(Ics04Error::invalid_decode)?;
 				trace!(target:"runtime::pallet-ibc",
 					"in channel: [client_consensus_state] >> any consensus state = {:?}",
 					any_consensus_state
 				);
-				return Ok(any_consensus_state)
+				return Ok(any_consensus_state);
 			}
 		}
 		trace!(target:"runtime::pallet-ibc",
 			"in channel : [client_consensus_state] >> read about client_id consensus_state error"
 		);
 
-		// Err(ICS04Error::frozen_client(client_id.clone()))
-		Ok(AnyConsensusState::Grandpa(
-			ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
-		))
+		Err(Ics04Error::processed_height_not_found(client_id.clone(), height))
+		// Ok(AnyConsensusState::Grandpa(
+		// 	ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
+		// ))
 	}
 
 	fn authenticated_capability(&self, port_id: &PortId) -> Result<ChannelCapability, Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel : [authenticated_capability]");
 
 		match PortReader::lookup_module_by_port(self, port_id) {
-			Ok((_, key)) =>
+			Ok((_, key)) => {
 				if !PortReader::authenticate(self, port_id.clone(), &key) {
 					Err(Ics04Error::invalid_port_capability())
 				} else {
 					Ok(Capability::from(key).into())
-				},
-			Err(e) if e.detail() == Ics05Error::unknown_port(port_id.clone()).detail() =>
-				Err(Ics04Error::no_port_capability(port_id.clone())),
+				}
+			},
+			Err(e) if e.detail() == Ics05Error::unknown_port(port_id.clone()).detail() => {
+				Err(Ics04Error::no_port_capability(port_id.clone()))
+			},
 			Err(_) => Err(Ics04Error::implementation_specific()),
 		}
 	}
@@ -344,7 +347,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		let time = T::TimeProvider::now();
 		let ts = Timestamp::from_nanoseconds(time.as_nanos() as u64)
 			.map_err(|e| panic!("{:?}, caused by {:?} from pallet timestamp_pallet", e, time));
-		log::trace!(target:"runtime::pallet-ibc","in channel: [host_timestamp] >> host_timestamp = {:?}", ts.clone().unwrap()); 
+		log::trace!(target:"runtime::pallet-ibc","in channel: [host_timestamp] >> host_timestamp = {:?}", ts.clone().unwrap());
 
 		ts.unwrap()
 	}
@@ -353,14 +356,71 @@ impl<T: Config> ChannelReader for Context<T> {
 	fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel: [host_consensus_state]");
 
-		ConnectionReader::host_consensus_state(self, height).map_err(Ics04Error::ics03_connection)
+		// ConnectionReader::host_consensus_state(self, height).map_err(Ics04Error::ics03_connection)
+		use frame_support::traits::UnixTime;
+		let time = T::TimeProvider::now();
+		let ts = Timestamp::from_nanoseconds(time.as_nanos() as u64)
+			.map_err(|e| panic!("{:?}, caused by {:?} from pallet timestamp_pallet", e, time));
+
+		let ts = ts.unwrap().into_tm_time().unwrap();
+		log::trace!(target:"runtime::pallet-ibc","in connection : [host_timestamp] >> host_timestamp = {:?}", ts);
+
+		let block_number = format!("{:?}", <frame_system::Pallet<T>>::block_number());
+		let current_height: u32 = block_number.parse().unwrap_or_default();
+
+		trace!(target:"runtime::pallet-ibc",
+			"in connection: [host_height] >> host_height = {:?}",current_height
+
+		);
+
+		//TODO: need to build a real consensus state from substrate chain
+		let cs = ibc::clients::ics10_grandpa::consensus_state::ConsensusState {
+			parent_hash: vec![0; 10],
+			block_number: current_height,
+			state_root: vec![0; 10],
+			extrinsics_root: vec![0; 10],
+			digest: vec![0; 10],
+			root: CommitmentRoot::from(vec![1, 2, 3]),
+			timestamp: ts,
+		};
+		trace!(target:"runtime::pallet-ibc","in connection : [host_consensus_state] consensus_state = {:?}", cs);
+		Ok(AnyConsensusState::Grandpa(cs))
 	}
 
 	fn pending_host_consensus_state(&self) -> Result<AnyConsensusState, Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel: [pending_host_consensus_stata]");
 
-		ClientReader::pending_host_consensus_state(self)
-			.map_err(|e| Ics04Error::ics03_connection(ICS03Error::ics02_client(e)))
+		// ClientReader::pending_host_consensus_state(self)
+		// 	.map_err(|e| Ics04Error::ics03_connection(ICS03Error::ics02_client(e)))
+		use frame_support::traits::UnixTime;
+		let time = T::TimeProvider::now();
+		let ts = Timestamp::from_nanoseconds(time.as_nanos() as u64)
+			.map_err(|e| panic!("{:?}, caused by {:?} from pallet timestamp_pallet", e, time));
+
+		let ts = ts.unwrap().into_tm_time().unwrap();
+		log::trace!(target:"runtime::pallet-ibc","in connection : [host_timestamp] >> host_timestamp = {:?}", ts);
+
+		let block_number = format!("{:?}", <frame_system::Pallet<T>>::block_number());
+		let current_height: u32 = block_number.parse().unwrap_or_default();
+
+		trace!(target:"runtime::pallet-ibc",
+			"in connection: [host_height] >> host_height = {:?}",current_height
+
+		);
+
+		//TODO: need to build a real consensus state from substrate chain
+
+		let cs = ibc::clients::ics10_grandpa::consensus_state::ConsensusState {
+			parent_hash: vec![0; 10],
+			block_number: current_height,
+			state_root: vec![0; 10],
+			extrinsics_root: vec![0; 10],
+			digest: vec![0; 10],
+			root: CommitmentRoot::from(vec![1, 2, 3]),
+			timestamp: ts,
+		};
+		trace!(target:"runtime::pallet-ibc","in connection : [host_consensus_state] consensus_state = {:?}", cs);
+		Ok(AnyConsensusState::Grandpa(cs))
 	}
 
 	/// Returns the `ClientProcessedTimes` for the given identifier `client_id` & `height`.

@@ -13,6 +13,7 @@ use ibc::{
 			context::{ClientKeeper, ClientReader},
 			error::Error as Ics02Error,
 		},
+		ics23_commitment::commitment::CommitmentRoot,
 		ics24_host::identifier::ClientId,
 	},
 	timestamp::Timestamp,
@@ -79,7 +80,7 @@ impl<T: Config> ClientReader for Context<T> {
 					"in client : [consensus_state] >> any consensus state = {:?}",
 					any_consensus_state
 				);
-				return Ok(any_consensus_state)
+				return Ok(any_consensus_state);
 			}
 		}
 
@@ -113,13 +114,14 @@ impl<T: Config> ClientReader for Context<T> {
 					"in client : [consensus_state] >> any consensus state = {:?}",
 					any_consensus_state
 				);
-				return Ok(Some(any_consensus_state))
+				return Ok(Some(any_consensus_state));
 			}
 		}
 
-		Ok(Some(AnyConsensusState::Grandpa(
-			ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
-		)))
+		// Ok(Some(AnyConsensusState::Grandpa(
+		// 	ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
+		// )))
+		Ok(None)
 	}
 
 	fn prev_consensus_state(
@@ -128,7 +130,7 @@ impl<T: Config> ClientReader for Context<T> {
 		height: Height,
 	) -> Result<Option<AnyConsensusState>, Ics02Error> {
 		trace!(target:"runtime::pallet-ibc",
-			"in client : [next_consensus_state]"
+			"in client : [pre_consensus_state]"
 		);
 
 		let mut values = <ConsensusStates<T>>::get(client_id.as_bytes());
@@ -149,13 +151,14 @@ impl<T: Config> ClientReader for Context<T> {
 					"in client : [consensus_state] >> any consensus state = {:?}",
 					any_consensus_state
 				);
-				return Ok(Some(any_consensus_state))
+				return Ok(Some(any_consensus_state));
 			}
 		}
 
-		Ok(Some(AnyConsensusState::Grandpa(
-			ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
-		)))
+		// Ok(Some(AnyConsensusState::Grandpa(
+		// 	ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
+		// )))
+		Ok(None)
 	}
 
 	fn host_height(&self) -> Height {
@@ -173,17 +176,57 @@ impl<T: Config> ClientReader for Context<T> {
 	fn host_consensus_state(&self, _height: Height) -> Result<AnyConsensusState, Ics02Error> {
 		trace!(target:"runtime::pallet-ibc","in client : [consensus_state]");
 
-		Ok(AnyConsensusState::Grandpa(
-			ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
-		))
+		// get local chain timestamp
+		use frame_support::traits::UnixTime;
+		let time = T::TimeProvider::now();
+		let ts = Timestamp::from_nanoseconds(time.as_nanos() as u64)
+			.map_err(|e| panic!("{:?}, caused by {:?} from pallet timestamp_pallet", e, time));
+
+		let ts = ts.unwrap().into_tm_time().unwrap();
+
+		log::trace!(target:"runtime::pallet-ibc","in client: [host_timestamp] >> host_timestamp = {:?}", ts);
+
+		//TODO: need to build a real consensus state from substrate chain
+		let cs = ibc::clients::ics10_grandpa::consensus_state::ConsensusState {
+			parent_hash: vec![0; 10],
+			block_number: 0,
+			state_root: vec![0; 10],
+			extrinsics_root: vec![0; 10],
+			digest: vec![0; 10],
+			root: CommitmentRoot::from(vec![1, 2, 3]),
+			timestamp: ts,
+		};
+		Ok(AnyConsensusState::Grandpa(cs))
+		// Ok(AnyConsensusState::Grandpa(
+		// 	ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
+		// ))
 	}
 
 	fn pending_host_consensus_state(&self) -> Result<AnyConsensusState, Ics02Error> {
 		trace!(target:"runtime::pallet-ibc","in client: [pending_host_consensus_state]");
+		// get local chain timestamp
+		use frame_support::traits::UnixTime;
+		let time = T::TimeProvider::now();
+		let ts = Timestamp::from_nanoseconds(time.as_nanos() as u64)
+			.map_err(|e| panic!("{:?}, caused by {:?} from pallet timestamp_pallet", e, time));
+		let ts = ts.unwrap().into_tm_time().unwrap();
+		log::trace!(target:"runtime::pallet-ibc","in client: [host_timestamp] >> host_timestamp = {:?}", ts);
 
-		Ok(AnyConsensusState::Grandpa(
-			ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
-		))
+		//TODO: need to build a real consensus state from substrate chain
+		let cs = ibc::clients::ics10_grandpa::consensus_state::ConsensusState {
+			parent_hash: vec![0; 10],
+			block_number: 0,
+			state_root: vec![0; 10],
+			extrinsics_root: vec![0; 10],
+			digest: vec![0; 10],
+			root: CommitmentRoot::from(vec![1, 2, 3]),
+			timestamp: ts,
+		};
+		Ok(AnyConsensusState::Grandpa(cs))
+
+		// Ok(AnyConsensusState::Grandpa(
+		// 	ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
+		// ))
 	}
 
 	fn client_counter(&self) -> Result<u64, Ics02Error> {
@@ -252,13 +295,24 @@ impl<T: Config> ClientKeeper for Context<T> {
 
 		let height = height.encode_vec().map_err(Ics02Error::invalid_encode)?;
 		let data = consensus_state.encode_vec().map_err(Ics02Error::invalid_encode)?;
-		if <ConsensusStates<T>>::contains_key(client_id.as_bytes()) {
-			// todo
-			// consensus_state is stored after mmr root updated
-		} else {
-			// if consensus state is empty insert a new item.
-			<ConsensusStates<T>>::insert(client_id.as_bytes(), vec![(height, data)]);
+
+		let ct = self.client_type(&client_id.clone())?;
+		match ct {
+			ClientType::Grandpa => {
+				if !<ConsensusStates<T>>::contains_key(client_id.as_bytes()) {
+					trace!(target:"runtime::pallet-ibc","in client : [store_consensus_state] need to insert new grandpa onsensus_state !");
+					<ConsensusStates<T>>::insert(client_id.as_bytes(), vec![(height, data)]);
+				}
+			},
+			ClientType::Tendermint => {
+				trace!(target:"runtime::pallet-ibc","in client : [store_consensus_state] need to insert new tendermint onsensus_state !");
+				<ConsensusStates<T>>::insert(client_id.as_bytes(), vec![(height, data)]);
+			},
+			_ => {
+				unimplemented!();
+			},
 		}
+
 		Ok(())
 	}
 
