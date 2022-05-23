@@ -91,9 +91,7 @@ impl<T: Config> ClientReader for Context<T> {
 		client_id: &ClientId,
 		height: Height,
 	) -> Result<Option<AnyConsensusState>, Ics02Error> {
-		trace!(target:"runtime::pallet-ibc",
-			"in client : [next_consensus_state]"
-		);
+		trace!(target:"runtime::pallet-ibc","in client : [next_consensus_state]");
 
 		let mut values = <ConsensusStates<T>>::get(client_id.as_bytes());
 		values.sort_by(|(height_left, _), (height_right, _)| {
@@ -127,9 +125,7 @@ impl<T: Config> ClientReader for Context<T> {
 		client_id: &ClientId,
 		height: Height,
 	) -> Result<Option<AnyConsensusState>, Ics02Error> {
-		trace!(target:"runtime::pallet-ibc",
-			"in client : [next_consensus_state]"
-		);
+		trace!(target:"runtime::pallet-ibc","in client : [next_consensus_state]");
 
 		let mut values = <ConsensusStates<T>>::get(client_id.as_bytes());
 		values.sort_by(|(height_left, _), (height_right, _)| {
@@ -187,9 +183,7 @@ impl<T: Config> ClientReader for Context<T> {
 	}
 
 	fn client_counter(&self) -> Result<u64, Ics02Error> {
-		trace!(target:"runtime::pallet-ibc",
-			"in client : [client_counter]"
-		);
+		trace!(target:"runtime::pallet-ibc","in client : [client_counter]");
 
 		Ok(<ClientCounter<T>>::get())
 	}

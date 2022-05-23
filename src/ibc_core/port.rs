@@ -25,6 +25,7 @@ impl<T: Config> CapabilityReader for Context<T> {
 		_capability: &Capability,
 	) -> Result<(), Ics05Error> {
 		trace!(target:"runtime::pallet-ibc","in port: [authenticate_capability]");
+
 		Ok(())
 	}
 }
@@ -36,6 +37,7 @@ impl<T: Config> PortReader for Context<T> {
 		port_id: &PortId,
 	) -> Result<(ModuleId, PortCapability), Ics05Error> {
 		trace!(target:"runtime::pallet-ibc","in port: [lookup_module_by_port]");
+
 		// todo
 		let module_id = ModuleId::new("ibcmodule".to_string().into()).unwrap();
 		Ok((module_id, Capability::new().into()))

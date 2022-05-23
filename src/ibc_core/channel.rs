@@ -36,9 +36,7 @@ use ibc::{
 
 impl<T: Config> ChannelReader for Context<T> {
 	fn channel_end(&self, port_channel_id: &(PortId, ChannelId)) -> Result<ChannelEnd, Ics04Error> {
-		trace!(target:"runtime::pallet-ibc",
-			"in channel : [channel_end]"
-		);
+		trace!(target:"runtime::pallet-ibc","in channel : [channel_end]");
 
 		let data = <Channels<T>>::get(
 			port_channel_id.0.as_bytes(),
@@ -117,9 +115,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		client_id: &ClientId,
 		height: Height,
 	) -> Result<AnyConsensusState, Ics04Error> {
-		trace!(target:"runtime::pallet-ibc",
-			"in channel : [client_consensus_state]"
-		);
+		trace!(target:"runtime::pallet-ibc","in channel : [client_consensus_state]");
 
 		let height = height.encode_vec().map_err(|_| Ics04Error::invalid_encode())?;
 		let value = <ConsensusStates<T>>::get(client_id.as_bytes());
@@ -165,9 +161,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		&self,
 		port_channel_id: &(PortId, ChannelId),
 	) -> Result<Sequence, Ics04Error> {
-		trace!(target:"runtime::pallet-ibc",
-			"in channel : [get_next_sequence]"
-		);
+		trace!(target:"runtime::pallet-ibc","in channel : [get_next_sequence]");
 
 		let sequence = <NextSequenceSend<T>>::get(
 			port_channel_id.0.as_bytes(),
@@ -182,9 +176,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		&self,
 		port_channel_id: &(PortId, ChannelId),
 	) -> Result<Sequence, Ics04Error> {
-		trace!(target:"runtime::pallet-ibc",
-			"in channel : [get_next_sequence_recv]"
-		);
+		trace!(target:"runtime::pallet-ibc","in channel : [get_next_sequence_recv]");
 
 		let sequence = <NextSequenceRecv<T>>::get(
 			port_channel_id.0.as_bytes(),
@@ -199,9 +191,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		&self,
 		port_channel_id: &(PortId, ChannelId),
 	) -> Result<Sequence, Ics04Error> {
-		trace!(target:"runtime::pallet-ibc",
-			"in channel : [get_next_sequence_ack]"
-		);
+		trace!(target:"runtime::pallet-ibc","in channel : [get_next_sequence_ack]");
 
 		let sequence = <NextSequenceAck<T>>::get(
 			port_channel_id.0.as_bytes(),
@@ -251,8 +241,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		&self,
 		key: &(PortId, ChannelId, Sequence),
 	) -> Result<Receipt, Ics04Error> {
-		trace!(target:"runtime::pallet-ibc","in channel : [get_packet_receipt]"
-		);
+		trace!(target:"runtime::pallet-ibc","in channel : [get_packet_receipt]");
 
 		let sequence = u64::from(key.2);
 
@@ -287,8 +276,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		&self,
 		key: &(PortId, ChannelId, Sequence),
 	) -> Result<IbcAcknowledgementCommitment, Ics04Error> {
-		trace!(target:"runtime::pallet-ibc","in channel : [get_packet_acknowledgement]"
-		);
+		trace!(target:"runtime::pallet-ibc","in channel : [get_packet_acknowledgement]");
 
 		let seq = u64::from(key.2);
 
@@ -344,7 +332,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		let time = T::TimeProvider::now();
 		let ts = Timestamp::from_nanoseconds(time.as_nanos() as u64)
 			.map_err(|e| panic!("{:?}, caused by {:?} from pallet timestamp_pallet", e, time));
-		log::trace!(target:"runtime::pallet-ibc","in channel: [host_timestamp] >> host_timestamp = {:?}", ts.clone().unwrap()); 
+		log::trace!(target:"runtime::pallet-ibc","in channel: [host_timestamp] >> host_timestamp = {:?}", ts.clone().unwrap());
 
 		ts.unwrap()
 	}
@@ -369,9 +357,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		client_id: &ClientId,
 		height: Height,
 	) -> Result<Timestamp, Ics04Error> {
-		trace!(target:"runtime::pallet-ibc",
-			"in channel: [client_update_time]"
-		);
+		trace!(target:"runtime::pallet-ibc","in channel: [client_update_time]");
 
 		if <ClientProcessedTimes<T>>::contains_key(
 			client_id.as_bytes(),
@@ -396,9 +382,8 @@ impl<T: Config> ChannelReader for Context<T> {
 		client_id: &ClientId,
 		height: Height,
 	) -> Result<Height, Ics04Error> {
-		trace!(target:"runtime::pallet-ibc",
-			"in channel: [client_update_height]"
-		);
+		trace!(target:"runtime::pallet-ibc","in channel: [client_update_height]");
+
 		if <ClientProcessedHeights<T>>::contains_key(
 			client_id.as_bytes(),
 			height.encode_vec().map_err(|_| Ics04Error::invalid_encode())?,
@@ -427,9 +412,8 @@ impl<T: Config> ChannelReader for Context<T> {
 	}
 
 	fn max_expected_time_per_block(&self) -> Duration {
-		trace!(target:"runtime::pallet-ibc",
-			"in channel: [max_expected_time_per_block]"
-		);
+		trace!(target:"runtime::pallet-ibc","in channel: [max_expected_time_per_block]");
+
 		Duration::from_secs(6)
 	}
 
@@ -439,9 +423,8 @@ impl<T: Config> ChannelReader for Context<T> {
 		channel_id: &ChannelId,
 		port_id: &PortId,
 	) -> Result<(ModuleId, ChannelCapability), Ics04Error> {
-		trace!(target:"runtime::pallet-ibc",
-			"in channel: [lookup_module_by_channel]"
-		);
+		trace!(target:"runtime::pallet-ibc", "in channel: [lookup_module_by_channel]");
+
 		// todo
 		let module_id = ModuleId::new("ibcmodule".to_string().into()).unwrap();
 		Ok((module_id, Capability::new().into()))
