@@ -825,7 +825,7 @@ pub mod pallet {
 								todo!()
 							};
 
-						ctx.store_packet_acknowledgement(
+						let _ = ctx.store_packet_acknowledgement(
 							(
 								write_ack_event_result.port_id.clone(),
 								write_ack_event_result.channel_id,
