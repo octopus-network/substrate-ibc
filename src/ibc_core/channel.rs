@@ -437,7 +437,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		key: (PortId, ChannelId, Sequence),
 		commitment: IbcPacketCommitment,
 	) -> Result<(), Ics04Error> {
-		log::trace!(target:"runtime::pallet-ibc","in channel: [store_packet_commitment]");
+		log::trace!(target:"runtime::pallet-ibc","in channel: [store_packet_commitment]. key={:?}", key);
 
 		let sequence = u64::from(key.2);
 
@@ -460,7 +460,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		&mut self,
 		key: (PortId, ChannelId, Sequence),
 	) -> Result<(), Ics04Error> {
-		log::trace!(target:"runtime::pallet-ibc","in channel: [delete_packet_commitment]");
+		log::trace!(target:"runtime::pallet-ibc","in channel: [delete_packet_commitment]. key={:?}", key);
 
 		let sequence = u64::from(key.2);
 

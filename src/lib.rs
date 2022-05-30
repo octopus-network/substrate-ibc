@@ -1300,11 +1300,11 @@ pub mod pallet {
 	}
 }
 
-fn store_send_packet<T: Config>(send_packet_event: &ibc::core::ics04_channel::events::SendPacket) {
+fn store_send_packet<T: Config>(_send_packet_event: &ibc::core::ics04_channel::events::SendPacket) {
 	use crate::event::primitive::Sequence;
 
 	// store send-packet
-	let send_packet_event = send_packet_event.clone();
+	let send_packet_event = _send_packet_event.clone();
 	let packet = Packet {
 		sequence: Sequence::from(send_packet_event.packet.sequence),
 		source_channel: ChannelId::from(send_packet_event.packet.source_channel),
@@ -1320,6 +1320,7 @@ fn store_send_packet<T: Config>(send_packet_event: &ibc::core::ics04_channel::ev
 	let port_id = send_packet_event.packet.source_port.as_bytes().to_vec();
 	let channel_id = from_channel_id_to_vec(send_packet_event.packet.source_channel);
 
+	log::trace!(target: LOG_TARGET, "in lib: [store_send_packet]. _send_packet_event={:?}", _send_packet_event.clone());
 	<SendPacketEvent<T>>::insert(
 		(port_id, channel_id, u64::from(send_packet_event.packet.sequence)),
 		packet,
