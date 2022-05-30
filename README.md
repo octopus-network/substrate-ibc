@@ -49,30 +49,6 @@ tendermint-proto        = { git = "https://github.com/informalsystems/tendermint
 tendermint-light-client = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
 tendermint-light-client-verifier = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
 tendermint-testgen      = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
-
-#for libp2p
-libp2p-noise 					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
-libp2p-yamux 					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
-libp2p-core 					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
-libp2p-websocket 					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
-libp2p-wasm-ext 					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
-libp2p-uds 					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
-libp2p-tcp 					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
-libp2p-swarm-derive 					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
-libp2p-swarm 					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
-libp2p-request-response 					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
-libp2p-relay 					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
-libp2p-pnet 					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
-libp2p-plaintext 					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
-libp2p-ping 					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
-libp2p-mplex 					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
-libp2p-mdns 					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
-libp2p-kad 					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
-libp2p-identify					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
-libp2p-gossipsub					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
-libp2p-floodsub					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
-libp2p-dns					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
-libp2p-deflate					= { git = "https://github.com/octopus-network/rust-libp2p.git", branch = "feature/dep-ibc-rs" }
 ```
 
 #### Runtime's `Cargo.toml`
