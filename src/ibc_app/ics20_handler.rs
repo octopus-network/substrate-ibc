@@ -340,16 +340,18 @@ where
 				token_id, &receiver, amount,
 			);
 			match result {
-				Ok(()) => {},
-				Err(_) =>
+				Ok(()) => {
+					Pallet::<T>::deposit_event(Event::<T>::MintToken(token_id, receiver, amount));
+					info!("🔥🔥🔥🔥🔥ics20_handle_recv_transfer:  sender was source, mint vouchers to receiver (assumed to fail if balance insufficient), success!!");		
+				},
+				Err(_) => {
 					ack = FungibleTokenPacketAcknowledgement::Err(FungibleTokenPacketError {
 						error: "mint coins failed".to_string(),
-					}),
+					});
+					error!("💥💥💥💥💥💥💥ics20_handle_recv_transfer: mint error because asset is not create");
+				}
 			}
 
-			Pallet::<T>::deposit_event(Event::<T>::MintToken(token_id, receiver, amount));
-
-			info!("🔥🔥🔥🔥🔥ics20_handle_recv_transfer:  sender was source, mint vouchers to receiver (assumed to fail if balance insufficient), success!!");
 		} else {
 			error!("🤮🤮🤮🤮🤮🤮🤮🤮🤮ics20_handle handle_recv_packet wrong get asset id");
 		}

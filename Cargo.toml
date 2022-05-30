@@ -37,10 +37,10 @@ serde = { version = "1.0", default-features = false }
 flex-error = { version = "0.4.4", default-features = false }
 hex = {version = "0.4.0", default-features = false }
 
-# ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/ics20", default-features = false }
-# ibc-proto = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/ics20", default-features = false }
-ibc = { path = "../ibc-rs/modules", default-features = false }
-ibc-proto = { path = "../ibc-rs/proto", default-features = false }
+ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/ics20", default-features = false }
+ibc-proto = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/ics20", default-features = false }
+# ibc = { path = "../ibc-rs/modules", default-features = false }
+# ibc-proto = { path = "../ibc-rs/proto", default-features = false }
 tendermint-proto = { version = "=0.23.6", default-features = false }
 beefy-light-client = { git = "https://github.com/octopus-network/beefy-light-client.git", branch="feature/v0.9.13", default-features = false }
 
@@ -48,8 +48,8 @@ beefy-light-client = { git = "https://github.com/octopus-network/beefy-light-cli
 hex = '0.4.0'
 sha2 = '0.9.3'
 serde = { version = "1.0" }
-# ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/ics20", features = ["mocks"]}
-ibc = { path = "../ibc-rs/modules", features = ["mocks"]}
+ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/ics20", features = ["mocks"]}
+# ibc = { path = "../ibc-rs/modules", features = ["mocks"]}
 sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13"}
 sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
 sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.13" }
@@ -85,11 +85,3 @@ runtime-benchmarks = ["frame-benchmarking"]
 try-runtime = ["frame-support/try-runtime"]
 
 [patch.crates-io]
-# for tendermint
-# tendermint              = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
-# tendermint-rpc          = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
-# tendermint-proto        = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
-# tendermint-light-client = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
-# tendermint-light-client-verifier = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
-# tendermint-testgen      = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
-
