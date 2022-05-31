@@ -55,7 +55,7 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 	where
 		Ctx: Ics20Context,
 	{
-		let ret = validate_transfer_channel_params(ctx, order, port_id, channel_id)?;
+		validate_transfer_channel_params(ctx, order, port_id, channel_id)?;
 
 		if version != Version::ics20() {
 			return Err(Ics20Error::invalid_version(version, Version::ics20()))
@@ -80,7 +80,7 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 	where
 		Ctx: Ics20Context,
 	{
-		let ret = validate_transfer_channel_params(ctx, order, port_id, channel_id)?;
+		validate_transfer_channel_params(ctx, order, port_id, channel_id)?;
 
 		if counterparty_version != Version::ics20() {
 			return Err(Ics20Error::invalid_version(counterparty_version, Version::ics20()))
@@ -178,7 +178,8 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 			// handle recv packet
 			let result = ics20_handler::handle_recv_packet::<Ctx, T>(ctx, packet, data);
 			if let Err(err) = result {
-				acknowledgement = Acknowledgement::new_error(format!("handle rev packet error: [{:?}]", err));
+				acknowledgement =
+					Acknowledgement::new_error(format!("handle rev packet error: [{:?}]", err));
 				error!(target:  "runtime::pallet-ibc", "on_recv_packet impl --> handle recv packet error : {:?}", err);
 			}
 		}

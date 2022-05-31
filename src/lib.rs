@@ -636,7 +636,7 @@ pub mod pallet {
 					results.append(&mut result);
 				}
 
-				let ret = Self::handle_result(&mut ctx, messages, results)?;
+				Self::handle_result(&mut ctx, messages, results)?;
 
 				Ok(().into())
 			})
@@ -780,7 +780,7 @@ pub mod pallet {
 							value.packet
 						);
 
-						let ret = ibc_app::ics20_handler::handle_transfer::<Ctx, T>(
+						ibc_app::ics20_handler::handle_transfer::<Ctx, T>(
 							ctx,
 							value.clone().packet,
 						)?;
@@ -875,14 +875,13 @@ pub mod pallet {
 
 						let ics20_module = Ics20IBCModule::<T>::new();
 
-						let ret =
-							ibc::core::ics26_routing::ibc_module::IBCModule::on_timeout_packet(
-								&ics20_module,
-								ctx,
-								value.clone().packet,
-								relayer_signer,
-							)
-							.map_err(|_| Error::<T>::TimeoutPacketError)?;
+						ibc::core::ics26_routing::ibc_module::IBCModule::on_timeout_packet(
+							&ics20_module,
+							ctx,
+							value.clone().packet,
+							relayer_signer,
+						)
+						.map_err(|_| Error::<T>::TimeoutPacketError)?;
 
 						Self::deposit_event(event.clone().into());
 					},
@@ -899,7 +898,14 @@ pub mod pallet {
 
 						let ics20_module = Ics20IBCModule::<T>::new();
 
-						let ret = ibc::core::ics26_routing::ibc_module::IBCModule::on_acknowledgement_packet(&ics20_module, ctx, value.clone().packet, vec![], relayer_signer).map_err(|_| Error::<T>::AcknowledgePacketError)?;
+						ibc::core::ics26_routing::ibc_module::IBCModule::on_acknowledgement_packet(
+							&ics20_module,
+							ctx,
+							value.clone().packet,
+							vec![],
+							relayer_signer,
+						)
+						.map_err(|_| Error::<T>::AcknowledgePacketError)?;
 
 						Self::deposit_event(event.clone().into());
 					},
@@ -924,22 +930,21 @@ pub mod pallet {
 
 						let ics20_modlue = Ics20IBCModule::<T>::new();
 
-						let ret =
-							ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_init(
-								&ics20_modlue,
-								ctx,
-								Order::Unordered,
-								vec![connection_id],
-								port_id,
-								channel_id,
-								&Capability::default(), // todo
-								Counterparty {
-									port_id: counterparty_port_id,
-									channel_id: counterparty_channel_id,
-								},
-								Version::ics20(),
-							)
-							.map_err(|_| Error::<T>::OpenInitChannelError)?;
+						ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_init(
+							&ics20_modlue,
+							ctx,
+							Order::Unordered,
+							vec![connection_id],
+							port_id,
+							channel_id,
+							&Capability::default(), // todo
+							Counterparty {
+								port_id: counterparty_port_id,
+								channel_id: counterparty_channel_id,
+							},
+							Version::ics20(),
+						)
+						.map_err(|_| Error::<T>::OpenInitChannelError)?;
 
 						Self::deposit_event(event.clone().into());
 					},
@@ -998,15 +1003,15 @@ pub mod pallet {
 							.map_err(|_| Error::<T>::InvalidSigner)?;
 
 						let ics20_modlue = Ics20IBCModule::<T>::new();
-						let ret =
-							ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_ack(
-								&ics20_modlue,
-								ctx,
-								port_id,
-								channel_id,
-								Version::ics20(),
-							)
-							.map_err(|_| Error::<T>::OpenAckChannelError)?;
+
+						ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_ack(
+							&ics20_modlue,
+							ctx,
+							port_id,
+							channel_id,
+							Version::ics20(),
+						)
+						.map_err(|_| Error::<T>::OpenAckChannelError)?;
 
 						Self::deposit_event(event.clone().into());
 					},
@@ -1028,14 +1033,13 @@ pub mod pallet {
 
 						let ics20_modlue = Ics20IBCModule::<T>::new();
 
-						let ret =
-							ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_confirm(
-								&ics20_modlue,
-								ctx,
-								port_id,
-								channel_id,
-							)
-							.map_err(|_| Error::<T>::OpenConfirmChannelError)?;
+						ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_confirm(
+							&ics20_modlue,
+							ctx,
+							port_id,
+							channel_id,
+						)
+						.map_err(|_| Error::<T>::OpenConfirmChannelError)?;
 
 						Self::deposit_event(event.clone().into());
 					},
@@ -1054,14 +1058,13 @@ pub mod pallet {
 
 						let ics20_modlue = Ics20IBCModule::<T>::new();
 
-						let ret =
-							ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_close_init(
-								&ics20_modlue,
-								ctx,
-								port_id,
-								channel_id,
-							)
-							.map_err(|_| Error::<T>::CloseInitChannelError)?;
+						ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_close_init(
+							&ics20_modlue,
+							ctx,
+							port_id,
+							channel_id,
+						)
+						.map_err(|_| Error::<T>::CloseInitChannelError)?;
 
 						Self::deposit_event(event.clone().into());
 					},
@@ -1082,14 +1085,14 @@ pub mod pallet {
 							.map_err(|_| Error::<T>::InvalidSigner)?;
 
 						let ics20_modlue = Ics20IBCModule::<T>::new();
-						let ret =
-							ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_close_confirm(
-								&ics20_modlue,
-								ctx,
-								port_id,
-								channel_id,
-							)
-							.map_err(|_| Error::<T>::CloseConfirmChannelError)?;
+
+						ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_close_confirm(
+							&ics20_modlue,
+							ctx,
+							port_id,
+							channel_id,
+						)
+						.map_err(|_| Error::<T>::CloseConfirmChannelError)?;
 
 						Self::deposit_event(event.clone().into());
 					},
@@ -1327,7 +1330,11 @@ fn store_send_packet<T: Config>(_send_packet_event: &ibc::core::ics04_channel::e
 	let port_id = send_packet_event.packet.source_port.as_bytes().to_vec();
 	let channel_id = from_channel_id_to_vec(send_packet_event.packet.source_channel);
 
-	log::trace!(target: LOG_TARGET, "in lib: [store_send_packet]. _send_packet_event={:?}", _send_packet_event.clone());
+	log::trace!(
+		target: LOG_TARGET,
+		"in lib: [store_send_packet]. _send_packet_event={:?}",
+		_send_packet_event.clone()
+	);
 	<SendPacketEvent<T>>::insert(
 		(port_id, channel_id, u64::from(send_packet_event.packet.sequence)),
 		packet,
@@ -1371,7 +1378,7 @@ impl<T: Config> AssetIdAndNameProvider<T::AssetId> for Pallet<T> {
 
 /// FungibleTokenPacketData defines a struct for the packet payload
 /// See FungibleTokenPacketData spec: https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer#data-structures
-#[derive(Decode, Encode, Debug, PartialEq)]
+#[derive(Decode, Encode, Debug, PartialEq, Eq)]
 pub struct FungibleTokenPacketData<T: Config> {
 	// the token denomination to be transferred
 	pub denomination: Vec<u8>,
