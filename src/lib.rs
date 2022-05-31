@@ -177,6 +177,7 @@ pub mod pallet {
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
+	#[pallet::without_storage_info]
 	pub struct Pallet<T>(_);
 
 	#[pallet::storage]
@@ -316,7 +317,7 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
-	/// (port_id, channel_id, sequence) => hash of (timestamp, heigh, packet)
+	/// (port_id, channel_id, sequence) => hash of (timestamp, height, packet)
 	pub type PacketCommitment<T: Config> = StorageNMap<
 		_,
 		(
@@ -371,6 +372,11 @@ pub mod pallet {
 	pub type Denomination<T: Config> =
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
+	#[pallet::type_value]
+	pub fn DefaultAccountId<T: Config>() -> T::AccountId {
+		PalletId(*b"defaultd").into_account()
+	}
+
 	#[pallet::storage]
 	// port, channel -> escrow address
 	pub type EscrowAddresses<T: Config> = StorageDoubleMap<
@@ -381,6 +387,7 @@ pub mod pallet {
 		ChannelId,
 		T::AccountId,
 		ValueQuery,
+		DefaultAccountId<T>,
 	>;
 
 	#[pallet::storage]
@@ -1190,7 +1197,7 @@ pub mod pallet {
 			let mmr_leaf = decode_received_mmr_root.mmr_leaf;
 			let mmr_leaf_proof = decode_received_mmr_root.mmr_leaf_proof;
 
-			// verfiy mmr proof and update lc state
+			// verify mmr proof and update lc state
 			let result = light_client.update_state(
 				&encoded_signed_commitment,
 				&validator_proofs,
@@ -1200,7 +1207,7 @@ pub mod pallet {
 
 			match result {
 				Ok(_) => {
-					log::trace!(target:"runtime::pallet-ibc","update the beefy light client sucesse! and the beefy light client state is : {:?} \n",light_client);
+					log::trace!(target:"runtime::pallet-ibc","update the beefy light client success! and the beefy light client state is : {:?} \n",light_client);
 
 					// update client_client block number and latest commitment
 					let latest_commitment =
@@ -1273,7 +1280,7 @@ pub mod pallet {
 						<ConsensusStates<T>>::insert(client_id, vec![(height, data)]);
 					}
 
-					// emit update state sucesse event
+					// emit update state success event
 					let event_height = Height {
 						revision_number: 0,
 						revision_height: client_state.block_number as u64,
