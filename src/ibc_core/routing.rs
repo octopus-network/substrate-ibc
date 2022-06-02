@@ -16,6 +16,7 @@ impl<T: Config> Ics26Context for Context<T> {
 
 	fn router_mut(&mut self) -> &mut Self::Router {
 		trace!(target:"runtime::pallet-ibc","in routing: [router_mut]");
+
 		&mut self.router
 	}
 }

@@ -178,8 +178,8 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 			// handle recv packet
 			let result = ics20_handler::handle_recv_packet::<Ctx, T>(ctx, packet, data);
 			if let Err(err) = result {
-				acknowledgement = Acknowledgement::new_error("handle rev packet error".to_string());
-				trace!(target:  "runtime::pallet-ibc", "on_recv_packet impl --> handle recv packet error : {:?}", err);
+				acknowledgement = Acknowledgement::new_error(format!("handle rev packet error: [{:?}]", err));
+				error!(target:  "runtime::pallet-ibc", "on_recv_packet impl --> handle recv packet error : {:?}", err);
 			}
 		}
 

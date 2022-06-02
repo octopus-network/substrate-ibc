@@ -101,9 +101,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 		client_id: &ClientId,
 		height: Height,
 	) -> Result<AnyConsensusState, Ics03Error> {
-		trace!(target:"runtime::pallet-ibc",
-			"in connection : [client_consensus_state]"
-		);
+		trace!(target:"runtime::pallet-ibc","in connection : [client_consensus_state]");
 
 		// ClientReader::consensus_state(self, client_id, height)
 		let encode_height = height.clone().encode_vec().map_err(Ics03Error::invalid_encode)?;

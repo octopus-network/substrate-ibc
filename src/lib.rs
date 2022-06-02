@@ -607,7 +607,7 @@ pub mod pallet {
 					})
 					.collect();
 
-				log::trace!(target: LOG_TARGET, "received deliver : {:?} ", messages);
+				log::trace!(target: LOG_TARGET, "received deliver : {:?} ", messages.iter().map(|message| message.type_url.clone()).collect::<Vec<_>>());
 
 				let mut results: Vec<IbcEvent> = vec![];
 				for (index, message) in messages.clone().into_iter().enumerate() {
@@ -629,7 +629,7 @@ pub mod pallet {
 					results.append(&mut result);
 				}
 
-				let ret = Self::handle_result(&ctx, messages, results)?;
+				let ret = Self::handle_result(&mut ctx, messages, results)?;
 
 				Ok(().into())
 			})
@@ -725,7 +725,7 @@ pub mod pallet {
 					// handle the result
 					log::info!(target: LOG_TARGET,"result: {:?}", send_transfer_result_event);
 
-					Self::handle_result(&ctx, vec![msg.to_any()], send_transfer_result_event)?;
+					Self::handle_result(&mut ctx, vec![msg.to_any()], send_transfer_result_event)?;
 
 					Ok(())
 				}
@@ -756,7 +756,7 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		/// handle the event returned by ics26 route module
 		fn handle_result<Ctx>(
-			ctx: &Ctx,
+			ctx: &mut Ctx,
 			messages: Vec<ibc_proto::google::protobuf::Any>,
 			result: Vec<IbcEvent>,
 		) -> DispatchResult
@@ -813,6 +813,26 @@ pub mod pallet {
 								ack.clone(),
 							)
 							.map_err(|_| Error::<T>::ReceivePacketError)?;
+
+						use ibc::core::ics04_channel::packet::PacketResult;
+
+						let write_ack_event_result =
+							if let PacketResult::WriteAck(write_ack_event_result) =
+								write_ack_event.result
+							{
+								write_ack_event_result
+							} else {
+								todo!()
+							};
+
+						let _ = ctx.store_packet_acknowledgement(
+							(
+								write_ack_event_result.port_id.clone(),
+								write_ack_event_result.channel_id,
+								write_ack_event_result.seq,
+							),
+							write_ack_event_result.ack_commitment,
+						);
 
 						// Emit write acknowledgement event
 						// todo this
@@ -1280,11 +1300,11 @@ pub mod pallet {
 	}
 }
 
-fn store_send_packet<T: Config>(send_packet_event: &ibc::core::ics04_channel::events::SendPacket) {
+fn store_send_packet<T: Config>(_send_packet_event: &ibc::core::ics04_channel::events::SendPacket) {
 	use crate::event::primitive::Sequence;
 
 	// store send-packet
-	let send_packet_event = send_packet_event.clone();
+	let send_packet_event = _send_packet_event.clone();
 	let packet = Packet {
 		sequence: Sequence::from(send_packet_event.packet.sequence),
 		source_channel: ChannelId::from(send_packet_event.packet.source_channel),
@@ -1300,6 +1320,7 @@ fn store_send_packet<T: Config>(send_packet_event: &ibc::core::ics04_channel::ev
 	let port_id = send_packet_event.packet.source_port.as_bytes().to_vec();
 	let channel_id = from_channel_id_to_vec(send_packet_event.packet.source_channel);
 
+	log::trace!(target: LOG_TARGET, "in lib: [store_send_packet]. _send_packet_event={:?}", _send_packet_event.clone());
 	<SendPacketEvent<T>>::insert(
 		(port_id, channel_id, u64::from(send_packet_event.packet.sequence)),
 		packet,
