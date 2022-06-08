@@ -22,11 +22,7 @@ use ibc::{
 			error::Error as Ics04Error,
 			packet::{Receipt, Sequence},
 		},
-		ics05_port::{
-			capabilities::{Capability, ChannelCapability, PortCapability},
-			context::PortReader,
-			error::Error as Ics05Error,
-		},
+		ics05_port::{context::PortReader, error::Error as Ics05Error},
 		ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
 		ics26_routing::context::ModuleId,
 	},
@@ -141,21 +137,21 @@ impl<T: Config> ChannelReader for Context<T> {
 		))
 	}
 
-	fn authenticated_capability(&self, port_id: &PortId) -> Result<ChannelCapability, Ics04Error> {
-		trace!(target:"runtime::pallet-ibc","in channel : [authenticated_capability]");
+	// fn authenticated_capability(&self, port_id: &PortId) -> Result<ChannelCapability, Ics04Error>
+	// { 	trace!(target:"runtime::pallet-ibc","in channel : [authenticated_capability]");
 
-		match PortReader::lookup_module_by_port(self, port_id) {
-			Ok((_, key)) =>
-				if !PortReader::authenticate(self, port_id.clone(), &key) {
-					Err(Ics04Error::invalid_port_capability())
-				} else {
-					Ok(Capability::from(key).into())
-				},
-			Err(e) if e.detail() == Ics05Error::unknown_port(port_id.clone()).detail() =>
-				Err(Ics04Error::no_port_capability(port_id.clone())),
-			Err(_) => Err(Ics04Error::implementation_specific()),
-		}
-	}
+	// 	match PortReader::lookup_module_by_port(self, port_id) {
+	// 		Ok((_, key)) =>
+	// 			if !PortReader::authenticate(self, port_id.clone(), &key) {
+	// 				Err(Ics04Error::invalid_port_capability())
+	// 			} else {
+	// 				Ok(Capability::from(key).into())
+	// 			},
+	// 		Err(e) if e.detail() == Ics05Error::unknown_port(port_id.clone()).detail() =>
+	// 			Err(Ics04Error::no_port_capability(port_id.clone())),
+	// 		Err(_) => Err(Ics04Error::implementation_specific()),
+	// 	}
+	// }
 
 	fn get_next_sequence_send(
 		&self,
@@ -417,18 +413,18 @@ impl<T: Config> ChannelReader for Context<T> {
 		Duration::from_secs(6)
 	}
 
-	/// Return the module_id along with the capability associated with a given (channel-id, port_id)
-	fn lookup_module_by_channel(
-		&self,
-		channel_id: &ChannelId,
-		port_id: &PortId,
-	) -> Result<(ModuleId, ChannelCapability), Ics04Error> {
-		trace!(target:"runtime::pallet-ibc", "in channel: [lookup_module_by_channel]");
+	// Return the module_id along with the capability associated with a given (channel-id, port_id)
+	// fn lookup_module_by_channel(
+	// 	&self,
+	// 	channel_id: &ChannelId,
+	// 	port_id: &PortId,
+	// ) -> Result<(ModuleId, ChannelCapability), Ics04Error> {
+	// 	trace!(target:"runtime::pallet-ibc", "in channel: [lookup_module_by_channel]");
 
-		// todo
-		let module_id = ModuleId::new("ibcmodule".to_string().into()).unwrap();
-		Ok((module_id, Capability::new().into()))
-	}
+	// 	// todo
+	// 	let module_id = ModuleId::new("ibcmodule".to_string().into()).unwrap();
+	// 	Ok((module_id, Capability::new().into()))
+	// }
 }
 
 impl<T: Config> ChannelKeeper for Context<T> {

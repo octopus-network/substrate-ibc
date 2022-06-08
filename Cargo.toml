@@ -30,8 +30,8 @@ sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polka
 sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.18", default-features = false }
 sp-tracing = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.18", default-features = false }
 log = { version = "0.4.0", default-features = false }
-prost-types = { version = "0.9.0", default-features = false }
-prost = { version = "0.9.0", default-features = false }
+prost-types = { version = "0.10", default-features = false }
+prost = { version = "0.10", default-features = false }
 serde_json = { version = "1.0", default-features = false }
 serde = { version = "1.0", default-features = false }
 flex-error = { version = "0.4.4", default-features = false }
@@ -41,8 +41,9 @@ hex = {version = "0.4.0", default-features = false }
 # ibc-proto = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/ics20", default-features = false }
 ibc = { path = "../ibc-rs/modules", default-features = false }
 ibc-proto = { path = "../ibc-rs/proto", default-features = false }
-tendermint-proto = { version = "=0.23.6", default-features = false }
-beefy-light-client = { git = "https://github.com/octopus-network/beefy-light-client.git", branch="feature/v0.9.18", default-features = false }
+tendermint-proto = { version = "0.23.7", default-features = false }
+# beefy-light-client = { git = "https://github.com/octopus-network/beefy-light-client.git", branch="feature/v0.9.18", default-features = false }
+beefy-light-client = { path = "../beefy-light-client", default-features = false }
 
 [dev-dependencies]
 hex = '0.4.0'

@@ -41,7 +41,7 @@ pub fn get_signer<T: Config>(
 			PacketMsg::ToPacket(val) => val.signer,
 			PacketMsg::ToClosePacket(val) => val.signer,
 		},
-		Ics26Envelope::Ics20Msg(value) => value.sender,
+		// Ics26Envelope::Ics20Msg(value) => value.sender,
 	};
 
 	Ok(signer)
@@ -189,7 +189,7 @@ pub fn event_from_ibc_event<T: Config>(value: IbcEvent) -> Event<T> {
 				counterparty_channel_id,
 			)
 		},
-		ibc::events::IbcEvent::OpenTryChannel(value) => {
+		IbcEvent::OpenTryChannel(value) => {
 			let height = value.height;
 			let port_id = value.port_id.clone();
 			let channel_id: Option<ChannelId> = value.channel_id.map(|val| val.into());
@@ -237,7 +237,7 @@ pub fn event_from_ibc_event<T: Config>(value: IbcEvent) -> Event<T> {
 				counterparty_channel_id,
 			)
 		},
-		ibc::events::IbcEvent::CloseInitChannel(value) => {
+		IbcEvent::CloseInitChannel(value) => {
 			let height = value.height;
 			let port_id = value.port_id.clone();
 			let channel_id: Option<ChannelId> = Some(value.channel_id.into());
@@ -301,6 +301,8 @@ pub fn event_from_ibc_event<T: Config>(value: IbcEvent) -> Event<T> {
 			let packet = value.packet;
 			Event::TimeoutOnClosePacket(height.into(), packet.into())
 		},
+		// TODO
+		IbcEvent::AppModule(_) => Event::AppModule,
 		IbcEvent::Empty(value) => Event::Empty(value.as_bytes().to_vec()),
 		IbcEvent::ChainError(value) => Event::ChainError(value.as_bytes().to_vec()),
 	}
