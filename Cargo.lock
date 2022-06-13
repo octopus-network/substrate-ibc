@@ -145,16 +145,16 @@ checksum = "904dfeac50f3cdaba28fc6f57fdcddb75f49ed61346676a78c4ffe55877802fd"
 [[package]]
 name = "beefy-light-client"
 version = "0.1.0"
-source = "git+https://github.com/octopus-network/beefy-light-client.git?branch=feature/v0.9.18#b44bfcf346068f1c3cce453cfa6674bb3d5a9d5f"
 dependencies = [
  "beefy-merkle-tree",
  "blake2-rfc",
  "borsh",
- "byteorder",
  "ckb-merkle-mountain-range",
  "hex",
  "libsecp256k1",
  "parity-scale-codec",
+ "scale-info",
+ "serde",
 ]
 
 [[package]]
