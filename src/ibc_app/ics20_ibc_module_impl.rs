@@ -58,7 +58,7 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 		let ret = validate_transfer_channel_params(ctx, order, port_id, channel_id)?;
 
 		if version != Version::ics20() {
-			return Err(Ics20Error::invalid_version(version, Version::ics20()))
+			return Err(Ics20Error::invalid_version(version, Version::ics20()));
 		}
 
 		Ok(())
@@ -83,7 +83,7 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 		let ret = validate_transfer_channel_params(ctx, order, port_id, channel_id)?;
 
 		if counterparty_version != Version::ics20() {
-			return Err(Ics20Error::invalid_version(counterparty_version, Version::ics20()))
+			return Err(Ics20Error::invalid_version(counterparty_version, Version::ics20()));
 		}
 
 		Ok(Version::ics20())
@@ -102,7 +102,7 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 		Ctx: Ics20Context,
 	{
 		if counterparty_version != Version::ics20() {
-			return Err(Ics20Error::invalid_version(counterparty_version, Version::ics20()))
+			return Err(Ics20Error::invalid_version(counterparty_version, Version::ics20()));
 		}
 		Ok(())
 	}
@@ -161,29 +161,37 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 	where
 		Ctx: Ics20Context,
 	{
-		trace!(target:  "runtime::pallet-ibc", "on_recv_packet impl --> packet: {:?}", packet);
+		trace!(target:"runtime::pallet-ibc", "on_recv_packet impl --> packet: {:?}", packet);
 
 		// construct Acknowledgement
 		let mut acknowledgement = Acknowledgement::new_success(vec![1]);
-		trace!(target:  "runtime::pallet-ibc", "on_recv_packet impl --> init acknowledgement : {:?}", acknowledgement);
+		trace!(target:"runtime::pallet-ibc", "on_recv_packet impl --> init acknowledgement : {:?}", acknowledgement);
 
 		// build FungibleTokenPacketData
+		// TODO: set ack error respone if packet.data decode error
 		let data: FungibleTokenPacketData = serde_json::from_slice(&packet.data)
 			.map_err(Ics20Error::invalid_serde_ibc_fungible_token_packet_data)?;
-		trace!(target:  "runtime::pallet-ibc", "on_recv_packet impl --> fungible token packet data: {:?}", data);
+		trace!(target:"runtime::pallet-ibc", "on_recv_packet impl --> fungible token packet data: {:?}", data);
 
 		// only attempt the application logic if the packet data
 		// was successfully decoded
 		if acknowledgement.success().map_err(Ics20Error::ics04_channel)? {
 			// handle recv packet
 			let result = ics20_handler::handle_recv_packet::<Ctx, T>(ctx, packet, data);
+			trace!(target:  "runtime::pallet-ibc", "on_recv_packet impl --> handle_recv_packet result : {:?}", result);
+
 			if let Err(err) = result {
-				acknowledgement = Acknowledgement::new_error(format!("handle rev packet error: [{:?}]", err));
+				acknowledgement =
+					Acknowledgement::new_error(format!("handle rev packet error: [{:?}]", err));
 				error!(target:  "runtime::pallet-ibc", "on_recv_packet impl --> handle recv packet error : {:?}", err);
 			}
 		}
+		trace!(target:"runtime::pallet-ibc", "on_recv_packet impl --> ack returned : {:?}", acknowledgement);
 
-		let ack = acknowledgement.encode_vec().map_err(Ics20Error::invalid_encode)?;
+		// let ack = acknowledgement.encode_vec().map_err(Ics20Error::invalid_encode)?;
+
+		let ack = serde_json::to_vec::<T>(&acknowledgement.into())
+			.map_err(|_| Ics20Error::invalid_serde_data())?;
 		Ok(ack)
 	}
 
@@ -245,17 +253,17 @@ fn validate_transfer_channel_params<Ctx: Ics20Context>(
 	let channel_sequence = parse_channel_sequence(channel_id)?;
 
 	if channel_sequence > u32::MAX.into() {
-		return Err(Ics20Error::overflow_channel_sequence(channel_sequence, u32::MAX.into()))
+		return Err(Ics20Error::overflow_channel_sequence(channel_sequence, u32::MAX.into()));
 	}
 
 	if order != Order::Unordered {
-		return Err(Ics20Error::invalid_equal_order(Order::Unordered, order))
+		return Err(Ics20Error::invalid_equal_order(Order::Unordered, order));
 	}
 
 	// Require portID is the portID transfer module is bound to
 	let bound_port = ctx.get_port()?;
 	if bound_port != port_id {
-		return Err(Ics20Error::invalid_equal_port_id(bound_port, port_id))
+		return Err(Ics20Error::invalid_equal_port_id(bound_port, port_id));
 	}
 
 	Ok(())

@@ -408,7 +408,6 @@ pub mod pallet {
 			}
 		}
 	}
-
 	/// Substrate IBC event list
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -800,6 +799,11 @@ pub mod pallet {
 							relayer_signer,
 						)
 						.map_err(|_| Error::<T>::ReceivePacketError)?;
+						log::trace!(
+							target: LOG_TARGET,
+							"[handle_result] receive packet on_recv_packet ack : {:?}",
+							ack
+						);
 
 						// Emit recv event
 						Self::deposit_event(event.clone().into());
@@ -813,6 +817,8 @@ pub mod pallet {
 								ack.clone(),
 							)
 							.map_err(|_| Error::<T>::ReceivePacketError)?;
+
+							
 
 						use ibc::core::ics04_channel::packet::PacketResult;
 
@@ -1134,7 +1140,7 @@ pub mod pallet {
 					client_id_str
 				);
 
-				return Err(Error::<T>::ClientIdNotFound.into())
+				return Err(Error::<T>::ClientIdNotFound.into());
 			} else {
 				// get client state from chain storage
 				let data = <ClientStates<T>>::get(client_id.clone());
@@ -1291,7 +1297,7 @@ pub mod pallet {
 						e
 					);
 
-					return Err(Error::<T>::UpdateBeefyLightClientFailure.into())
+					return Err(Error::<T>::UpdateBeefyLightClientFailure.into());
 				},
 			}
 
@@ -1320,7 +1326,11 @@ fn store_send_packet<T: Config>(_send_packet_event: &ibc::core::ics04_channel::e
 	let port_id = send_packet_event.packet.source_port.as_bytes().to_vec();
 	let channel_id = from_channel_id_to_vec(send_packet_event.packet.source_channel);
 
-	log::trace!(target: LOG_TARGET, "in lib: [store_send_packet]. _send_packet_event={:?}", _send_packet_event.clone());
+	log::trace!(
+		target: LOG_TARGET,
+		"in lib: [store_send_packet]. _send_packet_event={:?}",
+		_send_packet_event.clone()
+	);
 	<SendPacketEvent<T>>::insert(
 		(port_id, channel_id, u64::from(send_packet_event.packet.sequence)),
 		packet,
@@ -1382,16 +1392,22 @@ impl<T: Config> From<IBCFungibleTokenPacketData> for FungibleTokenPacketData<T> 
 	fn from(value: IBCFungibleTokenPacketData) -> Self {
 		use core::str;
 		use hex::FromHex;
+		log::trace!(target:"runtime::pallet-ibc","from IBCFungibleTokenPacketData into  FungibleTokenPacketData, value is {:?}", value);
 
-		let sender = <Vec<u8>>::from_hex(value.sender.as_str()).unwrap();
-		let receiver = <Vec<u8>>::from_hex(value.receiver.as_str()).unwrap();
+		let sender_hex = <Vec<u8>>::from_hex(value.sender.as_str()).unwrap();
+		log::trace!(target:"runtime::pallet-ibc","from IBCFungibleTokenPacketData into  FungibleTokenPacketData, sender is {:?}", sender_hex);
+		let receiver_hex = <Vec<u8>>::from_hex(value.receiver.as_str()).unwrap();
+		log::trace!(target:"runtime::pallet-ibc","from IBCFungibleTokenPacketData into  FungibleTokenPacketData, receiver is {:?}", receiver_hex);
+		let denom = value.denom.as_bytes().to_vec();
+		log::trace!(target:"runtime::pallet-ibc","from IBCFungibleTokenPacketData into  FungibleTokenPacketData, denom is {:?}", denom);
+		let amount = value.amount.parse::<u128>().unwrap_or_default();
+		log::trace!(target:"runtime::pallet-ibc","from IBCFungibleTokenPacketData into  FungibleTokenPacketData, amount is {:?}", amount);
+		let sender = T::AccountId::decode(&mut sender_hex.as_ref()).unwrap();
+		log::trace!(target:"runtime::pallet-ibc","from IBCFungibleTokenPacketData into  FungibleTokenPacketData, sender is {:?}", sender);
+		let receiver = T::AccountId::decode(&mut receiver_hex.as_ref()).unwrap();
+		log::trace!(target:"runtime::pallet-ibc","from IBCFungibleTokenPacketData into  FungibleTokenPacketData, sender is {:?}", receiver);
 
-		Self {
-			denomination: value.denom.as_bytes().to_vec(),
-			amount: value.amount.parse::<u128>().unwrap_or_default(),
-			sender: T::AccountId::decode(&mut sender.as_ref()).unwrap(),
-			receiver: T::AccountId::decode(&mut receiver.as_ref()).unwrap(),
-		}
+		Self { denomination: denom, amount, sender, receiver }
 	}
 }
 
