@@ -37,20 +37,20 @@ serde = { version = "1.0", default-features = false }
 flex-error = { version = "0.4.4", default-features = false }
 hex = {version = "0.4.0", default-features = false }
 
-# ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/ics20", default-features = false }
-# ibc-proto = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/ics20", default-features = false }
-ibc = { path = "../ibc-rs/modules", default-features = false }
-ibc-proto = { path = "../ibc-rs/proto", default-features = false }
+ ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/ibc20-informal", default-features = false }
+ ibc-proto = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/ibc20-informal", default-features = false }
+#ibc = { path = "../ibc-rs/modules", default-features = false }
+#ibc-proto = { path = "../ibc-rs/proto", default-features = false }
 tendermint-proto = { version = "0.23.7", default-features = false }
-# beefy-light-client = { git = "https://github.com/octopus-network/beefy-light-client.git", branch="feature/v0.9.18", default-features = false }
-beefy-light-client = { path = "../beefy-light-client", default-features = false }
+ beefy-light-client = { git = "https://github.com/octopus-network/beefy-light-client.git", branch="main", default-features = false }
+#beefy-light-client = { path = "../beefy-light-client", default-features = false }
 
 [dev-dependencies]
 hex = '0.4.0'
 sha2 = '0.10.2'
 serde = { version = "1.0" }
-# ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/ics20", features = ["mocks"]}
-ibc = { path = "../ibc-rs/modules", features = ["mocks"]}
+ ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/ibc20-informal", features = ["mocks"]}
+#ibc = { path = "../ibc-rs/modules", features = ["mocks"]}
 sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.18"}
 sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.18" }
 sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.18" }
@@ -86,3 +86,5 @@ runtime-benchmarks = ["frame-benchmarking"]
 try-runtime = ["frame-support/try-runtime"]
 
 [patch.crates-io]
+syn =  { git = "https://github.com/DaviRain-Su/syn.git", branch = "branch-1.0.97" }
+

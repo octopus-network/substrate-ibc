@@ -31,7 +31,7 @@ use core::{marker::PhantomData, str::FromStr};
 use scale_info::{prelude::vec, TypeInfo};
 use serde::{Deserialize, Serialize};
 
-use beefy_light_client::commitment;
+use beefy_light_client::commitment::{self, known_payload_ids::MMR_ROOT_ID};
 use codec::{Codec, Decode, Encode};
 
 use frame_support::{
@@ -1255,7 +1255,13 @@ pub mod pallet {
 
 					let mut consensus_state =
 						GPConsensusState::new(client_state.block_header.clone());
-					consensus_state.digest = client_state.latest_commitment.payload.clone();
+
+					consensus_state.digest = client_state
+						.latest_commitment
+						.payload
+						.get_raw(&MMR_ROOT_ID)
+						.map(|value| value.clone())
+						.unwrap_or_default();
 					let any_consensus_state = AnyConsensusState::Grandpa(consensus_state);
 
 					let height = ibc::Height {
