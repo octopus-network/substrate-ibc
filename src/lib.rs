@@ -31,7 +31,7 @@ use core::{marker::PhantomData, str::FromStr};
 use scale_info::{prelude::vec, TypeInfo};
 use serde::{Deserialize, Serialize};
 
-use beefy_light_client::commitment::{self, VersionedFinalityProof, known_payload_ids::MMR_ROOT_ID};
+use beefy_light_client::commitment::{self, known_payload_ids::MMR_ROOT_ID};
 
 use codec::{Codec, Decode, Encode};
 
@@ -1196,16 +1196,15 @@ pub mod pallet {
 				.collect();
 
 			// encode signed_commitment
-			// let encoded_signed_commitment =
-			// 	commitment::SignedCommitment::encode(&signed_commitment);
-			let encoded_versioned_finality_proof = VersionedFinalityProof::V1(signed_commitment).encode();
+			let encoded_signed_commitment =
+				commitment::SignedCommitment::encode(&signed_commitment);
 
 			let mmr_leaf = decode_received_mmr_root.mmr_leaf;
 			let mmr_leaf_proof = decode_received_mmr_root.mmr_leaf_proof;
 
 			// verify mmr proof and update lc state
 			let result = light_client.update_state(
-				&encoded_versioned_finality_proof,
+				&encoded_signed_commitment,
 				&validator_proofs,
 				&mmr_leaf,
 				&mmr_leaf_proof,

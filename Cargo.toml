@@ -45,8 +45,8 @@ ibc-proto = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "f
 # ibc = { path = "../ibc-rs/modules", default-features = false }
 # ibc-proto = { path = "../ibc-rs/proto", default-features = false }
 tendermint-proto = { version = "=0.23.6", default-features = false }
-beefy-light-client = { git = "https://github.com/octopus-network/beefy-light-client.git", branch="feature/v0.9.18", default-features = false }
-# beefy-light-client = { path = "../beefy-light-client", default-features = false }
+beefy-light-client = { git = "https://github.com/octopus-network/beefy-light-client.git", branch="main", default-features = false }
+# beefy-light-client = { path = "../beefy-light-client", default-features = false}
 
 [dev-dependencies]
 hex = '0.4.0'

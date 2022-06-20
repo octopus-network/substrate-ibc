@@ -159,6 +159,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "beefy-light-client"
+version = "0.1.0"
+source = "git+https://github.com/octopus-network/beefy-light-client.git?branch=main#dbd0ac359ecca2d671cf6eca25cefbea04f36179"
+dependencies = [
+ "beefy-merkle-tree",
+ "blake2-rfc",
+ "borsh",
+ "ckb-merkle-mountain-range",
+ "hex",
+ "libsecp256k1",
+ "parity-scale-codec",
+ "scale-info",
+]
+
+[[package]]
 name = "beefy-merkle-tree"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate.git?branch=polkadot-v0.9.18#fc3fd073d3a0acf9933c3994b660ebd7b5833f65"
@@ -553,9 +568,9 @@ dependencies = [
 
 [[package]]
 name = "dyn-clone"
-version = "1.0.5"
+version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "21e50f3adc76d6a43f5ed73b698a87d0760ca74617f60f7c3b879003536fdd28"
+checksum = "140206b78fb2bc3edbcfc9b5ccbd0b30699cfe8d348b8b31b330e47df5291a5a"
 
 [[package]]
 name = "ed25519"
@@ -1009,9 +1024,9 @@ dependencies = [
 [[package]]
 name = "ibc"
 version = "0.14.1"
-source = "git+https://github.com/octopus-network/ibc-rs.git?branch=feature/ibc-v0.9.18#7662aeff98f3c24f8683a56d527ed37eea508439"
+source = "git+https://github.com/octopus-network/ibc-rs.git?branch=feature/ibc-v0.9.18#d0a3a70190e6fae599c4f06afd1367deaab74440"
 dependencies = [
- "beefy-light-client",
+ "beefy-light-client 0.1.0 (git+https://github.com/octopus-network/beefy-light-client.git?branch=feature/v0.9.18)",
  "beefy-merkle-tree",
  "blake2-rfc",
  "bytes",
@@ -1049,7 +1064,7 @@ dependencies = [
 [[package]]
 name = "ibc-proto"
 version = "0.17.1"
-source = "git+https://github.com/octopus-network/ibc-rs.git?branch=feature/ibc-v0.9.18#7662aeff98f3c24f8683a56d527ed37eea508439"
+source = "git+https://github.com/octopus-network/ibc-rs.git?branch=feature/ibc-v0.9.18#d0a3a70190e6fae599c4f06afd1367deaab74440"
 dependencies = [
  "base64",
  "bytes",
@@ -1378,9 +1393,9 @@ dependencies = [
 
 [[package]]
 name = "num-complex"
-version = "0.4.1"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97fbc387afefefd5e9e39493299f3069e14a140dd34dc19b4c1c1a8fddb6a790"
+checksum = "7ae39348c8bc5fbd7f40c727a9925f03517afd2ab27d46702108b6a7e5414c19"
 dependencies = [
  "num-traits",
 ]
@@ -1499,7 +1514,7 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 name = "pallet-ibc"
 version = "3.0.0-pre.0"
 dependencies = [
- "beefy-light-client",
+ "beefy-light-client 0.1.0 (git+https://github.com/octopus-network/beefy-light-client.git?branch=main)",
  "chrono",
  "flex-error",
  "frame-benchmarking",
