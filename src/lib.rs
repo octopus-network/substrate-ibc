@@ -419,88 +419,147 @@ pub mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// emit new block event
-		NewBlock(Height),
+		NewBlock { height: Height },
 		/// emit create client event
-		CreateClient(Height, ClientId, ClientType, Height),
-		/// emit updte client event
-		UpdateClient(Height, ClientId, ClientType, Height),
+		CreateClient {
+			height: Height,
+			client_id: ClientId,
+			client_type: ClientType,
+			consensus_height: Height,
+		},
+		/// emit update client event
+		UpdateClient {
+			height: Height,
+			client_id: ClientId,
+			client_type: ClientType,
+			consensus_height: Height,
+		},
 		/// emit update client state event
-		UpdateClientState(Height, EventClientState),
+		UpdateClientState { height: Height, client_state: EventClientState },
 		/// emit upgrade client event
-		UpgradeClient(Height, ClientId, ClientType, Height),
+		UpgradeClient {
+			height: Height,
+			client_id: ClientId,
+			client_type: ClientType,
+			consensus_height: Height,
+		},
 		/// emit client misbehaviour event
-		ClientMisbehaviour(Height, ClientId, ClientType, Height),
+		ClientMisbehaviour {
+			height: Height,
+			client_id: ClientId,
+			client_type: ClientType,
+			consensus_height: Height,
+		},
 		/// emit open init connection event
-		OpenInitConnection(Height, Option<ConnectionId>, ClientId, Option<ConnectionId>, ClientId),
+		OpenInitConnection {
+			height: Height,
+			connection_id: Option<ConnectionId>,
+			client_id: ClientId,
+			counterparty_connection_id: Option<ConnectionId>,
+			counterparty_client_id: ClientId,
+		},
 		/// emit open try connection event
-		OpenTryConnection(Height, Option<ConnectionId>, ClientId, Option<ConnectionId>, ClientId),
+		OpenTryConnection {
+			height: Height,
+			connection_id: Option<ConnectionId>,
+			client_id: ClientId,
+			counterparty_connection_id: Option<ConnectionId>,
+			counterparty_client_id: ClientId,
+		},
 		/// emit open ack connection event
-		OpenAckConnection(Height, Option<ConnectionId>, ClientId, Option<ConnectionId>, ClientId),
+		OpenAckConnection {
+			height: Height,
+			connection_id: Option<ConnectionId>,
+			client_id: ClientId,
+			counterparty_connection_id: Option<ConnectionId>,
+			counterparty_client_id: ClientId,
+		},
 		/// emit open confirm connection event
-		OpenConfirmConnection(
-			Height,
-			Option<ConnectionId>,
-			ClientId,
-			Option<ConnectionId>,
-			ClientId,
-		),
+		OpenConfirmConnection {
+			height: Height,
+			connection_id: Option<ConnectionId>,
+			client_id: ClientId,
+			counterparty_connection_id: Option<ConnectionId>,
+			counterparty_client_id: ClientId,
+		},
 		/// emit open init channel event
-		OpenInitChannel(Height, PortId, Option<ChannelId>, ConnectionId, PortId, Option<ChannelId>),
+		OpenInitChannel {
+			height: Height,
+			port_id: PortId,
+			channel_id: Option<ChannelId>,
+			connection_id: ConnectionId,
+			counterparty_port_id: PortId,
+			counterparty_channel_id: Option<ChannelId>,
+		},
 		/// emit open try channel event
-		OpenTryChannel(Height, PortId, Option<ChannelId>, ConnectionId, PortId, Option<ChannelId>),
+		OpenTryChannel {
+			height: Height,
+			port_id: PortId,
+			channel_id: Option<ChannelId>,
+			connection_id: ConnectionId,
+			counterparty_port_id: PortId,
+			counterparty_channel_id: Option<ChannelId>,
+		},
 		/// emit open ack channel event
-		OpenAckChannel(Height, PortId, Option<ChannelId>, ConnectionId, PortId, Option<ChannelId>),
+		OpenAckChannel {
+			height: Height,
+			port_id: PortId,
+			channel_id: Option<ChannelId>,
+			connection_id: ConnectionId,
+			counterparty_port_id: PortId,
+			counterparty_channel_id: Option<ChannelId>,
+		},
 		/// emit open confirm channel event
-		OpenConfirmChannel(
-			Height,
-			PortId,
-			Option<ChannelId>,
-			ConnectionId,
-			PortId,
-			Option<ChannelId>,
-		),
+		OpenConfirmChannel {
+			height: Height,
+			port_id: PortId,
+			channel_id: Option<ChannelId>,
+			connection_id: ConnectionId,
+			counterparty_port_id: PortId,
+			counterparty_channel_id: Option<ChannelId>,
+		},
 		/// emit close init channel event
-		CloseInitChannel(
-			Height,
-			PortId,
-			Option<ChannelId>,
-			ConnectionId,
-			PortId,
-			Option<ChannelId>,
-		),
+		CloseInitChannel {
+			height: Height,
+			port_id: PortId,
+			channel_id: Option<ChannelId>,
+			connection_id: ConnectionId,
+			counterparty_port_id: PortId,
+			counterparty_channel_id: Option<ChannelId>,
+		},
 		/// emit close confirm channel event
-		CloseConfirmChannel(
-			Height,
-			PortId,
-			Option<ChannelId>,
-			ConnectionId,
-			PortId,
-			Option<ChannelId>,
-		),
+		CloseConfirmChannel {
+			height: Height,
+			port_id: PortId,
+			channel_id: Option<ChannelId>,
+			connection_id: ConnectionId,
+			counterparty_port_id: PortId,
+			counterparty_channel_id: Option<ChannelId>,
+		},
 		/// emit send packet event
-		SendPacket(Height, Packet),
+		SendPacket { height: Height, packet: Packet },
 		/// emit receive packet
-		ReceivePacket(Height, Packet),
+		ReceivePacket { height: Height, packet: Packet },
 		/// emit write acknowledgement packet event
-		WriteAcknowledgement(Height, Packet, Vec<u8>),
+		WriteAcknowledgement { height: Height, packet: Packet, ack: Vec<u8> },
 		/// emit acknowledgement packet event
-		AcknowledgePacket(Height, Packet),
+		AcknowledgePacket { height: Height, packet: Packet },
 		/// emit timeout packet event
-		TimeoutPacket(Height, Packet),
+		TimeoutPacket { height: Height, packet: Packet },
 		/// emit timeout on close packet event
-		TimeoutOnClosePacket(Height, Packet),
+		TimeoutOnClosePacket { height: Height, packet: Packet },
 		/// emit empty event
 		Empty(Vec<u8>),
 		/// emit chain error event
 		ChainError(Vec<u8>),
 		/// emit escrow token
-		EscrowToken(T::AccountId, T::AccountId, BalanceOf<T>),
+		EscrowToken { sender: T::AccountId, escrow_account: T::AccountId, amount: BalanceOf<T> },
 		/// emit burn token
-		BurnToken(T::AssetId, T::AccountId, T::AssetBalance),
+		BurnToken { token_id: T::AssetId, sender: T::AccountId, amount: T::AssetBalance },
 		/// unescrow token
-		UnEscrowToken(T::AccountId, T::AccountId, BalanceOf<T>),
+		UnEscrowToken { escrow_account: T::AccountId, receive: T::AccountId, amount: BalanceOf<T> },
 		/// mint token
-		MintToken(T::AssetId, T::AccountId, T::AssetBalance),
+		MintToken { token_id: T::AssetId, receive: T::AccountId, amount: T::AssetBalance },
 		/// App Module
 		AppModule,
 	}
