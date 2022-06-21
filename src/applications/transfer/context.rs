@@ -1,4 +1,5 @@
 use crate::{context::Context, *};
+use crate::utils::get_channel_escrow_address;
 
 use ibc::{
 	applications::transfer::{
@@ -51,18 +52,22 @@ impl<T: Config> Ics20Reader for Context<T> {
 
 	fn get_channel_escrow_address(
 		&self,
-		_port_id: &PortId,
-		_channel_id: IbcChannelId,
+		port_id: &PortId,
+		channel_id: IbcChannelId,
 	) -> Result<<Self as Ics20Reader>::AccountId, ICS20Error> {
-		todo!()
+		get_channel_escrow_address(port_id, channel_id)?
+			.try_into()
+			.map_err(|_| ICS20Error::parse_account_failure())
 	}
 
+	// TODO
 	fn is_send_enabled(&self) -> bool {
-		todo!()
+		true
 	}
 
+	// TODO
 	fn is_receive_enabled(&self) -> bool {
-		todo!()
+		true
 	}
 
 	fn denom_hash_string(&self, _denom: &PrefixedDenom) -> Option<String> {

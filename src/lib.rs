@@ -328,18 +328,18 @@ pub mod pallet {
 		PalletId(*b"defaultd").into_account()
 	}
 
-	#[pallet::storage]
-	// port, channel -> escrow address
-	pub type EscrowAddresses<T: Config> = StorageDoubleMap<
-		_,
-		Blake2_128Concat,
-		PortId,
-		Blake2_128Concat,
-		ChannelId,
-		T::AccountId,
-		ValueQuery,
-		DefaultAccountId<T>,
-	>;
+	// #[pallet::storage]
+	// // port, channel -> escrow address
+	// pub type EscrowAddresses<T: Config> = StorageDoubleMap<
+	// 	_,
+	// 	Blake2_128Concat,
+	// 	PortId,
+	// 	Blake2_128Concat,
+	// 	ChannelId,
+	// 	T::AccountId,
+	// 	ValueQuery,
+	// 	DefaultAccountId<T>,
+	// >;
 
 	#[pallet::storage]
 	/// key-value asserid with asset name
