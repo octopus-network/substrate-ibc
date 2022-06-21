@@ -4,31 +4,45 @@ use ibc::{
 	applications::transfer::{
 		context::{BankKeeper, Ics20Context, Ics20Keeper, Ics20Reader},
 		error::Error as ICS20Error,
-		PrefixedCoin, PrefixedDenom,
-		PORT_ID_STR
+		PrefixedCoin, PrefixedDenom, PORT_ID_STR,
 	},
 	core::ics24_host::identifier::{ChannelId as IbcChannelId, PortId},
 	signer::Signer,
 };
+use sp_runtime::{
+	traits::{IdentifyAccount, Verify},
+	MultiSignature,
+};
+type AccountId = <<MultiSignature as Verify>::Signer as IdentifyAccount>::AccountId;
 
-pub struct MocKAccountId;
+#[derive(Clone)]
+pub struct IbcAccount(AccountId);
 
-impl From<Signer> for MocKAccountId {
-	fn from(_sig: Signer) -> Self {
-		MocKAccountId
+impl IdentifyAccount for IbcAccount {
+	type AccountId = AccountId;
+	fn into_account(self) -> Self::AccountId {
+		self.0
+	}
+}
+
+impl TryFrom<Signer> for IbcAccount {
+	type Error = &'static str;
+	// TODO
+	fn try_from(_: Signer) -> Result<Self, Self::Error> {
+		Ok(IbcAccount(AccountId::new([0u8; 32])))
 	}
 }
 
 impl<T: Config> Ics20Context for Context<T> {
-	type AccountId = MocKAccountId; // MOCK
+	type AccountId = IbcAccount;
 }
 
 impl<T: Config> Ics20Keeper for Context<T> {
-	type AccountId = MocKAccountId;
+	type AccountId = IbcAccount;
 }
 
 impl<T: Config> Ics20Reader for Context<T> {
-	type AccountId = MocKAccountId;
+	type AccountId = IbcAccount;
 
 	fn get_port(&self) -> Result<PortId, ICS20Error> {
 		PortId::from_str(PORT_ID_STR)
@@ -57,7 +71,7 @@ impl<T: Config> Ics20Reader for Context<T> {
 }
 
 impl<T: Config> BankKeeper for Context<T> {
-	type AccountId = MocKAccountId;
+	type AccountId = IbcAccount;
 
 	fn send_coins(
 		&mut self,
@@ -75,7 +89,7 @@ impl<T: Config> BankKeeper for Context<T> {
 	) -> Result<(), ICS20Error> {
 		todo!()
 	}
-	
+
 	fn burn_coins(
 		&mut self,
 		_account: &Self::AccountId,
