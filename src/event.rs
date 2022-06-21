@@ -1,6 +1,5 @@
 pub mod primitive {
-	use crate::{alloc::string::ToString, from_channel_id_to_vec};
-	use alloc::string::String;
+	use alloc::string::{String, ToString};
 	use ibc::{
 		clients::ics10_grandpa::{
 			client_state::ClientState as IbcClientState,
@@ -74,7 +73,7 @@ pub mod primitive {
 
 	impl From<IbcChannelId> for ChannelId {
 		fn from(value: IbcChannelId) -> Self {
-			let value = from_channel_id_to_vec(value);
+			let value = value.to_string().as_bytes().to_vec();
 			Self(value)
 		}
 	}

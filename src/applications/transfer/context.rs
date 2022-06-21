@@ -3,8 +3,9 @@ use crate::{context::Context, *};
 use ibc::{
 	applications::transfer::{
 		context::{BankKeeper, Ics20Context, Ics20Keeper, Ics20Reader},
-		error::Error as Ics20Error,
+		error::Error as ICS20Error,
 		PrefixedCoin, PrefixedDenom,
+		PORT_ID_STR
 	},
 	core::ics24_host::identifier::{ChannelId as IbcChannelId, PortId},
 	signer::Signer,
@@ -29,32 +30,27 @@ impl<T: Config> Ics20Keeper for Context<T> {
 impl<T: Config> Ics20Reader for Context<T> {
 	type AccountId = MocKAccountId;
 
-	/// get_port returns the portID for the transfer module.
-	fn get_port(&self) -> Result<PortId, Ics20Error> {
-		todo!()
+	fn get_port(&self) -> Result<PortId, ICS20Error> {
+		PortId::from_str(PORT_ID_STR)
+			.map_err(|e| ICS20Error::invalid_port_id(PORT_ID_STR.to_string(), e))
 	}
 
-	/// Returns the escrow account id for a port and channel combination
 	fn get_channel_escrow_address(
 		&self,
 		_port_id: &PortId,
 		_channel_id: IbcChannelId,
-	) -> Result<<Self as Ics20Reader>::AccountId, Ics20Error> {
+	) -> Result<<Self as Ics20Reader>::AccountId, ICS20Error> {
 		todo!()
 	}
 
-	/// Returns true iff send is enabled.
 	fn is_send_enabled(&self) -> bool {
 		todo!()
 	}
 
-	/// Returns true iff receive is enabled.
 	fn is_receive_enabled(&self) -> bool {
 		todo!()
 	}
 
-	/// Returns a hash of the prefixed denom.
-	/// Implement only if the host chain supports hashed denominations.
 	fn denom_hash_string(&self, _denom: &PrefixedDenom) -> Option<String> {
 		todo!()
 	}
@@ -63,31 +59,28 @@ impl<T: Config> Ics20Reader for Context<T> {
 impl<T: Config> BankKeeper for Context<T> {
 	type AccountId = MocKAccountId;
 
-	/// This function should enable sending ibc fungible tokens from one account to another
 	fn send_coins(
 		&mut self,
 		_from: &Self::AccountId,
 		_to: &Self::AccountId,
 		_amt: &PrefixedCoin,
-	) -> Result<(), Ics20Error> {
+	) -> Result<(), ICS20Error> {
 		todo!()
 	}
 
-	/// This function to enable minting ibc tokens to a user account
 	fn mint_coins(
 		&mut self,
 		_account: &Self::AccountId,
 		_amt: &PrefixedCoin,
-	) -> Result<(), Ics20Error> {
+	) -> Result<(), ICS20Error> {
 		todo!()
 	}
-
-	/// This function should enable burning of minted tokens in a user account
+	
 	fn burn_coins(
 		&mut self,
 		_account: &Self::AccountId,
 		_amt: &PrefixedCoin,
-	) -> Result<(), Ics20Error> {
+	) -> Result<(), ICS20Error> {
 		todo!()
 	}
 }

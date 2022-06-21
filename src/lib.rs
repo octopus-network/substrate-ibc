@@ -37,7 +37,7 @@ use ibc::{
 	clients::ics10_grandpa::{client_state::ClientState, help},
 	core::{
 		ics02_client::{client_state::AnyClientState, height},
-		ics24_host::identifier::{self, ChannelId as IbcChannelId},
+		ics24_host::identifier,
 	},
 	timestamp,
 };
@@ -149,19 +149,12 @@ pub mod pallet {
 
 	#[pallet::storage]
 	/// (client_id, height) => timestamp
-	pub type ClientProcessedTimes<T: Config> = StorageDoubleMap<
-		_,
-		Blake2_128Concat,
-		Vec<u8>,
-		Blake2_128Concat,
-		Vec<u8>,
-		Vec<u8>,
-		ValueQuery,
-	>;
+	pub type ClientUpdateTime<T: Config> =
+		StorageDoubleMap<_, Blake2_128Concat, Vec<u8>, Blake2_128Concat, Vec<u8>, u64, ValueQuery>;
 
 	#[pallet::storage]
 	/// (client_id, height) => host_height
-	pub type ClientProcessedHeights<T: Config> = StorageDoubleMap<
+	pub type ClientUpdateHeight<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
 		Vec<u8>,
@@ -257,9 +250,9 @@ pub mod pallet {
 	pub type ChannelCounter<T: Config> = StorageValue<_, u64, ValueQuery>;
 
 	#[pallet::storage]
-	/// client_id => connection_id
+	/// ClientId => Vec<ConnectionId>
 	pub type ConnectionClient<T: Config> =
-		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
+		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<Vec<u8>>, ValueQuery>;
 
 	#[pallet::storage]
 	/// (port_id, channel_id, sequence) => receipt
@@ -623,7 +616,7 @@ pub mod pallet {
 			sp_tracing::Level::TRACE, "deliver";
 			{
 				let _sender = ensure_signed(origin)?;
-				let mut ctx = Context::<T>::new();
+				let mut ctx = Context::<T>::default();
 
 				let messages: Vec<ibc_proto::google::protobuf::Any> = messages
 					.into_iter()
@@ -1008,6 +1001,6 @@ impl<T: Config> AssetIdAndNameProvider<T::AssetId> for Pallet<T> {
 	}
 }
 
-pub fn from_channel_id_to_vec(value: IbcChannelId) -> Vec<u8> {
-	format!("{}", value).as_bytes().to_vec()
-}
+// pub fn from_channel_id_to_vec(value: IbcChannelId) -> Vec<u8> {
+// 	format!("{}", value).as_bytes().to_vec()
+// }
