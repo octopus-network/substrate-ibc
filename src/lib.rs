@@ -63,10 +63,20 @@ use tendermint_proto::Protobuf;
 
 pub mod context;
 pub mod event;
-pub mod ibc_app;
-pub mod ibc_core;
 pub mod ibc_help;
 pub mod utils;
+
+// ibc protocol implement
+pub mod applications;
+pub mod clients;
+pub mod core;
+pub mod relayer;
+#[cfg(test)]
+mod mock;
+#[cfg(test)]
+mod tests;
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
 
 use crate::{
 	context::Context,
@@ -97,14 +107,7 @@ impl From<ibc_proto::google::protobuf::Any> for Any {
 	}
 }
 
-#[cfg(test)]
-mod mock;
 
-#[cfg(test)]
-mod tests;
-
-#[cfg(feature = "runtime-benchmarks")]
-mod benchmarking;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -418,16 +421,16 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		/// emit new block event
+		/// New block
 		NewBlock { height: Height },
-		/// emit create client event
+		/// Client Created
 		CreateClient {
 			height: Height,
 			client_id: ClientId,
 			client_type: ClientType,
 			consensus_height: Height,
 		},
-		/// emit update client event
+		/// Client updated
 		UpdateClient {
 			height: Height,
 			client_id: ClientId,
@@ -436,21 +439,21 @@ pub mod pallet {
 		},
 		/// emit update client state event
 		UpdateClientState { height: Height, client_state: EventClientState },
-		/// emit upgrade client event
+		/// Client upgraded
 		UpgradeClient {
 			height: Height,
 			client_id: ClientId,
 			client_type: ClientType,
 			consensus_height: Height,
 		},
-		/// emit client misbehaviour event
+		/// Client misbehaviour
 		ClientMisbehaviour {
 			height: Height,
 			client_id: ClientId,
 			client_type: ClientType,
 			consensus_height: Height,
 		},
-		/// emit open init connection event
+		/// Connection open init
 		OpenInitConnection {
 			height: Height,
 			connection_id: Option<ConnectionId>,
@@ -458,7 +461,7 @@ pub mod pallet {
 			counterparty_connection_id: Option<ConnectionId>,
 			counterparty_client_id: ClientId,
 		},
-		/// emit open try connection event
+		/// Connection open try
 		OpenTryConnection {
 			height: Height,
 			connection_id: Option<ConnectionId>,
@@ -466,7 +469,7 @@ pub mod pallet {
 			counterparty_connection_id: Option<ConnectionId>,
 			counterparty_client_id: ClientId,
 		},
-		/// emit open ack connection event
+		/// Connection open acknowledgement
 		OpenAckConnection {
 			height: Height,
 			connection_id: Option<ConnectionId>,
@@ -474,7 +477,7 @@ pub mod pallet {
 			counterparty_connection_id: Option<ConnectionId>,
 			counterparty_client_id: ClientId,
 		},
-		/// emit open confirm connection event
+		/// Connection open confirm
 		OpenConfirmConnection {
 			height: Height,
 			connection_id: Option<ConnectionId>,
@@ -482,7 +485,7 @@ pub mod pallet {
 			counterparty_connection_id: Option<ConnectionId>,
 			counterparty_client_id: ClientId,
 		},
-		/// emit open init channel event
+		/// Channel open init
 		OpenInitChannel {
 			height: Height,
 			port_id: PortId,
@@ -491,7 +494,7 @@ pub mod pallet {
 			counterparty_port_id: PortId,
 			counterparty_channel_id: Option<ChannelId>,
 		},
-		/// emit open try channel event
+		/// Channel open try
 		OpenTryChannel {
 			height: Height,
 			port_id: PortId,
@@ -500,7 +503,7 @@ pub mod pallet {
 			counterparty_port_id: PortId,
 			counterparty_channel_id: Option<ChannelId>,
 		},
-		/// emit open ack channel event
+		/// Channel open acknowledgement
 		OpenAckChannel {
 			height: Height,
 			port_id: PortId,
@@ -509,7 +512,7 @@ pub mod pallet {
 			counterparty_port_id: PortId,
 			counterparty_channel_id: Option<ChannelId>,
 		},
-		/// emit open confirm channel event
+		/// Channel open confirm
 		OpenConfirmChannel {
 			height: Height,
 			port_id: PortId,
@@ -518,7 +521,7 @@ pub mod pallet {
 			counterparty_port_id: PortId,
 			counterparty_channel_id: Option<ChannelId>,
 		},
-		/// emit close init channel event
+		/// Channel close init
 		CloseInitChannel {
 			height: Height,
 			port_id: PortId,
@@ -527,7 +530,7 @@ pub mod pallet {
 			counterparty_port_id: PortId,
 			counterparty_channel_id: Option<ChannelId>,
 		},
-		/// emit close confirm channel event
+		/// Channel close confirm
 		CloseConfirmChannel {
 			height: Height,
 			port_id: PortId,
@@ -536,29 +539,29 @@ pub mod pallet {
 			counterparty_port_id: PortId,
 			counterparty_channel_id: Option<ChannelId>,
 		},
-		/// emit send packet event
+		/// Send packet
 		SendPacket { height: Height, packet: Packet },
-		/// emit receive packet
+		/// Receive packet
 		ReceivePacket { height: Height, packet: Packet },
-		/// emit write acknowledgement packet event
+		/// WriteAcknowledgement packet
 		WriteAcknowledgement { height: Height, packet: Packet, ack: Vec<u8> },
-		/// emit acknowledgement packet event
+		/// Acknowledgements packet
 		AcknowledgePacket { height: Height, packet: Packet },
-		/// emit timeout packet event
+		/// Timeout packet
 		TimeoutPacket { height: Height, packet: Packet },
-		/// emit timeout on close packet event
+		/// TimoutOnClose packet
 		TimeoutOnClosePacket { height: Height, packet: Packet },
-		/// emit empty event
+		/// Empty
 		Empty(Vec<u8>),
-		/// emit chain error event
+		/// Chain Error
 		ChainError(Vec<u8>),
-		/// emit escrow token
+		/// Escrow token
 		EscrowToken { sender: T::AccountId, escrow_account: T::AccountId, amount: BalanceOf<T> },
-		/// emit burn token
+		/// Burn token
 		BurnToken { token_id: T::AssetId, sender: T::AccountId, amount: T::AssetBalance },
-		/// unescrow token
+		/// Unescrow token
 		UnEscrowToken { escrow_account: T::AccountId, receive: T::AccountId, amount: BalanceOf<T> },
-		/// mint token
+		/// Mint token
 		MintToken { token_id: T::AssetId, receive: T::AccountId, amount: T::AssetBalance },
 		/// App Module
 		AppModule,
