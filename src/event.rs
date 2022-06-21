@@ -29,8 +29,7 @@ pub mod primitive {
 
 	use sp_runtime::RuntimeDebug;
 
-	use flex_error::{define_error, DisplayOnly, TraceError};
-	use tendermint_proto::Error as TendermintError;
+	use flex_error::{define_error, DisplayOnly};
 
 	define_error! {
 		#[derive(Debug, PartialEq, Eq)]
@@ -119,6 +118,8 @@ pub mod primitive {
 	pub enum ClientType {
 		Tendermint,
 		Grandpa,
+		#[cfg(any(test, feature = "mocks"))]
+		Mock = 9999,
 	}
 
 	impl From<IbcClientType> for ClientType {
@@ -126,7 +127,8 @@ pub mod primitive {
 			match value {
 				IbcClientType::Tendermint => ClientType::Tendermint,
 				IbcClientType::Grandpa => ClientType::Grandpa,
-				_ => unreachable!(),
+				#[cfg(any(test, feature = "mocks"))]
+				IbcClientType::Mock => ClientType::Mock,
 			}
 		}
 	}
@@ -136,7 +138,8 @@ pub mod primitive {
 			match self {
 				ClientType::Tendermint => IbcClientType::Tendermint,
 				ClientType::Grandpa => IbcClientType::Grandpa,
-				_ => unreachable!(),
+				#[cfg(any(test, feature = "mocks"))]
+				ClientType::Mock => IbcClientType::Mock,
 			}
 		}
 	}

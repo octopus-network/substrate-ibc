@@ -1,51 +1,5 @@
 use crate::*;
-use ibc::{
-	core::{
-		ics02_client::msgs::ClientMsg,
-		ics03_connection::msgs::ConnectionMsg,
-		ics04_channel::msgs::{ChannelMsg, PacketMsg},
-		ics26_routing::{handler, msgs::Ics26Envelope},
-	},
-	events::IbcEvent,
-	signer::Signer,
-};
-
-pub fn get_signer<T: Config>(
-	message: ibc_proto::google::protobuf::Any,
-) -> Result<Signer, DispatchError> {
-	let decode_message = handler::decode(message).map_err(|_| Error::<T>::InvalidDecode)?;
-	let signer = match decode_message {
-		Ics26Envelope::Ics2Msg(value) => match value {
-			ClientMsg::CreateClient(val) => val.signer,
-			ClientMsg::UpdateClient(val) => val.signer,
-			ClientMsg::Misbehaviour(val) => val.signer,
-			ClientMsg::UpgradeClient(val) => val.signer,
-		},
-		Ics26Envelope::Ics3Msg(value) => match value {
-			ConnectionMsg::ConnectionOpenInit(val) => val.signer,
-			ConnectionMsg::ConnectionOpenTry(val) => val.signer,
-			ConnectionMsg::ConnectionOpenAck(val) => val.signer,
-			ConnectionMsg::ConnectionOpenConfirm(val) => val.signer,
-		},
-		Ics26Envelope::Ics4ChannelMsg(value) => match value {
-			ChannelMsg::ChannelOpenInit(val) => val.signer,
-			ChannelMsg::ChannelOpenTry(val) => val.signer,
-			ChannelMsg::ChannelOpenAck(val) => val.signer,
-			ChannelMsg::ChannelOpenConfirm(val) => val.signer,
-			ChannelMsg::ChannelCloseInit(val) => val.signer,
-			ChannelMsg::ChannelCloseConfirm(val) => val.signer,
-		},
-		Ics26Envelope::Ics4PacketMsg(value) => match value {
-			PacketMsg::RecvPacket(val) => val.signer,
-			PacketMsg::AckPacket(val) => val.signer,
-			PacketMsg::ToPacket(val) => val.signer,
-			PacketMsg::ToClosePacket(val) => val.signer,
-		},
-		// Ics26Envelope::Ics20Msg(value) => value.sender,
-	};
-
-	Ok(signer)
-}
+use ibc::events::IbcEvent;
 
 pub fn event_from_ibc_event<T: Config>(value: IbcEvent) -> Event<T> {
 	match value {
@@ -75,12 +29,6 @@ pub fn event_from_ibc_event<T: Config>(value: IbcEvent) -> Event<T> {
 			}
 		},
 		// Upgrade client events are not currently being used
-		// UpgradeClient(
-		// 	height: Height,
-		// 	client_id: ClientId,
-		// 	client_type: ClientType,
-		// 	consensus_height: Height,
-		// )
 		IbcEvent::UpgradeClient(value) => {
 			let height = value.0.height;
 			let client_id = value.0.client_id;
@@ -301,7 +249,6 @@ pub fn event_from_ibc_event<T: Config>(value: IbcEvent) -> Event<T> {
 			let packet = value.packet;
 			Event::TimeoutOnClosePacket { height: height.into(), packet: packet.into() }
 		},
-		// TODO
 		IbcEvent::AppModule(_) => Event::AppModule,
 		IbcEvent::Empty(value) => Event::Empty(value.as_bytes().to_vec()),
 		IbcEvent::ChainError(value) => Event::ChainError(value.as_bytes().to_vec()),

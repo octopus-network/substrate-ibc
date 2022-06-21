@@ -1,13 +1,11 @@
 use crate::*;
 use alloc::{
-	borrow::{Borrow, Cow, ToOwned},
+	borrow::{Borrow, ToOwned},
 	collections::BTreeMap,
 	sync::Arc,
 };
-use scale_info::TypeInfo;
 
 use ibc::{
-	applications::transfer::{context::Ics20Context, error::Error as ICS20Error},
 	core::{
 		ics04_channel::{
 			channel::{Counterparty, Order},
@@ -16,9 +14,9 @@ use ibc::{
 			packet::Packet as IbcPacket,
 			Version,
 		},
-		ics24_host::identifier::{ChannelId, ChannelId as IbcChannelId, ConnectionId, PortId},
+		ics24_host::identifier::{ChannelId as IbcChannelId, ConnectionId, PortId},
 		ics26_routing::context::{
-			Ics26Context, Module, ModuleId, ModuleOutputBuilder, OnRecvPacketAck, RouterBuilder,
+			Module, ModuleId, ModuleOutputBuilder, OnRecvPacketAck, RouterBuilder,
 		},
 	},
 	signer::Signer,
