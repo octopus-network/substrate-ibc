@@ -1355,10 +1355,10 @@ pub mod pallet {
 						revision_height: client_state.block_number as u64,
 					};
 					let event_client_state = EventClientState::from(client_state);
-					Self::deposit_event(Event::<T>::UpdateClientState(
-						event_height,
-						event_client_state,
-					));
+					Self::deposit_event(Event::<T>::UpdateClientState {
+						height: event_height,
+						client_state: event_client_state,
+					});
 				},
 				Err(e) => {
 					log::error!(
