@@ -41,7 +41,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 			);
 			Ok(connection_end)
 		} else {
-			trace!(
+			error!(
 				target: LOG_TARGET,
 				"in connection : [connection_end] >> read connection end returns None"
 			);
@@ -65,7 +65,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 			);
 			Ok(any_client_state)
 		} else {
-			trace!(
+			error!(
 				target: LOG_TARGET,
 				"in connection : [client_state] >> read client_state is None"
 			);
@@ -98,7 +98,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 		let block_number = format!("{:?}", block_number);
 		let revision_height = block_number.parse().unwrap_or_default();
 		let revision_number = 0; //TODO: may be in the future to fix
-		log::trace!(
+		trace!(
 			"in connection : [host_oldest_height] >> Host oldest height = {:?}",
 			revision_height
 		);
@@ -109,7 +109,12 @@ impl<T: Config> ConnectionReader for Context<T> {
 	fn commitment_prefix(&self) -> CommitmentPrefix {
 		trace!(target: LOG_TARGET, "in connection : [commitment_prefix]");
 
-		"ibc".as_bytes().to_vec().try_into().unwrap_or_default()
+		// If this conversion fails it means the runtime was not configured well
+		T::CONNECTION_PREFIX
+			.to_vec()
+			.try_into()
+			.map_err(|_| panic!("Connection prefix supplied in pallet runtime config is invalid"))
+			.unwrap()
 	}
 
 	/// Returns the ConsensusState that the given client stores at a specific height.
@@ -125,7 +130,6 @@ impl<T: Config> ConnectionReader for Context<T> {
 			height
 		);
 
-		// ClientReader::consensus_state(self, client_id, height)
 		let height = height.encode_vec().map_err(ICS03Error::invalid_encode)?;
 		let value = <ConsensusStates<T>>::get(client_id.as_bytes());
 
@@ -137,7 +141,6 @@ impl<T: Config> ConnectionReader for Context<T> {
 			}
 		}
 
-		// Err(ICS03Error::missing_consensus_height())
 		Ok(AnyConsensusState::Grandpa(
 			ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
 		))
@@ -191,7 +194,6 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		let encode_connection_end =
 			connection_end.encode_vec().map_err(ICS03Error::invalid_encode)?;
 
-		// store connection end
 		<Connections<T>>::insert(encode_connection_id, encode_connection_end);
 
 		Ok(())
@@ -211,6 +213,7 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 
 		let encode_connection_id = connection_id.as_bytes().to_vec();
 		let encode_client_id = client_id.as_bytes().to_vec();
+
 		<ConnectionClient<T>>::try_mutate::<_, _, ICS03Error, _>(encode_client_id, |value| {
 			value.push(encode_connection_id);
 			Ok(())

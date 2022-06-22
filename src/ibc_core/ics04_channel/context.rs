@@ -114,6 +114,10 @@ impl<T: Config> ChannelReader for Context<T> {
 			);
 			Ok(vectors_port_id_and_channel_id)
 		} else {
+			error!(
+				target: LOG_TARGET,
+				"in channel : [connection_channels] >> read get  connection_channels return None"
+			);
 			Err(ICS04Error::connection_not_open(conn_id.clone()))
 		}
 	}
@@ -126,15 +130,15 @@ impl<T: Config> ChannelReader for Context<T> {
 		let encode_client_id = client_id.as_bytes();
 		let encode_any_client_state = <ClientStates<T>>::get(encode_client_id);
 
-		let any_consensus_state = AnyClientState::decode_vec(&*encode_any_client_state)
+		let any_client_state = AnyClientState::decode_vec(&*encode_any_client_state)
 			.map_err(|_| ICS04Error::frozen_client(client_id.clone()))?;
 
 		trace!(
 			target: LOG_TARGET,
 			"in channel : [client_state] >> Any client state: {:?}",
-			any_consensus_state
+			any_client_state
 		);
-		Ok(any_consensus_state)
+		Ok(any_client_state)
 	}
 
 	/// Returns the AnyConsensusState for the given
@@ -166,7 +170,7 @@ impl<T: Config> ChannelReader for Context<T> {
 				return Ok(any_consensus_state)
 			}
 		}
-		trace!(
+		error!(
 			target: LOG_TARGET,
 			"in channel : [client_consensus_state] >> read about client_id consensus_state error"
 		);
@@ -288,7 +292,7 @@ impl<T: Config> ChannelReader for Context<T> {
 			);
 			Ok(packet_commitment)
 		} else {
-			trace!(
+			error!(
 				target: LOG_TARGET,
 				"in channel : [get_packet_commitment] >> read get packet commitment return None"
 			);
@@ -495,7 +499,7 @@ impl<T: Config> ChannelReader for Context<T> {
 	fn channel_counter(&self) -> Result<u64, ICS04Error> {
 		trace!(target: LOG_TARGET, "in channel: [channel_counter]");
 
-		Ok(<Pallet<T> as Store>::ChannelCounter::get())
+		Ok(ChannelCounter::<T>::get())
 	}
 
 	/// Returns the maximum expected tiome per block.
@@ -527,7 +531,6 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		let encode_sequence = u64::from(key.2);
 		let encode_packet_commitment = commitment.into_vec();
 
-		// insert packet commitment key-value
 		<PacketCommitment<T>>::insert(
 			(encode_port_id.to_vec(), encode_channel_id.to_vec(), encode_sequence),
 			encode_packet_commitment,
@@ -552,7 +555,6 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		let encode_channel_id = key.1.to_string().as_bytes().to_vec();
 		let encode_sequence = u64::from(key.2);
 
-		// delete packet commitment
 		<PacketCommitment<T>>::remove((&encode_port_id, &encode_channel_id, encode_sequence));
 
 		Ok(())
@@ -606,11 +608,11 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		let encode_port_id = key.0.as_bytes().to_vec();
 		let encode_channel_id = key.1.to_string().as_bytes().to_vec();
 		let encode_sequence = u64::from(key.2);
+		let encode_packet_commitment = ack_commitment.into_vec();
 
-		// store packet acknowledgement key-value
 		<Acknowledgements<T>>::insert(
 			(&encode_port_id, &encode_channel_id, encode_sequence),
-			ack_commitment.into_vec(),
+			encode_packet_commitment,
 		);
 
 		Ok(())
@@ -633,7 +635,6 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		let encode_channel_id = key.1.to_string().as_bytes().to_vec();
 		let encode_sequence = u64::from(key.2);
 
-		// remove acknowledgements
 		<Acknowledgements<T>>::remove((&encode_port_id, &encode_channel_id, encode_sequence));
 
 		Ok(())
@@ -661,7 +662,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 				target: LOG_TARGET,
 				"in channel: [store_connection_channels] >> insert port_channel_id"
 			);
-			// if connection_identifier exist
+			// if connection_id exist
 			<ChannelsConnection<T>>::try_mutate(
 				&encode_connection_id,
 				|value| -> Result<(), ICS04Error> {
@@ -671,8 +672,8 @@ impl<T: Config> ChannelKeeper for Context<T> {
 			)
 			.map_err(|_| ICS04Error::invalid_store_channels_connection())
 		} else {
-			// if connection_identifier no exist
-			trace!(
+			// if connection_id no exist
+			error!(
 				target: LOG_TARGET,
 				"in channel: [store_connection_channels] >> init ChannelsConnection"
 			);
@@ -702,7 +703,6 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		let encode_channel_end =
 			channel_end.encode_vec().map_err(|_| ICS04Error::invalid_encode())?;
 
-		// store channels key-value
 		<Channels<T>>::insert(&encode_port_id, &encode_channel_id, encode_channel_end);
 
 		Ok(())
@@ -714,7 +714,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		seq: Sequence,
 	) -> Result<(), ICS04Error> {
 		trace!(
-			target:LOG_TARGET,
+			target: LOG_TARGET,
 			"in channel: [store_next_sequence_send] >> port_id = {:?}, channel_id = {:?}, sequence = {:?}",
 			port_channel_id.0, port_channel_id.1, seq
 		);
@@ -734,7 +734,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		seq: Sequence,
 	) -> Result<(), ICS04Error> {
 		trace!(
-			target:LOG_TARGET,
+			target: LOG_TARGET,
 			"in channel: [store_next_sequence_recv] >> port_id = {:?}, channel_id = {:?}, sequence = {:?}",
 			port_channel_id.0, port_channel_id.1, seq
 		);
@@ -754,7 +754,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		seq: Sequence,
 	) -> Result<(), ICS04Error> {
 		trace!(
-			target:LOG_TARGET,
+			target: LOG_TARGET,
 			"in channel: [store_next_sequence_ack] >> port_id = {:?}, channel_id = {:?}, sequence = {:?}",
 			port_channel_id.0, port_channel_id.1, seq
 		);

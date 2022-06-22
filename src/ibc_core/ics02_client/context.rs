@@ -42,7 +42,7 @@ impl<T: Config> ClientReader for Context<T> {
 			);
 			Ok(client_type)
 		} else {
-			trace!(target: LOG_TARGET, "in client : [client_type] >> read client_type is None");
+			error!(target: LOG_TARGET, "in client : [client_type] >> read client_type is None");
 			Err(ICS02Error::client_not_found(client_id.clone()))
 		}
 	}
@@ -63,7 +63,7 @@ impl<T: Config> ClientReader for Context<T> {
 
 			Ok(any_client_state)
 		} else {
-			trace!(
+			error!(
 				target: LOG_TARGET,
 				"in client : [client_state] >> read any client state is None"
 			);
@@ -269,7 +269,9 @@ impl<T: Config> ClientKeeper for Context<T> {
 
 		let encode_client_id = client_id.as_bytes();
 		let encode_client_type = client_type.as_str().as_bytes();
+
 		<Clients<T>>::insert(encode_client_id, encode_client_type);
+
 		Ok(())
 	}
 
@@ -288,7 +290,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 
 		let encode_client_type = client_id.as_bytes();
 		let encode_client_state = client_state.encode_vec().map_err(ICS02Error::invalid_encode)?;
-		// store client states key-value
+
 		<ClientStates<T>>::insert(encode_client_type, encode_client_state);
 
 		Ok(())
@@ -362,6 +364,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 		let encode_client_id = client_id.as_bytes();
 		let encode_height = height.encode_vec().map_err(ICS02Error::invalid_encode)?;
 		let timestamp = timestamp.nanoseconds();
+
 		<ClientUpdateTime<T>>::insert(encode_client_id, encode_height, timestamp);
 
 		Ok(())
@@ -388,6 +391,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 		let encode_client_id = client_id.as_bytes();
 		let encode_height = height.encode_vec().map_err(ICS02Error::invalid_encode)?;
 		let encode_host_height = host_height.encode_vec().map_err(ICS02Error::invalid_encode)?;
+
 		<ClientUpdateHeight<T>>::insert(encode_client_id, encode_height, encode_host_height);
 
 		Ok(())
