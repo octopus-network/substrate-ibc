@@ -19,38 +19,68 @@ use ibc::{
 	Height,
 };
 
+/// Defines the read-only part of ICS02 (client functions) context.
 impl<T: Config> ClientReader for Context<T> {
+
+	/// Read `ClientType` by `ClientId`.
 	fn client_type(&self, client_id: &ClientId) -> Result<ClientType, ICS02Error> {
-		trace!(target:"runtime::pallet-ibc","in client : [client_type] >> client_id = {:?}", client_id);
+		trace!(
+			target:"runtime::pallet-ibc",
+			"in client : [client_type] >> client_id = {:?}",
+			client_id
+		);
 
 		if <Clients<T>>::contains_key(client_id.as_bytes()) {
-			let data = <Clients<T>>::get(client_id.as_bytes());
-			let data = String::from_utf8(data).map_err(ICS02Error::invalid_from_utf8)?;
-			let client_type = ClientType::from_str(&data)
+			let encode_client_type = <Clients<T>>::get(client_id.as_bytes());
+			let string_client_type = String::from_utf8(encode_client_type).map_err(ICS02Error::invalid_from_utf8)?;
+			let client_type = ClientType::from_str(&string_client_type)
 				.map_err(|e| ICS02Error::unknown_client_type(e.to_string()))?;
-			trace!(target:"runtime::pallet-ibc","in client : [client_type] >> client_type = {:?}", client_type);
+
+			trace!(
+				target:"runtime::pallet-ibc",
+				"in client : [client_type] >> client_type = {:?}",
+				client_type
+			);
 			Ok(client_type)
 		} else {
-			trace!(target:"runtime::pallet-ibc","in client : [client_type] >> read client_type is None");
+			trace!(
+				target:"runtime::pallet-ibc",
+				"in client : [client_type] >> read client_type is None"
+			);
 			Err(ICS02Error::client_not_found(client_id.clone()))
 		}
 	}
 
+	/// Read `AnyClientState` by `ClientId`.
 	fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, ICS02Error> {
-		trace!(target:"runtime::pallet-ibc","in client : [client_state] >> client_id = {:?}", client_id);
+		trace!(
+			target:"runtime::pallet-ibc",
+			"in client : [client_state] >> client_id = {:?}",
+			client_id
+		);
 
 		if <ClientStates<T>>::contains_key(client_id.as_bytes()) {
-			let data = <ClientStates<T>>::get(client_id.as_bytes());
-			let result = AnyClientState::decode_vec(&*data).map_err(ICS02Error::invalid_decode)?;
-			trace!(target:"runtime::pallet-ibc","in client : [client_state] >> any client_state: {:?}", result);
+			let encode_client_state = <ClientStates<T>>::get(client_id.as_bytes());
+			let any_client_state = AnyClientState::decode_vec(&*encode_client_state).map_err(ICS02Error::invalid_decode)?;
+			trace!(
+				target:"runtime::pallet-ibc",
+				"in client : [client_state] >> any client_state: {:?}",
+				any_client_state
+			);
 
-			Ok(result)
+			Ok(any_client_state)
 		} else {
-			trace!(target:"runtime::pallet-ibc","in client : [client_state] >> read any client state is None");
+			trace!(
+				target:"runtime::pallet-ibc",
+				"in client : [client_state] >> read any client state is None"
+			);
 			Err(ICS02Error::client_not_found(client_id.clone()))
 		}
 	}
 
+	/// Retrieve the consensus state for give client ID at the specified height.
+	///
+	/// Returns an error if no such stat exists.
 	fn consensus_state(
 		&self,
 		client_id: &ClientId,
@@ -59,8 +89,7 @@ impl<T: Config> ClientReader for Context<T> {
 		trace!(
 			target:"runtime::pallet-ibc",
 			"in client : [consensus_state] >> client_id = {:?}, height = {:?}",
-			client_id,
-			height
+			client_id, height
 		);
 
 		let mut values = <ConsensusStates<T>>::get(client_id.as_bytes());
@@ -77,7 +106,8 @@ impl<T: Config> ClientReader for Context<T> {
 			if item_height == height {
 				let any_consensus_state =
 					AnyConsensusState::decode_vec(&*item.1).map_err(ICS02Error::invalid_decode)?;
-				trace!(target:"runtime::pallet-ibc",
+				trace!(
+					target:"runtime::pallet-ibc",
 					"in client : [consensus_state] >> any consensus state = {:?}",
 					any_consensus_state
 				);
@@ -88,12 +118,17 @@ impl<T: Config> ClientReader for Context<T> {
 		Err(ICS02Error::consensus_state_not_found(client_id.clone(), height))
 	}
 
+	/// Search for the lowest consensus state higher than `height`.
 	fn next_consensus_state(
 		&self,
 		client_id: &ClientId,
 		height: Height,
 	) -> Result<Option<AnyConsensusState>, ICS02Error> {
-		trace!(target:"runtime::pallet-ibc","in client : [next_consensus_state]");
+		trace!(
+			target:"runtime::pallet-ibc",
+			"in client : [next_consensus_state] >> client_id = {:?}, height = {:?}",
+			client_id, height
+		);
 
 		let mut values = <ConsensusStates<T>>::get(client_id.as_bytes());
 		values.sort_by(|(height_left, _), (height_right, _)| {
@@ -109,7 +144,8 @@ impl<T: Config> ClientReader for Context<T> {
 			if item_height < height {
 				let any_consensus_state =
 					AnyConsensusState::decode_vec(&*item.1).map_err(ICS02Error::invalid_decode)?;
-				trace!(target:"runtime::pallet-ibc",
+				trace!(
+					target:"runtime::pallet-ibc",
 					"in client : [consensus_state] >> any consensus state = {:?}",
 					any_consensus_state
 				);
@@ -122,12 +158,17 @@ impl<T: Config> ClientReader for Context<T> {
 		)))
 	}
 
+	/// Search for the highest consensus state lower than `height`.
 	fn prev_consensus_state(
 		&self,
 		client_id: &ClientId,
 		height: Height,
 	) -> Result<Option<AnyConsensusState>, ICS02Error> {
-		trace!(target:"runtime::pallet-ibc","in client : [next_consensus_state]");
+		trace!(
+			target:"runtime::pallet-ibc",
+			"in client : [next_consensus_state] >> client_id = {:?}, height = {:?}",
+			client_id, height
+		);
 
 		let mut values = <ConsensusStates<T>>::get(client_id.as_bytes());
 		values.sort_by(|(height_left, _), (height_right, _)| {
@@ -143,7 +184,8 @@ impl<T: Config> ClientReader for Context<T> {
 			if item_height > height {
 				let any_consensus_state =
 					AnyConsensusState::decode_vec(&*item.1).map_err(ICS02Error::invalid_decode)?;
-				trace!(target:"runtime::pallet-ibc",
+				trace!(
+					target:"runtime::pallet-ibc",
 					"in client : [consensus_state] >> any consensus state = {:?}",
 					any_consensus_state
 				);
@@ -156,6 +198,21 @@ impl<T: Config> ClientReader for Context<T> {
 		)))
 	}
 
+	/// Returns the current height of the local chain.
+	fn host_height(&self) -> Height {
+		trace!(target:"runtime::pallet-ibc","in client : [host_height]");
+
+		let revision_height = host_height::<T>();
+		trace!(
+			target:"runtime::pallet-ibc",
+			"in channel: [host_height] >> revision_height = {:?}",
+			revision_height
+		);
+		let revision_number = 0; // todo revision_number is zero.
+		Height::new(revision_number, revision_height)
+	}
+
+	/// Returns the current timestamp of the local chain.
 	fn host_timestamp(&self) -> Timestamp {
 		trace!(target:"runtime::pallet-ibc","in client: [host_timestamp]");
 
@@ -172,25 +229,20 @@ impl<T: Config> ClientReader for Context<T> {
 		ts.unwrap()
 	}
 
-	fn host_height(&self) -> Height {
-		trace!(target:"runtime::pallet-ibc","in client : [host_height]");
-		let revision_height = host_height::<T>();
-		trace!(target:"runtime::pallet-ibc",
-			"in channel: [host_height] >> revision_height = {:?}",
-			revision_height
-		);
-		let revision_number = 0; // todo revision_number is zero.
-		Height::new(revision_number, revision_height)
-	}
-
+	/// Returns the `ConsensusState` of the host (local) chain at specific height.
 	fn host_consensus_state(&self, _height: Height) -> Result<AnyConsensusState, ICS02Error> {
-		trace!(target:"runtime::pallet-ibc","in client : [consensus_state]");
+		trace!(
+			target:"runtime::pallet-ibc",
+			"in client : [consensus_state] >> height = {:?}",
+			_height
+		);
 
 		Ok(AnyConsensusState::Grandpa(
 			ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
 		))
 	}
 
+	/// Returns the pending `ConsensusState` of the host (local) chain.
 	fn pending_host_consensus_state(&self) -> Result<AnyConsensusState, ICS02Error> {
 		trace!(target:"runtime::pallet-ibc","in client: [pending_host_consensus_state]");
 
@@ -199,6 +251,9 @@ impl<T: Config> ClientReader for Context<T> {
 		))
 	}
 
+	/// Returns a natural number, counting how many clients have been created thus far.
+	/// The value of this counter should increase only via method
+	/// `ClientKepper::increase_client_counter`.
 	fn client_counter(&self) -> Result<u64, ICS02Error> {
 		trace!(target:"runtime::pallet-ibc","in client : [client_counter]");
 
@@ -206,7 +261,10 @@ impl<T: Config> ClientReader for Context<T> {
 	}
 }
 
+/// Defines the write-only part of ICS02 (client functions) context.
 impl<T: Config> ClientKeeper for Context<T> {
+
+	/// Called upon successful client creation.
 	fn store_client_type(
 		&mut self,
 		client_id: ClientId,
@@ -224,17 +282,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 		Ok(())
 	}
 
-	fn increase_client_counter(&mut self) {
-		trace!(target:"runtime::pallet-ibc","in client : [increase_client_counter]");
-
-		<ClientCounter<T>>::try_mutate(|val| -> Result<(), ICS02Error> {
-			let new = val.checked_add(1).ok_or_else(ICS02Error::invalid_increase_client_counter)?;
-			*val = new;
-			Ok(())
-		})
-		.expect("increase_client_counter error");
-	}
-
+	/// Called upon successful client creation and update
 	fn store_client_state(
 		&mut self,
 		client_id: ClientId,
@@ -262,6 +310,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 		})
 	}
 
+	/// Called upon successful client creation and update.
 	fn store_consensus_state(
 		&mut self,
 		client_id: ClientId,
@@ -292,6 +341,23 @@ impl<T: Config> ClientKeeper for Context<T> {
 		Ok(())
 	}
 
+	/// Called upon client creation.
+	/// Increases the counter which keeps track of how many clients have been created.
+	/// Should never fail.
+	fn increase_client_counter(&mut self) {
+		trace!(target:"runtime::pallet-ibc","in client : [increase_client_counter]");
+
+		<ClientCounter<T>>::try_mutate(|val| -> Result<(), ICS02Error> {
+			let new = val.checked_add(1).ok_or_else(ICS02Error::invalid_increase_client_counter)?;
+			*val = new;
+			Ok(())
+		})
+			.expect("increase_client_counter error");
+	}
+
+	/// Called upon successful client update.
+	/// Implementations are expected to use this to record specified time
+	/// as the time at which this update (or header) was processed.
 	fn store_update_time(
 		&mut self,
 		client_id: ClientId,
@@ -313,6 +379,9 @@ impl<T: Config> ClientKeeper for Context<T> {
 		Ok(())
 	}
 
+	/// Called upon successful client update.
+	/// Implementations are expected to use this to record the specified
+	/// height as the height at which this update (or header) was processed.
 	fn store_update_height(
 		&mut self,
 		client_id: ClientId,

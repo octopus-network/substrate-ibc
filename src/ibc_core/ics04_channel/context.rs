@@ -28,7 +28,10 @@ use ibc::{
 	Height,
 };
 
+/// A context supplying all the necessary read-only dependencies for
+/// processing any `ChannelMsg`.
 impl<T: Config> ChannelReader for Context<T> {
+	/// Returns the ChannelEnd for the given `port_id` and `channel_id`.
 	fn channel_end(&self, port_channel_id: &(PortId, ChannelId)) -> Result<ChannelEnd, ICS04Error> {
 		trace!(
 			target:"runtime::pallet-ibc",
@@ -54,6 +57,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		Ok(channel_end)
 	}
 
+	/// Returns the ConnectionState for the given identifier `connection_id`.
 	fn connection_end(&self, connection_id: &ConnectionId) -> Result<ConnectionEnd, ICS04Error> {
 		trace!(
 			target:"runtime::pallet-ibc",
@@ -75,7 +79,8 @@ impl<T: Config> ChannelReader for Context<T> {
 		Ok(connection_end)
 	}
 
-	/// Returns the `ChannelsConnection` for the given identifier `conn_id`.
+	/// Returns the vector tuple port_id and channel_id for the given
+	/// identifier `connection_id`.
 	fn connection_channels(
 		&self,
 		conn_id: &ConnectionId,
@@ -117,6 +122,8 @@ impl<T: Config> ChannelReader for Context<T> {
 		}
 	}
 
+	/// Returns the ClientState for the given identifier `client_id`.
+	/// Necessary dependency towards proof verification.
 	fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, ICS04Error> {
 		trace!(
 			target:"runtime::pallet-ibc",
@@ -138,6 +145,8 @@ impl<T: Config> ChannelReader for Context<T> {
 		Ok(any_consensus_state)
 	}
 
+	/// Returns the AnyConsensusState for the given
+	/// identifier `client_id` and at the specified `height`.
 	fn client_consensus_state(
 		&self,
 		client_id: &ClientId,
@@ -175,6 +184,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		))
 	}
 
+	/// Return `next send sequence ` by given identifier `port_id` and `channel_id`.
 	fn get_next_sequence_send(
 		&self,
 		port_channel_id: &(PortId, ChannelId),
@@ -198,6 +208,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		Ok(Sequence::from(encode_sequence))
 	}
 
+	/// Return `next recv sequence ` by given identifier `port_id` and `channel_id`.
 	fn get_next_sequence_recv(
 		&self,
 		port_channel_id: &(PortId, ChannelId),
@@ -222,6 +233,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		Ok(Sequence::from(encode_sequence))
 	}
 
+	/// Return `next ack sequence ` by given identifier `port_id` and `channel_id`.
 	fn get_next_sequence_ack(
 		&self,
 		port_channel_id: &(PortId, ChannelId),
@@ -286,6 +298,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		}
 	}
 
+	/// Returns the `Receipt` for the given identifier `(PortId, ChannelId, Sequence)`.
 	fn get_packet_receipt(
 		&self,
 		key: &(PortId, ChannelId, Sequence),
@@ -408,7 +421,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		ts.unwrap()
 	}
 
-	/// Returns the `AnyConsensusState` for the given identifier `height`.
+	/// Returns the `ConsensusState` for the host (local) chain at a specific height.
 	fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, ICS04Error> {
 		trace!(
 			target:"runtime::pallet-ibc",
@@ -419,6 +432,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		ConnectionReader::host_consensus_state(self, height).map_err(ICS04Error::ics03_connection)
 	}
 
+	/// Returns the pending `ConsensusState` of the host (local) chain.
 	fn pending_host_consensus_state(&self) -> Result<AnyConsensusState, ICS04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel: [pending_host_consensus_stata]");
 
@@ -426,7 +440,8 @@ impl<T: Config> ChannelReader for Context<T> {
 			.map_err(|e| ICS04Error::ics03_connection(ICS03Error::ics02_client(e)))
 	}
 
-	/// Returns the `ClientProcessedTimes` for the given identifier `client_id` & `height`.
+	/// Returns the time when the client state for the given [`client_id`] was
+	/// updated with a header for the given [`Height`]
 	fn client_update_time(
 		&self,
 		client_id: &ClientId,
@@ -455,6 +470,8 @@ impl<T: Config> ChannelReader for Context<T> {
 		}
 	}
 
+	/// Returns the height when the client state for the given [`ClientId`] was
+	/// updated with a header for the given [`Height`]
 	fn client_update_height(
 		&self,
 		client_id: &ClientId,
@@ -492,6 +509,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		Ok(<Pallet<T> as Store>::ChannelCounter::get())
 	}
 
+	/// Returns the maximum expected tiome per block.
 	fn max_expected_time_per_block(&self) -> Duration {
 		trace!(target:"runtime::pallet-ibc","in channel: [max_expected_time_per_block]");
 

@@ -5,7 +5,7 @@ use ibc::{
 	applications::transfer::{
 		context::{BankKeeper, Ics20Context, Ics20Keeper, Ics20Reader},
 		error::Error as ICS20Error,
-		PrefixedCoin, PrefixedDenom, PORT_ID_STR,
+		PrefixedCoin, PORT_ID_STR,
 	},
 	core::ics24_host::identifier::{ChannelId as IbcChannelId, PortId},
 	signer::Signer,
@@ -34,6 +34,9 @@ impl TryFrom<Signer> for IbcAccount {
 	}
 }
 
+
+/// Captures all the dependencies which the ICS20 module requires to be able to dispatch and
+/// process IBC messages.
 impl<T: Config> Ics20Context for Context<T> {
 	type AccountId = IbcAccount;
 }
@@ -45,11 +48,13 @@ impl<T: Config> Ics20Keeper for Context<T> {
 impl<T: Config> Ics20Reader for Context<T> {
 	type AccountId = IbcAccount;
 
+	/// get_port returns the portID for the transfer module.
 	fn get_port(&self) -> Result<PortId, ICS20Error> {
 		PortId::from_str(PORT_ID_STR)
 			.map_err(|e| ICS20Error::invalid_port_id(PORT_ID_STR.to_string(), e))
 	}
 
+	/// Returns the escrow account id for a port and channel combination
 	fn get_channel_escrow_address(
 		&self,
 		port_id: &PortId,
@@ -60,24 +65,21 @@ impl<T: Config> Ics20Reader for Context<T> {
 			.map_err(|_| ICS20Error::parse_account_failure())
 	}
 
-	// TODO
+	/// Returns true iff send is enabled.
 	fn is_send_enabled(&self) -> bool {
 		true
 	}
 
-	// TODO
+	/// Returns true iff receive is enabled.
 	fn is_receive_enabled(&self) -> bool {
 		true
-	}
-
-	fn denom_hash_string(&self, _denom: &PrefixedDenom) -> Option<String> {
-		todo!()
 	}
 }
 
 impl<T: Config> BankKeeper for Context<T> {
 	type AccountId = IbcAccount;
 
+	/// This function should enable sending ibc fungible tokens from one account to another
 	fn send_coins(
 		&mut self,
 		_from: &Self::AccountId,
@@ -87,6 +89,7 @@ impl<T: Config> BankKeeper for Context<T> {
 		todo!()
 	}
 
+	/// This function to enable minting ibc tokens to a user account
 	fn mint_coins(
 		&mut self,
 		_account: &Self::AccountId,
@@ -95,6 +98,7 @@ impl<T: Config> BankKeeper for Context<T> {
 		todo!()
 	}
 
+	/// This function should enable burning of minted tokens in a user account
 	fn burn_coins(
 		&mut self,
 		_account: &Self::AccountId,
