@@ -25,7 +25,7 @@ use alloc::{
 	format,
 	string::{String, ToString},
 };
-use core::{marker::PhantomData, fmt::Debug, str::FromStr};
+use core::{fmt::Debug, marker::PhantomData, str::FromStr};
 
 use codec::{Codec, Decode, Encode};
 use scale_info::{prelude::vec, TypeInfo};
@@ -33,7 +33,10 @@ use scale_info::{prelude::vec, TypeInfo};
 use beefy_light_client::commitment::{self, known_payload_ids::MMR_ROOT_ID};
 
 use log::{error, info, trace};
-use sp_runtime::{RuntimeDebug, traits::{AtLeast32BitUnsigned, IdentifyAccount }};
+use sp_runtime::{
+	traits::{AtLeast32BitUnsigned, IdentifyAccount},
+	RuntimeDebug,
+};
 use sp_std::prelude::*;
 
 use event::primitive::{
@@ -45,10 +48,10 @@ use frame_support::{
 	pallet_prelude::*,
 	traits::{
 		fungibles::{Inspect, Mutate, Transfer},
-		UnixTime, Currency
-	}
+		Currency, UnixTime,
+	},
 };
-use frame_system::{pallet_prelude::*, ensure_signed};
+use frame_system::{ensure_signed, pallet_prelude::*};
 use ibc::{
 	applications::transfer::msgs::transfer::MsgTransfer,
 	clients::ics10_grandpa::{client_state::ClientState, help},

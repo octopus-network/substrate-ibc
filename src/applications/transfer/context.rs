@@ -18,6 +18,7 @@ use sp_runtime::{
 	MultiSignature,
 };
 
+// TODO IBC Account ID
 type AccountId = <<MultiSignature as Verify>::Signer as IdentifyAccount>::AccountId;
 
 #[derive(Clone)]
@@ -103,28 +104,35 @@ impl<T: Config> BankKeeper for Context<T> {
 					"send ibc token name is not native token name"
 				);
 
-				T::Currency::transfer(
+				<T::Currency as Currency<T::AccountId>>::transfer(
 					&from.clone().into_account(),
 					&to.clone().into_account(),
 					amount,
 					AllowDeath,
 				)
-				.map_err(|_| ICS20Error::invalid_token())?;
+				.map_err(|error| {
+					error!("❎ [send_coins] : Error: ({:?})", error);
+					ICS20Error::invalid_token()
+				})?;
 			},
 			// transfer non-native token
 			false => {
 				let amount = amt.amount.as_u256().low_u128().into();
 				let denom = amt.denom.base_denom().as_str();
+				// look cross chain asset have register in host chain
 				match T::AssetIdByName::try_get_asset_id(denom) {
 					Ok(token_id) => {
-						T::Assets::transfer(
+						<T::Assets as Transfer<T::AccountId>>::transfer(
 							token_id.into(),
 							&from.clone().into_account(),
 							&to.clone().into_account(),
 							amount,
 							true,
 						)
-						.map_err(|_| ICS20Error::invalid_token())?;
+						.map_err(|error| {
+							error!("❎ [send_coins] : Error: ({:?})", error);
+							ICS20Error::invalid_token()
+						})?;
 					},
 					Err(error) => {
 						error!("❎ [send_coins]: Error({:?}), denom: ({:?})", error, denom);
@@ -145,6 +153,7 @@ impl<T: Config> BankKeeper for Context<T> {
 	) -> Result<(), ICS20Error> {
 		let amount = amt.amount.as_u256().low_u128().into();
 		let denom = amt.denom.base_denom().as_str();
+		// look cross chain asset have register in host chain
 		match T::AssetIdByName::try_get_asset_id(denom) {
 			Ok(token_id) => {
 				<T::Assets as Mutate<T::AccountId>>::mint_into(
@@ -152,10 +161,13 @@ impl<T: Config> BankKeeper for Context<T> {
 					&account.clone().into_account(),
 					amount,
 				)
-				.map_err(|_| ICS20Error::invalid_token())?;
+				.map_err(|error| {
+					error!("❎ [mint_coins] : Error: ({:?})", error);
+					ICS20Error::invalid_token()
+				})?;
 			},
 			Err(error) => {
-				error!("❎ [send_coins]: Error({:?}), denom: ({:?})", error, denom);
+				error!("❎ [mint_coins]: Error({:?}), denom: ({:?})", error, denom);
 				return Err(ICS20Error::invalid_token())
 			},
 		}
@@ -170,6 +182,7 @@ impl<T: Config> BankKeeper for Context<T> {
 	) -> Result<(), ICS20Error> {
 		let amount = amt.amount.as_u256().low_u128().into();
 		let denom = amt.denom.base_denom().as_str();
+		// look cross chain asset have register in host chain
 		match T::AssetIdByName::try_get_asset_id(denom) {
 			Ok(token_id) => {
 				<T::Assets as Mutate<T::AccountId>>::burn_from(
@@ -177,10 +190,13 @@ impl<T: Config> BankKeeper for Context<T> {
 					&account.clone().into_account(),
 					amount,
 				)
-				.map_err(|_| ICS20Error::invalid_token())?;
+				.map_err(|error| {
+					error!("❎ [burn_coins] : Error: ({:?})", error);
+					ICS20Error::invalid_token()
+				})?;
 			},
 			Err(error) => {
-				error!("❎ [send_coins]: Error({:?}), denom: ({:?})", error, denom);
+				error!("❎ [burn_coins]: Error({:?}), denom: ({:?})", error, denom);
 				return Err(ICS20Error::invalid_token())
 			},
 		}
