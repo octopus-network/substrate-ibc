@@ -1,5 +1,4 @@
-use crate::{context::Context, *};
-use crate::utils::get_channel_escrow_address;
+use crate::{context::Context, utils::get_channel_escrow_address, *};
 
 use ibc::{
 	applications::transfer::{
@@ -33,7 +32,6 @@ impl TryFrom<Signer> for IbcAccount {
 		Ok(IbcAccount(AccountId::new([0u8; 32])))
 	}
 }
-
 
 /// Captures all the dependencies which the ICS20 module requires to be able to dispatch and
 /// process IBC messages.

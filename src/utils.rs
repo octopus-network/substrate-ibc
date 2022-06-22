@@ -2,9 +2,7 @@ use crate::Config;
 use alloc::{format, vec::Vec};
 
 use ibc::{
-	applications::transfer::{
-		error::Error as Ics20Error, VERSION,
-	},
+	applications::transfer::{error::Error as Ics20Error, VERSION},
 	core::ics24_host::identifier::{ChannelId, PortId},
 	signer::Signer,
 };
@@ -22,7 +20,6 @@ pub fn host_height<T: Config>() -> u64 {
 	let current_height: u64 = block_number.parse().unwrap_or_default();
 	current_height
 }
-
 
 pub fn get_channel_escrow_address(
 	port_id: &PortId,

@@ -173,10 +173,9 @@ impl<T: Config> ConnectionReader for Context<T> {
 	}
 }
 
-/// A context supplying all the necessary write-only dependencies (i.e, storage writing for facility)
-/// for processing any `ConnectionMsg`.
+/// A context supplying all the necessary write-only dependencies (i.e, storage writing for
+/// facility) for processing any `ConnectionMsg`.
 impl<T: Config> ConnectionKeeper for Context<T> {
-
 	/// Stores the given connection_end at a path associated with the connection_id.
 	fn store_connection(
 		&mut self,
@@ -243,6 +242,6 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 			*val = new;
 			Ok(())
 		})
-			.expect("increase_connection_counter error");
+		.expect("increase_connection_counter error");
 	}
 }

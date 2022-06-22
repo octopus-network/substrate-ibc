@@ -1,4 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(clippy::too_many_arguments)]
+#![allow(unused_assignments)]
 //! # Overview
 //!
 //! The goal of this pallet is to allow the blockchains built on Substrate to gain the ability to
@@ -629,7 +631,7 @@ pub mod pallet {
 				log::trace!(target: LOG_TARGET, "received deliver : {:?} ", messages.iter().map(|message| message.type_url.clone()).collect::<Vec<_>>());
 
 				let mut results: Vec<IbcEvent> = vec![];
-				for (_index, message) in messages.clone().into_iter().enumerate() {
+				for (_index, message) in messages.into_iter().enumerate() {
 
 					let mut result = Vec::new();
 					match ibc::core::ics26_routing::handler::deliver(&mut ctx, message.clone()) {
@@ -924,7 +926,7 @@ pub mod pallet {
 						.latest_commitment
 						.payload
 						.get_raw(&MMR_ROOT_ID)
-						.map(|value| value.clone())
+						.cloned()
 						.unwrap_or_default();
 					let any_consensus_state = AnyConsensusState::Grandpa(consensus_state);
 

@@ -21,7 +21,6 @@ use ibc::{
 
 /// Defines the read-only part of ICS02 (client functions) context.
 impl<T: Config> ClientReader for Context<T> {
-
 	/// Read `ClientType` by `ClientId`.
 	fn client_type(&self, client_id: &ClientId) -> Result<ClientType, ICS02Error> {
 		trace!(
@@ -32,7 +31,8 @@ impl<T: Config> ClientReader for Context<T> {
 
 		if <Clients<T>>::contains_key(client_id.as_bytes()) {
 			let encode_client_type = <Clients<T>>::get(client_id.as_bytes());
-			let string_client_type = String::from_utf8(encode_client_type).map_err(ICS02Error::invalid_from_utf8)?;
+			let string_client_type =
+				String::from_utf8(encode_client_type).map_err(ICS02Error::invalid_from_utf8)?;
 			let client_type = ClientType::from_str(&string_client_type)
 				.map_err(|e| ICS02Error::unknown_client_type(e.to_string()))?;
 
@@ -61,7 +61,8 @@ impl<T: Config> ClientReader for Context<T> {
 
 		if <ClientStates<T>>::contains_key(client_id.as_bytes()) {
 			let encode_client_state = <ClientStates<T>>::get(client_id.as_bytes());
-			let any_client_state = AnyClientState::decode_vec(&*encode_client_state).map_err(ICS02Error::invalid_decode)?;
+			let any_client_state = AnyClientState::decode_vec(&*encode_client_state)
+				.map_err(ICS02Error::invalid_decode)?;
 			trace!(
 				target:"runtime::pallet-ibc",
 				"in client : [client_state] >> any client_state: {:?}",
@@ -263,7 +264,6 @@ impl<T: Config> ClientReader for Context<T> {
 
 /// Defines the write-only part of ICS02 (client functions) context.
 impl<T: Config> ClientKeeper for Context<T> {
-
 	/// Called upon successful client creation.
 	fn store_client_type(
 		&mut self,
@@ -352,7 +352,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 			*val = new;
 			Ok(())
 		})
-			.expect("increase_client_counter error");
+		.expect("increase_client_counter error");
 	}
 
 	/// Called upon successful client update.
