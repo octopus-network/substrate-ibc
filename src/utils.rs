@@ -1,5 +1,6 @@
 use crate::Config;
 use alloc::{format, vec::Vec};
+use core::fmt::Debug;
 
 use ibc::{
 	applications::transfer::{error::Error as Ics20Error, VERSION},
@@ -10,7 +11,7 @@ use ibc::{
 pub(crate) const LOG_TARGET: &str = "runtime::pallet-ibc";
 
 pub trait AssetIdAndNameProvider<AssetId> {
-	type Err;
+	type Err: Debug;
 
 	fn try_get_asset_id(name: impl AsRef<[u8]>) -> Result<AssetId, Self::Err>;
 

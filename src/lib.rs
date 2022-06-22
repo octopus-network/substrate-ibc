@@ -12,6 +12,7 @@
 //! which implements the generic cross-chain logic in [ICS spec](https://github.com/cosmos/ibc/tree/ee71d0640c23ec4e05e924f52f557b5e06c1d82f).
 
 extern crate alloc;
+extern crate core;
 
 pub use pallet::*;
 
@@ -24,24 +25,30 @@ use alloc::{
 	format,
 	string::{String, ToString},
 };
-use core::{marker::PhantomData, str::FromStr};
-use event::primitive::{ChannelId, ConnectionId};
+use core::{marker::PhantomData, fmt::Debug, str::FromStr};
+
+use codec::{Codec, Decode, Encode};
 use scale_info::{prelude::vec, TypeInfo};
 
 use beefy_light_client::commitment::{self, known_payload_ids::MMR_ROOT_ID};
-use codec::{Codec, Decode, Encode};
 
-use frame_support::{
-	sp_runtime::traits::AtLeast32BitUnsigned,
-	sp_std::fmt::Debug,
-	traits::{tokens::fungibles, Currency},
-	PalletId,
-};
-use frame_system::ensure_signed;
 use log::{error, info, trace};
-use sp_runtime::{traits::AccountIdConversion, RuntimeDebug};
+use sp_runtime::{RuntimeDebug, traits::{AtLeast32BitUnsigned, IdentifyAccount }};
 use sp_std::prelude::*;
 
+use event::primitive::{
+	ChannelId, ClientId, ClientState as EventClientState, ClientType, ConnectionId, Height, Packet,
+	PortId,
+};
+use frame_support::{
+	dispatch::DispatchResult,
+	pallet_prelude::*,
+	traits::{
+		fungibles::{Inspect, Mutate, Transfer},
+		UnixTime, Currency
+	}
+};
+use frame_system::{pallet_prelude::*, ensure_signed};
 use ibc::{
 	applications::transfer::msgs::transfer::MsgTransfer,
 	clients::ics10_grandpa::{client_state::ClientState, help},
@@ -49,6 +56,8 @@ use ibc::{
 		ics02_client::{client_state::AnyClientState, height},
 		ics24_host::identifier,
 	},
+	events::IbcEvent,
+	signer::Signer,
 	timestamp,
 };
 use tendermint_proto::Protobuf;
@@ -89,13 +98,6 @@ impl From<ibc_proto::google::protobuf::Any> for Any {
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use event::primitive::{
-		ChannelId, ClientId, ClientState as EventClientState, ClientType, ConnectionId, Height,
-		Packet, PortId,
-	};
-	use frame_support::{dispatch::DispatchResult, pallet_prelude::*, traits::UnixTime};
-	use frame_system::pallet_prelude::*;
-	use ibc::{events::IbcEvent, signer::Signer};
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -128,13 +130,25 @@ pub mod pallet {
 			+ MaybeSerializeDeserialize
 			+ Debug;
 
-		type Assets: fungibles::Mutate<
-			<Self as frame_system::Config>::AccountId,
-			AssetId = Self::AssetId,
-			Balance = Self::AssetBalance,
-		>;
+		type Assets: Transfer<Self::AccountId, AssetId = Self::AssetId, Balance = Self::AssetBalance>
+			+ Mutate<Self::AccountId, AssetId = Self::AssetId, Balance = Self::AssetBalance>
+			+ Inspect<Self::AccountId, AssetId = Self::AssetId, Balance = Self::AssetBalance>;
 
 		type AssetIdByName: AssetIdAndNameProvider<Self::AssetId>;
+
+		/// Account Id Conversion from SS58 string or hex string
+		type AccountIdConversion: TryFrom<Signer>
+			+ IdentifyAccount<AccountId = Self::AccountId>
+			+ Clone;
+
+		// config native token name
+		const NATIVE_TOKEN_NAME: &'static [u8];
+
+		/// Prefix for events stored in the Off-chain DB via Indexing API.
+		const INDEXING_PREFIX: &'static [u8];
+
+		/// Prefix for ibc connection, should be valid utf8 string bytes
+		const CONNECTION_PREFIX: &'static [u8];
 	}
 
 	#[pallet::pallet]
@@ -321,29 +335,6 @@ pub mod pallet {
 
 	#[pallet::storage]
 	pub type OldHeight<T: Config> = StorageValue<_, u64, ValueQuery>;
-
-	#[pallet::storage]
-	/// sha256(tracePath + "/" + baseDenom) => DenomTrace
-	pub type Denomination<T: Config> =
-		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
-
-	#[pallet::type_value]
-	pub fn DefaultAccountId<T: Config>() -> T::AccountId {
-		PalletId(*b"defaultd").into_account()
-	}
-
-	// #[pallet::storage]
-	// // port, channel -> escrow address
-	// pub type EscrowAddresses<T: Config> = StorageDoubleMap<
-	// 	_,
-	// 	Blake2_128Concat,
-	// 	PortId,
-	// 	Blake2_128Concat,
-	// 	ChannelId,
-	// 	T::AccountId,
-	// 	ValueQuery,
-	// 	DefaultAccountId<T>,
-	// >;
 
 	#[pallet::storage]
 	/// key-value asserid with asset name

@@ -1009,7 +1009,6 @@ dependencies = [
 [[package]]
 name = "ibc"
 version = "0.15.0"
-source = "git+https://github.com/octopus-network/ibc-rs.git?branch=feature/ibc20-informal#3ff6b7a1bda53801440874f547f4765654404fb6"
 dependencies = [
  "beefy-light-client",
  "beefy-merkle-tree",
@@ -1050,7 +1049,6 @@ dependencies = [
 [[package]]
 name = "ibc-proto"
 version = "0.18.0"
-source = "git+https://github.com/octopus-network/ibc-rs.git?branch=feature/ibc20-informal#3ff6b7a1bda53801440874f547f4765654404fb6"
 dependencies = [
  "base64",
  "bytes",

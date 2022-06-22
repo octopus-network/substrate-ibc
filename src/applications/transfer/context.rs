@@ -1,4 +1,8 @@
 use crate::{context::Context, utils::get_channel_escrow_address, *};
+use frame_support::traits::{
+	fungibles::{Mutate, Transfer},
+	ExistenceRequirement::AllowDeath,
+};
 
 use ibc::{
 	applications::transfer::{
@@ -10,9 +14,10 @@ use ibc::{
 	signer::Signer,
 };
 use sp_runtime::{
-	traits::{IdentifyAccount, Verify},
+	traits::{CheckedConversion, IdentifyAccount, Verify},
 	MultiSignature,
 };
+
 type AccountId = <<MultiSignature as Verify>::Signer as IdentifyAccount>::AccountId;
 
 #[derive(Clone)]
@@ -36,15 +41,15 @@ impl TryFrom<Signer> for IbcAccount {
 /// Captures all the dependencies which the ICS20 module requires to be able to dispatch and
 /// process IBC messages.
 impl<T: Config> Ics20Context for Context<T> {
-	type AccountId = IbcAccount;
+	type AccountId = <T as Config>::AccountIdConversion;
 }
 
 impl<T: Config> Ics20Keeper for Context<T> {
-	type AccountId = IbcAccount;
+	type AccountId = <T as Config>::AccountIdConversion;
 }
 
 impl<T: Config> Ics20Reader for Context<T> {
-	type AccountId = IbcAccount;
+	type AccountId = <T as Config>::AccountIdConversion;
 
 	/// get_port returns the portID for the transfer module.
 	fn get_port(&self) -> Result<PortId, ICS20Error> {
@@ -75,33 +80,110 @@ impl<T: Config> Ics20Reader for Context<T> {
 }
 
 impl<T: Config> BankKeeper for Context<T> {
-	type AccountId = IbcAccount;
+	type AccountId = <T as Config>::AccountIdConversion;
 
 	/// This function should enable sending ibc fungible tokens from one account to another
 	fn send_coins(
 		&mut self,
-		_from: &Self::AccountId,
-		_to: &Self::AccountId,
-		_amt: &PrefixedCoin,
+		from: &Self::AccountId,
+		to: &Self::AccountId,
+		amt: &PrefixedCoin,
 	) -> Result<(), ICS20Error> {
-		todo!()
+		let is_native_asset = amt.denom.trace_path().is_empty();
+		match is_native_asset {
+			// transfer native token
+			true => {
+				let amount = amt.amount.as_u256().low_u128().checked_into().unwrap(); // TODO: FIX IN THE FUTURE
+				let native_token_name = T::NATIVE_TOKEN_NAME;
+				let ibc_token_name = amt.denom.base_denom().as_str().as_bytes();
+
+				// assert native token name equal want to send ibc token name
+				assert_eq!(
+					native_token_name, ibc_token_name,
+					"send ibc token name is not native token name"
+				);
+
+				T::Currency::transfer(
+					&from.clone().into_account(),
+					&to.clone().into_account(),
+					amount,
+					AllowDeath,
+				)
+				.map_err(|_| ICS20Error::invalid_token())?;
+			},
+			// transfer non-native token
+			false => {
+				let amount = amt.amount.as_u256().low_u128().into();
+				let denom = amt.denom.base_denom().as_str();
+				match T::AssetIdByName::try_get_asset_id(denom) {
+					Ok(token_id) => {
+						T::Assets::transfer(
+							token_id.into(),
+							&from.clone().into_account(),
+							&to.clone().into_account(),
+							amount,
+							true,
+						)
+						.map_err(|_| ICS20Error::invalid_token())?;
+					},
+					Err(error) => {
+						error!("❎ [send_coins]: Error({:?}), denom: ({:?})", error, denom);
+						return Err(ICS20Error::invalid_token())
+					},
+				}
+			},
+		}
+
+		Ok(())
 	}
 
 	/// This function to enable minting ibc tokens to a user account
 	fn mint_coins(
 		&mut self,
-		_account: &Self::AccountId,
-		_amt: &PrefixedCoin,
+		account: &Self::AccountId,
+		amt: &PrefixedCoin,
 	) -> Result<(), ICS20Error> {
-		todo!()
+		let amount = amt.amount.as_u256().low_u128().into();
+		let denom = amt.denom.base_denom().as_str();
+		match T::AssetIdByName::try_get_asset_id(denom) {
+			Ok(token_id) => {
+				<T::Assets as Mutate<T::AccountId>>::mint_into(
+					token_id.into(),
+					&account.clone().into_account(),
+					amount,
+				)
+				.map_err(|_| ICS20Error::invalid_token())?;
+			},
+			Err(error) => {
+				error!("❎ [send_coins]: Error({:?}), denom: ({:?})", error, denom);
+				return Err(ICS20Error::invalid_token())
+			},
+		}
+		Ok(())
 	}
 
 	/// This function should enable burning of minted tokens in a user account
 	fn burn_coins(
 		&mut self,
-		_account: &Self::AccountId,
-		_amt: &PrefixedCoin,
+		account: &Self::AccountId,
+		amt: &PrefixedCoin,
 	) -> Result<(), ICS20Error> {
-		todo!()
+		let amount = amt.amount.as_u256().low_u128().into();
+		let denom = amt.denom.base_denom().as_str();
+		match T::AssetIdByName::try_get_asset_id(denom) {
+			Ok(token_id) => {
+				<T::Assets as Mutate<T::AccountId>>::burn_from(
+					token_id.into(),
+					&account.clone().into_account(),
+					amount,
+				)
+				.map_err(|_| ICS20Error::invalid_token())?;
+			},
+			Err(error) => {
+				error!("❎ [send_coins]: Error({:?}), denom: ({:?})", error, denom);
+				return Err(ICS20Error::invalid_token())
+			},
+		}
+		Ok(())
 	}
 }

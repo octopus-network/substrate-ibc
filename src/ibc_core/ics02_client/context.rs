@@ -212,7 +212,6 @@ impl<T: Config> ClientReader for Context<T> {
 	fn host_timestamp(&self) -> Timestamp {
 		trace!(target: LOG_TARGET, "in client: [host_timestamp]");
 
-		use frame_support::traits::UnixTime;
 		let time = T::TimeProvider::now();
 		let ts = Timestamp::from_nanoseconds(time.as_nanos() as u64)
 			.map_err(|e| panic!("{:?}, caused by {:?} from pallet timestamp_pallet", e, time));
