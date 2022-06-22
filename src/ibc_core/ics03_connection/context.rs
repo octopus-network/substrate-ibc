@@ -1,4 +1,8 @@
-use crate::{context::Context, utils::host_height, *};
+use crate::{
+	context::Context,
+	utils::{host_height, LOG_TARGET},
+	*,
+};
 use log::trace;
 
 use ibc::{
@@ -21,7 +25,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 	/// Returns the ConnectionEnd for the given identifier `connection_id`.
 	fn connection_end(&self, conn_id: &ConnectionId) -> Result<ConnectionEnd, ICS03Error> {
 		trace!(
-			target:"runtime::pallet-ibc",
+			target: LOG_TARGET,
 			"in connection : [connection_end] >> connection_id = {:?}",
 			conn_id
 		);
@@ -31,14 +35,14 @@ impl<T: Config> ConnectionReader for Context<T> {
 			let connection_end = ConnectionEnd::decode_vec(&*encode_connection_end)
 				.map_err(ICS03Error::invalid_decode)?;
 			trace!(
-				target:"runtime::pallet-ibc",
+				target: LOG_TARGET,
 				"in connection : [connection_end] >>  connection_end = {:?}",
 				connection_end
 			);
 			Ok(connection_end)
 		} else {
 			trace!(
-				target:"runtime::pallet-ibc",
+				target: LOG_TARGET,
 				"in connection : [connection_end] >> read connection end returns None"
 			);
 			Err(ICS03Error::connection_mismatch(conn_id.clone()))
@@ -47,10 +51,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 
 	/// Returns the ClientState for the given identifier `client_id`.
 	fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, ICS03Error> {
-		trace!(
-			target:"runtime::pallet-ibc",
-			"in connection : [client_state]"
-		);
+		trace!(target: LOG_TARGET, "in connection : [client_state]");
 
 		if <ClientStates<T>>::contains_key(client_id.as_bytes()) {
 			let encode_client_state = <ClientStates<T>>::get(client_id.as_bytes());
@@ -58,14 +59,14 @@ impl<T: Config> ConnectionReader for Context<T> {
 				.map_err(ICS03Error::invalid_decode)?;
 
 			trace!(
-				target:"runtime::pallet-ibc",
+				target: LOG_TARGET,
 				"in connection : [client_state] >> client_state: {:?}",
 				any_client_state
 			);
 			Ok(any_client_state)
 		} else {
 			trace!(
-				target:"runtime::pallet-ibc",
+				target: LOG_TARGET,
 				"in connection : [client_state] >> read client_state is None"
 			);
 			Err(ICS03Error::frozen_client(client_id.clone()))
@@ -74,13 +75,13 @@ impl<T: Config> ConnectionReader for Context<T> {
 
 	/// Returns the current height of the local chain.
 	fn host_current_height(&self) -> Height {
-		trace!(target:"runtime::pallet-ibc","in connection : [host_current_height]");
+		trace!(target: LOG_TARGET, "in connection : [host_current_height]");
 
 		let revision_height = host_height::<T>();
 		<OldHeight<T>>::put(revision_height);
 
 		trace!(
-			target:"runtime::pallet-ibc",
+			target: LOG_TARGET,
 			"in connection : [host_current_height] >> Host revision_height = {:?}",
 			revision_height
 		);
@@ -90,7 +91,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 
 	/// Returns the oldest height available on the local chain.
 	fn host_oldest_height(&self) -> Height {
-		trace!(target:"runtime::pallet-ibc","in connection : [host_oldest_height]");
+		trace!(target: LOG_TARGET, "in connection : [host_oldest_height]");
 
 		let mut temp = frame_system::BlockHash::<T>::iter().collect::<Vec<_>>();
 		temp.sort_by(|(a, ..), (b, ..)| a.cmp(b));
@@ -107,7 +108,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 
 	/// Returns the prefix that local chain uses in the KV store.
 	fn commitment_prefix(&self) -> CommitmentPrefix {
-		trace!(target:"runtime::pallet-ibc","in connection : [commitment_prefix]");
+		trace!(target: LOG_TARGET, "in connection : [commitment_prefix]");
 
 		"ibc".as_bytes().to_vec().try_into().unwrap_or_default()
 	}
@@ -119,9 +120,10 @@ impl<T: Config> ConnectionReader for Context<T> {
 		height: Height,
 	) -> Result<AnyConsensusState, ICS03Error> {
 		trace!(
-			target:"runtime::pallet-ibc",
+			target: LOG_TARGET,
 			"in connection : [client_consensus_state] >> client_id = {:?}, height = {:?}",
-			client_id, height
+			client_id,
+			height
 		);
 
 		// ClientReader::consensus_state(self, client_id, height)
@@ -145,7 +147,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 	/// Returns the ConsensusState of the host (local) chain at a specific height.
 	fn host_consensus_state(&self, _height: Height) -> Result<AnyConsensusState, ICS03Error> {
 		trace!(
-			target:"runtime::pallet-ibc",
+			target: LOG_TARGET,
 			"in connection : [host_consensus_state] >> height = {:?}",
 			_height
 		);
@@ -153,7 +155,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 			AnyConsensusState::Grandpa(GPConsensusState::from(Header::default()));
 
 		trace!(
-			target:"runtime::pallet-ibc",
+			target: LOG_TARGET,
 			"in connection : [host_consensus_state] >> any_consensus_state = {:?}",
 			any_consensus_state
 		);
@@ -164,10 +166,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 	/// The value of this counter should increase only via method
 	/// `ConnectionKeeper::increase_connection_counter`.
 	fn connection_counter(&self) -> Result<u64, ICS03Error> {
-		trace!(
-			target:"runtime::pallet-ibc",
-			"in connection : [connection_counter]"
-		);
+		trace!(target: LOG_TARGET, "in connection : [connection_counter]");
 
 		Ok(<ConnectionCounter<T>>::get())
 	}
@@ -183,9 +182,10 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		connection_end: &ConnectionEnd,
 	) -> Result<(), ICS03Error> {
 		trace!(
-			target:"runtime::pallet-ibc",
+			target: LOG_TARGET,
 			"in connection : [store_connection] >> connection_id = {:?}, connection_end = {:?}",
-			connection_id, connection_end
+			connection_id,
+			connection_end
 		);
 
 		let encode_connection_id = connection_id.as_bytes();
@@ -212,7 +212,7 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		client_id: &ClientId,
 	) -> Result<(), ICS03Error> {
 		trace!(
-			target:"runtime::pallet-ibc",
+			target:LOG_TARGET,
 			"in connection : [store_connection_to_client] >> connection_id = {:?}, client_id = {:?}",
 			connection_id, client_id
 		);
@@ -230,10 +230,7 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 	/// created.
 	/// Should never fail.
 	fn increase_connection_counter(&mut self) {
-		trace!(
-			target:"runtime::pallet-ibc",
-			"in connection : [increase_connection_counter]"
-		);
+		trace!(target: LOG_TARGET, "in connection : [increase_connection_counter]");
 
 		<ConnectionCounter<T>>::try_mutate(|val| -> Result<(), ICS03Error> {
 			let new = val

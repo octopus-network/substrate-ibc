@@ -7,6 +7,8 @@ use ibc::{
 	signer::Signer,
 };
 
+pub(crate) const LOG_TARGET: &str = "runtime::pallet-ibc";
+
 pub trait AssetIdAndNameProvider<AssetId> {
 	type Err;
 

@@ -1,4 +1,4 @@
-use crate::*;
+use crate::{utils::LOG_TARGET, *};
 use log::trace;
 
 use crate::context::Context;
@@ -15,11 +15,7 @@ use ibc::{
 
 impl<T: Config> PortReader for Context<T> {
 	fn lookup_module_by_port(&self, port_id: &PortId) -> Result<ModuleId, ICS05Error> {
-		trace!(
-			target:"runtime::pallet-ibc",
-			"in port: [lookup_module_by_port] >> port_id = {:?}",
-			port_id
-		);
+		trace!(target: LOG_TARGET, "in port: [lookup_module_by_port] >> port_id = {:?}", port_id);
 		match port_id.as_str() {
 			TRANSFER_PORT_ID => Ok(ModuleId::from_str(TRANSFER_MODULE_ID)
 				.map_err(|_| ICS05Error::module_not_found(port_id.clone()))?),

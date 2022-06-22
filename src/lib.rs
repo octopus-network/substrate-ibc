@@ -1,6 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::too_many_arguments)]
 #![allow(unused_assignments)]
+
 //! # Overview
 //!
 //! The goal of this pallet is to allow the blockchains built on Substrate to gain the ability to
@@ -14,11 +15,17 @@ extern crate alloc;
 
 pub use pallet::*;
 
+use crate::{
+	context::Context,
+	ibc_help::event_from_ibc_event,
+	utils::{AssetIdAndNameProvider, LOG_TARGET},
+};
 use alloc::{
 	format,
 	string::{String, ToString},
 };
 use core::{marker::PhantomData, str::FromStr};
+use event::primitive::{ChannelId, ConnectionId};
 use scale_info::{prelude::vec, TypeInfo};
 
 use beefy_light_client::commitment::{self, known_payload_ids::MMR_ROOT_ID};
@@ -31,6 +38,7 @@ use frame_support::{
 	PalletId,
 };
 use frame_system::ensure_signed;
+use log::{error, info, trace};
 use sp_runtime::{traits::AccountIdConversion, RuntimeDebug};
 use sp_std::prelude::*;
 
@@ -61,12 +69,6 @@ mod mock;
 pub mod relayer;
 #[cfg(test)]
 mod tests;
-
-use crate::{context::Context, ibc_help::event_from_ibc_event, utils::AssetIdAndNameProvider};
-
-use event::primitive::{ChannelId, ConnectionId};
-
-pub(crate) const LOG_TARGET: &str = "runtime::pallet-ibc";
 
 type BalanceOf<T> =
 	<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
@@ -628,7 +630,11 @@ pub mod pallet {
 					})
 					.collect();
 
-				log::trace!(target: LOG_TARGET, "received deliver : {:?} ", messages.iter().map(|message| message.type_url.clone()).collect::<Vec<_>>());
+				trace!(
+					target: LOG_TARGET,
+					"received deliver : {:?} ",
+					messages.iter().map(|message| message.type_url.clone()).collect::<Vec<_>>()
+				);
 
 				let mut results: Vec<IbcEvent> = vec![];
 				for (_index, message) in messages.into_iter().enumerate() {
@@ -636,16 +642,24 @@ pub mod pallet {
 					let mut result = Vec::new();
 					match ibc::core::ics26_routing::handler::deliver(&mut ctx, message.clone()) {
 						Ok(value) => {
-							log::trace!(target: LOG_TARGET, "deliver event  : {:?} ", value.events);
+							trace!(
+								target: LOG_TARGET,
+								"deliver event  : {:?} ",
+								value.events
+							);
 							result = value.events;
 
 						}
 						Err(error) => {
-							log::trace!(target: LOG_TARGET, "deliver error  : {:?} ", error);
+							trace!(
+								target: LOG_TARGET,
+								"deliver error  : {:?} ",
+								error
+							);
 						}
 					};
 
-					log::info!("result: {:?}", result);
+					info!("result: {:?}", result);
 
 					results.append(&mut result);
 				}
@@ -664,7 +678,8 @@ pub mod pallet {
 			client_id: Vec<u8>,
 			mmr_root: Vec<u8>,
 		) -> DispatchResultWithPostInfo {
-			log::trace!(target: LOG_TARGET, "update_client_state: update_client_state request.");
+			trace!(target: LOG_TARGET, "[update_client_state] : update_client_state request.");
+
 			let _who = ensure_signed(origin)?;
 
 			Self::inner_update_mmr_root(client_id, mmr_root)
@@ -689,40 +704,40 @@ pub mod pallet {
 						&String::from_utf8(source_port).map_err(|_| Error::<T>::InvalidFromUtf8)?,
 					)
 					.map_err(|_| Error::<T>::InvalidIdentifier)?;
-					log::info!(target: LOG_TARGET,"transfer : source_port: {}", source_port);
+					info!(target: LOG_TARGET,"[transfer] : source_port: {}", source_port);
 
 					let source_channel = identifier::ChannelId::from_str(
 						&String::from_utf8(source_channel).map_err(|_| Error::<T>::InvalidFromUtf8)?,
 					)
 					.map_err(|_| Error::<T>::InvalidIdentifier)?;
-					log::info!(target: LOG_TARGET,"transfer : source_channel : {}", source_channel);
+					info!(target: LOG_TARGET,"[transfer] : source_channel : {}", source_channel);
 
 					let token = Some(ibc_proto::cosmos::base::v1beta1::Coin {
 						denom: String::from_utf8(token).map_err(|_| Error::<T>::InvalidFromUtf8)?,
 						amount: amount.to_string(),
 					});
-					log::info!(target: LOG_TARGET,"transfer : token : {:?}", token);
+					info!(target: LOG_TARGET,"[transfer] : token : {:?}", token);
 
 					let sender: T::AccountId = ensure_signed(origin)?;
 					let encode_sender = T::AccountId::encode(&sender);
 					let hex_sender = hex::encode(encode_sender);
-					log::info!(target: LOG_TARGET,"transfer : hex sender : 0x{}", hex_sender);
+					info!(target: LOG_TARGET,"[transfer] : hex sender : 0x{}", hex_sender);
 
 					let sender = Signer::from_str(&hex_sender).unwrap();
-					log::info!(target: LOG_TARGET,"transfer : sender : {}", sender);
+					info!(target: LOG_TARGET,"[transfer] : sender : {}", sender);
 
 					let receiver = String::from_utf8(receiver).map_err(|_| Error::<T>::InvalidFromUtf8)?;
 					let receiver = Signer::from_str(&receiver).unwrap();
-					log::info!(target: LOG_TARGET,"transfer : receiver : {}", receiver);
+					info!(target: LOG_TARGET,"[transfer] : receiver : {}", receiver);
 
 
 					let timeout_height =
 						height::Height { revision_number: 0, revision_height: timeout_height };
-					log::info!(target: LOG_TARGET,"transfer : timeout height : {}", timeout_height);
+					info!(target: LOG_TARGET,"[transfer] : timeout height : {}", timeout_height);
 
 					let timeout_timestamp = timestamp::Timestamp::from_nanoseconds(timeout_timestamp)
 						.map_err(|_| Error::<T>::InvalidTimestamp)?;
-					log::info!(target: LOG_TARGET,"transfer : timeout timestamp : {}", timeout_timestamp);
+					info!(target: LOG_TARGET,"[transfer] : timeout timestamp : {}", timeout_timestamp);
 
 					let _msg = MsgTransfer {
 						source_port,
@@ -745,7 +760,7 @@ pub mod pallet {
 					// let send_transfer_result_event = send_transfer_result.events;
 
 					// handle the result
-					// log::info!(target: LOG_TARGET,"result: {:?}", send_transfer_result_event);
+					// info!(target: LOG_TARGET,"result: {:?}", send_transfer_result_event);
 
 					// Self::handle_result(&mut ctx, vec![msg.to_any()], send_transfer_result_event)?;
 
@@ -756,7 +771,7 @@ pub mod pallet {
 
 		#[pallet::weight(0)]
 		pub fn delete_send_packet_event(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
-			log::trace!(target: LOG_TARGET, "delete_send_packet_event");
+			trace!(target: LOG_TARGET, "[delete_send_packet_event]");
 
 			let _who = ensure_signed(origin)?;
 			<SendPacketEvent<T>>::drain();
@@ -766,7 +781,7 @@ pub mod pallet {
 
 		#[pallet::weight(0)]
 		pub fn delete_ack_packet_event(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
-			log::trace!(target: LOG_TARGET, "delete_ack_packet_event");
+			trace!(target: LOG_TARGET, "[delete_ack_packet_event]");
 
 			let _who = ensure_signed(origin)?;
 			<WriteAckPacketEvent<T>>::drain();
@@ -781,35 +796,29 @@ pub mod pallet {
 			client_id: Vec<u8>,
 			mmr_root: Vec<u8>,
 		) -> DispatchResultWithPostInfo {
-			log::trace!(
-				target: LOG_TARGET,
-				"inner_update_client_state: update_client_state request."
-			);
+			trace!(target: LOG_TARGET, "[inner_update_mmr_root]: update_client_state request.");
 
 			// check if the client id exist?
 			let client_id_str =
 				String::from_utf8(client_id.clone()).map_err(|_| Error::<T>::InvalidFromUtf8)?;
-			log::trace!(
+			trace!(
 				target: LOG_TARGET,
-				"inner_update_client_state:  client id is {:?}",
+				"[inner_update_mmr_root]:  client id is {:?}",
 				client_id_str
 			);
 
 			let decode_received_mmr_root =
 				help::MmrRoot::decode(&mut &mmr_root[..]).map_err(|_| Error::<T>::InvalidDecode)?;
-			log::trace!(
+			trace!(
 				target: LOG_TARGET,
-				"inner_update_client_state:  decode mmr root is {:?}",
+				"[inner_update_mmr_root]:  decode mmr root is {:?}",
 				decode_received_mmr_root
 			);
 
 			let mut client_state = ClientState::default();
 
 			if !<ClientStates<T>>::contains_key(client_id.clone()) {
-				log::error!(
-					"in inner_update_client_state: {:?} client_state not found !",
-					client_id_str
-				);
+				error!("[inner_update_mmr_root]: {:?} client_state not found !", client_id_str);
 
 				return Err(Error::<T>::ClientIdNotFound.into())
 			} else {
@@ -822,9 +831,9 @@ pub mod pallet {
 					_ => unimplemented!(),
 				};
 
-				log::trace!(
+				trace!(
 					target: LOG_TARGET,
-					"in inner_update_client_state: get client_state from chain storage: {:?}",
+					"[inner_update_mmr_root]: get client_state from chain storage: {:?}",
 					client_state
 				);
 			}
@@ -835,8 +844,11 @@ pub mod pallet {
 
 			let rev_block_number = signed_commitment.commitment.block_number;
 			if rev_block_number <= client_state.latest_commitment.block_number {
-				log::trace!(target: LOG_TARGET,"receive mmr root block number({}) less than client_state.latest_commitment.block_number({})",
-				rev_block_number,client_state.latest_commitment.block_number);
+				trace!(
+					target: LOG_TARGET,
+					"receive mmr root block number({}) less than client_state.latest_commitment.block_number({})",
+					rev_block_number, client_state.latest_commitment.block_number
+				);
 
 				return Err(Error::<T>::ReceiveMmrRootBlockNumberLessThanClientStateLatestCommitmentBlockNumber.into());
 			}
@@ -846,7 +858,7 @@ pub mod pallet {
 				validator_set: client_state.validator_set.clone().into(),
 				in_process_state: None,
 			};
-			log::trace!(
+			trace!(
 				target: LOG_TARGET,
 				"build new beefy_light_client from client_state store in chain \n {:?}",
 				light_client
@@ -877,7 +889,11 @@ pub mod pallet {
 
 			match result {
 				Ok(_) => {
-					log::trace!(target:"runtime::pallet-ibc","update the beefy light client success! and the beefy light client state is : {:?} \n",light_client);
+					trace!(
+						target: LOG_TARGET ,
+						"update the beefy light client success! and the beefy light client state is : {:?} \n",
+						light_client
+					);
 
 					// update client_client block number and latest commitment
 					let latest_commitment =
@@ -908,11 +924,7 @@ pub mod pallet {
 						Ok(())
 					});
 
-					log::trace!(
-						target: LOG_TARGET,
-						"the updated client state is : {:?}",
-						client_state
-					);
+					trace!(target: LOG_TARGET, "the updated client state is : {:?}", client_state);
 
 					use ibc::{
 						clients::ics10_grandpa::consensus_state::ConsensusState as GPConsensusState,
@@ -935,7 +947,14 @@ pub mod pallet {
 						revision_height: client_state.block_number as u64,
 					};
 
-					log::trace!(target: LOG_TARGET,"in ibc-lib : [store_consensus_state] >> client_id: {:?}, height = {:?}, consensus_state = {:?}", client_id, height, any_consensus_state);
+					trace!(
+						target: LOG_TARGET,
+						"in ibc-lib : [store_consensus_state]\
+						 >> client_id: {:?}, height = {:?}, consensus_state = {:?}",
+						client_id,
+						height,
+						any_consensus_state
+					);
 
 					let height = height.encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
 					let data =
@@ -968,11 +987,7 @@ pub mod pallet {
 					});
 				},
 				Err(e) => {
-					log::error!(
-						target: LOG_TARGET,
-						"update the beefy light client failure! : {:?}",
-						e
-					);
+					error!(target: LOG_TARGET, "update the beefy light client failure! : {:?}", e);
 
 					return Err(Error::<T>::UpdateBeefyLightClientFailure.into())
 				},
@@ -1002,7 +1017,3 @@ impl<T: Config> AssetIdAndNameProvider<T::AssetId> for Pallet<T> {
 		}
 	}
 }
-
-// pub fn from_channel_id_to_vec(value: IbcChannelId) -> Vec<u8> {
-// 	format!("{}", value).as_bytes().to_vec()
-// }

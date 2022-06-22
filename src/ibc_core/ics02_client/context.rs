@@ -1,4 +1,7 @@
-use crate::{utils::host_height, *};
+use crate::{
+	utils::{host_height, LOG_TARGET},
+	*,
+};
 use alloc::string::ToString;
 use core::str::FromStr;
 use log::trace;
@@ -23,11 +26,7 @@ use ibc::{
 impl<T: Config> ClientReader for Context<T> {
 	/// Read `ClientType` by `ClientId`.
 	fn client_type(&self, client_id: &ClientId) -> Result<ClientType, ICS02Error> {
-		trace!(
-			target:"runtime::pallet-ibc",
-			"in client : [client_type] >> client_id = {:?}",
-			client_id
-		);
+		trace!(target: LOG_TARGET, "in client : [client_type] >> client_id = {:?}", client_id);
 
 		if <Clients<T>>::contains_key(client_id.as_bytes()) {
 			let encode_client_type = <Clients<T>>::get(client_id.as_bytes());
@@ -37,34 +36,27 @@ impl<T: Config> ClientReader for Context<T> {
 				.map_err(|e| ICS02Error::unknown_client_type(e.to_string()))?;
 
 			trace!(
-				target:"runtime::pallet-ibc",
+				target: LOG_TARGET,
 				"in client : [client_type] >> client_type = {:?}",
 				client_type
 			);
 			Ok(client_type)
 		} else {
-			trace!(
-				target:"runtime::pallet-ibc",
-				"in client : [client_type] >> read client_type is None"
-			);
+			trace!(target: LOG_TARGET, "in client : [client_type] >> read client_type is None");
 			Err(ICS02Error::client_not_found(client_id.clone()))
 		}
 	}
 
 	/// Read `AnyClientState` by `ClientId`.
 	fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, ICS02Error> {
-		trace!(
-			target:"runtime::pallet-ibc",
-			"in client : [client_state] >> client_id = {:?}",
-			client_id
-		);
+		trace!(target: LOG_TARGET, "in client : [client_state] >> client_id = {:?}", client_id);
 
 		if <ClientStates<T>>::contains_key(client_id.as_bytes()) {
 			let encode_client_state = <ClientStates<T>>::get(client_id.as_bytes());
 			let any_client_state = AnyClientState::decode_vec(&*encode_client_state)
 				.map_err(ICS02Error::invalid_decode)?;
 			trace!(
-				target:"runtime::pallet-ibc",
+				target: LOG_TARGET,
 				"in client : [client_state] >> any client_state: {:?}",
 				any_client_state
 			);
@@ -72,7 +64,7 @@ impl<T: Config> ClientReader for Context<T> {
 			Ok(any_client_state)
 		} else {
 			trace!(
-				target:"runtime::pallet-ibc",
+				target: LOG_TARGET,
 				"in client : [client_state] >> read any client state is None"
 			);
 			Err(ICS02Error::client_not_found(client_id.clone()))
@@ -88,9 +80,10 @@ impl<T: Config> ClientReader for Context<T> {
 		height: Height,
 	) -> Result<AnyConsensusState, ICS02Error> {
 		trace!(
-			target:"runtime::pallet-ibc",
+			target: LOG_TARGET,
 			"in client : [consensus_state] >> client_id = {:?}, height = {:?}",
-			client_id, height
+			client_id,
+			height
 		);
 
 		let mut values = <ConsensusStates<T>>::get(client_id.as_bytes());
@@ -108,7 +101,7 @@ impl<T: Config> ClientReader for Context<T> {
 				let any_consensus_state =
 					AnyConsensusState::decode_vec(&*item.1).map_err(ICS02Error::invalid_decode)?;
 				trace!(
-					target:"runtime::pallet-ibc",
+					target: LOG_TARGET,
 					"in client : [consensus_state] >> any consensus state = {:?}",
 					any_consensus_state
 				);
@@ -126,9 +119,10 @@ impl<T: Config> ClientReader for Context<T> {
 		height: Height,
 	) -> Result<Option<AnyConsensusState>, ICS02Error> {
 		trace!(
-			target:"runtime::pallet-ibc",
+			target: LOG_TARGET,
 			"in client : [next_consensus_state] >> client_id = {:?}, height = {:?}",
-			client_id, height
+			client_id,
+			height
 		);
 
 		let mut values = <ConsensusStates<T>>::get(client_id.as_bytes());
@@ -146,7 +140,7 @@ impl<T: Config> ClientReader for Context<T> {
 				let any_consensus_state =
 					AnyConsensusState::decode_vec(&*item.1).map_err(ICS02Error::invalid_decode)?;
 				trace!(
-					target:"runtime::pallet-ibc",
+					target: LOG_TARGET,
 					"in client : [consensus_state] >> any consensus state = {:?}",
 					any_consensus_state
 				);
@@ -166,9 +160,10 @@ impl<T: Config> ClientReader for Context<T> {
 		height: Height,
 	) -> Result<Option<AnyConsensusState>, ICS02Error> {
 		trace!(
-			target:"runtime::pallet-ibc",
+			target: LOG_TARGET,
 			"in client : [next_consensus_state] >> client_id = {:?}, height = {:?}",
-			client_id, height
+			client_id,
+			height
 		);
 
 		let mut values = <ConsensusStates<T>>::get(client_id.as_bytes());
@@ -186,7 +181,7 @@ impl<T: Config> ClientReader for Context<T> {
 				let any_consensus_state =
 					AnyConsensusState::decode_vec(&*item.1).map_err(ICS02Error::invalid_decode)?;
 				trace!(
-					target:"runtime::pallet-ibc",
+					target: LOG_TARGET,
 					"in client : [consensus_state] >> any consensus state = {:?}",
 					any_consensus_state
 				);
@@ -201,11 +196,11 @@ impl<T: Config> ClientReader for Context<T> {
 
 	/// Returns the current height of the local chain.
 	fn host_height(&self) -> Height {
-		trace!(target:"runtime::pallet-ibc","in client : [host_height]");
+		trace!(target: LOG_TARGET, "in client : [host_height]");
 
 		let revision_height = host_height::<T>();
 		trace!(
-			target:"runtime::pallet-ibc",
+			target: LOG_TARGET,
 			"in channel: [host_height] >> revision_height = {:?}",
 			revision_height
 		);
@@ -215,14 +210,14 @@ impl<T: Config> ClientReader for Context<T> {
 
 	/// Returns the current timestamp of the local chain.
 	fn host_timestamp(&self) -> Timestamp {
-		trace!(target:"runtime::pallet-ibc","in client: [host_timestamp]");
+		trace!(target: LOG_TARGET, "in client: [host_timestamp]");
 
 		use frame_support::traits::UnixTime;
 		let time = T::TimeProvider::now();
 		let ts = Timestamp::from_nanoseconds(time.as_nanos() as u64)
 			.map_err(|e| panic!("{:?}, caused by {:?} from pallet timestamp_pallet", e, time));
 		trace!(
-			target:"runtime::pallet-ibc",
+			target: LOG_TARGET,
 			"in client: [host_timestamp] >> host_timestamp = {:?}",
 			ts.unwrap()
 		);
@@ -232,11 +227,7 @@ impl<T: Config> ClientReader for Context<T> {
 
 	/// Returns the `ConsensusState` of the host (local) chain at specific height.
 	fn host_consensus_state(&self, _height: Height) -> Result<AnyConsensusState, ICS02Error> {
-		trace!(
-			target:"runtime::pallet-ibc",
-			"in client : [consensus_state] >> height = {:?}",
-			_height
-		);
+		trace!(target: LOG_TARGET, "in client : [consensus_state] >> height = {:?}", _height);
 
 		Ok(AnyConsensusState::Grandpa(
 			ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
@@ -245,7 +236,7 @@ impl<T: Config> ClientReader for Context<T> {
 
 	/// Returns the pending `ConsensusState` of the host (local) chain.
 	fn pending_host_consensus_state(&self) -> Result<AnyConsensusState, ICS02Error> {
-		trace!(target:"runtime::pallet-ibc","in client: [pending_host_consensus_state]");
+		trace!(target: LOG_TARGET, "in client: [pending_host_consensus_state]");
 
 		Ok(AnyConsensusState::Grandpa(
 			ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
@@ -256,7 +247,7 @@ impl<T: Config> ClientReader for Context<T> {
 	/// The value of this counter should increase only via method
 	/// `ClientKepper::increase_client_counter`.
 	fn client_counter(&self) -> Result<u64, ICS02Error> {
-		trace!(target:"runtime::pallet-ibc","in client : [client_counter]");
+		trace!(target: LOG_TARGET, "in client : [client_counter]");
 
 		Ok(<ClientCounter<T>>::get())
 	}
@@ -271,9 +262,10 @@ impl<T: Config> ClientKeeper for Context<T> {
 		client_type: ClientType,
 	) -> Result<(), ICS02Error> {
 		trace!(
-			target:"runtime::pallet-ibc",
+			target: LOG_TARGET,
 			"in client : [store_client_type] >> client_id = {:?}, client_type = {:?}",
-			client_id, client_type
+			client_id,
+			client_type
 		);
 
 		let encode_client_id = client_id.as_bytes();
@@ -289,9 +281,10 @@ impl<T: Config> ClientKeeper for Context<T> {
 		client_state: AnyClientState,
 	) -> Result<(), ICS02Error> {
 		trace!(
-			target:"runtime::pallet-ibc",
+			target: LOG_TARGET,
 			"in client : [store_client_state] >> client_id = {:?}, client_state = {:?}",
-			client_id, client_state
+			client_id,
+			client_state
 		);
 
 		let encode_client_type = client_id.as_bytes();
@@ -318,10 +311,12 @@ impl<T: Config> ClientKeeper for Context<T> {
 		consensus_state: AnyConsensusState,
 	) -> Result<(), ICS02Error> {
 		trace!(
-			target:"runtime::pallet-ibc",
+			target: LOG_TARGET,
 			"in client : [store_consensus_state] \
 			>> client_id = {:?}, height = {:?}, consensus_state = {:?}",
-			client_id, height, consensus_state
+			client_id,
+			height,
+			consensus_state
 		);
 
 		let encode_client_type = client_id.as_bytes();
@@ -345,7 +340,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 	/// Increases the counter which keeps track of how many clients have been created.
 	/// Should never fail.
 	fn increase_client_counter(&mut self) {
-		trace!(target:"runtime::pallet-ibc","in client : [increase_client_counter]");
+		trace!(target: LOG_TARGET, "in client : [increase_client_counter]");
 
 		<ClientCounter<T>>::try_mutate(|val| -> Result<(), ICS02Error> {
 			let new = val.checked_add(1).ok_or_else(ICS02Error::invalid_increase_client_counter)?;
@@ -365,10 +360,12 @@ impl<T: Config> ClientKeeper for Context<T> {
 		timestamp: Timestamp,
 	) -> Result<(), ICS02Error> {
 		trace!(
-			target:"runtime::pallet-ibc",
+			target: LOG_TARGET,
 			"in client: [store_update_time] >>\
 			 client_id = {:?}, height = {:?}, timestamp = {:?}",
-			client_id, height, timestamp
+			client_id,
+			height,
+			timestamp
 		);
 
 		let encode_client_id = client_id.as_bytes();
@@ -389,10 +386,12 @@ impl<T: Config> ClientKeeper for Context<T> {
 		host_height: Height,
 	) -> Result<(), ICS02Error> {
 		trace!(
-			target:"runtime::pallet-ibc",
+			target: LOG_TARGET,
 			"in client: [store_update_height] >>\
 			 client_id = {:?}, height = {:?}, host_height = {:?}",
-			client_id, height, host_height
+			client_id,
+			height,
+			host_height
 		);
 
 		let encode_client_id = client_id.as_bytes();

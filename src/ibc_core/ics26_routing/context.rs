@@ -1,4 +1,4 @@
-use crate::{context::Context, *};
+use crate::{context::Context, utils::LOG_TARGET, *};
 use alloc::{borrow::Borrow, collections::BTreeMap, sync::Arc};
 use ibc::core::ics26_routing::context::Ics26Context;
 use log::trace;
@@ -30,13 +30,13 @@ impl<T: Config> Ics26Context for Context<T> {
 	type Router = IBCRouter;
 
 	fn router(&self) -> &Self::Router {
-		trace!(target:"runtime::pallet-ibc","in routing: [route]");
+		trace!(target: LOG_TARGET, "in routing: [route]");
 
 		&self.router
 	}
 
 	fn router_mut(&mut self) -> &mut Self::Router {
-		trace!(target:"runtime::pallet-ibc","in routing: [router_mut]");
+		trace!(target: LOG_TARGET, "in routing: [router_mut]");
 
 		&mut self.router
 	}
