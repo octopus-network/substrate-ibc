@@ -291,15 +291,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 		// store client states key-value
 		<ClientStates<T>>::insert(encode_client_type, encode_client_state);
 
-		// TODO need to remove in the future
-		// store client states keys
-		<ClientStatesKeys<T>>::try_mutate(|val| -> Result<(), ICS02Error> {
-			if let Some(_value) = val.iter().find(|&x| x == encode_client_type) {
-			} else {
-				val.push(encode_client_type.to_vec());
-			}
-			Ok(())
-		})
+		Ok(())
 	}
 
 	/// Called upon successful client creation and update.

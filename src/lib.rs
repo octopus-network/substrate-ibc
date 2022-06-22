@@ -165,10 +165,6 @@ pub mod pallet {
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
-	/// vector client id for rpc
-	pub type ClientStatesKeys<T: Config> = StorageValue<_, Vec<Vec<u8>>, ValueQuery>;
-
-	#[pallet::storage]
 	/// (client_id, height) => timestamp
 	pub type ClientUpdateTime<T: Config> =
 		StorageDoubleMap<_, Blake2_128Concat, Vec<u8>, Blake2_128Concat, Vec<u8>, u64, ValueQuery>;
@@ -195,10 +191,6 @@ pub mod pallet {
 	pub type Connections<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
-	/// vector connection id for rpc
-	pub type ConnectionsKeys<T: Config> = StorageValue<_, Vec<Vec<u8>>, ValueQuery>;
-
-	#[pallet::storage]
 	/// (port_identifier, channel_identifier) => ChannelEnd
 	pub type Channels<T: Config> = StorageDoubleMap<
 		_,
@@ -209,10 +201,6 @@ pub mod pallet {
 		Vec<u8>,
 		ValueQuery,
 	>;
-
-	#[pallet::storage]
-	/// vector of (port id, channel id) for rpc
-	pub type ChannelsKeys<T: Config> = StorageValue<_, Vec<(Vec<u8>, Vec<u8>)>, ValueQuery>;
 
 	#[pallet::storage]
 	/// connection_id => Vec<(port_id, channel_id)>
@@ -246,11 +234,6 @@ pub mod pallet {
 		Vec<u8>,
 		ValueQuery,
 	>;
-
-	#[pallet::storage]
-	/// vector of (port_identifier, channel_identifier, sequence) for rpc
-	pub type AcknowledgementsKeys<T: Config> =
-		StorageValue<_, Vec<(Vec<u8>, Vec<u8>, u64)>, ValueQuery>;
 
 	#[pallet::storage]
 	/// client_id => client_type
@@ -300,44 +283,6 @@ pub mod pallet {
 		Vec<u8>,
 		ValueQuery,
 	>;
-
-	#[pallet::storage]
-	/// vector of (port_id, channel_id, sequence) for rpc
-	pub type PacketCommitmentKeys<T: Config> =
-		StorageValue<_, Vec<(Vec<u8>, Vec<u8>, u64)>, ValueQuery>;
-
-	#[pallet::storage]
-	/// (height, port_id, channel_id, sequence) => sendpacket event
-	pub type SendPacketEvent<T: Config> = StorageNMap<
-		_,
-		(
-			NMapKey<Blake2_128Concat, Vec<u8>>,
-			NMapKey<Blake2_128Concat, Vec<u8>>,
-			NMapKey<Blake2_128Concat, u64>,
-		),
-		Vec<u8>,
-		ValueQuery,
-	>;
-
-	#[pallet::storage]
-	/// (port_id, channel_id, sequence) => writeack event
-	pub type WriteAckPacketEvent<T: Config> = StorageNMap<
-		_,
-		(
-			NMapKey<Blake2_128Concat, Vec<u8>>,
-			NMapKey<Blake2_128Concat, Vec<u8>>,
-			NMapKey<Blake2_128Concat, u64>,
-		),
-		Vec<u8>,
-		ValueQuery,
-	>;
-
-	#[pallet::storage]
-	/// store latest height
-	pub type LatestHeight<T: Config> = StorageValue<_, Vec<u8>, ValueQuery>;
-
-	#[pallet::storage]
-	pub type OldHeight<T: Config> = StorageValue<_, u64, ValueQuery>;
 
 	#[pallet::storage]
 	/// key-value asserid with asset name
@@ -762,26 +707,6 @@ pub mod pallet {
 				}
 			)
 		}
-
-		#[pallet::weight(0)]
-		pub fn delete_send_packet_event(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
-			trace!(target: LOG_TARGET, "[delete_send_packet_event]");
-
-			let _who = ensure_signed(origin)?;
-			<SendPacketEvent<T>>::drain();
-
-			Ok(().into())
-		}
-
-		#[pallet::weight(0)]
-		pub fn delete_ack_packet_event(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
-			trace!(target: LOG_TARGET, "[delete_ack_packet_event]");
-
-			let _who = ensure_signed(origin)?;
-			<WriteAckPacketEvent<T>>::drain();
-
-			Ok(().into())
-		}
 	}
 
 	impl<T: Config> Pallet<T> {
@@ -908,15 +833,6 @@ pub mod pallet {
 						any_client_state.encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
 					// store client states key-value
 					<ClientStates<T>>::insert(client_id.clone(), data);
-
-					// store client states keys
-					let _ = <ClientStatesKeys<T>>::try_mutate(|val| -> Result<(), &'static str> {
-						if let Some(_value) = val.iter().find(|&x| x == &client_id.clone()) {
-						} else {
-							val.push(client_id.clone());
-						}
-						Ok(())
-					});
 
 					trace!(target: LOG_TARGET, "the updated client state is : {:?}", client_state);
 

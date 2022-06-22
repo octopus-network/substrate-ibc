@@ -532,12 +532,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 			(encode_port_id.to_vec(), encode_channel_id.to_vec(), encode_sequence),
 			encode_packet_commitment,
 		);
-
-		// insert packet commitment keys
-		<PacketCommitmentKeys<T>>::try_mutate(|val| -> Result<(), ICS04Error> {
-			val.push((encode_port_id.to_vec(), encode_channel_id.to_vec(), encode_sequence));
-			Ok(())
-		})
+		Ok(())
 	}
 
 	fn delete_packet_commitment(
@@ -560,18 +555,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		// delete packet commitment
 		<PacketCommitment<T>>::remove((&encode_port_id, &encode_channel_id, encode_sequence));
 
-		// delete packet commitment keys
-		<PacketCommitmentKeys<T>>::try_mutate(|val| -> Result<(), ICS04Error> {
-			let index = val
-				.iter()
-				.position(|value| {
-					value == &(encode_port_id.clone(), encode_channel_id.clone(), encode_sequence)
-				})
-				.ok_or_else(ICS04Error::packet_commitment_keys_not_found)?;
-			let ret = val.remove(index);
-			assert_eq!(ret, (encode_port_id.clone(), encode_channel_id.clone(), encode_sequence));
-			Ok(())
-		})
+		Ok(())
 	}
 
 	fn store_packet_receipt(
@@ -629,11 +613,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 			ack_commitment.into_vec(),
 		);
 
-		// store packet acknowledgement keys
-		<AcknowledgementsKeys<T>>::try_mutate(|val| -> Result<(), ICS04Error> {
-			val.push((encode_port_id, encode_channel_id, encode_sequence));
-			Ok(())
-		})
+		Ok(())
 	}
 
 	fn delete_packet_acknowledgement(
@@ -656,18 +636,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		// remove acknowledgements
 		<Acknowledgements<T>>::remove((&encode_port_id, &encode_channel_id, encode_sequence));
 
-		// remove acknowledgement keys for rpc
-		<AcknowledgementsKeys<T>>::try_mutate(|val| -> Result<(), ICS04Error> {
-			let index = val
-				.iter()
-				.position(|value| {
-					value == &(encode_port_id.clone(), encode_channel_id.clone(), encode_sequence)
-				})
-				.ok_or_else(ICS04Error::acknowledgements_keys_not_found)?;
-			let ret = val.remove(index);
-			assert_eq!(&ret, &(encode_port_id.clone(), encode_channel_id.clone(), encode_sequence));
-			Ok(())
-		})
+		Ok(())
 	}
 
 	fn store_connection_channels(
@@ -709,6 +678,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 			);
 
 			<ChannelsConnection<T>>::insert(&encode_connection_id, vec![port_and_channel_id]);
+
 			Ok(())
 		}
 	}
@@ -735,18 +705,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		// store channels key-value
 		<Channels<T>>::insert(&encode_port_id, &encode_channel_id, encode_channel_end);
 
-		// store channels keys for rpc
-		<ChannelsKeys<T>>::try_mutate(|val| -> Result<(), ICS04Error> {
-			if let Some(_value) =
-				val.iter().find(|&x| x == &(encode_port_id.clone(), encode_channel_id.clone()))
-			{
-			} else {
-				val.push((encode_port_id.clone(), encode_channel_id.clone()));
-			}
-
-			Ok(())
-		})
-		.map_err(|_| ICS04Error::invalid_store_channels_keys())
+		Ok(())
 	}
 
 	fn store_next_sequence_send(

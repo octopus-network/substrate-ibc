@@ -78,7 +78,6 @@ impl<T: Config> ConnectionReader for Context<T> {
 		trace!(target: LOG_TARGET, "in connection : [host_current_height]");
 
 		let revision_height = host_height::<T>();
-		<OldHeight<T>>::put(revision_height);
 
 		trace!(
 			target: LOG_TARGET,
@@ -195,14 +194,7 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		// store connection end
 		<Connections<T>>::insert(encode_connection_id, encode_connection_end);
 
-		// store connection id vector for rpc
-		<ConnectionsKeys<T>>::try_mutate(|val| -> Result<(), ICS03Error> {
-			if let Some(_value) = val.iter().find(|&x| x == encode_connection_id) {
-			} else {
-				val.push(encode_connection_id.to_vec());
-			}
-			Ok(())
-		})
+		Ok(())
 	}
 
 	/// Stores the given connection_id at a path associated with the client_id.
