@@ -5,7 +5,7 @@ use log::trace;
 
 use ibc::core::ics26_routing::context::{Module, ModuleId};
 
-#[derive(Debug, Default, Clone)]
+#[derive(Default, Clone)]
 pub struct IBCRouter(pub BTreeMap<ModuleId, Arc<dyn Module>>);
 
 impl ibc::core::ics26_routing::context::Router for IBCRouter {

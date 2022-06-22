@@ -1009,7 +1009,7 @@ dependencies = [
 [[package]]
 name = "ibc"
 version = "0.15.0"
-source = "git+https://github.com/octopus-network/ibc-rs.git?branch=feature/ibc20-informal#015e02440fcb491fd710db8742353635241467ae"
+source = "git+https://github.com/octopus-network/ibc-rs.git?branch=feature/ibc20-informal#3ff6b7a1bda53801440874f547f4765654404fb6"
 dependencies = [
  "beefy-light-client",
  "beefy-merkle-tree",
@@ -1022,9 +1022,9 @@ dependencies = [
  "hash-db",
  "ibc-proto",
  "ics23",
- "log",
  "num-traits",
  "parity-scale-codec",
+ "primitive-types",
  "prost",
  "prost-types",
  "safe-regex",
@@ -1042,7 +1042,7 @@ dependencies = [
  "tendermint-light-client-verifier",
  "tendermint-proto",
  "tendermint-testgen",
- "time 0.3.10",
+ "time 0.3.11",
  "tracing",
  "uint",
 ]
@@ -1050,7 +1050,7 @@ dependencies = [
 [[package]]
 name = "ibc-proto"
 version = "0.18.0"
-source = "git+https://github.com/octopus-network/ibc-rs.git?branch=feature/ibc20-informal#015e02440fcb491fd710db8742353635241467ae"
+source = "git+https://github.com/octopus-network/ibc-rs.git?branch=feature/ibc20-informal#3ff6b7a1bda53801440874f547f4765654404fb6"
 dependencies = [
  "base64",
  "bytes",
@@ -2839,7 +2839,7 @@ dependencies = [
  "subtle",
  "subtle-encoding",
  "tendermint-proto",
- "time 0.3.10",
+ "time 0.3.11",
  "zeroize",
 ]
 
@@ -2853,7 +2853,7 @@ dependencies = [
  "flex-error",
  "serde",
  "tendermint",
- "time 0.3.10",
+ "time 0.3.11",
 ]
 
 [[package]]
@@ -2871,7 +2871,7 @@ dependencies = [
  "serde",
  "serde_bytes",
  "subtle-encoding",
- "time 0.3.10",
+ "time 0.3.11",
 ]
 
 [[package]]
@@ -2887,7 +2887,7 @@ dependencies = [
  "simple-error",
  "tempfile",
  "tendermint",
- "time 0.3.10",
+ "time 0.3.11",
 ]
 
 [[package]]
@@ -2932,9 +2932,9 @@ dependencies = [
 
 [[package]]
 name = "time"
-version = "0.3.10"
+version = "0.3.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "82501a4c1c0330d640a6e176a3d6a204f5ec5237aca029029d21864a902e27b0"
+checksum = "72c91f41dcb2f096c05f0873d667dceec1087ce5bcf984ec8ffb19acddbb3217"
 dependencies = [
  "libc",
  "num_threads",
