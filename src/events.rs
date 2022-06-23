@@ -400,3 +400,10 @@ impl From<RawIbcEvent> for IbcEvent {
 		}
 	}
 }
+
+impl<T: Config> From<Vec<RawIbcEvent>> for Event<T> {
+	fn from(events: Vec<RawIbcEvent>) -> Self {
+		let events: Vec<IbcEvent> = events.into_iter().map(|ev| ev.into()).collect();
+		Self::IbcEvents { events }
+	}
+}

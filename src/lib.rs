@@ -36,7 +36,7 @@ use ibc::{
 		ics02_client::{client_state::AnyClientState, height},
 		ics24_host::identifier,
 	},
-	events::IbcEvent,
+	events::IbcEvent as RawIbcEvent,
 	signer::Signer,
 	timestamp,
 };
@@ -58,7 +58,7 @@ use sp_std::{prelude::*, str::FromStr};
 use tendermint_proto::Protobuf;
 
 pub mod context;
-pub mod event;
+pub mod events;
 pub mod utils;
 
 // ibc protocol implement
@@ -306,6 +306,8 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
+		/// Raw Ibc events
+		IbcEvents { events: Vec<events::IbcEvent> },
 		/// emit update client state event
 		UpdateClientState { height: Height, client_state: EventClientState },
 		/// Escrow token
@@ -317,13 +319,6 @@ pub mod pallet {
 		/// Mint token
 		MintToken { token_id: T::AssetId, receive: T::AccountId, amount: T::AssetBalance },
 	}
-
-	// /// Convert events of ibc-rs to the corresponding events in substrate-ibc
-	// impl<T: Config> From<ibc::events::IbcEvent> for Event<T> {
-	// 	fn from(value: ibc::events::IbcEvent) -> Self {
-	// 		event_from_ibc_event(value)
-	// 	}
-	// }
 
 	/// Errors in MMR verification informing users that something went wrong.
 	#[pallet::error]
@@ -433,7 +428,7 @@ pub mod pallet {
 					messages.iter().map(|message| message.type_url.clone()).collect::<Vec<_>>()
 				);
 
-				let mut results: Vec<IbcEvent> = vec![];
+				let mut results: Vec<RawIbcEvent> = vec![];
 				for (_index, message) in messages.into_iter().enumerate() {
 
 					let mut result = Vec::new();
