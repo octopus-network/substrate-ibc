@@ -1,7 +1,8 @@
 use crate::{context::Context, utils::LOG_TARGET, *};
-use alloc::{borrow::Borrow, collections::BTreeMap, sync::Arc};
 use ibc::core::ics26_routing::context::Ics26Context;
 use log::trace;
+use scale_info::prelude::{borrow::Borrow, collections::btree_map::BTreeMap};
+use sp_std::sync::Arc;
 
 use ibc::core::ics26_routing::context::{Module, ModuleId};
 

@@ -4,6 +4,7 @@ use crate::{
 	*,
 };
 use log::trace;
+use scale_info::prelude::format;
 
 use ibc::{
 	clients::ics10_grandpa::{consensus_state::ConsensusState as GPConsensusState, header::Header},

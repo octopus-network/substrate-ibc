@@ -10,9 +10,12 @@
 //! The pallet implements the chain specific logic of [ICS spec](https://github.com/cosmos/ibc/tree/ee71d0640c23ec4e05e924f52f557b5e06c1d82f),  
 //! and is integrated with [ibc-rs](https://github.com/informalsystems/ibc-rs),
 //! which implements the generic cross-chain logic in [ICS spec](https://github.com/cosmos/ibc/tree/ee71d0640c23ec4e05e924f52f557b5e06c1d82f).
-
-extern crate alloc;
-extern crate core;
+use scale_info::prelude::{
+	fmt::Debug,
+	marker::PhantomData,
+	string::{String, ToString},
+};
+use sp_std::str::FromStr;
 
 pub use pallet::*;
 
@@ -21,11 +24,6 @@ use crate::{
 	ibc_help::event_from_ibc_event,
 	utils::{AssetIdAndNameProvider, LOG_TARGET},
 };
-use alloc::{
-	format,
-	string::{String, ToString},
-};
-use core::{fmt::Debug, marker::PhantomData, str::FromStr};
 
 use codec::{Codec, Decode, Encode};
 use scale_info::{prelude::vec, TypeInfo};

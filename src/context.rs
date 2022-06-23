@@ -2,11 +2,12 @@ use crate::{
 	applications::transfer::transfer_handler::IBCTransferModule,
 	ibc_core::ics26_routing::context::IBCRouter, *,
 };
-use alloc::{borrow::ToOwned, sync::Arc};
 use ibc::{
 	applications::transfer::MODULE_ID_STR as TRANSFER_MODULE_ID,
 	core::ics26_routing::context::{Module, ModuleId, RouterBuilder},
 };
+use scale_info::prelude::borrow::ToOwned;
+use sp_std::sync::Arc;
 
 #[derive(Clone)]
 pub struct Context<T: Config> {

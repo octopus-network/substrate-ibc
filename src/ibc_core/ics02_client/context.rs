@@ -2,9 +2,9 @@ use crate::{
 	utils::{host_height, LOG_TARGET},
 	*,
 };
-use alloc::string::ToString;
-use core::str::FromStr;
 use log::trace;
+use scale_info::prelude::string::{String, ToString};
+use sp_std::str::FromStr;
 
 use crate::context::Context;
 use ibc::{

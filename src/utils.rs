@@ -1,6 +1,5 @@
 use crate::Config;
-use alloc::{format, vec::Vec};
-use core::fmt::Debug;
+use scale_info::prelude::{fmt::Debug, format, vec::Vec};
 
 use ibc::{
 	applications::transfer::{error::Error as Ics20Error, VERSION},

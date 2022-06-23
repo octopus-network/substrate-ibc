@@ -1,6 +1,7 @@
 use crate::{utils::LOG_TARGET, *};
-use core::{str::FromStr, time::Duration};
 use log::{error, trace};
+use scale_info::prelude::string::{String, ToString};
+use sp_std::{str::FromStr, time::Duration};
 
 use crate::{context::Context, utils::host_height};
 use ibc::{

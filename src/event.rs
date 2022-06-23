@@ -1,5 +1,10 @@
 pub mod primitive {
-	use alloc::string::{String, ToString};
+	use scale_info::prelude::{
+		string::{FromUtf8Error, String, ToString},
+		vec::Vec,
+	};
+	use sp_std::{convert::Infallible, str::FromStr};
+
 	use ibc::{
 		clients::ics10_grandpa::{
 			client_state::ClientState as IbcClientState,
@@ -21,7 +26,6 @@ pub mod primitive {
 		},
 		timestamp::Timestamp as IbcTimestamp,
 	};
-	use sp_std::{str::FromStr, vec::Vec};
 
 	use codec::{Decode, Encode};
 	use scale_info::TypeInfo;
@@ -34,7 +38,7 @@ pub mod primitive {
 		#[derive(Debug, PartialEq, Eq)]
 		Error {
 			InvalidFromUtf8
-				[DisplayOnly<alloc::string::FromUtf8Error>]
+				[DisplayOnly<FromUtf8Error>]
 				| _ | { "invalid from utf8 error" },
 			InvalidDecode
 				[DisplayOnly<codec::Error>]
@@ -46,7 +50,7 @@ pub mod primitive {
 				[DisplayOnly<ValidationError>]
 				| _ | { "invalid validation error"},
 			InvalidChainId
-				[DisplayOnly<core::convert::Infallible>]
+				[DisplayOnly<Infallible>]
 				|_| { "invalid chain id error" },
 		}
 	}
