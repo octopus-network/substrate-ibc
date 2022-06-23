@@ -12,8 +12,7 @@
 //! which implements the generic cross-chain logic in [ICS spec](https://github.com/cosmos/ibc/tree/ee71d0640c23ec4e05e924f52f557b5e06c1d82f).
 use crate::{
 	context::Context,
-	event::event_from_ibc_event,
-	primitives::{
+	ibc_core::ics24_host::{
 		ChannelId, ClientId, ClientState as EventClientState, ClientType, ConnectionId, Height,
 		Packet, PortId,
 	},
@@ -60,7 +59,6 @@ use tendermint_proto::Protobuf;
 
 pub mod context;
 pub mod event;
-pub mod primitives;
 pub mod utils;
 
 // ibc protocol implement
@@ -308,140 +306,8 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		/// New block
-		NewBlock { height: Height },
-		/// Client Created
-		CreateClient {
-			height: Height,
-			client_id: ClientId,
-			client_type: ClientType,
-			consensus_height: Height,
-		},
-		/// Client updated
-		UpdateClient {
-			height: Height,
-			client_id: ClientId,
-			client_type: ClientType,
-			consensus_height: Height,
-		},
 		/// emit update client state event
 		UpdateClientState { height: Height, client_state: EventClientState },
-		/// Client upgraded
-		UpgradeClient {
-			height: Height,
-			client_id: ClientId,
-			client_type: ClientType,
-			consensus_height: Height,
-		},
-		/// Client misbehaviour
-		ClientMisbehaviour {
-			height: Height,
-			client_id: ClientId,
-			client_type: ClientType,
-			consensus_height: Height,
-		},
-		/// Connection open init
-		OpenInitConnection {
-			height: Height,
-			connection_id: Option<ConnectionId>,
-			client_id: ClientId,
-			counterparty_connection_id: Option<ConnectionId>,
-			counterparty_client_id: ClientId,
-		},
-		/// Connection open try
-		OpenTryConnection {
-			height: Height,
-			connection_id: Option<ConnectionId>,
-			client_id: ClientId,
-			counterparty_connection_id: Option<ConnectionId>,
-			counterparty_client_id: ClientId,
-		},
-		/// Connection open acknowledgement
-		OpenAckConnection {
-			height: Height,
-			connection_id: Option<ConnectionId>,
-			client_id: ClientId,
-			counterparty_connection_id: Option<ConnectionId>,
-			counterparty_client_id: ClientId,
-		},
-		/// Connection open confirm
-		OpenConfirmConnection {
-			height: Height,
-			connection_id: Option<ConnectionId>,
-			client_id: ClientId,
-			counterparty_connection_id: Option<ConnectionId>,
-			counterparty_client_id: ClientId,
-		},
-		/// Channel open init
-		OpenInitChannel {
-			height: Height,
-			port_id: PortId,
-			channel_id: Option<ChannelId>,
-			connection_id: ConnectionId,
-			counterparty_port_id: PortId,
-			counterparty_channel_id: Option<ChannelId>,
-		},
-		/// Channel open try
-		OpenTryChannel {
-			height: Height,
-			port_id: PortId,
-			channel_id: Option<ChannelId>,
-			connection_id: ConnectionId,
-			counterparty_port_id: PortId,
-			counterparty_channel_id: Option<ChannelId>,
-		},
-		/// Channel open acknowledgement
-		OpenAckChannel {
-			height: Height,
-			port_id: PortId,
-			channel_id: Option<ChannelId>,
-			connection_id: ConnectionId,
-			counterparty_port_id: PortId,
-			counterparty_channel_id: Option<ChannelId>,
-		},
-		/// Channel open confirm
-		OpenConfirmChannel {
-			height: Height,
-			port_id: PortId,
-			channel_id: Option<ChannelId>,
-			connection_id: ConnectionId,
-			counterparty_port_id: PortId,
-			counterparty_channel_id: Option<ChannelId>,
-		},
-		/// Channel close init
-		CloseInitChannel {
-			height: Height,
-			port_id: PortId,
-			channel_id: Option<ChannelId>,
-			connection_id: ConnectionId,
-			counterparty_port_id: PortId,
-			counterparty_channel_id: Option<ChannelId>,
-		},
-		/// Channel close confirm
-		CloseConfirmChannel {
-			height: Height,
-			port_id: PortId,
-			channel_id: Option<ChannelId>,
-			connection_id: ConnectionId,
-			counterparty_port_id: PortId,
-			counterparty_channel_id: Option<ChannelId>,
-		},
-		/// Send packet
-		SendPacket { height: Height, packet: Packet },
-		/// Receive packet
-		ReceivePacket { height: Height, packet: Packet },
-		/// WriteAcknowledgement packet
-		WriteAcknowledgement { height: Height, packet: Packet, ack: Vec<u8> },
-		/// Acknowledgements packet
-		AcknowledgePacket { height: Height, packet: Packet },
-		/// Timeout packet
-		TimeoutPacket { height: Height, packet: Packet },
-		/// TimoutOnClose packet
-		TimeoutOnClosePacket { height: Height, packet: Packet },
-		/// Empty
-		Empty(Vec<u8>),
-		/// Chain Error
-		ChainError(Vec<u8>),
 		/// Escrow token
 		EscrowToken { sender: T::AccountId, escrow_account: T::AccountId, amount: BalanceOf<T> },
 		/// Burn token
@@ -450,16 +316,14 @@ pub mod pallet {
 		UnEscrowToken { escrow_account: T::AccountId, receive: T::AccountId, amount: BalanceOf<T> },
 		/// Mint token
 		MintToken { token_id: T::AssetId, receive: T::AccountId, amount: T::AssetBalance },
-		/// App Module
-		AppModule,
 	}
 
-	/// Convert events of ibc-rs to the corresponding events in substrate-ibc
-	impl<T: Config> From<ibc::events::IbcEvent> for Event<T> {
-		fn from(value: ibc::events::IbcEvent) -> Self {
-			event_from_ibc_event(value)
-		}
-	}
+	// /// Convert events of ibc-rs to the corresponding events in substrate-ibc
+	// impl<T: Config> From<ibc::events::IbcEvent> for Event<T> {
+	// 	fn from(value: ibc::events::IbcEvent) -> Self {
+	// 		event_from_ibc_event(value)
+	// 	}
+	// }
 
 	/// Errors in MMR verification informing users that something went wrong.
 	#[pallet::error]
