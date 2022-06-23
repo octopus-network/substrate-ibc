@@ -11,13 +11,11 @@
 //! and is integrated with [ibc-rs](https://github.com/informalsystems/ibc-rs),
 //! which implements the generic cross-chain logic in [ICS spec](https://github.com/cosmos/ibc/tree/ee71d0640c23ec4e05e924f52f557b5e06c1d82f).
 use crate::{
+	clients::ics10_grandpa::ClientState as EventClientState,
 	context::Context,
 	ibc_core::{
 		ics04_channel::packet::Packet,
-		ics24_host::{
-			ChannelId, ClientId, ClientState as EventClientState, ClientType, ConnectionId, Height,
-			PortId,
-		},
+		ics24_host::{ChannelId, ClientId, ClientType, ConnectionId, Height, PortId},
 	},
 	utils::{AssetIdAndNameProvider, LOG_TARGET},
 };
