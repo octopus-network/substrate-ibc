@@ -1,7 +1,7 @@
 use crate::*;
 use ibc::events::IbcEvent as RawIbcEvent;
 
-/// IBC EVENTS
+/// IBC Events
 #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo)]
 pub enum IbcEvent {
 	/// New block

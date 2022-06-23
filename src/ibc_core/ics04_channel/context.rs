@@ -1,4 +1,7 @@
-use crate::{utils::LOG_TARGET, *};
+use crate::{
+	utils::{offchain_key, LOG_TARGET},
+	*,
+};
 use log::{error, trace};
 use scale_info::prelude::string::{String, ToString};
 use sp_std::{str::FromStr, time::Duration};
@@ -21,7 +24,7 @@ use ibc::{
 			},
 			context::{ChannelKeeper, ChannelReader},
 			error::Error as ICS04Error,
-			packet::{Receipt, Sequence},
+			packet::{Packet as IBCPacket, Receipt, Sequence},
 		},
 		ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
 	},
@@ -41,17 +44,37 @@ impl<T: Config> ChannelReader for Context<T> {
 			port_channel_id.1
 		);
 
-		let encode_port_id = port_channel_id.0.as_bytes().to_vec();
-		let encode_channel_id = port_channel_id.1.to_string().as_bytes().to_vec();
+		let encode_port_id = port_channel_id.0.clone().as_bytes().to_vec();
+		let encode_channel_id = port_channel_id.1.clone().to_string().as_bytes().to_vec();
 
-		let encode_channel_end = <Channels<T>>::get(encode_port_id, encode_channel_id);
+		match <Channels<T>>::contains_key(&encode_port_id, &encode_channel_id) {
+			true => {
+				let encode_channel_end = <Channels<T>>::get(&encode_port_id, &encode_channel_id);
 
-		let channel_end = ChannelEnd::decode_vec(&*encode_channel_end).map_err(|_| {
-			ICS04Error::channel_not_found(port_channel_id.clone().0, port_channel_id.clone().1)
-		})?;
+				let channel_end = ChannelEnd::decode_vec(&*encode_channel_end).map_err(|_| {
+					ICS04Error::channel_not_found(
+						port_channel_id.clone().0,
+						port_channel_id.clone().1,
+					)
+				})?;
 
-		trace!(target: LOG_TARGET, "in channel : [channel_end] >> channel_end = {:?}", channel_end);
-		Ok(channel_end)
+				trace!(
+					target: LOG_TARGET,
+					"in channel : [channel_end] >> channel_end = {:?}",
+					channel_end
+				);
+				Ok(channel_end)
+			},
+			false => {
+				error!(
+					target: LOG_TARGET,
+					"in channel: [channel_end] ❎: Can't find ChannelEnd by PortId:({:?}), ChannelId({:?})",
+					port_channel_id.0,
+					port_channel_id.1
+				);
+				Err(ICS04Error::channel_not_found(port_channel_id.0.clone(), port_channel_id.1))
+			},
+		}
 	}
 
 	/// Returns the ConnectionState for the given identifier `connection_id`.
@@ -63,17 +86,30 @@ impl<T: Config> ChannelReader for Context<T> {
 		);
 
 		let encode_connection_id = connection_id.as_bytes().to_vec();
-		let encode_connection_end = <Connections<T>>::get(encode_connection_id);
 
-		let connection_end = ConnectionEnd::decode_vec(&*encode_connection_end)
-			.map_err(|_| ICS04Error::connection_not_open(connection_id.clone()))?;
+		match <Connections<T>>::contains_key(&encode_connection_id) {
+			true => {
+				let encode_connection_end = <Connections<T>>::get(encode_connection_id);
 
-		trace!(
-			target: LOG_TARGET,
-			"In channel : [connection_end] >> connection_end = {:?}",
-			connection_end
-		);
-		Ok(connection_end)
+				let connection_end = ConnectionEnd::decode_vec(&*encode_connection_end)
+					.map_err(|_| ICS04Error::connection_not_open(connection_id.clone()))?;
+
+				trace!(
+					target: LOG_TARGET,
+					"In channel : [connection_end] >> connection_end = {:?}",
+					connection_end
+				);
+				Ok(connection_end)
+			},
+			false => {
+				error!(
+					target: LOG_TARGET,
+					"in channel: [connection_end] ❎: Can't find ConnectionEnd by ConnectionId:({:?})",
+					connection_id
+				);
+				Err(ICS04Error::connection_not_found(connection_id.clone()))
+			},
+		}
 	}
 
 	/// Returns the vector tuple port_id and channel_id for the given
@@ -89,37 +125,42 @@ impl<T: Config> ChannelReader for Context<T> {
 		);
 
 		let encode_connection_id = conn_id.as_bytes();
-		if <ChannelsConnection<T>>::contains_key(encode_connection_id) {
-			let port_and_channel_id = <ChannelsConnection<T>>::get(encode_connection_id);
+		match <ChannelsConnection<T>>::contains_key(encode_connection_id) {
+			true => {
+				let port_and_channel_id = <ChannelsConnection<T>>::get(encode_connection_id);
 
-			let mut vectors_port_id_and_channel_id = vec![];
+				let mut vectors_port_id_and_channel_id = vec![];
 
-			for item in port_and_channel_id.iter() {
-				let string_port_id =
-					String::from_utf8(item.0.clone()).map_err(ICS04Error::invalid_from_utf8)?;
-				let port_id =
-					PortId::from_str(string_port_id.as_str()).map_err(ICS04Error::identifier)?;
+				for item in port_and_channel_id.iter() {
+					let string_port_id =
+						String::from_utf8(item.0.clone()).map_err(ICS04Error::invalid_from_utf8)?;
+					let port_id = PortId::from_str(string_port_id.as_str())
+						.map_err(ICS04Error::identifier)?;
 
-				let string_channel_id =
-					String::from_utf8(item.1.clone()).map_err(ICS04Error::invalid_from_utf8)?;
-				let channel_id = ChannelId::from_str(string_channel_id.as_str())
-					.map_err(ICS04Error::identifier)?;
+					let string_channel_id =
+						String::from_utf8(item.1.clone()).map_err(ICS04Error::invalid_from_utf8)?;
+					let channel_id = ChannelId::from_str(string_channel_id.as_str())
+						.map_err(ICS04Error::identifier)?;
 
-				vectors_port_id_and_channel_id.push((port_id, channel_id));
-			}
+					vectors_port_id_and_channel_id.push((port_id, channel_id));
+				}
 
-			trace!(
-				target: LOG_TARGET,
-				"in channel : [connection_channels] >> Vector<(PortId, ChannelId)> =  {:?}",
-				vectors_port_id_and_channel_id
-			);
-			Ok(vectors_port_id_and_channel_id)
-		} else {
-			error!(
-				target: LOG_TARGET,
-				"in channel : [connection_channels] >> read get  connection_channels return None"
-			);
-			Err(ICS04Error::connection_not_open(conn_id.clone()))
+				trace!(
+					target: LOG_TARGET,
+					"in channel : [connection_channels] >> Vector<(PortId, ChannelId)> =  {:?}",
+					vectors_port_id_and_channel_id
+				);
+				Ok(vectors_port_id_and_channel_id)
+			},
+			false => {
+				error!(
+					target: LOG_TARGET,
+					"in channel: [connection_channels] ❎: Can't find vector port_id and \
+					channel_id by ConnectionId:({:?})",
+					conn_id
+				);
+				Err(ICS04Error::port_id_and_channel_id_not_found(conn_id.clone()))
+			},
 		}
 	}
 
@@ -129,19 +170,32 @@ impl<T: Config> ChannelReader for Context<T> {
 		trace!(target: LOG_TARGET, "in channel : [client_state] >> client_id = {:?}", client_id);
 
 		let encode_client_id = client_id.as_bytes();
-		let encode_any_client_state = <ClientStates<T>>::get(encode_client_id);
+		match <ClientStates<T>>::contains_key(encode_client_id) {
+			true => {
+				let encode_any_client_state = <ClientStates<T>>::get(encode_client_id);
 
-		let any_client_state = AnyClientState::decode_vec(&*encode_any_client_state)
-			.map_err(|_| ICS04Error::frozen_client(client_id.clone()))?;
+				let any_client_state = AnyClientState::decode_vec(&*encode_any_client_state)
+					.map_err(|_| ICS04Error::frozen_client(client_id.clone()))?;
 
-		trace!(
-			target: LOG_TARGET,
-			"in channel : [client_state] >> Any client state: {:?}",
-			any_client_state
-		);
-		Ok(any_client_state)
+				trace!(
+					target: LOG_TARGET,
+					"in channel : [client_state] >> Any client state: {:?}",
+					any_client_state
+				);
+				Ok(any_client_state)
+			},
+			false => {
+				error!(
+					target: LOG_TARGET,
+					"in channel: [client_state] ❎: Can't find client_state by ClientId:({:?})",
+					client_id
+				);
+				Err(ICS04Error::any_client_state_not_found(client_id.clone()))
+			},
+		}
 	}
 
+	/// TODO
 	/// Returns the AnyConsensusState for the given
 	/// identifier `client_id` and at the specified `height`.
 	fn client_consensus_state(
@@ -197,14 +251,21 @@ impl<T: Config> ChannelReader for Context<T> {
 		let encode_port_id = port_channel_id.0.as_bytes().to_vec();
 		let encode_channel_id = port_channel_id.1.to_string().as_bytes().to_vec();
 
-		let encode_sequence = <NextSequenceSend<T>>::get(encode_port_id, encode_channel_id);
+		match <NextSequenceSend<T>>::contains_key(&encode_port_id, &encode_channel_id) {
+			true => {
+				let encode_sequence = <NextSequenceSend<T>>::get(encode_port_id, encode_channel_id);
 
-		trace!(
-			target: LOG_TARGET,
-			"in channel : [get_next_sequence] >> sequence  = {:?}",
-			encode_sequence
-		);
-		Ok(Sequence::from(encode_sequence))
+				trace!(
+					target: LOG_TARGET,
+					"in channel : [get_next_sequence] >> sequence  = {:?}",
+					encode_sequence
+				);
+				Ok(Sequence::from(encode_sequence))
+			},
+			false => {
+				todo!()
+			},
+		}
 	}
 
 	/// Return `next recv sequence ` by given identifier `port_id` and `channel_id`.
@@ -222,15 +283,22 @@ impl<T: Config> ChannelReader for Context<T> {
 		let encode_port_id = port_channel_id.0.as_bytes().to_vec();
 		let encode_channel_id = port_channel_id.1.to_string().as_bytes().to_vec();
 
-		let encode_sequence = <NextSequenceRecv<T>>::get(encode_port_id, encode_channel_id);
+		match <NextSequenceRecv<T>>::contains_key(&encode_port_id, &encode_channel_id) {
+			true => {
+				let encode_sequence = <NextSequenceRecv<T>>::get(encode_port_id, encode_channel_id);
 
-		trace!(
-			target: LOG_TARGET,
-			"in channel : [get_next_sequence_recv] >> sequence = {:?}",
-			encode_sequence
-		);
+				trace!(
+					target: LOG_TARGET,
+					"in channel : [get_next_sequence_recv] >> sequence = {:?}",
+					encode_sequence
+				);
 
-		Ok(Sequence::from(encode_sequence))
+				Ok(Sequence::from(encode_sequence))
+			},
+			false => {
+				todo!()
+			},
+		}
 	}
 
 	/// Return `next ack sequence ` by given identifier `port_id` and `channel_id`.
@@ -248,14 +316,21 @@ impl<T: Config> ChannelReader for Context<T> {
 		let encode_port_id = port_channel_id.0.as_bytes().to_vec();
 		let encode_channel_id = port_channel_id.1.to_string().as_bytes().to_vec();
 
-		let encode_sequence = <NextSequenceAck<T>>::get(encode_port_id, encode_channel_id);
+		match <NextSequenceAck<T>>::contains_key(&encode_port_id, &encode_channel_id) {
+			true => {
+				let encode_sequence = <NextSequenceAck<T>>::get(encode_port_id, encode_channel_id);
 
-		trace!(
-			target: LOG_TARGET,
-			"in channel : [get_next_sequence_ack] >> sequence = {}",
-			encode_sequence
-		);
-		Ok(Sequence::from(encode_sequence))
+				trace!(
+					target: LOG_TARGET,
+					"in channel : [get_next_sequence_ack] >> sequence = {}",
+					encode_sequence
+				);
+				Ok(Sequence::from(encode_sequence))
+			},
+			false => {
+				todo!()
+			},
+		}
 	}
 
 	/// Returns the `PacketCommitment` for the given identifier `(PortId, ChannelId, Sequence)`.
@@ -276,28 +351,34 @@ impl<T: Config> ChannelReader for Context<T> {
 		let encode_channel_id = key.1.to_string().as_bytes().to_vec();
 		let encode_sequence = u64::from(key.2);
 
-		if <PacketCommitment<T>>::contains_key((
+		match <PacketCommitment<T>>::contains_key((
 			&encode_port_id,
 			&encode_channel_id,
 			encode_sequence,
 		)) {
-			let encode_packet_commitment =
-				<PacketCommitment<T>>::get((&encode_port_id, &encode_channel_id, encode_sequence));
+			true => {
+				let encode_packet_commitment = <PacketCommitment<T>>::get((
+					&encode_port_id,
+					&encode_channel_id,
+					encode_sequence,
+				));
 
-			let packet_commitment = IbcPacketCommitment::from(encode_packet_commitment);
+				let packet_commitment = IbcPacketCommitment::from(encode_packet_commitment);
 
-			trace!(
-				target: LOG_TARGET,
-				"in channel : [get_packet_commitment] >> packet_commitment = {:?}",
-				packet_commitment
-			);
-			Ok(packet_commitment)
-		} else {
-			error!(
+				trace!(
+					target: LOG_TARGET,
+					"in channel : [get_packet_commitment] >> packet_commitment = {:?}",
+					packet_commitment
+				);
+				Ok(packet_commitment)
+			},
+			false => {
+				error!(
 				target: LOG_TARGET,
 				"in channel : [get_packet_commitment] >> read get packet commitment return None"
 			);
-			Err(ICS04Error::packet_commitment_not_found(key.2))
+				Err(ICS04Error::packet_commitment_not_found(key.2))
+			},
 		}
 	}
 
@@ -316,30 +397,36 @@ impl<T: Config> ChannelReader for Context<T> {
 		let encode_channel_id = key.1.to_string().as_bytes().to_vec();
 		let encode_sequence = u64::from(key.2);
 
-		if <PacketReceipt<T>>::contains_key((&encode_port_id, &encode_channel_id, encode_sequence))
-		{
-			let encode_receipt =
-				<PacketReceipt<T>>::get((&encode_port_id, &encode_channel_id, encode_sequence));
+		match <PacketReceipt<T>>::contains_key((
+			&encode_port_id,
+			&encode_channel_id,
+			encode_sequence,
+		)) {
+			true => {
+				let encode_receipt =
+					<PacketReceipt<T>>::get((&encode_port_id, &encode_channel_id, encode_sequence));
 
-			let string_receipt =
-				String::from_utf8(encode_receipt).map_err(ICS04Error::invalid_from_utf8)?;
+				let string_receipt =
+					String::from_utf8(encode_receipt).map_err(ICS04Error::invalid_from_utf8)?;
 
-			let receipt = match string_receipt.as_ref() {
-				"Ok" => Receipt::Ok,
-				_ => unreachable!(),
-			};
-			trace!(
-				target: LOG_TARGET,
-				"in channel : [get_packet_receipt] >> packet_receipt = {:?}",
-				receipt
-			);
-			Ok(receipt)
-		} else {
-			error!(
-				target: LOG_TARGET,
-				"in channel : [get_packet_receipt] >> read get packet receipt not found"
-			);
-			Err(ICS04Error::packet_receipt_not_found(key.2))
+				let receipt = match string_receipt.as_ref() {
+					"Ok" => Receipt::Ok,
+					_ => unreachable!(),
+				};
+				trace!(
+					target: LOG_TARGET,
+					"in channel : [get_packet_receipt] >> packet_receipt = {:?}",
+					receipt
+				);
+				Ok(receipt)
+			},
+			false => {
+				error!(
+					target: LOG_TARGET,
+					"in channel : [get_packet_receipt] >> read get packet receipt not found"
+				);
+				Err(ICS04Error::packet_receipt_not_found(key.2))
+			},
 		}
 	}
 
@@ -358,27 +445,33 @@ impl<T: Config> ChannelReader for Context<T> {
 		let encode_channel_id = key.1.to_string().as_bytes().to_vec();
 		let encode_sequence = u64::from(key.2);
 
-		if <Acknowledgements<T>>::contains_key((
+		match <Acknowledgements<T>>::contains_key((
 			&encode_port_id,
 			&encode_channel_id,
 			encode_sequence,
 		)) {
-			let encode_acknowledgement =
-				<Acknowledgements<T>>::get((&encode_port_id, &encode_channel_id, encode_sequence));
+			true => {
+				let encode_acknowledgement = <Acknowledgements<T>>::get((
+					&encode_port_id,
+					&encode_channel_id,
+					encode_sequence,
+				));
 
-			let acknowledgement = IbcAcknowledgementCommitment::from(encode_acknowledgement);
-			trace!(
-				target: LOG_TARGET,
-				"in channel : [get_packet_acknowledgement] >> packet_acknowledgement = {:?}",
-				acknowledgement
-			);
-			Ok(acknowledgement)
-		} else {
-			error!(
-				target: LOG_TARGET,
-				"in channel : [get_packet_acknowledgement] >> get acknowledgement not found"
-			);
-			Err(ICS04Error::packet_acknowledgement_not_found(key.2))
+				let acknowledgement = IbcAcknowledgementCommitment::from(encode_acknowledgement);
+				trace!(
+					target: LOG_TARGET,
+					"in channel : [get_packet_acknowledgement] >> packet_acknowledgement = {:?}",
+					acknowledgement
+				);
+				Ok(acknowledgement)
+			},
+			false => {
+				error!(
+					target: LOG_TARGET,
+					"in channel : [get_packet_acknowledgement] >> get acknowledgement not found"
+				);
+				Err(ICS04Error::packet_acknowledgement_not_found(key.2))
+			},
 		}
 	}
 
@@ -452,14 +545,20 @@ impl<T: Config> ChannelReader for Context<T> {
 		let encode_client_id = client_id.as_bytes().to_vec();
 		let encode_height = height.encode_vec().map_err(|_| ICS04Error::invalid_encode())?;
 
-		if <ClientUpdateTime<T>>::contains_key(&encode_client_id, &encode_height) {
-			let time = <ClientUpdateTime<T>>::get(&encode_client_id, &encode_height);
-			// TODO: Need to handle unwrap()
-			let timestamp = Timestamp::from_nanoseconds(time).unwrap();
-			Ok(timestamp)
-		} else {
-			error!(target: LOG_TARGET, "in channel: [client_update_time] processed time not found");
-			Err(ICS04Error::processed_time_not_found(client_id.clone(), height))
+		match <ClientUpdateTime<T>>::contains_key(&encode_client_id, &encode_height) {
+			true => {
+				let time = <ClientUpdateTime<T>>::get(&encode_client_id, &encode_height);
+				// TODO: Need to handle unwrap()
+				let timestamp = Timestamp::from_nanoseconds(time).unwrap();
+				Ok(timestamp)
+			},
+			false => {
+				error!(
+					target: LOG_TARGET,
+					"in channel: [client_update_time] processed time not found"
+				);
+				Err(ICS04Error::processed_time_not_found(client_id.clone(), height))
+			},
 		}
 	}
 
@@ -480,17 +579,20 @@ impl<T: Config> ChannelReader for Context<T> {
 		let encode_client_id = client_id.as_bytes().to_vec();
 		let encode_height = height.encode_vec().map_err(|_| ICS04Error::invalid_encode())?;
 
-		if <ClientUpdateHeight<T>>::contains_key(&encode_client_id, &encode_height) {
-			let host_height = <ClientUpdateHeight<T>>::get(&encode_client_id, &encode_height);
-			let host_height =
-				Height::decode(&mut &host_height[..]).map_err(ICS04Error::invalid_decode)?;
-			Ok(host_height)
-		} else {
-			error!(
-				target: LOG_TARGET,
-				"in channel: [client_update_height] processed height not found"
-			);
-			Err(ICS04Error::processed_height_not_found(client_id.clone(), height))
+		match <ClientUpdateHeight<T>>::contains_key(&encode_client_id, &encode_height) {
+			true => {
+				let host_height = <ClientUpdateHeight<T>>::get(&encode_client_id, &encode_height);
+				let host_height =
+					Height::decode(&mut &host_height[..]).map_err(ICS04Error::invalid_decode)?;
+				Ok(host_height)
+			},
+			false => {
+				error!(
+					target: LOG_TARGET,
+					"in channel: [client_update_height] processed height not found"
+				);
+				Err(ICS04Error::processed_height_not_found(client_id.clone(), height))
+			},
 		}
 	}
 
@@ -506,8 +608,9 @@ impl<T: Config> ChannelReader for Context<T> {
 	/// Returns the maximum expected tiome per block.
 	fn max_expected_time_per_block(&self) -> Duration {
 		trace!(target: LOG_TARGET, "in channel: [max_expected_time_per_block]");
+		let expected = T::ExpectedBlockTime::get();
 
-		Duration::from_secs(6)
+		Duration::from_nanos(expected)
 	}
 }
 
@@ -559,6 +662,22 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		<PacketCommitment<T>>::remove((&encode_port_id, &encode_channel_id, encode_sequence));
 
 		Ok(())
+	}
+
+	/// Allow implementers to optionally store packet in storage
+	fn store_packet(
+		&mut self,
+		key: (PortId, ChannelId, Sequence),
+		packet: IBCPacket,
+	) -> Result<(), ICS04Error> {
+		// store packet offchain
+		let encode_port_id = key.0.as_bytes().to_vec();
+		let encode_channel_id = key.1.to_string().as_bytes().to_vec();
+		let encode_sequence = u64::from(key.2);
+
+		let key = offchain_key::<T>(encode_port_id, encode_channel_id);
+
+		todo!()
 	}
 
 	fn store_packet_receipt(

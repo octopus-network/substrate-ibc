@@ -1,4 +1,5 @@
 use crate::Config;
+use codec::Encode;
 use scale_info::prelude::{fmt::Debug, format, vec::Vec};
 
 use ibc::{
@@ -36,4 +37,9 @@ pub fn get_channel_escrow_address(
 	let mut hex_string = hex::encode_upper(hash);
 	hex_string.insert_str(0, "0x");
 	hex_string.parse::<Signer>().map_err(Ics20Error::signer)
+}
+
+pub fn offchain_key<T: Config>(channel_id: Vec<u8>, port_id: Vec<u8>) -> Vec<u8> {
+	let pair = (T::INDEXING_PREFIX.to_vec(), channel_id, port_id);
+	pair.encode()
 }

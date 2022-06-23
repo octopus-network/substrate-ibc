@@ -4,6 +4,7 @@ use scale_info::prelude::{
 };
 use sp_std::{convert::Infallible, str::FromStr};
 
+use codec::{Decode, Encode};
 use ibc::{
 	clients::ics10_grandpa::{
 		client_state::ClientState as IbcClientState,
@@ -25,34 +26,8 @@ use ibc::{
 	},
 	timestamp::Timestamp as IbcTimestamp,
 };
-
-use codec::{Decode, Encode};
 use scale_info::TypeInfo;
-
 use sp_runtime::RuntimeDebug;
-
-use flex_error::{define_error, DisplayOnly};
-
-define_error! {
-	#[derive(Debug, PartialEq, Eq)]
-	Error {
-		InvalidFromUtf8
-			[DisplayOnly<FromUtf8Error>]
-			| _ | { "invalid from utf8 error" },
-		InvalidDecode
-			[DisplayOnly<codec::Error>]
-			| _ | { "invalid decode error" },
-		ParseTimestampFailed
-			[DisplayOnly<ibc::timestamp::ParseTimestampError>]
-			| _ | { "invalid parse timestamp error" },
-		ValidationFailed
-			[DisplayOnly<ValidationError>]
-			| _ | { "invalid validation error"},
-		InvalidChainId
-			[DisplayOnly<Infallible>]
-			|_| { "invalid chain id error" },
-	}
-}
 
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub struct PortId(pub Vec<u8>);
@@ -64,10 +39,10 @@ impl From<IbcPortId> for PortId {
 	}
 }
 
-impl PortId {
-	pub fn to_ibc_port_id(self) -> Result<IbcPortId, Error> {
-		let value = String::from_utf8(self.0).map_err(Error::invalid_from_utf8)?;
-		Ok(IbcPortId(value))
+impl From<PortId> for IbcPortId {
+	fn from(port_id: PortId) -> Self {
+		let value = String::from_utf8(port_id.0).expect("Never fail");
+		Self(value)
 	}
 }
 
@@ -81,10 +56,10 @@ impl From<IbcChannelId> for ChannelId {
 	}
 }
 
-impl ChannelId {
-	pub fn to_ibc_channel_id(self) -> Result<IbcChannelId, Error> {
-		let value = String::from_utf8(self.0).map_err(Error::invalid_from_utf8)?;
-		IbcChannelId::from_str(&value).map_err(Error::validation_failed)
+impl From<ChannelId> for IbcChannelId {
+	fn from(channel_id: ChannelId) -> Self {
+		let value = String::from_utf8(channel_id.0).expect("Never fail");
+		Self::from_str(&value).expect("Never fail")
 	}
 }
 
@@ -99,17 +74,19 @@ pub struct Height {
 
 impl From<IbcHeight> for Height {
 	fn from(IbcHeight { revision_number, revision_height }: IbcHeight) -> Self {
-		Height { revision_number, revision_height }
+		Self { revision_number, revision_height }
+	}
+}
+
+impl From<Height> for IbcHeight {
+	fn from(height: Height) -> Self {
+		Self { revision_number: height.revision_number, revision_height: height.revision_height }
 	}
 }
 
 impl Height {
 	pub fn new(revision_number: u64, revision_height: u64) -> Self {
 		Self { revision_number, revision_height }
-	}
-
-	pub fn to_ibc_height(self) -> IbcHeight {
-		IbcHeight { revision_number: self.revision_number, revision_height: self.revision_height }
 	}
 }
 
@@ -124,21 +101,21 @@ pub enum ClientType {
 impl From<IbcClientType> for ClientType {
 	fn from(value: IbcClientType) -> Self {
 		match value {
-			IbcClientType::Tendermint => ClientType::Tendermint,
-			IbcClientType::Grandpa => ClientType::Grandpa,
+			IbcClientType::Tendermint => Self::Tendermint,
+			IbcClientType::Grandpa => Self::Grandpa,
 			#[cfg(any(test, feature = "mocks"))]
-			IbcClientType::Mock => ClientType::Mock,
+			IbcClientType::Mock => Self::Mock,
 		}
 	}
 }
 
-impl ClientType {
-	pub fn to_ibc_client_type(self) -> IbcClientType {
-		match self {
-			ClientType::Tendermint => IbcClientType::Tendermint,
-			ClientType::Grandpa => IbcClientType::Grandpa,
+impl From<ClientType> for IbcClientType {
+	fn from(client_type: ClientType) -> Self {
+		match client_type {
+			ClientType::Tendermint => Self::Tendermint,
+			ClientType::Grandpa => Self::Grandpa,
 			#[cfg(any(test, feature = "mocks"))]
-			ClientType::Mock => IbcClientType::Mock,
+			ClientType::Mock => Self::Mock,
 		}
 	}
 }
@@ -153,10 +130,10 @@ impl From<IbcClientId> for ClientId {
 	}
 }
 
-impl ClientId {
-	pub fn to_ibc_client_id(self) -> Result<IbcClientId, Error> {
-		let value = String::from_utf8(self.0).map_err(Error::invalid_from_utf8)?;
-		Ok(IbcClientId(value))
+impl From<ClientId> for IbcClientId {
+	fn from(client_id: ClientId) -> Self {
+		let value = String::from_utf8(client_id.0).expect("Never fail");
+		Self(value)
 	}
 }
 
@@ -170,10 +147,10 @@ impl From<IbcConnectionId> for ConnectionId {
 	}
 }
 
-impl ConnectionId {
-	pub fn to_ibc_connection_id(self) -> Result<IbcConnectionId, Error> {
-		let value = String::from_utf8(self.0).map_err(Error::invalid_from_utf8)?;
-		Ok(IbcConnectionId(value))
+impl From<ConnectionId> for IbcConnectionId {
+	fn from(connection_id: ConnectionId) -> Self {
+		let value = String::from_utf8(connection_id.0).expect("Never fail");
+		Self(value)
 	}
 }
 
@@ -189,10 +166,10 @@ impl From<IbcTimestamp> for Timestamp {
 	}
 }
 
-impl Timestamp {
-	pub fn to_ibc_timestamp(self) -> Result<IbcTimestamp, Error> {
-		let value = String::from_utf8(self.time).map_err(Error::invalid_from_utf8)?;
-		IbcTimestamp::from_str(&value).map_err(Error::parse_timestamp_failed)
+impl From<Timestamp> for IbcTimestamp {
+	fn from(time_stamp: Timestamp) -> Self {
+		let value = String::from_utf8(time_stamp.time).expect("Never fail");
+		Self::from_str(&value).expect("Never fail")
 	}
 }
 
@@ -205,51 +182,9 @@ impl From<IbcSequence> for Sequence {
 	}
 }
 
-impl Sequence {
-	pub fn to_ibc_sequence(self) -> IbcSequence {
-		IbcSequence::from(self.0)
-	}
-}
-
-#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
-pub struct Packet {
-	pub sequence: Sequence,
-	pub source_port: PortId,
-	pub source_channel: ChannelId,
-	pub destination_port: PortId,
-	pub destination_channel: ChannelId,
-	pub data: Vec<u8>,
-	pub timeout_height: Height,
-	pub timeout_timestamp: Timestamp,
-}
-
-impl From<IbcPacket> for Packet {
-	fn from(val: IbcPacket) -> Self {
-		Self {
-			sequence: val.sequence.into(),
-			source_port: val.source_port.into(),
-			source_channel: val.source_channel.into(),
-			destination_port: val.destination_port.into(),
-			destination_channel: val.destination_channel.into(),
-			data: val.data,
-			timeout_height: val.timeout_height.into(),
-			timeout_timestamp: val.timeout_timestamp.into(),
-		}
-	}
-}
-
-impl Packet {
-	pub fn to_ibc_packet(self) -> Result<IbcPacket, Error> {
-		Ok(IbcPacket {
-			sequence: self.sequence.to_ibc_sequence(),
-			source_port: self.source_port.to_ibc_port_id()?,
-			source_channel: self.source_channel.to_ibc_channel_id()?,
-			destination_port: self.destination_port.to_ibc_port_id()?,
-			destination_channel: self.destination_channel.to_ibc_channel_id()?,
-			data: self.data,
-			timeout_height: self.timeout_height.to_ibc_height(),
-			timeout_timestamp: self.timeout_timestamp.to_ibc_timestamp()?,
-		})
+impl From<Sequence> for IbcSequence {
+	fn from(sequence: Sequence) -> Self {
+		Self::from(sequence.0)
 	}
 }
 
@@ -263,41 +198,41 @@ pub struct MmrRoot {
 }
 
 impl From<IbcMmrRoot> for MmrRoot {
-	fn from(val: IbcMmrRoot) -> Self {
-		let encode_validator_proofs = val
+	fn from(ibc_mmr_root: IbcMmrRoot) -> Self {
+		let encode_validator_proofs = ibc_mmr_root
 			.validator_merkle_proofs
 			.into_iter()
 			.map(|validator_proof| ValidatorMerkleProof::encode(&validator_proof))
 			.collect();
 
 		Self {
-			block_header: BlockHeader::encode(&val.block_header),
-			signed_commitment: SignedCommitment::encode(&val.signed_commitment),
+			block_header: BlockHeader::encode(&ibc_mmr_root.block_header),
+			signed_commitment: SignedCommitment::encode(&ibc_mmr_root.signed_commitment),
 			validator_merkle_proofs: encode_validator_proofs,
-			mmr_leaf: val.mmr_leaf,
-			mmr_leaf_proof: val.mmr_leaf_proof,
+			mmr_leaf: ibc_mmr_root.mmr_leaf,
+			mmr_leaf_proof: ibc_mmr_root.mmr_leaf_proof,
 		}
 	}
 }
 
-impl MmrRoot {
-	pub fn to_ibc_mmr_root(self) -> Result<IbcMmrRoot, Error> {
-		let decode_validator_proofs: Vec<ValidatorMerkleProof> = self
+impl From<MmrRoot> for IbcMmrRoot {
+	fn from(mmr_root: MmrRoot) -> Self {
+		let decode_validator_proofs: Vec<ValidatorMerkleProof> = mmr_root
 			.validator_merkle_proofs
 			.into_iter()
 			.map(|validator_proof| {
-				ValidatorMerkleProof::decode(&mut &validator_proof[..]).unwrap() // TODO
+				ValidatorMerkleProof::decode(&mut &validator_proof[..]).expect("Never fail")
 			})
 			.collect();
-		Ok(IbcMmrRoot {
-			block_header: BlockHeader::decode(&mut &self.block_header[..])
-				.map_err(Error::invalid_decode)?,
-			signed_commitment: SignedCommitment::decode(&mut &self.signed_commitment[..])
-				.map_err(Error::invalid_decode)?,
+
+		Self {
+			block_header: BlockHeader::decode(&mut &mmr_root.block_header[..]).expect("Never fail"),
+			signed_commitment: SignedCommitment::decode(&mut &mmr_root.signed_commitment[..])
+				.expect("Never fail"),
 			validator_merkle_proofs: decode_validator_proofs,
-			mmr_leaf: self.mmr_leaf,
-			mmr_leaf_proof: self.mmr_leaf_proof,
-		})
+			mmr_leaf: mmr_root.mmr_leaf,
+			mmr_leaf_proof: mmr_root.mmr_leaf_proof,
+		}
 	}
 }
 
@@ -313,31 +248,31 @@ pub struct ClientState {
 	pub validator_set: Vec<u8>,
 }
 impl From<IbcClientState> for ClientState {
-	fn from(val: IbcClientState) -> Self {
+	fn from(ibc_client_state: IbcClientState) -> Self {
 		Self {
-			chain_id: val.chain_id.as_str().as_bytes().to_vec(),
-			block_number: val.block_number,
-			frozen_height: val.frozen_height.map(|val| val.into()),
-			block_header: BlockHeader::encode(&val.block_header),
-			latest_commitment: Commitment::encode(&val.latest_commitment),
-			validator_set: ValidatorSet::encode(&val.validator_set),
+			chain_id: ibc_client_state.chain_id.as_str().as_bytes().to_vec(),
+			block_number: ibc_client_state.block_number,
+			frozen_height: ibc_client_state.frozen_height.map(|val| val.into()),
+			block_header: BlockHeader::encode(&ibc_client_state.block_header),
+			latest_commitment: Commitment::encode(&ibc_client_state.latest_commitment),
+			validator_set: ValidatorSet::encode(&ibc_client_state.validator_set),
 		}
 	}
 }
 
-impl ClientState {
-	pub fn to_ibc_client_state(self) -> Result<IbcClientState, Error> {
-		let chain_id_str = String::from_utf8(self.chain_id).map_err(Error::invalid_from_utf8)?;
-		Ok(IbcClientState {
-			chain_id: IbcChainId::from_str(&chain_id_str).map_err(Error::invalid_chain_id)?,
-			block_number: self.block_number,
-			frozen_height: self.frozen_height.map(|value| value.to_ibc_height()),
-			block_header: BlockHeader::decode(&mut &self.block_header[..])
-				.map_err(Error::invalid_decode)?,
-			latest_commitment: Commitment::decode(&mut &self.latest_commitment[..])
-				.map_err(Error::invalid_decode)?,
-			validator_set: ValidatorSet::decode(&mut &self.validator_set[..])
-				.map_err(Error::invalid_decode)?,
-		})
+impl From<ClientState> for IbcClientState {
+	fn from(client_state: ClientState) -> Self {
+		let chain_id_str = String::from_utf8(client_state.chain_id).expect("Never fail");
+		Self {
+			chain_id: IbcChainId::from_str(&chain_id_str).expect("Never fail"),
+			block_number: client_state.block_number,
+			frozen_height: client_state.frozen_height.map(|value| value.into()),
+			block_header: BlockHeader::decode(&mut &client_state.block_header[..])
+				.expect("Never fail"),
+			latest_commitment: Commitment::decode(&mut &client_state.latest_commitment[..])
+				.expect("Never fail"),
+			validator_set: ValidatorSet::decode(&mut &client_state.validator_set[..])
+				.expect("Never fail"),
+		}
 	}
 }

@@ -12,9 +12,12 @@
 //! which implements the generic cross-chain logic in [ICS spec](https://github.com/cosmos/ibc/tree/ee71d0640c23ec4e05e924f52f557b5e06c1d82f).
 use crate::{
 	context::Context,
-	ibc_core::ics24_host::{
-		ChannelId, ClientId, ClientState as EventClientState, ClientType, ConnectionId, Height,
-		Packet, PortId,
+	ibc_core::{
+		ics04_channel::packet::Packet,
+		ics24_host::{
+			ChannelId, ClientId, ClientState as EventClientState, ClientType, ConnectionId, Height,
+			PortId,
+		},
 	},
 	utils::{AssetIdAndNameProvider, LOG_TARGET},
 };
@@ -144,6 +147,9 @@ pub mod pallet {
 
 		/// Prefix for ibc connection, should be valid utf8 string bytes
 		const CONNECTION_PREFIX: &'static [u8];
+
+		#[pallet::constant]
+		type ExpectedBlockTime: Get<u64>;
 	}
 
 	#[pallet::pallet]
