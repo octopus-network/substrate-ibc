@@ -10,30 +10,17 @@
 //! The pallet implements the chain specific logic of [ICS spec](https://github.com/cosmos/ibc/tree/ee71d0640c23ec4e05e924f52f557b5e06c1d82f),  
 //! and is integrated with [ibc-rs](https://github.com/informalsystems/ibc-rs),
 //! which implements the generic cross-chain logic in [ICS spec](https://github.com/cosmos/ibc/tree/ee71d0640c23ec4e05e924f52f557b5e06c1d82f).
-use scale_info::prelude::{
-	fmt::Debug,
-	marker::PhantomData,
-	string::{String, ToString},
-};
-use sp_std::str::FromStr;
-use sp_std::prelude::*;
-use sp_runtime::{
-	traits::{AtLeast32BitUnsigned, IdentifyAccount},
-	RuntimeDebug,
-};
 use crate::{
 	context::Context,
-	ibc_help::event_from_ibc_event,
+	event::event_from_ibc_event,
+	primitives::{
+		ChannelId, ClientId, ClientState as EventClientState, ClientType, ConnectionId, Height,
+		Packet, PortId,
+	},
 	utils::{AssetIdAndNameProvider, LOG_TARGET},
-	event::primitive::{
-		ChannelId, ClientId, ClientState as EventClientState, ClientType, ConnectionId, Height, Packet,
-		PortId,
-	}
 };
-use log::{error, info, trace};
-use codec::{Codec, Decode, Encode};
-use scale_info::{prelude::vec, TypeInfo};
 use beefy_light_client::commitment::{self, known_payload_ids::MMR_ROOT_ID};
+use codec::{Codec, Decode, Encode};
 use frame_support::{
 	dispatch::DispatchResult,
 	pallet_prelude::*,
@@ -54,11 +41,26 @@ use ibc::{
 	signer::Signer,
 	timestamp,
 };
+use log::{error, info, trace};
+use scale_info::{
+	prelude::{
+		fmt::Debug,
+		marker::PhantomData,
+		string::{String, ToString},
+		vec,
+	},
+	TypeInfo,
+};
+use sp_runtime::{
+	traits::{AtLeast32BitUnsigned, IdentifyAccount},
+	RuntimeDebug,
+};
+use sp_std::{prelude::*, str::FromStr};
 use tendermint_proto::Protobuf;
 
 pub mod context;
 pub mod event;
-pub mod ibc_help;
+pub mod primitives;
 pub mod utils;
 
 // ibc protocol implement
