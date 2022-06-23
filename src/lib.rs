@@ -52,9 +52,12 @@ use ibc::{
 	},
 	core::{
 		ics02_client::{client_state::AnyClientState, height},
+		ics04_channel::msgs::{ChannelMsg, PacketMsg},
 		ics24_host::identifier::{self, ChainId as ICS24ChainId, ChannelId as IbcChannelId},
+		ics26_routing::handler,
 		ics26_routing::msgs::Ics26Envelope,
 	},
+	events::IbcEvent,
 	timestamp,
 	tx_msg::Msg,
 };
@@ -606,29 +609,44 @@ pub mod pallet {
 					})
 					.collect();
 
-				log::trace!(target: LOG_TARGET, "received deliver : {:?} ", messages.iter().map(|message| message.type_url.clone()).collect::<Vec<_>>());
+				// log::trace!(target: LOG_TARGET, "received deliver : {:?} ", messages.iter().map(|message| message.type_url.clone()).collect::<Vec<_>>());
 
-				let mut results: Vec<IbcEvent> = vec![];
+				// let mut results: Vec<IbcEvent> = vec![];
+				// for (index, message) in messages.clone().into_iter().enumerate() {
+
+				// 	let mut result = Vec::new();
+				// 	match ibc::core::ics26_routing::handler::deliver(&mut ctx, message.clone()) {
+				// 		Ok(value) => {
+				// 			log::trace!(target: LOG_TARGET, "deliver event  : {:?} ", value.0);
+				// 			result = value.0;
+
+				// 		}
+				// 		Err(error) => {
+				// 			log::trace!(target: LOG_TARGET, "deliver error  : {:?} ", error);
+				// 		}
+				// 	};
+
+				// 	log::info!("result: {:?}", result);
+
+				// 	results.append(&mut result);
+
+				// }
+				// let ret = Self::handle_result(&mut ctx, messages, results)?;
+
 				for (index, message) in messages.clone().into_iter().enumerate() {
-
-					let mut result = Vec::new();
-					match ibc::core::ics26_routing::handler::deliver(&mut ctx, message.clone()) {
+					log::trace!(target: LOG_TARGET, "handle deliver message : {:?} ", message);
+					match handler::deliver(&mut ctx, message.clone()) {
 						Ok(value) => {
-							log::trace!(target: LOG_TARGET, "deliver event  : {:?} ", value.0);
-							result = value.0;
-
+							log::trace!(target: LOG_TARGET, "deliver result.event  : {:?} ", value.0);
+							log::trace!(target: LOG_TARGET, "deliver result.log  : {:?} ", value.1);
+							let ret = Self::handle_result(&mut ctx, message, value.0)?;
 						}
 						Err(error) => {
 							log::trace!(target: LOG_TARGET, "deliver error  : {:?} ", error);
 						}
 					};
 
-					log::info!("result: {:?}", result);
-
-					results.append(&mut result);
 				}
-
-				let ret = Self::handle_result(&mut ctx, messages, results)?;
 
 				Ok(().into())
 			})
@@ -724,7 +742,7 @@ pub mod pallet {
 					// handle the result
 					log::info!(target: LOG_TARGET,"result: {:?}", send_transfer_result_event);
 
-					Self::handle_result(&mut ctx, vec![msg.to_any()], send_transfer_result_event)?;
+					Self::handle_result(&mut ctx, msg.to_any(), send_transfer_result_event)?;
 
 					Ok(())
 				}
@@ -753,16 +771,16 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
-		/// handle the event returned by ics26 route module
+		// /// handle the event returned by ics26 route module
 		fn handle_result<Ctx>(
 			ctx: &mut Ctx,
-			messages: Vec<ibc_proto::google::protobuf::Any>,
-			result: Vec<IbcEvent>,
+			message: ibc_proto::google::protobuf::Any,
+			events: Vec<IbcEvent>,
 		) -> DispatchResult
 		where
 			Ctx: Ics20Context,
 		{
-			for (index, event) in result.into_iter().enumerate() {
+			for (index, event) in events.into_iter().enumerate() {
 				match event.clone() {
 					IbcEvent::SendPacket(value) => {
 						// refer to https://github.com/octopus-network/ibc-go/blob/f5962c3324ee7e69eeaa9918b65eb1b089da6095/modules/apps/transfer/keeper/msg_server.go#L16
@@ -788,23 +806,26 @@ pub mod pallet {
 							"[handle_result] receive packet is : {:?}",
 							value.packet
 						);
-						let relayer_signer = get_signer::<T>(messages[index].clone())
+
+						let relayer_signer = get_signer::<T>(message.clone())
 							.map_err(|_| Error::<T>::InvalidSigner)?;
 
 						let ics20_modlue = Ics20IBCModule::<T>::new();
-						let ack = ibc::core::ics26_routing::ibc_module::IBCModule::on_recv_packet(
+						let raw_ack = ibc::core::ics26_routing::ibc_module::IBCModule::on_recv_packet(
 							&ics20_modlue,
 							ctx,
 							value.clone().packet,
 							relayer_signer,
 						)
 						.map_err(|_| Error::<T>::ReceivePacketError)?;
+						
+						let ack: ibc::core::ics04_channel::msgs::acknowledgement::Acknowledgement = raw_ack.into();
+	
 						log::trace!(
 							target: LOG_TARGET,
 							"[handle_result] receive packet on_recv_packet ack : {:?}",
 							ack
 						);
-
 						// Emit recv event
 						Self::deposit_event(event.clone().into());
 
@@ -814,11 +835,9 @@ pub mod pallet {
 							ibc::core::ics04_channel::handler::write_acknowledgement::process(
 								ctx,
 								packet.clone(),
-								ack.clone(),
+								ack.clone().into_bytes(),
 							)
 							.map_err(|_| Error::<T>::ReceivePacketError)?;
-
-							
 
 						use ibc::core::ics04_channel::packet::PacketResult;
 
@@ -848,7 +867,7 @@ pub mod pallet {
 						Self::deposit_event(Event::<T>::WriteAcknowledgement(
 							Height::new(0, current_height),
 							packet.into(),
-							ack,
+							ack.into_bytes(),
 						));
 
 						// write ack acknowledgement
@@ -869,7 +888,7 @@ pub mod pallet {
 							"[handle_result] timeout packet is : {:?}",
 							value.packet
 						);
-						let relayer_signer = get_signer::<T>(messages[index].clone())
+						let relayer_signer = get_signer::<T>(message.clone())
 							.map_err(|_| Error::<T>::InvalidSigner)?;
 
 						let ics20_module = Ics20IBCModule::<T>::new();
@@ -890,15 +909,36 @@ pub mod pallet {
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L581
 						log::trace!(
 							target: LOG_TARGET,
-							"[handle_result] ack packet is : {:?}",
+							"[handle_result] AcknowledgePacket is : {:?}",
 							value.packet
 						);
-						let relayer_signer = get_signer::<T>(messages[index].clone())
-							.map_err(|_| Error::<T>::InvalidSigner)?;
+						// let relayer_signer = get_signer::<T>(message.clone())
+						// 	.map_err(|_| Error::<T>::InvalidSigner)?;
 
 						let ics20_module = Ics20IBCModule::<T>::new();
 
-						let ret = ibc::core::ics26_routing::ibc_module::IBCModule::on_acknowledgement_packet(&ics20_module, ctx, value.clone().packet, vec![], relayer_signer).map_err(|_| Error::<T>::AcknowledgePacketError)?;
+						//get ack from message
+						let dmsg = handler::decode(message.clone())
+							.map_err(|_| Error::<T>::InvalidDecode)?;
+						let msg = if let Ics26Envelope::Ics4PacketMsg(ics4_msg) = dmsg {
+							let msg = if let PacketMsg::AckPacket(ack_msg) = ics4_msg {
+								ack_msg
+							} else {
+								todo!()
+							};
+							msg
+						} else {
+							todo!()
+						};
+						let relayer_signer = msg.signer;
+						let ack = msg.acknowledgement;
+						log::trace!(
+							target: LOG_TARGET,
+							"[handle_result] acknowledgement is : {:?}",
+							ack
+						);
+						// let ret = ibc::core::ics26_routing::ibc_module::IBCModule::on_acknowledgement_packet(&ics20_module, ctx, value.clone().packet, vec![], relayer_signer).map_err(|_| Error::<T>::AcknowledgePacketError)?;
+						let ret = ibc::core::ics26_routing::ibc_module::IBCModule::on_acknowledgement_packet(&ics20_module, ctx, value.clone().packet, ack.into_bytes(), relayer_signer).map_err(|_| Error::<T>::AcknowledgePacketError)?;
 
 						Self::deposit_event(event.clone().into());
 					},
@@ -910,7 +950,7 @@ pub mod pallet {
 							value
 						);
 						// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L163
-						let relayer_signer = get_signer::<T>(messages[index].clone())
+						let relayer_signer = get_signer::<T>(message.clone())
 							.map_err(|_| Error::<T>::InvalidSigner)?;
 
 						let height = value.clone().height;
@@ -993,7 +1033,7 @@ pub mod pallet {
 						let channel_id =
 							value.clone().channel_id.ok_or(Error::<T>::EmptyChannelId)?;
 
-						let relayer_signer = get_signer::<T>(messages[index].clone())
+						let relayer_signer = get_signer::<T>(message.clone())
 							.map_err(|_| Error::<T>::InvalidSigner)?;
 
 						let ics20_modlue = Ics20IBCModule::<T>::new();
@@ -1022,7 +1062,7 @@ pub mod pallet {
 						let channel_id =
 							value.clone().channel_id.ok_or(Error::<T>::EmptyChannelId)?;
 
-						let relayer_signer = get_signer::<T>(messages[index].clone())
+						let relayer_signer = get_signer::<T>(message.clone())
 							.map_err(|_| Error::<T>::InvalidSigner)?;
 
 						let ics20_modlue = Ics20IBCModule::<T>::new();
@@ -1048,7 +1088,7 @@ pub mod pallet {
 
 						let port_id = value.clone().port_id;
 						let channel_id = value.clone().channel_id;
-						let relayer_signer = get_signer::<T>(messages[index].clone())
+						let relayer_signer = get_signer::<T>(message.clone())
 							.map_err(|_| Error::<T>::InvalidSigner)?;
 
 						let ics20_modlue = Ics20IBCModule::<T>::new();
@@ -1077,7 +1117,7 @@ pub mod pallet {
 						let channel_id =
 							value.clone().channel_id.ok_or(Error::<T>::EmptyChannelId)?;
 
-						let relayer_signer = get_signer::<T>(messages[index].clone())
+						let relayer_signer = get_signer::<T>(message.clone())
 							.map_err(|_| Error::<T>::InvalidSigner)?;
 
 						let ics20_modlue = Ics20IBCModule::<T>::new();
@@ -1104,6 +1144,356 @@ pub mod pallet {
 			}
 			Ok(())
 		}
+
+		// fn handle_result<Ctx>(
+		// 	ctx: &mut Ctx,
+		// 	messages: Vec<ibc_proto::google::protobuf::Any>,
+		// 	result: Vec<IbcEvent>,
+		// ) -> DispatchResult
+		// where
+		// 	Ctx: Ics20Context,
+		// {
+		// 	for (index, event) in result.into_iter().enumerate() {
+		// 		match event.clone() {
+		// 			IbcEvent::SendPacket(value) => {
+		// 				// refer to https://github.com/octopus-network/ibc-go/blob/f5962c3324ee7e69eeaa9918b65eb1b089da6095/modules/apps/transfer/keeper/msg_server.go#L16
+		// 				log::trace!(
+		// 					target: LOG_TARGET,
+		// 					"[handle_result] send packet is : {:?}",
+		// 					value.packet
+		// 				);
+
+		// 				let ret = ibc_app::ics20_handler::handle_transfer::<Ctx, T>(
+		// 					ctx,
+		// 					value.clone().packet,
+		// 				)?;
+
+		// 				Self::deposit_event(event.clone().into());
+		// 				store_send_packet::<T>(&value);
+		// 			},
+
+		// 			IbcEvent::ReceivePacket(value) => {
+		// 				// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L364
+		// 				log::trace!(
+		// 					target: LOG_TARGET,
+		// 					"[handle_result] receive packet is : {:?}",
+		// 					value.packet
+		// 				);
+		// 				let relayer_signer = get_signer::<T>(messages[index].clone())
+		// 					.map_err(|_| Error::<T>::InvalidSigner)?;
+
+		// 				let ics20_modlue = Ics20IBCModule::<T>::new();
+		// 				let ack = ibc::core::ics26_routing::ibc_module::IBCModule::on_recv_packet(
+		// 					&ics20_modlue,
+		// 					ctx,
+		// 					value.clone().packet,
+		// 					relayer_signer,
+		// 				)
+		// 				.map_err(|_| Error::<T>::ReceivePacketError)?;
+		// 				log::trace!(
+		// 					target: LOG_TARGET,
+		// 					"[handle_result] receive packet on_recv_packet ack : {:?}",
+		// 					ack
+		// 				);
+
+		// 				// Emit recv event
+		// 				Self::deposit_event(event.clone().into());
+
+		// 				let packet = value.packet;
+
+		// 				let write_ack_event =
+		// 					ibc::core::ics04_channel::handler::write_acknowledgement::process(
+		// 						ctx,
+		// 						packet.clone(),
+		// 						ack.clone(),
+		// 					)
+		// 					.map_err(|_| Error::<T>::ReceivePacketError)?;
+
+		// 				use ibc::core::ics04_channel::packet::PacketResult;
+
+		// 				let write_ack_event_result =
+		// 					if let PacketResult::WriteAck(write_ack_event_result) =
+		// 						write_ack_event.result
+		// 					{
+		// 						write_ack_event_result
+		// 					} else {
+		// 						todo!()
+		// 					};
+
+		// 				let _ = ctx.store_packet_acknowledgement(
+		// 					(
+		// 						write_ack_event_result.port_id.clone(),
+		// 						write_ack_event_result.channel_id,
+		// 						write_ack_event_result.seq,
+		// 					),
+		// 					write_ack_event_result.ack_commitment,
+		// 				);
+
+		// 				// Emit write acknowledgement event
+		// 				// todo this
+		// 				let block_number =
+		// 					format!("{:?}", <frame_system::Pallet<T>>::block_number());
+		// 				let current_height: u64 = block_number.parse().unwrap_or_default();
+		// 				Self::deposit_event(Event::<T>::WriteAcknowledgement(
+		// 					Height::new(0, current_height),
+		// 					packet.into(),
+		// 					ack,
+		// 				));
+
+		// 				// write ack acknowledgement
+		// 				let write_ack_event =
+		// 					if let IbcEvent::WriteAcknowledgement(write_ack_event) =
+		// 						write_ack_event.events.first().unwrap()
+		// 					{
+		// 						write_ack_event
+		// 					} else {
+		// 						todo!()
+		// 					};
+		// 				store_write_ack::<T>(write_ack_event);
+		// 			},
+		// 			IbcEvent::TimeoutPacket(value) => {
+		// 				// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L442
+		// 				log::trace!(
+		// 					target: LOG_TARGET,
+		// 					"[handle_result] timeout packet is : {:?}",
+		// 					value.packet
+		// 				);
+		// 				let relayer_signer = get_signer::<T>(messages[index].clone())
+		// 					.map_err(|_| Error::<T>::InvalidSigner)?;
+
+		// 				let ics20_module = Ics20IBCModule::<T>::new();
+
+		// 				let ret =
+		// 					ibc::core::ics26_routing::ibc_module::IBCModule::on_timeout_packet(
+		// 						&ics20_module,
+		// 						ctx,
+		// 						value.clone().packet,
+		// 						relayer_signer,
+		// 					)
+		// 					.map_err(|_| Error::<T>::TimeoutPacketError)?;
+
+		// 				Self::deposit_event(event.clone().into());
+		// 			},
+
+		// 			IbcEvent::AcknowledgePacket(value) => {
+		// 				// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L581
+		// 				log::trace!(
+		// 					target: LOG_TARGET,
+		// 					"[handle_result] ack packet is : {:?}",
+		// 					value.packet
+		// 				);
+		// 				let relayer_signer = get_signer::<T>(messages[index].clone())
+		// 					.map_err(|_| Error::<T>::InvalidSigner)?;
+
+		// 				let ics20_module = Ics20IBCModule::<T>::new();
+
+		// 				//TODO: get ack from message
+		// 				let ret = ibc::core::ics26_routing::ibc_module::IBCModule::on_acknowledgement_packet(&ics20_module, ctx, value.clone().packet, vec![], relayer_signer).map_err(|_| Error::<T>::AcknowledgePacketError)?;
+
+		// 				Self::deposit_event(event.clone().into());
+		// 			},
+
+		// 			IbcEvent::OpenInitChannel(value) => {
+		// 				log::trace!(
+		// 					target: LOG_TARGET,
+		// 					"[handle_result] open init channel : {:?}",
+		// 					value
+		// 				);
+		// 				// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L163
+		// 				let relayer_signer = get_signer::<T>(messages[index].clone())
+		// 					.map_err(|_| Error::<T>::InvalidSigner)?;
+
+		// 				let height = value.clone().height;
+		// 				let port_id = value.clone().port_id;
+		// 				let channel_id =
+		// 					value.clone().channel_id.ok_or(Error::<T>::EmptyChannelId)?;
+		// 				let connection_id = value.clone().connection_id;
+		// 				let counterparty_port_id = value.clone().counterparty_port_id;
+		// 				let counterparty_channel_id = value.clone().counterparty_channel_id;
+
+		// 				let ics20_modlue = Ics20IBCModule::<T>::new();
+
+		// 				let ret =
+		// 					ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_init(
+		// 						&ics20_modlue,
+		// 						ctx,
+		// 						Order::Unordered,
+		// 						vec![connection_id],
+		// 						port_id,
+		// 						channel_id,
+		// 						&Capability::default(), // todo
+		// 						Counterparty {
+		// 							port_id: counterparty_port_id,
+		// 							channel_id: counterparty_channel_id,
+		// 						},
+		// 						Version::ics20(),
+		// 					)
+		// 					.map_err(|_| Error::<T>::OpenInitChannelError)?;
+
+		// 				Self::deposit_event(event.clone().into());
+		// 			},
+
+		// 			IbcEvent::OpenTryChannel(value) => {
+		// 				log::trace!(
+		// 					target: LOG_TARGET,
+		// 					"[handle_result] open try channel : {:?}",
+		// 					value
+		// 				);
+		// 				// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L203
+
+		// 				let height = value.clone().height;
+		// 				let port_id = value.clone().port_id;
+		// 				let channel_id =
+		// 					value.clone().channel_id.ok_or(Error::<T>::EmptyChannelId)?;
+		// 				let connection_id = value.clone().connection_id;
+		// 				let counterparty_port_id = value.clone().counterparty_port_id;
+		// 				let counterparty_channel_id = value.clone().counterparty_channel_id;
+
+		// 				let ics20_modlue = Ics20IBCModule::<T>::new();
+
+		// 				let ret =
+		// 					ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_try(
+		// 						&ics20_modlue,
+		// 						ctx,
+		// 						Order::Unordered,
+		// 						vec![connection_id],
+		// 						port_id,
+		// 						channel_id,
+		// 						&Capability::default(), // todo
+		// 						Counterparty {
+		// 							port_id: counterparty_port_id,
+		// 							channel_id: counterparty_channel_id,
+		// 						},
+		// 						Version::ics20(),
+		// 					)
+		// 					.map_err(|_| Error::<T>::OpenTryChannelError)?;
+
+		// 				Self::deposit_event(event.clone().into());
+		// 			},
+
+		// 			IbcEvent::OpenAckChannel(value) => {
+		// 				log::trace!(
+		// 					target: LOG_TARGET,
+		// 					"[handle_result] open ack channel : {:?}",
+		// 					value
+		// 				);
+		// 				// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L241
+
+		// 				let port_id = value.clone().port_id;
+		// 				let channel_id =
+		// 					value.clone().channel_id.ok_or(Error::<T>::EmptyChannelId)?;
+
+		// 				let relayer_signer = get_signer::<T>(messages[index].clone())
+		// 					.map_err(|_| Error::<T>::InvalidSigner)?;
+
+		// 				let ics20_modlue = Ics20IBCModule::<T>::new();
+		// 				let ret =
+		// 					ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_ack(
+		// 						&ics20_modlue,
+		// 						ctx,
+		// 						port_id,
+		// 						channel_id,
+		// 						Version::ics20(),
+		// 					)
+		// 					.map_err(|_| Error::<T>::OpenAckChannelError)?;
+
+		// 				Self::deposit_event(event.clone().into());
+		// 			},
+
+		// 			IbcEvent::OpenConfirmChannel(value) => {
+		// 				log::trace!(
+		// 					target: LOG_TARGET,
+		// 					"[handle_result] open confirm channel : {:?}",
+		// 					value
+		// 				);
+		// 				// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L277
+
+		// 				let port_id = value.clone().port_id;
+		// 				let channel_id =
+		// 					value.clone().channel_id.ok_or(Error::<T>::EmptyChannelId)?;
+
+		// 				let relayer_signer = get_signer::<T>(messages[index].clone())
+		// 					.map_err(|_| Error::<T>::InvalidSigner)?;
+
+		// 				let ics20_modlue = Ics20IBCModule::<T>::new();
+
+		// 				let ret =
+		// 					ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_open_confirm(
+		// 						&ics20_modlue,
+		// 						ctx,
+		// 						port_id,
+		// 						channel_id,
+		// 					)
+		// 					.map_err(|_| Error::<T>::OpenConfirmChannelError)?;
+
+		// 				Self::deposit_event(event.clone().into());
+		// 			},
+		// 			IbcEvent::CloseInitChannel(value) => {
+		// 				log::trace!(
+		// 					target: LOG_TARGET,
+		// 					"[handle_result] close init channel : {:?}",
+		// 					value
+		// 				);
+		// 				// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L309
+
+		// 				let port_id = value.clone().port_id;
+		// 				let channel_id = value.clone().channel_id;
+		// 				let relayer_signer = get_signer::<T>(messages[index].clone())
+		// 					.map_err(|_| Error::<T>::InvalidSigner)?;
+
+		// 				let ics20_modlue = Ics20IBCModule::<T>::new();
+
+		// 				let ret =
+		// 					ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_close_init(
+		// 						&ics20_modlue,
+		// 						ctx,
+		// 						port_id,
+		// 						channel_id,
+		// 					)
+		// 					.map_err(|_| Error::<T>::CloseInitChannelError)?;
+
+		// 				Self::deposit_event(event.clone().into());
+		// 			},
+
+		// 			IbcEvent::CloseConfirmChannel(value) => {
+		// 				log::trace!(
+		// 					target: LOG_TARGET,
+		// 					"[handle_result] close confirm channel : {:?}",
+		// 					value
+		// 				);
+		// 				// refer to https://github.com/octopus-network/ibc-go/blob/acbc9b61d10bf892528a392595782ac17aeeca30/modules/core/keeper/msg_server.go#L336
+
+		// 				let port_id = value.clone().port_id;
+		// 				let channel_id =
+		// 					value.clone().channel_id.ok_or(Error::<T>::EmptyChannelId)?;
+
+		// 				let relayer_signer = get_signer::<T>(messages[index].clone())
+		// 					.map_err(|_| Error::<T>::InvalidSigner)?;
+
+		// 				let ics20_modlue = Ics20IBCModule::<T>::new();
+		// 				let ret =
+		// 					ibc::core::ics26_routing::ibc_module::IBCModule::on_chan_close_confirm(
+		// 						&ics20_modlue,
+		// 						ctx,
+		// 						port_id,
+		// 						channel_id,
+		// 					)
+		// 					.map_err(|_| Error::<T>::CloseConfirmChannelError)?;
+
+		// 				Self::deposit_event(event.clone().into());
+		// 			},
+		// 			_ => {
+		// 				log::warn!(
+		// 					target: LOG_TARGET,
+		// 					"[handle_result] Unhandled event: {:?}",
+		// 					event
+		// 				);
+		// 				Self::deposit_event(event.clone().into());
+		// 			},
+		// 		}
+		// 	}
+		// 	Ok(())
+		// }
 
 		/// inner update mmr root
 		fn inner_update_mmr_root(

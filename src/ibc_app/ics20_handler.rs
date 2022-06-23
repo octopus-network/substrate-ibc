@@ -421,7 +421,7 @@ pub fn handle_timeout_packet<Ctx, T: Config>(
 where
 	Ctx: Ics20Context,
 {
-	trace!(target:"runtime::pallet-ibc","in ics20_handler : handle timeout packet !");
+	trace!(target:"runtime::pallet-ibc","in ics20_handler  handle_timeout_packet!");
 
 	refund_packet_token::<Ctx, T>(ctx, packet, data)
 }
@@ -441,7 +441,9 @@ pub fn handle_ack_packet<Ctx, T: Config>(
 where
 	Ctx: Ics20Context,
 {
+	trace!(target:"runtime::pallet-ibc","in ics20_handler  handle_ack_packet!");
 	let response = acknowledgement.response.ok_or(Error::<T>::AcknowledgementResponseEmpty)?;
+	trace!(target:"runtime::pallet-ibc","n ics20_handler : handle_ack_packet response is {:?}",response);
 
 	match response {
 		Response::Error(e) => {
