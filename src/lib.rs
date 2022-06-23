@@ -32,10 +32,13 @@ use frame_support::{
 use frame_system::{ensure_signed, pallet_prelude::*};
 use ibc::{
 	applications::transfer::msgs::transfer::MsgTransfer,
-	clients::ics10_grandpa::{client_state::ClientState, help},
+	clients::ics10_grandpa::{
+		client_state::ClientState, consensus_state::ConsensusState as GPConsensusState, help,
+	},
 	core::{
-		ics02_client::{client_state::AnyClientState, height},
+		ics02_client::{client_consensus::AnyConsensusState, client_state::AnyClientState, height},
 		ics24_host::identifier,
+		ics26_routing::handler::deliver,
 	},
 	events::IbcEvent as RawIbcEvent,
 	signer::Signer,
@@ -434,9 +437,8 @@ pub mod pallet {
 
 				let mut results: Vec<RawIbcEvent> = vec![];
 				for (_index, message) in messages.into_iter().enumerate() {
-
 					let mut result = Vec::new();
-					match ibc::core::ics26_routing::handler::deliver(&mut ctx, message.clone()) {
+					match deliver(&mut ctx, message.clone()) {
 						Ok(value) => {
 							trace!(
 								target: LOG_TARGET,
@@ -459,8 +461,6 @@ pub mod pallet {
 
 					results.append(&mut result);
 				}
-
-				// Self::handle_result(&mut ctx, messages, results)?;
 
 				Ok(().into())
 			})
@@ -656,14 +656,12 @@ pub mod pallet {
 			let mmr_leaf_proof = decode_received_mmr_root.mmr_leaf_proof;
 
 			// verify mmr proof and update lc state
-			let result = light_client.update_state(
+			match light_client.update_state(
 				&encoded_signed_commitment,
 				&validator_proofs,
 				&mmr_leaf,
 				&mmr_leaf_proof,
-			);
-
-			match result {
+			) {
 				Ok(_) => {
 					trace!(
 						target: LOG_TARGET ,
@@ -693,11 +691,6 @@ pub mod pallet {
 
 					trace!(target: LOG_TARGET, "the updated client state is : {:?}", client_state);
 
-					use ibc::{
-						clients::ics10_grandpa::consensus_state::ConsensusState as GPConsensusState,
-						core::ics02_client::client_consensus::AnyConsensusState,
-					};
-
 					let mut consensus_state =
 						GPConsensusState::new(client_state.block_header.clone());
 
@@ -709,10 +702,7 @@ pub mod pallet {
 						.unwrap_or_default();
 					let any_consensus_state = AnyConsensusState::Grandpa(consensus_state);
 
-					let height = ibc::Height {
-						revision_number: 0,
-						revision_height: client_state.block_number as u64,
-					};
+					let height = ibc::Height::new(0, client_state.block_number as u64);
 
 					trace!(
 						target: LOG_TARGET,
@@ -727,26 +717,26 @@ pub mod pallet {
 					let data =
 						any_consensus_state.encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
 
-					if <ConsensusStates<T>>::contains_key(client_id.clone()) {
-						// if consensus_state is no empty use push insert an exist
-						// ConsensusStates
-						let _ = <ConsensusStates<T>>::try_mutate(
-							client_id,
-							|val| -> Result<(), &'static str> {
-								val.push((height, data));
-								Ok(())
-							},
-						);
-					} else {
-						// if consensus state is empty insert a new item.
-						<ConsensusStates<T>>::insert(client_id, vec![(height, data)]);
+					match <ConsensusStates<T>>::contains_key(client_id.clone()) {
+						true => {
+							// if consensus_state is no empty use push insert an exist
+							// ConsensusStates
+							let _ = <ConsensusStates<T>>::try_mutate(
+								client_id,
+								|val| -> Result<(), &'static str> {
+									val.push((height, data));
+									Ok(())
+								},
+							);
+						},
+						false => {
+							// if consensus state is empty insert a new item.
+							<ConsensusStates<T>>::insert(client_id, vec![(height, data)]);
+						},
 					}
 
 					// emit update state success event
-					let event_height = Height {
-						revision_number: 0,
-						revision_height: client_state.block_number as u64,
-					};
+					let event_height = Height::new(0, client_state.block_number as u64);
 					let event_client_state = EventClientState::from(client_state);
 					Self::deposit_event(Event::<T>::UpdateClientState {
 						height: event_height,
