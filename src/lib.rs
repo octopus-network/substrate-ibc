@@ -16,31 +16,24 @@ use scale_info::prelude::{
 	string::{String, ToString},
 };
 use sp_std::str::FromStr;
-
-pub use pallet::*;
-
-use crate::{
-	context::Context,
-	ibc_help::event_from_ibc_event,
-	utils::{AssetIdAndNameProvider, LOG_TARGET},
-};
-
-use codec::{Codec, Decode, Encode};
-use scale_info::{prelude::vec, TypeInfo};
-
-use beefy_light_client::commitment::{self, known_payload_ids::MMR_ROOT_ID};
-
-use log::{error, info, trace};
+use sp_std::prelude::*;
 use sp_runtime::{
 	traits::{AtLeast32BitUnsigned, IdentifyAccount},
 	RuntimeDebug,
 };
-use sp_std::prelude::*;
-
-use event::primitive::{
-	ChannelId, ClientId, ClientState as EventClientState, ClientType, ConnectionId, Height, Packet,
-	PortId,
+use crate::{
+	context::Context,
+	ibc_help::event_from_ibc_event,
+	utils::{AssetIdAndNameProvider, LOG_TARGET},
+	event::primitive::{
+		ChannelId, ClientId, ClientState as EventClientState, ClientType, ConnectionId, Height, Packet,
+		PortId,
+	}
 };
+use log::{error, info, trace};
+use codec::{Codec, Decode, Encode};
+use scale_info::{prelude::vec, TypeInfo};
+use beefy_light_client::commitment::{self, known_payload_ids::MMR_ROOT_ID};
 use frame_support::{
 	dispatch::DispatchResult,
 	pallet_prelude::*,
@@ -96,6 +89,7 @@ impl From<ibc_proto::google::protobuf::Any> for Any {
 	}
 }
 
+pub use pallet::*;
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
