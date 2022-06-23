@@ -269,7 +269,7 @@ impl<T: Config> ChannelReader for Context<T> {
 					"in channel: [get_next_sequence_send] ❎: Can't find next Sequence send number by PortId:({:?}), ChannelId:({:?})",
 					port_channel_id.0, port_channel_id.1
 				);
-				Err(ICS04Error::next_sequence_ack_not_found(port_channel_id))
+				Err(ICS04Error::next_sequence_ack_not_found(port_channel_id.clone()))
 			},
 		}
 	}
@@ -307,7 +307,7 @@ impl<T: Config> ChannelReader for Context<T> {
 					"in channel: [get_next_sequence_recv] ❎: Can't find next Sequence recv number by PortId:({:?}), ChannelId:({:?})",
 					port_channel_id.0, port_channel_id.1
 				);
-				Err(ICS04Error::next_sequence_recv_not_found(port_channel_id))
+				Err(ICS04Error::next_sequence_recv_not_found(port_channel_id.clone()))
 			},
 		}
 	}
@@ -344,7 +344,7 @@ impl<T: Config> ChannelReader for Context<T> {
 					"in channel: [get_next_sequence_ack] ❎: Can't find next Sequence ack number by PortId:({:?}), ChannelId:({:?})",
 					port_channel_id.0, port_channel_id.1
 				);
-				Err(ICS04Error::next_sequence_ack_not_found(port_channel_id))
+				Err(ICS04Error::next_sequence_ack_not_found(port_channel_id.clone()))
 			},
 		}
 	}
@@ -391,7 +391,7 @@ impl<T: Config> ChannelReader for Context<T> {
 			false => {
 				error!(
 					target: LOG_TARGET,
-					"in channel : [get_packet_commitment]: ❎: Can't find packet commitment by  PortId:({:?}), ChannelId:({:?}), Sequence:({:?})"
+					"in channel : [get_packet_commitment]: ❎: Can't find packet commitment by  PortId:({:?}), ChannelId:({:?}), Sequence:({:?})",
 					key.0, key.1, key.2
 				);
 				Err(ICS04Error::packet_commitment_not_found(key.2))
@@ -440,7 +440,7 @@ impl<T: Config> ChannelReader for Context<T> {
 			false => {
 				error!(
 					target: LOG_TARGET,
-					"in channel : [get_packet_receipt]: ❎: Can't find packet receipt by  PortId:({:?}), ChannelId:({:?}), Sequence:({:?})"
+					"in channel : [get_packet_receipt]: ❎: Can't find packet receipt by  PortId:({:?}), ChannelId:({:?}), Sequence:({:?})",
 					key.0, key.1, key.2
 				);
 				Err(ICS04Error::packet_receipt_not_found(key.2))
@@ -486,7 +486,7 @@ impl<T: Config> ChannelReader for Context<T> {
 			false => {
 				error!(
 					target: LOG_TARGET,
-					"in channel : [get_packet_acknowledgement]: ❎: Can't find packet acknowledgement by  PortId:({:?}), ChannelId:({:?}), Sequence:({:?})"
+					"in channel : [get_packet_acknowledgement]: ❎: Can't find packet acknowledgement by  PortId:({:?}), ChannelId:({:?}), Sequence:({:?})",
 					key.0, key.1, key.2
 				);
 				Err(ICS04Error::packet_acknowledgement_not_found(key.2))

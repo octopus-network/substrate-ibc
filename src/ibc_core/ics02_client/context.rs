@@ -28,22 +28,27 @@ impl<T: Config> ClientReader for Context<T> {
 	fn client_type(&self, client_id: &ClientId) -> Result<ClientType, ICS02Error> {
 		trace!(target: LOG_TARGET, "in client : [client_type] >> client_id = {:?}", client_id);
 
-		if <Clients<T>>::contains_key(client_id.as_bytes()) {
-			let encode_client_type = <Clients<T>>::get(client_id.as_bytes());
-			let string_client_type =
-				String::from_utf8(encode_client_type).map_err(ICS02Error::invalid_from_utf8)?;
-			let client_type = ClientType::from_str(&string_client_type)
-				.map_err(|e| ICS02Error::unknown_client_type(e.to_string()))?;
+		let encode_client_id = client_id.as_bytes();
 
-			trace!(
-				target: LOG_TARGET,
-				"in client : [client_type] >> client_type = {:?}",
-				client_type
-			);
-			Ok(client_type)
-		} else {
-			error!(target: LOG_TARGET, "in client : [client_type] >> read client_type is None");
-			Err(ICS02Error::client_not_found(client_id.clone()))
+		match <Clients<T>>::contains_key(encode_client_id) {
+			true => {
+				let encode_client_type = <Clients<T>>::get(encode_client_id);
+				let string_client_type =
+					String::from_utf8(encode_client_type).map_err(ICS02Error::invalid_from_utf8)?;
+				let client_type = ClientType::from_str(&string_client_type)
+					.map_err(|e| ICS02Error::unknown_client_type(e.to_string()))?;
+
+				trace!(
+					target: LOG_TARGET,
+					"in client : [client_type] >> client_type = {:?}",
+					client_type
+				);
+				Ok(client_type)
+			},
+			false => {
+				error!(target: LOG_TARGET, "in client : [client_type] >> read client_type is None");
+				Err(ICS02Error::client_not_found(client_id.clone()))
+			},
 		}
 	}
 
@@ -51,23 +56,26 @@ impl<T: Config> ClientReader for Context<T> {
 	fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, ICS02Error> {
 		trace!(target: LOG_TARGET, "in client : [client_state] >> client_id = {:?}", client_id);
 
-		if <ClientStates<T>>::contains_key(client_id.as_bytes()) {
-			let encode_client_state = <ClientStates<T>>::get(client_id.as_bytes());
-			let any_client_state = AnyClientState::decode_vec(&*encode_client_state)
-				.map_err(ICS02Error::invalid_decode)?;
-			trace!(
-				target: LOG_TARGET,
-				"in client : [client_state] >> any client_state: {:?}",
-				any_client_state
-			);
+		match <ClientStates<T>>::contains_key(client_id.as_bytes()) {
+			true => {
+				let encode_client_state = <ClientStates<T>>::get(client_id.as_bytes());
+				let any_client_state = AnyClientState::decode_vec(&*encode_client_state)
+					.map_err(ICS02Error::invalid_decode)?;
+				trace!(
+					target: LOG_TARGET,
+					"in client : [client_state] >> any client_state: {:?}",
+					any_client_state
+				);
 
-			Ok(any_client_state)
-		} else {
-			error!(
-				target: LOG_TARGET,
-				"in client : [client_state] >> read any client state is None"
-			);
-			Err(ICS02Error::client_not_found(client_id.clone()))
+				Ok(any_client_state)
+			},
+			false => {
+				error!(
+					target: LOG_TARGET,
+					"in client : [client_state] >> read any client state is None"
+				);
+				Err(ICS02Error::client_not_found(client_id.clone()))
+			},
 		}
 	}
 
@@ -316,16 +324,21 @@ impl<T: Config> ClientKeeper for Context<T> {
 		let encode_height = height.encode_vec().map_err(ICS02Error::invalid_encode)?;
 		let encode_consensus_state =
 			consensus_state.encode_vec().map_err(ICS02Error::invalid_encode)?;
-		if <ConsensusStates<T>>::contains_key(encode_client_type) {
-			// todo
-			// consensus_state is stored after mmr root updated
-		} else {
-			// if consensus state is empty insert a new item.
-			<ConsensusStates<T>>::insert(
-				encode_client_type,
-				vec![(encode_height, encode_consensus_state)],
-			);
+
+		match <ConsensusStates<T>>::contains_key(encode_client_type) {
+			true => {
+				// todo
+				// consensus_state is stored after mmr root updated
+			},
+			false => {
+				// if consensus state is empty insert a new item.
+				<ConsensusStates<T>>::insert(
+					encode_client_type,
+					vec![(encode_height, encode_consensus_state)],
+				);
+			},
 		}
+
 		Ok(())
 	}
 

@@ -31,22 +31,25 @@ impl<T: Config> ConnectionReader for Context<T> {
 			conn_id
 		);
 
-		if <Connections<T>>::contains_key(conn_id.as_bytes()) {
-			let encode_connection_end = <Connections<T>>::get(conn_id.as_bytes());
-			let connection_end = ConnectionEnd::decode_vec(&*encode_connection_end)
-				.map_err(ICS03Error::invalid_decode)?;
-			trace!(
-				target: LOG_TARGET,
-				"in connection : [connection_end] >>  connection_end = {:?}",
-				connection_end
-			);
-			Ok(connection_end)
-		} else {
-			error!(
-				target: LOG_TARGET,
-				"in connection : [connection_end] >> read connection end returns None"
-			);
-			Err(ICS03Error::connection_mismatch(conn_id.clone()))
+		match <Connections<T>>::contains_key(conn_id.as_bytes()) {
+			true => {
+				let encode_connection_end = <Connections<T>>::get(conn_id.as_bytes());
+				let connection_end = ConnectionEnd::decode_vec(&*encode_connection_end)
+					.map_err(ICS03Error::invalid_decode)?;
+				trace!(
+					target: LOG_TARGET,
+					"in connection : [connection_end] >>  connection_end = {:?}",
+					connection_end
+				);
+				Ok(connection_end)
+			},
+			false => {
+				error!(
+					target: LOG_TARGET,
+					"in connection : [connection_end] >> read connection end returns None"
+				);
+				Err(ICS03Error::connection_mismatch(conn_id.clone()))
+			},
 		}
 	}
 
@@ -54,23 +57,26 @@ impl<T: Config> ConnectionReader for Context<T> {
 	fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, ICS03Error> {
 		trace!(target: LOG_TARGET, "in connection : [client_state]");
 
-		if <ClientStates<T>>::contains_key(client_id.as_bytes()) {
-			let encode_client_state = <ClientStates<T>>::get(client_id.as_bytes());
-			let any_client_state = AnyClientState::decode_vec(&*encode_client_state)
-				.map_err(ICS03Error::invalid_decode)?;
+		match <ClientStates<T>>::contains_key(client_id.as_bytes()) {
+			true => {
+				let encode_client_state = <ClientStates<T>>::get(client_id.as_bytes());
+				let any_client_state = AnyClientState::decode_vec(&*encode_client_state)
+					.map_err(ICS03Error::invalid_decode)?;
 
-			trace!(
-				target: LOG_TARGET,
-				"in connection : [client_state] >> client_state: {:?}",
-				any_client_state
-			);
-			Ok(any_client_state)
-		} else {
-			error!(
-				target: LOG_TARGET,
-				"in connection : [client_state] >> read client_state is None"
-			);
-			Err(ICS03Error::frozen_client(client_id.clone()))
+				trace!(
+					target: LOG_TARGET,
+					"in connection : [client_state] >> client_state: {:?}",
+					any_client_state
+				);
+				Ok(any_client_state)
+			},
+			false => {
+				error!(
+					target: LOG_TARGET,
+					"in connection : [client_state] >> read client_state is None"
+				);
+				Err(ICS03Error::frozen_client(client_id.clone()))
+			},
 		}
 	}
 
