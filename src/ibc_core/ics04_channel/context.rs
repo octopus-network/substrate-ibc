@@ -1,10 +1,11 @@
 use crate::{
+	ibc_core::ics04_channel::packet::Packet,
 	utils::{offchain_key, LOG_TARGET},
 	*,
 };
 use log::{error, trace};
 use scale_info::prelude::string::{String, ToString};
-use sp_std::{str::FromStr, time::Duration};
+use sp_std::{collections::btree_map::BTreeMap, str::FromStr, time::Duration};
 
 use crate::{context::Context, utils::host_height};
 use ibc::{
@@ -263,7 +264,12 @@ impl<T: Config> ChannelReader for Context<T> {
 				Ok(Sequence::from(encode_sequence))
 			},
 			false => {
-				todo!()
+				error!(
+					target: LOG_TARGET,
+					"in channel: [get_next_sequence_send] ❎: Can't find next Sequence send number by PortId:({:?}), ChannelId:({:?})",
+					port_channel_id.0, port_channel_id.1
+				);
+				Err(ICS04Error::next_sequence_ack_not_found(port_channel_id))
 			},
 		}
 	}
@@ -296,7 +302,12 @@ impl<T: Config> ChannelReader for Context<T> {
 				Ok(Sequence::from(encode_sequence))
 			},
 			false => {
-				todo!()
+				error!(
+					target: LOG_TARGET,
+					"in channel: [get_next_sequence_recv] ❎: Can't find next Sequence recv number by PortId:({:?}), ChannelId:({:?})",
+					port_channel_id.0, port_channel_id.1
+				);
+				Err(ICS04Error::next_sequence_recv_not_found(port_channel_id))
 			},
 		}
 	}
@@ -328,7 +339,12 @@ impl<T: Config> ChannelReader for Context<T> {
 				Ok(Sequence::from(encode_sequence))
 			},
 			false => {
-				todo!()
+				error!(
+					target: LOG_TARGET,
+					"in channel: [get_next_sequence_ack] ❎: Can't find next Sequence ack number by PortId:({:?}), ChannelId:({:?})",
+					port_channel_id.0, port_channel_id.1
+				);
+				Err(ICS04Error::next_sequence_ack_not_found(port_channel_id))
 			},
 		}
 	}
@@ -374,9 +390,10 @@ impl<T: Config> ChannelReader for Context<T> {
 			},
 			false => {
 				error!(
-				target: LOG_TARGET,
-				"in channel : [get_packet_commitment] >> read get packet commitment return None"
-			);
+					target: LOG_TARGET,
+					"in channel : [get_packet_commitment]: ❎: Can't find packet commitment by  PortId:({:?}), ChannelId:({:?}), Sequence:({:?})"
+					key.0, key.1, key.2
+				);
 				Err(ICS04Error::packet_commitment_not_found(key.2))
 			},
 		}
@@ -423,7 +440,8 @@ impl<T: Config> ChannelReader for Context<T> {
 			false => {
 				error!(
 					target: LOG_TARGET,
-					"in channel : [get_packet_receipt] >> read get packet receipt not found"
+					"in channel : [get_packet_receipt]: ❎: Can't find packet receipt by  PortId:({:?}), ChannelId:({:?}), Sequence:({:?})"
+					key.0, key.1, key.2
 				);
 				Err(ICS04Error::packet_receipt_not_found(key.2))
 			},
@@ -468,7 +486,8 @@ impl<T: Config> ChannelReader for Context<T> {
 			false => {
 				error!(
 					target: LOG_TARGET,
-					"in channel : [get_packet_acknowledgement] >> get acknowledgement not found"
+					"in channel : [get_packet_acknowledgement]: ❎: Can't find packet acknowledgement by  PortId:({:?}), ChannelId:({:?}), Sequence:({:?})"
+					key.0, key.1, key.2
 				);
 				Err(ICS04Error::packet_acknowledgement_not_found(key.2))
 			},
@@ -639,6 +658,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 			(encode_port_id.to_vec(), encode_channel_id.to_vec(), encode_sequence),
 			encode_packet_commitment,
 		);
+
 		Ok(())
 	}
 
@@ -670,14 +690,28 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		key: (PortId, ChannelId, Sequence),
 		packet: IBCPacket,
 	) -> Result<(), ICS04Error> {
-		// store packet offchain
+		trace!(
+			target: LOG_TARGET,
+			"in channel: [store_packet] >> port_id = {:?}, channel_id = {:?}, sequence = {:?}, packet = {:?}",
+			key.0, key.1, key.2, packet
+		);
+
+		// store packet in offchain
 		let encode_port_id = key.0.as_bytes().to_vec();
 		let encode_channel_id = key.1.to_string().as_bytes().to_vec();
 		let encode_sequence = u64::from(key.2);
 
 		let key = offchain_key::<T>(encode_port_id, encode_channel_id);
+		let mut off_chain_packets: BTreeMap<u64, Packet> =
+			sp_io::offchain::local_storage_get(sp_core::offchain::StorageKind::PERSISTENT, &key)
+				.and_then(|v| codec::Decode::decode(&mut &*v).ok())
+				.unwrap_or_default();
 
-		todo!()
+		let off_chain_packet: Packet = packet.into();
+		off_chain_packets.insert(encode_sequence, off_chain_packet.clone());
+		sp_io::offchain_index::set(&key, off_chain_packet.encode().as_slice());
+
+		Ok(())
 	}
 
 	fn store_packet_receipt(
@@ -777,30 +811,33 @@ impl<T: Config> ChannelKeeper for Context<T> {
 
 		let port_and_channel_id = (encode_port_id.to_vec(), encode_channel_id.to_vec());
 
-		if <ChannelsConnection<T>>::contains_key(&encode_connection_id) {
-			trace!(
-				target: LOG_TARGET,
-				"in channel: [store_connection_channels] >> insert port_channel_id"
-			);
-			// if connection_id exist
-			<ChannelsConnection<T>>::try_mutate(
-				&encode_connection_id,
-				|value| -> Result<(), ICS04Error> {
-					value.push(port_and_channel_id);
-					Ok(())
-				},
-			)
-			.map_err(|_| ICS04Error::invalid_store_channels_connection())
-		} else {
-			// if connection_id no exist
-			error!(
-				target: LOG_TARGET,
-				"in channel: [store_connection_channels] >> init ChannelsConnection"
-			);
+		match <ChannelsConnection<T>>::contains_key(&encode_connection_id) {
+			true => {
+				trace!(
+					target: LOG_TARGET,
+					"in channel: [store_connection_channels] >> The connection_id have associated some port_id \
+					and channel_id, so there we mutate Struct ChannelsConnection."
+				);
+				<ChannelsConnection<T>>::try_mutate(
+					&encode_connection_id,
+					|value| -> Result<(), ICS04Error> {
+						value.push(port_and_channel_id);
+						Ok(())
+					},
+				)
+				.map_err(|_| ICS04Error::invalid_store_channels_connection())
+			},
+			false => {
+				trace!(
+					target: LOG_TARGET,
+					"in channel: [store_connection_channels] >> The connection_id have not \
+					associated any port_id and channel_id, so there init the Struct ChannelsConnection."
+				);
 
-			<ChannelsConnection<T>>::insert(&encode_connection_id, vec![port_and_channel_id]);
+				<ChannelsConnection<T>>::insert(&encode_connection_id, vec![port_and_channel_id]);
 
-			Ok(())
+				Ok(())
+			},
 		}
 	}
 
