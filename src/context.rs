@@ -1,97 +1,47 @@
-use crate::*;
-use alloc::{
-	borrow::{Borrow, Cow, ToOwned},
-	collections::BTreeMap,
-	sync::Arc,
+use crate::{
+	applications::transfer::transfer_handler::IBCTransferModule,
+	ibc_core::ics26_routing::context::IBCRouter, *,
 };
-use scale_info::TypeInfo;
-
 use ibc::{
-	applications::ics20_fungible_token_transfer::{
-		context::Ics20Context, error::Error as ICS20Error, msgs::denom_trace::DenomTrace,
-	},
-	core::{
-		ics04_channel::{
-			channel::{Counterparty, Order},
-			error::Error as Ics04Error,
-			Version,
-		},
-		ics05_port::capabilities::ChannelCapability,
-		ics24_host::identifier::{ChannelId, ConnectionId, PortId},
-		ics26_routing::context::{Ics26Context, Module, ModuleId, ModuleOutput, RouterBuilder},
-	},
+	applications::transfer::MODULE_ID_STR as TRANSFER_MODULE_ID,
+	core::ics26_routing::context::{Module, ModuleId, RouterBuilder},
 };
+use scale_info::prelude::borrow::ToOwned;
+use sp_std::sync::Arc;
 
-#[derive(Debug, Default)]
-struct IbcModule;
+#[derive(Clone)]
+pub struct Context<T: Config> {
+	pub _pd: PhantomData<T>,
+	pub router: IBCRouter,
+}
 
-impl Module for IbcModule {
-	fn on_chan_open_try(
-		&mut self,
-		_output: &mut ModuleOutput,
-		_order: Order,
-		_connection_hops: &[ConnectionId],
-		_port_id: &PortId,
-		_channel_id: &ChannelId,
-		_channel_cap: &ChannelCapability,
-		_counterparty: &Counterparty,
-		_counterparty_version: &Version,
-	) -> Result<Version, Ics04Error> {
-		Ok(Version::ics20())
+impl<T: Config> Context<T> {
+	fn new() -> Self {
+		let ibc_router = Self::default()
+			.add_route(TRANSFER_MODULE_ID.parse().unwrap(), IBCTransferModule::default())
+			.unwrap()
+			.build();
+
+		Self { _pd: PhantomData::default(), router: ibc_router }
 	}
 }
 
-#[derive(Default)]
-pub struct MockRouterBuilder(MockRouter);
-
-impl RouterBuilder for MockRouterBuilder {
-	type Router = MockRouter;
+impl<T: Config> RouterBuilder for Context<T> {
+	type Router = IBCRouter;
 
 	fn add_route(mut self, module_id: ModuleId, module: impl Module) -> Result<Self, String> {
-		match self.0 .0.insert(module_id, Arc::new(module)) {
+		match self.router.0.insert(module_id, Arc::new(module)) {
 			None => Ok(self),
 			Some(_) => Err("Duplicate module_id".to_owned()),
 		}
 	}
 
 	fn build(self) -> Self::Router {
-		self.0
+		self.router
 	}
 }
 
-#[derive(Debug, Default, Clone)]
-pub struct MockRouter(BTreeMap<ModuleId, Arc<dyn Module>>);
-
-impl ibc::core::ics26_routing::context::Router for MockRouter {
-	fn get_route_mut(&mut self, module_id: &impl Borrow<ModuleId>) -> Option<&mut dyn Module> {
-		log::trace!(target:"runtime::pallet-ibc","in routing: [get_route_mut]");
-
-		self.0.get_mut(module_id.borrow()).and_then(Arc::get_mut)
-	}
-
-	fn has_route(&self, module_id: &impl Borrow<ModuleId>) -> bool {
-		log::trace!(target:"runtime::pallet-ibc","in routing: [has_route]");
-		self.0.get(module_id.borrow()).is_some()
-	}
-}
-
-#[derive(Clone)]
-pub struct Context<T: Config> {
-	pub _pd: PhantomData<T>,
-	pub router: MockRouter,
-}
-
-impl<T: Config> Context<T> {
-	pub fn new() -> Self {
-		let r = MockRouterBuilder::default()
-			.add_route("ibcmodule".parse().unwrap(), IbcModule::default())
-			.unwrap()
-			.build();
-
-		Self { _pd: PhantomData::default(), router: r }
-	}
-}
-
+/// default config ics20 transfer module
 impl<T: Config> Default for Context<T> {
 	fn default() -> Self {
 		Self::new()
