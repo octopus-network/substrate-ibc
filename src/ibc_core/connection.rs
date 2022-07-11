@@ -17,6 +17,7 @@ use ibc::{
 	},
 	Height,
 };
+use ibc::core::ics02_client::context::ClientReader;
 
 impl<T: Config> ConnectionReader for Context<T> {
 	fn connection_end(&self, conn_id: &ConnectionId) -> Result<ConnectionEnd, Ics03Error> {
@@ -37,17 +38,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 	fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, Ics03Error> {
 		trace!(target:"runtime::pallet-ibc","in connection : [client_state]");
 
-		// ClientReader::client_state(self, client_id)
-		if <ClientStates<T>>::contains_key(client_id.as_bytes()) {
-			let data = <ClientStates<T>>::get(client_id.as_bytes());
-			let result = AnyClientState::decode_vec(&*data).map_err(Ics03Error::invalid_decode)?;
-			trace!(target:"runtime::pallet-ibc","in connection : [client_state] >> client_state: {:?}", result);
-
-			Ok(result)
-		} else {
-			trace!(target:"runtime::pallet-ibc","in connection : [client_state] >> read client_state is None");
-			Err(Ics03Error::frozen_client(client_id.clone()))
-		}
+		ClientReader::client_state(self, client_id).map_err(Ics03Error::ics02_client)
 	}
 
 	fn host_current_height(&self) -> Height {
@@ -77,14 +68,6 @@ impl<T: Config> ConnectionReader for Context<T> {
 		Height::new(0, height)
 	}
 
-	fn connection_counter(&self) -> Result<u64, Ics03Error> {
-		trace!(target:"runtime::pallet-ibc",
-			"in connection : [connection_counter]"
-		);
-
-		Ok(<ConnectionCounter<T>>::get())
-	}
-
 	fn commitment_prefix(&self) -> CommitmentPrefix {
 		trace!(target:"runtime::pallet-ibc","in connection : [commitment_prefix]");
 
@@ -98,22 +81,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 	) -> Result<AnyConsensusState, Ics03Error> {
 		trace!(target:"runtime::pallet-ibc","in connection : [client_consensus_state]");
 
-		// ClientReader::consensus_state(self, client_id, height)
-		let height = height.encode_vec().map_err(Ics03Error::invalid_encode)?;
-		let value = <ConsensusStates<T>>::get(client_id.as_bytes());
-
-		for item in value.iter() {
-			if item.0 == height {
-				let any_consensus_state =
-					AnyConsensusState::decode_vec(&*item.1).map_err(Ics03Error::invalid_decode)?;
-				return Ok(any_consensus_state)
-			}
-		}
-
-		// Err(ICS03Error::missing_consensus_height())
-		Ok(AnyConsensusState::Grandpa(
-			ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
-		))
+		ClientReader::consensus_state(self, client_id, height).map_err(Ics03Error::ics02_client)
 	}
 
 	fn host_consensus_state(&self, _height: Height) -> Result<AnyConsensusState, Ics03Error> {
@@ -123,21 +91,17 @@ impl<T: Config> ConnectionReader for Context<T> {
 		trace!(target:"runtime::pallet-ibc","in connection : [host_consensus_state] >> any_consensus_state = {:?}", result);
 		Ok(result)
 	}
+
+	fn connection_counter(&self) -> Result<u64, Ics03Error> {
+		trace!(target:"runtime::pallet-ibc",
+			"in connection : [connection_counter]"
+		);
+
+		Ok(<ConnectionCounter<T>>::get())
+	}
 }
 
 impl<T: Config> ConnectionKeeper for Context<T> {
-	fn increase_connection_counter(&mut self) {
-		trace!(target:"runtime::pallet-ibc","in connection : [increase_connection_counter]");
-
-		let ret = <ConnectionCounter<T>>::try_mutate(|val| -> Result<(), Ics03Error> {
-			let new = val
-				.checked_add(1)
-				.ok_or_else(Ics03Error::invalid_increment_connection_counter)?;
-			*val = new;
-			Ok(())
-		});
-	}
-
 	fn store_connection(
 		&mut self,
 		connection_id: ConnectionId,
@@ -174,5 +138,17 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 			connection_id.as_bytes().to_vec(),
 		);
 		Ok(())
+	}
+
+	fn increase_connection_counter(&mut self) {
+		trace!(target:"runtime::pallet-ibc","in connection : [increase_connection_counter]");
+
+		let ret = <ConnectionCounter<T>>::try_mutate(|val| -> Result<(), Ics03Error> {
+			let new = val
+				.checked_add(1)
+				.ok_or_else(Ics03Error::invalid_increment_connection_counter)?;
+			*val = new;
+			Ok(())
+		});
 	}
 }

@@ -54,13 +54,7 @@ impl<T: Config> ChannelReader for Context<T> {
 	fn connection_end(&self, connection_id: &ConnectionId) -> Result<ConnectionEnd, Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel : [connection_end]");
 
-		let data = <Connections<T>>::get(connection_id.as_bytes());
-
-		let ret = ConnectionEnd::decode_vec(&*data)
-			.map_err(|_| Ics04Error::connection_not_open(connection_id.clone()))?;
-
-		trace!(target:"runtime::pallet-ibc","In channel : [connection_end] >> connection_end = {:?}", ret);
-		Ok(ret)
+		ConnectionReader::connection_end(self, connection_id).map_err(Ics04Error::ics03_connection)
 	}
 
 	/// Returns the `ChannelsConnection` for the given identifier `conn_id`.
@@ -101,13 +95,7 @@ impl<T: Config> ChannelReader for Context<T> {
 	fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel : [client_state]");
 
-		let data = <ClientStates<T>>::get(client_id.as_bytes());
-
-		let any_consensus_state = AnyClientState::decode_vec(&*data)
-			.map_err(|_| Ics04Error::frozen_client(client_id.clone()))?;
-
-		trace!(target:"runtime::pallet-ibc","in channel : [client_state] >> Any client state: {:?}", any_consensus_state);
-		Ok(any_consensus_state)
+		ClientReader::client_state(self, client_id).map_err(Ics04Error::ics02_client)
 	}
 
 	fn client_consensus_state(
@@ -117,28 +105,7 @@ impl<T: Config> ChannelReader for Context<T> {
 	) -> Result<AnyConsensusState, Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel : [client_consensus_state]");
 
-		let height = height.encode_vec().map_err(|_| Ics04Error::invalid_encode())?;
-		let value = <ConsensusStates<T>>::get(client_id.as_bytes());
-
-		for item in value.iter() {
-			if item.0 == height {
-				let any_consensus_state =
-					AnyConsensusState::decode_vec(&*item.1).map_err(Ics04Error::invalid_decode)?;
-				trace!(target:"runtime::pallet-ibc",
-					"in channel: [client_consensus_state] >> any consensus state = {:?}",
-					any_consensus_state
-				);
-				return Ok(any_consensus_state)
-			}
-		}
-		trace!(target:"runtime::pallet-ibc",
-			"in channel : [client_consensus_state] >> read about client_id consensus_state error"
-		);
-
-		// Err(ICS04Error::frozen_client(client_id.clone()))
-		Ok(AnyConsensusState::Grandpa(
-			ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
-		))
+		ClientReader::consensus_state(self, client_id, height).map_err(Ics04Error::ics02_client)
 	}
 
 	fn authenticated_capability(&self, port_id: &PortId) -> Result<ChannelCapability, Ics04Error> {
