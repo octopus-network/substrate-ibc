@@ -105,7 +105,15 @@ impl<T: Config> ChannelReader for Context<T> {
 	) -> Result<AnyConsensusState, Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel : [client_consensus_state]");
 
-		ClientReader::consensus_state(self, client_id, height).map_err(Ics04Error::ics02_client)
+		let ret = ClientReader::consensus_state(self, client_id, height).map_err(Ics04Error::ics02_client);
+
+		if ret.is_err() { // TODO(davirain) template deatil with
+			Ok(AnyConsensusState::Grandpa(
+				ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
+			))
+		} else {
+			Ok(ret.unwrap())
+		}
 	}
 
 	fn authenticated_capability(&self, port_id: &PortId) -> Result<ChannelCapability, Ics04Error> {

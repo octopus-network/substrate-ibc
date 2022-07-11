@@ -81,7 +81,15 @@ impl<T: Config> ConnectionReader for Context<T> {
 	) -> Result<AnyConsensusState, Ics03Error> {
 		trace!(target:"runtime::pallet-ibc","in connection : [client_consensus_state]");
 
-		ClientReader::consensus_state(self, client_id, height).map_err(Ics03Error::ics02_client)
+		let ret = ClientReader::consensus_state(self, client_id, height).map_err(Ics03Error::ics02_client);
+
+		if ret.is_err() { // TODO(davirain) template deatil with
+			Ok(AnyConsensusState::Grandpa(
+				ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
+			))
+		} else {
+			Ok(ret.unwrap())
+		}
 	}
 
 	fn host_consensus_state(&self, _height: Height) -> Result<AnyConsensusState, Ics03Error> {
