@@ -14,6 +14,7 @@ use ibc::{
 			error::Error as Ics02Error,
 		},
 		ics24_host::identifier::ClientId,
+		ics24_host::path::ClientTypePath,
 	},
 	timestamp::Timestamp,
 	Height,
@@ -23,8 +24,9 @@ impl<T: Config> ClientReader for Context<T> {
 	fn client_type(&self, client_id: &ClientId) -> Result<ClientType, Ics02Error> {
 		trace!(target:"runtime::pallet-ibc","in client : [client_type]");
 
-		if <Clients<T>>::contains_key(client_id.as_bytes()) {
-			let data = <Clients<T>>::get(client_id.as_bytes());
+		let client_type_path = ClientTypePath(client_id.clone()).to_string().as_bytes().to_vec();
+		if <Clients<T>>::contains_key(client_type_path.clone()) {
+			let data = <Clients<T>>::get(client_type_path);
 			let mut data: &[u8] = &data;
 			let data = Vec::<u8>::decode(&mut data).map_err(Ics02Error::invalid_codec_decode)?;
 			let data = String::from_utf8(data).map_err(Ics02Error::invalid_from_utf8)?;
@@ -197,9 +199,9 @@ impl<T: Config> ClientKeeper for Context<T> {
 	) -> Result<(), Ics02Error> {
 		info!("in client : [store_client_type]");
 
-		let client_id = client_id.as_bytes().to_vec();
+		let client_type_path = ClientTypePath(client_id.clone()).to_string().as_bytes().to_vec();
 		let client_type = client_type.as_str().encode();
-		<Clients<T>>::insert(client_id, client_type);
+		<Clients<T>>::insert(client_type_path, client_type);
 		Ok(())
 	}
 
