@@ -204,8 +204,10 @@ impl<T: Config> ClientKeeper for Context<T> {
 		<ClientStates<T>>::insert(client_state_path.clone(), data);
 
 		let ret = <ClientStatesKeys<T>>::try_mutate(|val| -> Result<(), Ics02Error> {
-
-			val.push(client_id.as_bytes().to_vec());
+			if let Some(_value) = val.iter().find(|&x| x == client_id.as_bytes()) {
+			} else {
+				val.push(client_id.as_bytes().to_vec());
+			}
 
 			Ok(())
 		});

@@ -1255,7 +1255,10 @@ pub mod pallet {
 
 					// store client states keys
 					let _ = <ClientStatesKeys<T>>::try_mutate(|val| -> Result<(), &'static str> {
-						val.push(client_id.clone());
+						if let Some(_value) = val.iter().find(|&x| x == &client_id.clone()) {
+						} else {
+							val.push(client_id.clone());
+						}
 
 						Ok(())
 					});
