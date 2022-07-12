@@ -218,6 +218,7 @@ pub mod pallet {
 
 	#[pallet::storage]
 	/// (client_id, Height) => ConsensusState
+	/// Need ClientConsensusStatePath
 	pub type ConsensusStates<T: Config> =
 		StorageDoubleMap<_, Blake2_128Concat, Vec<u8>, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
@@ -227,6 +228,7 @@ pub mod pallet {
 
 	#[pallet::storage]
 	/// connection_id => ConnectionEnd
+	/// Need ConnectionsPath
 	pub type Connections<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
@@ -235,6 +237,7 @@ pub mod pallet {
 
 	#[pallet::storage]
 	/// (port_identifier, channel_identifier) => ChannelEnd
+	/// Need ChannelEndPath
 	pub type Channels<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
@@ -251,26 +254,31 @@ pub mod pallet {
 
 	#[pallet::storage]
 	/// connection_id => Vec<(port_id, channel_id)>
+	/// Need ConnectionsPath <-> ChannelEndPath
 	pub type ChannelsConnection<T: Config> =
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<(Vec<u8>, Vec<u8>)>, ValueQuery>;
 
 	#[pallet::storage]
 	/// (port_id, channel_id) => sequence
+	/// Maybe Need SeqSendsPath
 	pub type NextSequenceSend<T: Config> =
 		StorageDoubleMap<_, Blake2_128Concat, Vec<u8>, Blake2_128Concat, Vec<u8>, u64, ValueQuery>;
 
 	#[pallet::storage]
 	/// (port_id, channel_id) => sequence
+	/// Need SeqRecvsPath
 	pub type NextSequenceRecv<T: Config> =
 		StorageDoubleMap<_, Blake2_128Concat, Vec<u8>, Blake2_128Concat, Vec<u8>, u64, ValueQuery>;
 
 	#[pallet::storage]
 	/// (port_id, channel_id) => sequence
+	/// Maybe Ned SeqAcksPath
 	pub type NextSequenceAck<T: Config> =
 		StorageDoubleMap<_, Blake2_128Concat, Vec<u8>, Blake2_128Concat, Vec<u8>, u64, ValueQuery>;
 
 	#[pallet::storage]
 	/// (port_id, channel_id, sequence) => hash of acknowledgement
+	/// Need AcksPath
 	pub type Acknowledgements<T: Config> = StorageNMap<
 		_,
 		(
@@ -307,11 +315,13 @@ pub mod pallet {
 
 	#[pallet::storage]
 	/// client_id => connection_id
+	/// ClientsStatePath <-> ConnectionEndPath
 	pub type ConnectionClient<T: Config> =
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
 	/// (port_id, channel_id, sequence) => receipt
+	/// Need ReceiptsPath
 	pub type PacketReceipt<T: Config> = StorageNMap<
 		_,
 		(
@@ -325,6 +335,7 @@ pub mod pallet {
 
 	#[pallet::storage]
 	/// (port_id, channel_id, sequence) => hash of (timestamp, height, packet)
+	/// Need CommitmentsPath
 	pub type PacketCommitment<T: Config> = StorageNMap<
 		_,
 		(
