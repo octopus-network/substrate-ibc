@@ -301,13 +301,13 @@ impl<T: Config> ChannelReader for Context<T> {
 
 	/// Returns the current timestamp of the local chain.
 	fn host_timestamp(&self) -> Timestamp {
-		log::trace!(target:"runtime::pallet-ibc","in channel: [host_timestamp]");
+		trace!(target:"runtime::pallet-ibc","in channel: [host_timestamp]");
 
 		use frame_support::traits::UnixTime;
 		let time = T::TimeProvider::now();
 		let ts = Timestamp::from_nanoseconds(time.as_nanos() as u64)
 			.map_err(|e| panic!("{:?}, caused by {:?} from pallet timestamp_pallet", e, time));
-		log::trace!(target:"runtime::pallet-ibc","in channel: [host_timestamp] >> host_timestamp = {:?}", ts.unwrap());
+		trace!(target:"runtime::pallet-ibc","in channel: [host_timestamp] >> host_timestamp = {:?}", ts.unwrap());
 
 		ts.unwrap()
 	}
@@ -412,11 +412,11 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		key: (PortId, ChannelId, Sequence),
 		commitment: IbcPacketCommitment,
 	) -> Result<(), Ics04Error> {
-		log::trace!(target:"runtime::pallet-ibc","in channel: [store_packet_commitment]. key={:?}", key);
+		trace!(target:"runtime::pallet-ibc","in channel: [store_packet_commitment]. key={:?}", key);
 
 		let sequence = u64::from(key.2);
 
-		// inser packet commitment key-value
+		// insert packet commitment key-value
 		<PacketCommitment<T>>::insert(
 			(key.0.as_bytes().to_vec(), from_channel_id_to_vec(key.1), sequence),
 			commitment.into_vec(),
@@ -435,7 +435,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		&mut self,
 		key: (PortId, ChannelId, Sequence),
 	) -> Result<(), Ics04Error> {
-		log::trace!(target:"runtime::pallet-ibc","in channel: [delete_packet_commitment]. key={:?}", key);
+		trace!(target:"runtime::pallet-ibc","in channel: [delete_packet_commitment]. key={:?}", key);
 
 		let sequence = u64::from(key.2);
 
@@ -467,7 +467,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		key: (PortId, ChannelId, Sequence),
 		receipt: Receipt,
 	) -> Result<(), Ics04Error> {
-		log::trace!(target:"runtime::pallet-ibc","in channel: [store_packet_receipt]");
+		trace!(target:"runtime::pallet-ibc","in channel: [store_packet_receipt]");
 
 		let receipt = match receipt {
 			Receipt::Ok => "Ok".encode(),
@@ -488,7 +488,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		key: (PortId, ChannelId, Sequence),
 		ack_commitment: IbcAcknowledgementCommitment,
 	) -> Result<(), Ics04Error> {
-		log::trace!(target:"runtime::pallet-ibc","in channel: [store_packet_acknowledgement]");
+		trace!(target:"runtime::pallet-ibc","in channel: [store_packet_acknowledgement]");
 
 		let sequence = u64::from(key.2);
 
@@ -511,7 +511,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		&mut self,
 		key: (PortId, ChannelId, Sequence),
 	) -> Result<(), Ics04Error> {
-		log::trace!(target:"runtime::pallet-ibc","in channel: [delete_packet_acknowledgement]");
+		trace!(target:"runtime::pallet-ibc","in channel: [delete_packet_acknowledgement]");
 
 		let sequence = u64::from(key.2);
 
