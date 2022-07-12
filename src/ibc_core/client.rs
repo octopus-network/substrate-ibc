@@ -14,7 +14,7 @@ use ibc::{
 			error::Error as Ics02Error,
 		},
 		ics24_host::identifier::ClientId,
-		ics24_host::path::ClientTypePath,
+		ics24_host::path::{ClientTypePath, ClientStatePath},
 	},
 	timestamp::Timestamp,
 	Height,
@@ -42,8 +42,10 @@ impl<T: Config> ClientReader for Context<T> {
 	fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, Ics02Error> {
 		trace!(target:"runtime::pallet-ibc","in client : [client_state]");
 
-		if <ClientStates<T>>::contains_key(client_id.as_bytes()) {
-			let data = <ClientStates<T>>::get(client_id.as_bytes());
+		let client_state_path = ClientStatePath(client_id.clone()).to_string().as_bytes().to_vec();
+
+		if <ClientStates<T>>::contains_key(&client_state_path) {
+			let data = <ClientStates<T>>::get(&client_state_path);
 			let result = AnyClientState::decode_vec(&*data).map_err(Ics02Error::invalid_decode)?;
 			trace!(target:"runtime::pallet-ibc","in client : [client_state] >> any client_state: {:?}", result);
 
@@ -222,11 +224,13 @@ impl<T: Config> ClientKeeper for Context<T> {
 	) -> Result<(), Ics02Error> {
 		trace!(target:"runtime::pallet-ibc","in client : [store_client_state]");
 
+		let client_state_path = ClientStatePath(client_id.clone()).to_string().as_bytes().to_vec();
+
 		let data = client_state.encode_vec().map_err(Ics02Error::invalid_encode)?;
 		// store client states key-value
-		<ClientStates<T>>::insert(client_id.as_bytes().to_vec(), data);
+		<ClientStates<T>>::insert(client_state_path.clone(), data);
 
-		// store client states keys
+		// store client states_path
 		let ret = <ClientStatesKeys<T>>::try_mutate(|val| -> Result<(), Ics02Error> {
 			if let Some(_value) = val.iter().find(|&x| x == client_id.as_bytes()) {
 			} else {

@@ -136,6 +136,7 @@ pub mod pallet {
 		events::IbcEvent,
 		signer::Signer,
 	};
+	use ibc::core::ics24_host::path::ClientStatePath;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -183,12 +184,12 @@ pub mod pallet {
 	pub struct Pallet<T>(_);
 
 	#[pallet::storage]
-	/// client_id => ClientState
+	/// ClientStatePath(client_id) => ClientState
 	pub type ClientStates<T: Config> =
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
-	/// vector client id for rpc
+	/// vector client_id for rpc
 	pub type ClientStatesKeys<T: Config> = StorageValue<_, Vec<Vec<u8>>, ValueQuery>;
 
 	#[pallet::storage]
@@ -1129,6 +1130,7 @@ pub mod pallet {
 				"inner_update_client_state:  client id is {:?}",
 				client_id_str
 			);
+			let ibc_client_id = ibc::core::ics24_host::identifier::ClientId::from_str(&client_id_str).unwrap();
 
 			let decode_received_mmr_root =
 				help::MmrRoot::decode(&mut &mmr_root[..]).map_err(|_| Error::<T>::InvalidDecode)?;
@@ -1140,7 +1142,8 @@ pub mod pallet {
 
 			let mut client_state = ClientState::default();
 
-			if !<ClientStates<T>>::contains_key(client_id.clone()) {
+			let client_state_path = ClientStatePath(ibc_client_id).to_string().as_bytes().to_vec();
+			if !<ClientStates<T>>::contains_key(client_state_path.clone()) {
 				log::error!(
 					"in inner_update_client_state: {:?} client_state not found !",
 					client_id_str
@@ -1149,7 +1152,7 @@ pub mod pallet {
 				return Err(Error::<T>::ClientIdNotFound.into())
 			} else {
 				// get client state from chain storage
-				let data = <ClientStates<T>>::get(client_id.clone());
+				let data = <ClientStates<T>>::get(client_state_path.clone());
 				let any_client_state =
 					AnyClientState::decode_vec(&*data).map_err(|_| Error::<T>::InvalidDecode)?;
 				client_state = match any_client_state {
@@ -1232,13 +1235,13 @@ pub mod pallet {
 					let data =
 						any_client_state.encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
 					// store client states key-value
-					<ClientStates<T>>::insert(client_id.clone(), data);
+					<ClientStates<T>>::insert(client_state_path.clone(), data);
 
 					// store client states keys
 					let _ = <ClientStatesKeys<T>>::try_mutate(|val| -> Result<(), &'static str> {
 						if let Some(_value) = val.iter().find(|&x| x == &client_id.clone()) {
 						} else {
-							val.push(client_id.clone());
+							val.push(client_state_path.clone());
 						}
 						Ok(())
 					});
