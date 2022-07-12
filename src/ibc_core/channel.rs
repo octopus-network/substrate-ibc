@@ -33,15 +33,15 @@ use ibc::{
 	timestamp::Timestamp,
 	Height,
 };
+use ibc::core::ics24_host::path::ChannelEndsPath;
 
 impl<T: Config> ChannelReader for Context<T> {
 	fn channel_end(&self, port_channel_id: &(PortId, ChannelId)) -> Result<ChannelEnd, Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel : [channel_end]");
 
-		let data = <Channels<T>>::get(
-			port_channel_id.0.as_bytes(),
-			from_channel_id_to_vec(port_channel_id.1),
-		);
+		let channel_end_path = ChannelEndsPath(port_channel_id.0.clone(), port_channel_id.1.clone()).to_string().as_bytes().to_vec();
+
+		let data = <Channels<T>>::get(channel_end_path);
 
 		let channel_end = ChannelEnd::decode_vec(&*data).map_err(|_| {
 			Ics04Error::channel_not_found(port_channel_id.clone().0, port_channel_id.clone().1)
@@ -577,12 +577,12 @@ impl<T: Config> ChannelKeeper for Context<T> {
 	) -> Result<(), Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel: [store_channel]");
 
+		let channel_end_path = ChannelEndsPath(port_channel_id.0.clone(), port_channel_id.1.clone()).to_string().as_bytes().to_vec();
 		let channel_end = channel_end.encode_vec().map_err(|_| Ics04Error::invalid_encode())?;
 
 		// store channels key-value
 		<Channels<T>>::insert(
-			port_channel_id.0.as_bytes().to_vec(),
-			from_channel_id_to_vec(port_channel_id.1),
+			channel_end_path,
 			channel_end,
 		);
 

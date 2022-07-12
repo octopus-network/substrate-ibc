@@ -234,12 +234,9 @@ pub mod pallet {
 	pub type ConnectionsKeys<T: Config> = StorageValue<_, Vec<Vec<u8>>, ValueQuery>;
 
 	#[pallet::storage]
-	/// (port_identifier, channel_identifier) => ChannelEnd
-	/// Need ChannelEndPath
-	pub type Channels<T: Config> = StorageDoubleMap<
+	/// ChannelEndPath(port_id, channel_id) => ChannelEnd
+	pub type Channels<T: Config> = StorageMap<
 		_,
-		Blake2_128Concat,
-		Vec<u8>,
 		Blake2_128Concat,
 		Vec<u8>,
 		Vec<u8>,
