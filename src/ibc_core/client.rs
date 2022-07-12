@@ -19,6 +19,7 @@ use ibc::{
 	timestamp::Timestamp,
 	Height,
 };
+use ibc::core::ics24_host::path::ClientConsensusStatePath;
 
 impl<T: Config> ClientReader for Context<T> {
 	fn client_type(&self, client_id: &ClientId) -> Result<ClientType, Ics02Error> {
@@ -65,10 +66,16 @@ impl<T: Config> ClientReader for Context<T> {
 			"in client : [consensus_state]"
 		);
 
-		let raw_height = height.encode_vec().map_err(Ics02Error::invalid_encode)?;
+		// search key
+		let client_consensus_state_path = ClientConsensusStatePath {
+			client_id: client_id.clone(),
+			epoch: height.revision_number,
+			height: height.revision_height
+		}.to_string().as_bytes().to_vec();
 
-		if <ConsensusStates<T>>::contains_key(client_id.as_bytes(), raw_height.clone()) {
-			let values = <ConsensusStates<T>>::get(client_id.as_bytes(), raw_height.clone());
+
+		if <ConsensusStates<T>>::contains_key(client_consensus_state_path.clone()) {
+			let values = <ConsensusStates<T>>::get(client_consensus_state_path.clone());
 			let any_consensus_state =
 				AnyConsensusState::decode_vec(&*values).map_err(Ics02Error::invalid_decode)?;
 				trace!(target:"runtime::pallet-ibc",
@@ -89,10 +96,15 @@ impl<T: Config> ClientReader for Context<T> {
 	) -> Result<Option<AnyConsensusState>, Ics02Error> {
 		trace!(target:"runtime::pallet-ibc","in client : [next_consensus_state]");
 
-		let raw_height = height.encode_vec().map_err(Ics02Error::invalid_encode)?;
+		// search key
+		let client_consensus_state_path = ClientConsensusStatePath {
+			client_id: client_id.clone(),
+			epoch: height.revision_number,
+			height: height.revision_height
+		}.to_string().as_bytes().to_vec();
 
-		if <ConsensusStates<T>>::contains_key(client_id.as_bytes(), raw_height.clone()) {
-			let values = <ConsensusStates<T>>::get(client_id.as_bytes(), raw_height.clone());
+		if <ConsensusStates<T>>::contains_key(client_consensus_state_path.clone()) {
+			let values = <ConsensusStates<T>>::get(client_consensus_state_path.clone());
 			let any_consensus_state =
 				AnyConsensusState::decode_vec(&*values).map_err(Ics02Error::invalid_decode)?;
 			trace!(target:"runtime::pallet-ibc",
@@ -119,10 +131,15 @@ impl<T: Config> ClientReader for Context<T> {
 	) -> Result<Option<AnyConsensusState>, Ics02Error> {
 		trace!(target:"runtime::pallet-ibc","in client : [next_consensus_state]");
 
-		let raw_height = height.encode_vec().map_err(Ics02Error::invalid_encode)?;
+		// search key
+		let client_consensus_state_path = ClientConsensusStatePath {
+			client_id: client_id.clone(),
+			epoch: height.revision_number,
+			height: height.revision_height
+		}.to_string().as_bytes().to_vec();
 
-		if <ConsensusStates<T>>::contains_key(client_id.as_bytes(), raw_height.clone()) {
-			let values = <ConsensusStates<T>>::get(client_id.as_bytes(), raw_height.clone());
+		if <ConsensusStates<T>>::contains_key(client_consensus_state_path.clone()) {
+			let values = <ConsensusStates<T>>::get(client_consensus_state_path.clone());
 			let any_consensus_state =
 				AnyConsensusState::decode_vec(&*values).map_err(Ics02Error::invalid_decode)?;
 			trace!(target:"runtime::pallet-ibc",
@@ -223,14 +240,23 @@ impl<T: Config> ClientKeeper for Context<T> {
 	) -> Result<(), Ics02Error> {
 		trace!(target:"runtime::pallet-ibc","in client : [store_consensus_state]");
 
+		// store key
+		let client_consensus_state_path = ClientConsensusStatePath {
+			client_id: client_id.clone(),
+			epoch: height.revision_number,
+			height: height.revision_height
+		}.to_string().as_bytes().to_vec();
+
+		// store value
+		let consensus_state = consensus_state.encode_vec().map_err(Ics02Error::invalid_encode)?;
+		// store client_consensus_state path as key, consensus_state as value
+		<ConsensusStates<T>>::insert(client_consensus_state_path, consensus_state);
+
+		// store consensus state key(client_id, and height)
+		let client_id = client_id.as_bytes().to_vec();
 		let height = height.encode_vec().map_err(Ics02Error::invalid_encode)?;
-		let data = consensus_state.encode_vec().map_err(Ics02Error::invalid_encode)?;
-
-		<ConsensusStates<T>>::insert(client_id.as_bytes(), height.clone(), data);
-
-		// store consensus state key
 		let ret = <ConsensusStatesKeys<T>>::try_mutate(|val| -> Result<(), Ics02Error> {
-			val.push((client_id.as_bytes().to_vec(), height));
+			val.push((client_id, height));
 			Ok(())
 		});
 
@@ -259,6 +285,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 			.map_err(Ics02Error::invalid_serde_json_encode)?
 			.as_bytes()
 			.to_vec();
+
 		<ClientProcessedTimes<T>>::insert(
 			client_id.as_bytes(),
 			height.encode_vec().map_err(Ics02Error::invalid_encode)?,

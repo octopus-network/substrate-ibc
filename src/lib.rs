@@ -136,7 +136,7 @@ pub mod pallet {
 		events::IbcEvent,
 		signer::Signer,
 	};
-	use ibc::core::ics24_host::path::ClientStatePath;
+	use ibc::core::ics24_host::path::{ClientConsensusStatePath, ClientStatePath};
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -217,10 +217,9 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
-	/// (client_id, Height) => ConsensusState
-	/// Need ClientConsensusStatePath
+	/// ClientConsensusStatePath(client_id, Height) => ConsensusState
 	pub type ConsensusStates<T: Config> =
-		StorageDoubleMap<_, Blake2_128Concat, Vec<u8>, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
+		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
 	/// vector (client_id, height) for rpc
@@ -1158,7 +1157,7 @@ pub mod pallet {
 			let mut client_state = ClientState::default();
 
 			// read client state key, here is client state path
-			let client_state_path = ClientStatePath(ibc_client_id).to_string().as_bytes().to_vec();
+			let client_state_path = ClientStatePath(ibc_client_id.clone()).to_string().as_bytes().to_vec();
 			if !<ClientStates<T>>::contains_key(client_state_path.clone()) {
 				log::error!(
 					"in inner_update_client_state: {:?} client_state not found !",
@@ -1277,6 +1276,7 @@ pub mod pallet {
 						.get_raw(&MMR_ROOT_ID)
 						.map(|value| value.clone())
 						.unwrap_or_default();
+
 					let any_consensus_state = AnyConsensusState::Grandpa(consensus_state);
 
 					let height = ibc::Height {
@@ -1286,13 +1286,22 @@ pub mod pallet {
 
 					log::trace!(target: LOG_TARGET,"in ibc-lib : [store_consensus_state] >> client_id: {:?}, height = {:?}, consensus_state = {:?}", client_id, height, any_consensus_state);
 
-					let height = height.encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
+
+					// store key
+					let client_consensus_state_path = ClientConsensusStatePath {
+						client_id: ibc_client_id.clone(),
+						epoch: height.revision_number,
+						height: height.revision_height,
+					}.to_string().as_bytes().to_vec();
+					// store value
 					let data =
 						any_consensus_state.encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
 
 					// if consensus state is empty insert a new item.
-					<ConsensusStates<T>>::insert(client_id.clone(), height.clone(), data);
+					<ConsensusStates<T>>::insert(client_consensus_state_path, data);
 
+
+					let height = height.encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
 					// store consensus state key
 					let _ = <ConsensusStatesKeys<T>>::try_mutate(|val| -> Result<(), &'static str> {
 						val.push((client_id, height));
