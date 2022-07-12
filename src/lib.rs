@@ -217,9 +217,13 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
-	/// client_id => Vector<(Height, ConsensusState)>
+	/// (client_id, Height) => ConsensusState
 	pub type ConsensusStates<T: Config> =
-		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<(Vec<u8>, Vec<u8>)>, ValueQuery>;
+		StorageDoubleMap<_, Blake2_128Concat, Vec<u8>, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
+
+	#[pallet::storage]
+	/// vector (client_id, height) for rpc
+	pub type ConsensusStatesKeys<T: Config> = StorageValue<_, Vec<(Vec<u8>, Vec<u8>)>, ValueQuery>;
 
 	#[pallet::storage]
 	/// connection_id => ConnectionEnd
@@ -1130,7 +1134,7 @@ pub mod pallet {
 				"inner_update_client_state:  client id is {:?}",
 				client_id_str
 			);
-			let ibc_client_id = ibc::core::ics24_host::identifier::ClientId::from_str(&client_id_str).unwrap();
+			let ibc_client_id = identifier::ClientId::from_str(&client_id_str).unwrap();
 
 			let decode_received_mmr_root =
 				help::MmrRoot::decode(&mut &mmr_root[..]).map_err(|_| Error::<T>::InvalidDecode)?;
@@ -1142,6 +1146,7 @@ pub mod pallet {
 
 			let mut client_state = ClientState::default();
 
+			// read client state key, here is client state path
 			let client_state_path = ClientStatePath(ibc_client_id).to_string().as_bytes().to_vec();
 			if !<ClientStates<T>>::contains_key(client_state_path.clone()) {
 				log::error!(
@@ -1239,10 +1244,8 @@ pub mod pallet {
 
 					// store client states keys
 					let _ = <ClientStatesKeys<T>>::try_mutate(|val| -> Result<(), &'static str> {
-						if let Some(_value) = val.iter().find(|&x| x == &client_id.clone()) {
-						} else {
-							val.push(client_state_path.clone());
-						}
+						val.push(client_id.clone());
+
 						Ok(())
 					});
 
@@ -1273,20 +1276,15 @@ pub mod pallet {
 					let data =
 						any_consensus_state.encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
 
-					if <ConsensusStates<T>>::contains_key(client_id.clone()) {
-						// if consensus_state is no empty use push insert an exist
-						// ConsensusStates
-						let _ = <ConsensusStates<T>>::try_mutate(
-							client_id,
-							|val| -> Result<(), &'static str> {
-								val.push((height, data));
-								Ok(())
-							},
-						);
-					} else {
-						// if consensus state is empty insert a new item.
-						<ConsensusStates<T>>::insert(client_id, vec![(height, data)]);
-					}
+					// if consensus state is empty insert a new item.
+					<ConsensusStates<T>>::insert(client_id.clone(), height.clone(), data);
+
+					// store consensus state key
+					let _ = <ConsensusStatesKeys<T>>::try_mutate(|val| -> Result<(), &'static str> {
+						val.push((client_id, height));
+						Ok(())
+					});
+
 
 					// emit update state success event
 					let event_height = Height {

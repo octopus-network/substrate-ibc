@@ -65,29 +65,42 @@ impl<T: Config> ClientReader for Context<T> {
 			"in client : [consensus_state]"
 		);
 
-		let mut values = <ConsensusStates<T>>::get(client_id.as_bytes());
-		values.sort_by(|(height_left, _), (height_right, _)| {
-			let height_left = Height::decode(&mut &height_left[..]).unwrap_or_default();
-			let height_right = Height::decode(&mut &height_right[..]).unwrap_or_default();
-			height_left.cmp(&height_right)
-		});
+		let raw_height = height.encode_vec().map_err(Ics02Error::invalid_encode)?;
 
-		for item in values.iter() {
-			let item_height =
-				Height::decode(&mut &item.0.clone()[..]).map_err(Ics02Error::invalid_decode)?;
-
-			if item_height == height {
-				let any_consensus_state =
-					AnyConsensusState::decode_vec(&*item.1).map_err(Ics02Error::invalid_decode)?;
+		if <ConsensusStates<T>>::contains_key(client_id.as_bytes(), raw_height.clone()) {
+			let values = <ConsensusStates<T>>::get(client_id.as_bytes(), raw_height.clone());
+			let any_consensus_state =
+				AnyConsensusState::decode_vec(&*values).map_err(Ics02Error::invalid_decode)?;
 				trace!(target:"runtime::pallet-ibc",
 					"in client : [consensus_state] >> any consensus state = {:?}",
 					any_consensus_state
 				);
-				return Ok(any_consensus_state)
-			}
+			Ok(any_consensus_state)
+		} else {
+			Err(Ics02Error::consensus_state_not_found(client_id.clone(), height))
 		}
 
-		Err(Ics02Error::consensus_state_not_found(client_id.clone(), height))
+		// values.sort_by(|(height_left, _), (height_right, _)| {
+		// 	let height_left = Height::decode(&mut &height_left[..]).unwrap_or_default();
+		// 	let height_right = Height::decode(&mut &height_right[..]).unwrap_or_default();
+		// 	height_left.cmp(&height_right)
+		// });
+
+		// for item in values.iter() {
+		// 	let item_height =
+		// 		Height::decode(&mut &item.0.clone()[..]).map_err(Ics02Error::invalid_decode)?;
+			// if item_height == height {
+			// 	let any_consensus_state =
+			// 		AnyConsensusState::decode_vec(&*item.1).map_err(Ics02Error::invalid_decode)?;
+			// 	trace!(target:"runtime::pallet-ibc",
+			// 		"in client : [consensus_state] >> any consensus state = {:?}",
+			// 		any_consensus_state
+			// 	);
+				// return Ok(any_consensus_state)
+			// }
+		// }
+		//
+		// Err(Ics02Error::consensus_state_not_found(client_id.clone(), height))
 	}
 
 	fn next_consensus_state(
@@ -97,31 +110,53 @@ impl<T: Config> ClientReader for Context<T> {
 	) -> Result<Option<AnyConsensusState>, Ics02Error> {
 		trace!(target:"runtime::pallet-ibc","in client : [next_consensus_state]");
 
-		let mut values = <ConsensusStates<T>>::get(client_id.as_bytes());
-		values.sort_by(|(height_left, _), (height_right, _)| {
-			let height_left = Height::decode(&mut &height_left[..]).unwrap_or_default();
-			let height_right = Height::decode(&mut &height_right[..]).unwrap_or_default();
-			height_left.cmp(&height_right)
-		});
+		// let mut values = <ConsensusStates<T>>::get(client_id.as_bytes());
+		// values.sort_by(|(height_left, _), (height_right, _)| {
+		// 	let height_left = Height::decode(&mut &height_left[..]).unwrap_or_default();
+		// 	let height_right = Height::decode(&mut &height_right[..]).unwrap_or_default();
+		// 	height_left.cmp(&height_right)
+		// });
+		//
+		// for item in values.iter() {
+		// 	let item_height =
+		// 		Height::decode(&mut &item.0.clone()[..]).map_err(Ics02Error::invalid_decode)?;
+		//
+		// 	if item_height < height {
+		// 		let any_consensus_state =
+		// 			AnyConsensusState::decode_vec(&*item.1).map_err(Ics02Error::invalid_decode)?;
+		// 		trace!(target:"runtime::pallet-ibc",
+		// 			"in client : [consensus_state] >> any consensus state = {:?}",
+		// 			any_consensus_state
+		// 		);
+		// 		return Ok(Some(any_consensus_state))
+		// 	}
+		// }
 
-		for item in values.iter() {
-			let item_height =
-				Height::decode(&mut &item.0.clone()[..]).map_err(Ics02Error::invalid_decode)?;
 
-			if item_height < height {
-				let any_consensus_state =
-					AnyConsensusState::decode_vec(&*item.1).map_err(Ics02Error::invalid_decode)?;
-				trace!(target:"runtime::pallet-ibc",
-					"in client : [consensus_state] >> any consensus state = {:?}",
+		let raw_height = height.encode_vec().map_err(Ics02Error::invalid_encode)?;
+
+		if <ConsensusStates<T>>::contains_key(client_id.as_bytes(), raw_height.clone()) {
+			let values = <ConsensusStates<T>>::get(client_id.as_bytes(), raw_height.clone());
+			let any_consensus_state =
+				AnyConsensusState::decode_vec(&*values).map_err(Ics02Error::invalid_decode)?;
+			trace!(target:"runtime::pallet-ibc",
+					"in client : [next_consensus_state] >> any consensus state = {:?}",
 					any_consensus_state
 				);
-				return Ok(Some(any_consensus_state))
-			}
+			Ok(Some(any_consensus_state))
+		} else {
+			trace!(target:"runtime::pallet-ibc",
+					"in client : [next_consensus_state] >> any consensus state is not contains at ConsensusStates : client_id = {:?}, height = {:?}", client_id, height
+				);
+			// Err(Ics02Error::consensus_state_not_found(client_id.clone(), height))
+			Ok(Some(AnyConsensusState::Grandpa(
+				ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
+			)))
 		}
 
-		Ok(Some(AnyConsensusState::Grandpa(
-			ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
-		)))
+		// Ok(Some(AnyConsensusState::Grandpa(
+		// 	ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
+		// )))
 	}
 
 	fn prev_consensus_state(
@@ -131,31 +166,52 @@ impl<T: Config> ClientReader for Context<T> {
 	) -> Result<Option<AnyConsensusState>, Ics02Error> {
 		trace!(target:"runtime::pallet-ibc","in client : [next_consensus_state]");
 
-		let mut values = <ConsensusStates<T>>::get(client_id.as_bytes());
-		values.sort_by(|(height_left, _), (height_right, _)| {
-			let height_left = Height::decode(&mut &height_left[..]).unwrap_or_default();
-			let height_right = Height::decode(&mut &height_right[..]).unwrap_or_default();
-			height_left.cmp(&height_right)
-		});
+		// let mut values = <ConsensusStates<T>>::get(client_id.as_bytes());
+		// values.sort_by(|(height_left, _), (height_right, _)| {
+		// 	let height_left = Height::decode(&mut &height_left[..]).unwrap_or_default();
+		// 	let height_right = Height::decode(&mut &height_right[..]).unwrap_or_default();
+		// 	height_left.cmp(&height_right)
+		// });
+		//
+		// for item in values.iter() {
+		// 	let item_height =
+		// 		Height::decode(&mut &item.0.clone()[..]).map_err(Ics02Error::invalid_decode)?;
+		//
+		// 	if item_height > height {
+		// 		let any_consensus_state =
+		// 			AnyConsensusState::decode_vec(&*item.1).map_err(Ics02Error::invalid_decode)?;
+		// 		trace!(target:"runtime::pallet-ibc",
+		// 			"in client : [consensus_state] >> any consensus state = {:?}",
+		// 			any_consensus_state
+		// 		);
+		// 		return Ok(Some(any_consensus_state))
+		// 	}
+		// }
+		//
+		// Ok(Some(AnyConsensusState::Grandpa(
+		// 	ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
+		// )))
 
-		for item in values.iter() {
-			let item_height =
-				Height::decode(&mut &item.0.clone()[..]).map_err(Ics02Error::invalid_decode)?;
+		let raw_height = height.encode_vec().map_err(Ics02Error::invalid_encode)?;
 
-			if item_height > height {
-				let any_consensus_state =
-					AnyConsensusState::decode_vec(&*item.1).map_err(Ics02Error::invalid_decode)?;
-				trace!(target:"runtime::pallet-ibc",
-					"in client : [consensus_state] >> any consensus state = {:?}",
+		if <ConsensusStates<T>>::contains_key(client_id.as_bytes(), raw_height.clone()) {
+			let values = <ConsensusStates<T>>::get(client_id.as_bytes(), raw_height.clone());
+			let any_consensus_state =
+				AnyConsensusState::decode_vec(&*values).map_err(Ics02Error::invalid_decode)?;
+			trace!(target:"runtime::pallet-ibc",
+					"in client : [prev_consensus_state] >> any consensus state = {:?}",
 					any_consensus_state
 				);
-				return Ok(Some(any_consensus_state))
-			}
+			Ok(Some(any_consensus_state))
+		} else {
+			trace!(target:"runtime::pallet-ibc",
+					"in client : [prev_consensus_state] >> any consensus state is not contains at ConsensusStates : client_id = {:?}, height = {:?}", client_id, height
+				);
+			// Err(Ics02Error::consensus_state_not_found(client_id.clone(), height))
+			Ok(Some(AnyConsensusState::Grandpa(
+				ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
+			)))
 		}
-
-		Ok(Some(AnyConsensusState::Grandpa(
-			ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
-		)))
 	}
 
 	fn host_height(&self) -> Height {
@@ -230,12 +286,10 @@ impl<T: Config> ClientKeeper for Context<T> {
 		// store client states key-value
 		<ClientStates<T>>::insert(client_state_path.clone(), data);
 
-		// store client states_path
 		let ret = <ClientStatesKeys<T>>::try_mutate(|val| -> Result<(), Ics02Error> {
-			if let Some(_value) = val.iter().find(|&x| x == client_id.as_bytes()) {
-			} else {
-				val.push(client_id.as_bytes().to_vec());
-			}
+
+			val.push(client_id.as_bytes().to_vec());
+
 			Ok(())
 		});
 
@@ -252,13 +306,15 @@ impl<T: Config> ClientKeeper for Context<T> {
 
 		let height = height.encode_vec().map_err(Ics02Error::invalid_encode)?;
 		let data = consensus_state.encode_vec().map_err(Ics02Error::invalid_encode)?;
-		if <ConsensusStates<T>>::contains_key(client_id.as_bytes()) {
-			// todo
-			// consensus_state is stored after mmr root updated
-		} else {
-			// if consensus state is empty insert a new item.
-			<ConsensusStates<T>>::insert(client_id.as_bytes(), vec![(height, data)]);
-		}
+
+		<ConsensusStates<T>>::insert(client_id.as_bytes(), height.clone(), data);
+
+		// store consensus state key
+		let ret = <ConsensusStatesKeys<T>>::try_mutate(|val| -> Result<(), Ics02Error> {
+			val.push((client_id.as_bytes().to_vec(), height));
+			Ok(())
+		});
+
 		Ok(())
 	}
 
