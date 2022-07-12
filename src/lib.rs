@@ -226,8 +226,7 @@ pub mod pallet {
 	pub type ConsensusStatesKeys<T: Config> = StorageValue<_, Vec<(Vec<u8>, Vec<u8>)>, ValueQuery>;
 
 	#[pallet::storage]
-	/// connection_id => ConnectionEnd
-	/// Need ConnectionsPath
+	/// ConnectionsPath(connection_id) => ConnectionEnd
 	pub type Connections<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
@@ -314,7 +313,7 @@ pub mod pallet {
 
 	#[pallet::storage]
 	/// client_id => connection_id
-	/// ClientsStatePath <-> ConnectionEndPath
+	/// Need ClientConnectionsPath
 	pub type ConnectionClient<T: Config> =
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 

@@ -18,13 +18,16 @@ use ibc::{
 	Height,
 };
 use ibc::core::ics02_client::context::ClientReader;
+use ibc::core::ics24_host::path::ConnectionsPath;
 
 impl<T: Config> ConnectionReader for Context<T> {
 	fn connection_end(&self, conn_id: &ConnectionId) -> Result<ConnectionEnd, Ics03Error> {
 		trace!(target:"runtime::pallet-ibc","in connection : [connection_end]");
 
-		if <Connections<T>>::contains_key(conn_id.as_bytes()) {
-			let data = <Connections<T>>::get(conn_id.as_bytes());
+		let connections_path = ConnectionsPath(conn_id.clone()).to_string().as_bytes().to_vec();
+
+		if <Connections<T>>::contains_key(&connections_path) {
+			let data = <Connections<T>>::get(&connections_path);
 			let ret = ConnectionEnd::decode_vec(&*data).map_err(Ics03Error::invalid_decode)?;
 
 			trace!(target:"runtime::pallet-ibc","in connection : [connection_end] >>  connection_end = {:?}", ret);
@@ -117,10 +120,11 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 	) -> Result<(), Ics03Error> {
 		trace!(target:"runtime::pallet-ibc","in connection : [store_connection]");
 
+		let connections_path = ConnectionsPath(connection_id.clone()).to_string().as_bytes().to_vec();
 		let data = connection_end.encode_vec().map_err(Ics03Error::invalid_encode)?;
 
 		// store connection end
-		<Connections<T>>::insert(connection_id.as_bytes().to_vec(), data);
+		<Connections<T>>::insert(connections_path, data);
 
 		// store connection id vector for rpc
 		let ret = <ConnectionsKeys<T>>::try_mutate(|val| -> Result<(), Ics03Error> {
