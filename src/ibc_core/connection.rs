@@ -18,7 +18,7 @@ use ibc::{
 	Height,
 };
 use ibc::core::ics02_client::context::ClientReader;
-use ibc::core::ics24_host::path::ConnectionsPath;
+use ibc::core::ics24_host::path::{ClientConnectionsPath, ConnectionsPath};
 
 impl<T: Config> ConnectionReader for Context<T> {
 	fn connection_end(&self, conn_id: &ConnectionId) -> Result<ConnectionEnd, Ics03Error> {
@@ -145,8 +145,10 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 	) -> Result<(), Ics03Error> {
 		trace!(target:"runtime::pallet-ibc","in connection : [store_connection_to_client]");
 
+		let client_connection_paths = ClientConnectionsPath(client_id.clone()).to_string().as_bytes().to_vec();
+
 		<ConnectionClient<T>>::insert(
-			client_id.as_bytes().to_vec(),
+			client_connection_paths,
 			connection_id.as_bytes().to_vec(),
 		);
 		Ok(())

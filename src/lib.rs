@@ -308,8 +308,7 @@ pub mod pallet {
 	pub type ChannelCounter<T: Config> = StorageValue<_, u64, ValueQuery>;
 
 	#[pallet::storage]
-	/// client_id => connection_id
-	/// Need ClientConnectionsPath
+	/// ClientConnectionsPath(client_id) => connection_id
 	pub type ConnectionClient<T: Config> =
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
