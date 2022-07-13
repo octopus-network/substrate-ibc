@@ -34,7 +34,7 @@ use ibc::{
 	Height,
 };
 use ibc::core::ics24_host::Path;
-use ibc::core::ics24_host::path::{ChannelEndsPath, ConnectionsPath, ReceiptsPath};
+use ibc::core::ics24_host::path::{ChannelEndsPath, CommitmentsPath, ConnectionsPath, ReceiptsPath};
 
 impl<T: Config> ChannelReader for Context<T> {
 	fn channel_end(&self, port_channel_id: &(PortId, ChannelId)) -> Result<ChannelEnd, Ics04Error> {
@@ -189,18 +189,14 @@ impl<T: Config> ChannelReader for Context<T> {
 	) -> Result<IbcPacketCommitment, Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel : [get_packet_commitment]");
 
-		let sequence = u64::from(key.2);
+		let packet_commitments_path = CommitmentsPath {
+			port_id: key.0.clone(),
+			channel_id: key.1.clone(),
+			sequence: key.2.clone()
+		}.to_string().as_bytes().to_vec();
 
-		if <PacketCommitment<T>>::contains_key((
-			key.0.as_bytes(),
-			from_channel_id_to_vec(key.1),
-			sequence,
-		)) {
-			let data = <PacketCommitment<T>>::get((
-				key.0.as_bytes(),
-				from_channel_id_to_vec(key.1),
-				sequence,
-			));
+		if <PacketCommitment<T>>::contains_key(&packet_commitments_path) {
+			let data = <PacketCommitment<T>>::get(&packet_commitments_path);
 
 			let packet_commitment = IbcPacketCommitment::from(data);
 
@@ -413,14 +409,19 @@ impl<T: Config> ChannelKeeper for Context<T> {
 	) -> Result<(), Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel: [store_packet_commitment]. key={:?}", key);
 
-		let sequence = u64::from(key.2);
+		let packet_commitments_path = CommitmentsPath {
+			port_id: key.0.clone(),
+			channel_id: key.1.clone(),
+			sequence: key.2.clone()
+		}.to_string().as_bytes().to_vec();
 
 		// insert packet commitment key-value
 		<PacketCommitment<T>>::insert(
-			(key.0.as_bytes().to_vec(), from_channel_id_to_vec(key.1), sequence),
+			packet_commitments_path,
 			commitment.into_vec(),
 		);
 
+		let sequence = u64::from(key.2);
 		// insert packet commitment keys
 		let ret = <PacketCommitmentKeys<T>>::try_mutate(|val| -> Result<(), Ics04Error> {
 			val.push((key.0.as_bytes().to_vec(), from_channel_id_to_vec(key.1), sequence));
@@ -436,15 +437,16 @@ impl<T: Config> ChannelKeeper for Context<T> {
 	) -> Result<(), Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel: [delete_packet_commitment]. key={:?}", key);
 
-		let sequence = u64::from(key.2);
+		let packet_commitments_path = CommitmentsPath {
+			port_id: key.0.clone(),
+			channel_id: key.1.clone(),
+			sequence: key.2.clone()
+		}.to_string().as_bytes().to_vec();
 
 		// delete packet commitment
-		<PacketCommitment<T>>::remove((
-			key.0.as_bytes().to_vec(),
-			from_channel_id_to_vec(key.1),
-			sequence,
-		));
+		<PacketCommitment<T>>::remove(&packet_commitments_path);
 
+		let sequence = u64::from(key.2);
 		// delete packet commitment keys
 		let ret = <PacketCommitmentKeys<T>>::try_mutate(|val| -> Result<(), Ics04Error> {
 			let index = val
