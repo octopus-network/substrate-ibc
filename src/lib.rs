@@ -313,18 +313,8 @@ pub mod pallet {
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
-	/// (port_id, channel_id, sequence) => receipt
-	/// Need ReceiptsPath
-	pub type PacketReceipt<T: Config> = StorageNMap<
-		_,
-		(
-			NMapKey<Blake2_128Concat, Vec<u8>>,
-			NMapKey<Blake2_128Concat, Vec<u8>>,
-			NMapKey<Blake2_128Concat, u64>,
-		),
-		Vec<u8>,
-		ValueQuery,
-	>;
+	/// ReceiptsPath(port_id, channel_id, sequence) => receipt
+	pub type PacketReceipt<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
 	/// (port_id, channel_id, sequence) => hash of (timestamp, height, packet)

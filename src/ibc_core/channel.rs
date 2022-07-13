@@ -34,7 +34,7 @@ use ibc::{
 	Height,
 };
 use ibc::core::ics24_host::Path;
-use ibc::core::ics24_host::path::{ChannelEndsPath, ConnectionsPath};
+use ibc::core::ics24_host::path::{ChannelEndsPath, ConnectionsPath, ReceiptsPath};
 
 impl<T: Config> ChannelReader for Context<T> {
 	fn channel_end(&self, port_channel_id: &(PortId, ChannelId)) -> Result<ChannelEnd, Ics04Error> {
@@ -223,22 +223,16 @@ impl<T: Config> ChannelReader for Context<T> {
 	) -> Result<Receipt, Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel : [get_packet_receipt]");
 
-		let sequence = u64::from(key.2);
+		let packet_receipt_path = ReceiptsPath {
+			port_id: key.0.clone(),
+			channel_id: key.1.clone(),
+			sequence: key.2.clone()
+		}.to_string().as_bytes().to_vec();
 
-		if <PacketReceipt<T>>::contains_key((
-			key.0.as_bytes(),
-			from_channel_id_to_vec(key.1),
-			sequence,
-		)) {
-			let data = <PacketReceipt<T>>::get((
-				key.0.as_bytes(),
-				from_channel_id_to_vec(key.1),
-				sequence,
-			));
-			let mut data: &[u8] = &data;
-			let data = Vec::<u8>::decode(&mut data).map_err(Ics04Error::invalid_codec_decode)?;
+
+		if <PacketReceipt<T>>::contains_key(&packet_receipt_path) {
+			let data = <PacketReceipt<T>>::get(&packet_receipt_path);
 			let data = String::from_utf8(data).map_err(Ics04Error::invalid_from_utf8)?;
-
 			let data = match data.as_ref() {
 				"Ok" => Receipt::Ok,
 				_ => unreachable!(),
@@ -474,14 +468,18 @@ impl<T: Config> ChannelKeeper for Context<T> {
 	) -> Result<(), Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel: [store_packet_receipt]");
 
+		let packet_receipt_path = ReceiptsPath {
+			port_id: key.0.clone(),
+			channel_id: key.1.clone(),
+			sequence: key.2.clone()
+		}.to_string().as_bytes().to_vec();
+
 		let receipt = match receipt {
-			Receipt::Ok => "Ok".encode(),
+			Receipt::Ok => "Ok".as_bytes().to_vec(),
 		};
 
-		let sequence = u64::from(key.2);
-
 		<PacketReceipt<T>>::insert(
-			(key.0.as_bytes().to_vec(), from_channel_id_to_vec(key.1), sequence),
+			packet_receipt_path,
 			receipt,
 		);
 
