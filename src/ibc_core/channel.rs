@@ -33,7 +33,8 @@ use ibc::{
 	timestamp::Timestamp,
 	Height,
 };
-use ibc::core::ics24_host::path::ChannelEndsPath;
+use ibc::core::ics24_host::Path;
+use ibc::core::ics24_host::path::{ChannelEndsPath, ConnectionsPath};
 
 impl<T: Config> ChannelReader for Context<T> {
 	fn channel_end(&self, port_channel_id: &(PortId, ChannelId)) -> Result<ChannelEnd, Ics04Error> {
@@ -63,23 +64,27 @@ impl<T: Config> ChannelReader for Context<T> {
 		conn_id: &ConnectionId,
 	) -> Result<Vec<(PortId, ChannelId)>, Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel : [connection_channels]");
+		// store key
+		let connections_path = ConnectionsPath(conn_id.clone()).to_string().as_bytes().to_vec();
 
-		if <ChannelsConnection<T>>::contains_key(conn_id.as_bytes()) {
-			let port_and_channel_id = <ChannelsConnection<T>>::get(conn_id.as_bytes());
+		if <ChannelsConnection<T>>::contains_key(&connections_path) {
+			let channel_ends_paths = <ChannelsConnection<T>>::get(&connections_path);
 
 			let mut result = vec![];
 
-			for item in port_and_channel_id.iter() {
-				let port_id =
-					String::from_utf8(item.0.clone()).map_err(Ics04Error::invalid_from_utf8)?;
-				let port_id = PortId::from_str(port_id.as_str()).map_err(Ics04Error::identifier)?;
+			for item in channel_ends_paths.into_iter() {
 
-				let channel_id =
-					String::from_utf8(item.1.clone()).map_err(Ics04Error::invalid_from_utf8)?;
-				let channel_id =
-					ChannelId::from_str(channel_id.as_str()).map_err(Ics04Error::identifier)?;
-
-				result.push((port_id, channel_id));
+				let raw_path = String::from_utf8(item).map_err(Ics04Error::invalid_from_utf8)?;
+				// decode key
+				let path = Path::from_str(&raw_path).map_err(Ics04Error::invalid_path_parser)?;
+				trace!(target:"runtime::pallet-ibc", "[get_channels] >> Path: {:?}", path);
+				match path {
+					Path::ChannelEnds(channel_ends_path) => {
+						let ChannelEndsPath(port_id, channel_id)= channel_ends_path;
+						result.push((port_id, channel_id));
+					},
+					_=> unimplemented!(),
+				}
 			}
 
 			trace!(target:"runtime::pallet-ibc",
@@ -545,25 +550,25 @@ impl<T: Config> ChannelKeeper for Context<T> {
 	) -> Result<(), Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel: [store_connection_channels]");
 
-		let conn_id = conn_id.as_bytes().to_vec();
+		// store key
+		let connections_path = ConnectionsPath(conn_id.clone()).to_string().as_bytes().to_vec();
 
-		let port_channel_id =
-			(port_channel_id.0.as_bytes().to_vec(), from_channel_id_to_vec(port_channel_id.1));
+		// store value
+		let channel_ends_path = ChannelEndsPath(port_channel_id.0.clone(), port_channel_id.1.clone()).to_string().as_bytes().to_vec();
 
-		if <ChannelsConnection<T>>::contains_key(conn_id.clone()) {
+		if <ChannelsConnection<T>>::contains_key(&connections_path) {
 			trace!(target:"runtime::pallet-ibc","in channel: [store_connection_channels] >> insert port_channel_id");
-			// if connection_identifier exist
+			// if connection_id exist
 			let ret =
-				<ChannelsConnection<T>>::try_mutate(conn_id, |val| -> Result<(), Ics04Error> {
-					val.push(port_channel_id);
+				<ChannelsConnection<T>>::try_mutate(&connections_path, |val| -> Result<(), Ics04Error> {
+					val.push(channel_ends_path.clone());
 					Ok(())
 				})
 				.map_err(|_| Ics04Error::invalid_store_channels_connection());
 		} else {
-			// if connection_identifier no exist
+			// if connection_id no exist
 			trace!(target:"runtime::pallet-ibc","in channel: [store_connection_channels] >> init ChannelsConnection");
-			let temp_connection_channels = vec![port_channel_id];
-			<ChannelsConnection<T>>::insert(conn_id, temp_connection_channels);
+			<ChannelsConnection<T>>::insert(connections_path, vec![channel_ends_path]);
 		}
 
 		Ok(())

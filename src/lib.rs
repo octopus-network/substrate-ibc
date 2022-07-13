@@ -248,10 +248,9 @@ pub mod pallet {
 	pub type ChannelsKeys<T: Config> = StorageValue<_, Vec<(Vec<u8>, Vec<u8>)>, ValueQuery>;
 
 	#[pallet::storage]
-	/// connection_id => Vec<(port_id, channel_id)>
-	/// Need ConnectionsPath <-> ChannelEndPath
+	/// ConnectionsPath(connection_id) => Vec<ChannelEndPath(port_id, channel_id)>
 	pub type ChannelsConnection<T: Config> =
-		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<(Vec<u8>, Vec<u8>)>, ValueQuery>;
+		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<Vec<u8>>, ValueQuery>;
 
 	#[pallet::storage]
 	/// (port_id, channel_id) => sequence
@@ -1480,5 +1479,5 @@ pub struct FungibleTokenPacketError {
 }
 
 pub fn from_channel_id_to_vec(value: IbcChannelId) -> Vec<u8> {
-	format!("{}", value).as_bytes().to_vec()
+	value.to_string().as_bytes().to_vec()
 }
