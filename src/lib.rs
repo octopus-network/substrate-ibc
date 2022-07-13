@@ -253,10 +253,8 @@ pub mod pallet {
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<Vec<u8>>, ValueQuery>;
 
 	#[pallet::storage]
-	/// (port_id, channel_id) => sequence
-	/// Maybe Need SeqSendsPath
-	pub type NextSequenceSend<T: Config> =
-		StorageDoubleMap<_, Blake2_128Concat, Vec<u8>, Blake2_128Concat, Vec<u8>, u64, ValueQuery>;
+	/// SeqSendsPath(port_id, channel_id) => sequence
+	pub type NextSequenceSend<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, u64, ValueQuery>;
 
 	#[pallet::storage]
 	/// SeqRecvsPath(port_id, channel_id) => sequence
