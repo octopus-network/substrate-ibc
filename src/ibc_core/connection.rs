@@ -6,19 +6,23 @@ use log::{error, info, trace, warn};
 use ibc::{
 	clients::ics10_grandpa::{consensus_state::ConsensusState as GPConsensusState, header::Header},
 	core::{
-		ics02_client::{client_consensus::AnyConsensusState, client_state::AnyClientState},
+		ics02_client::{
+			client_consensus::AnyConsensusState, client_state::AnyClientState,
+			context::ClientReader,
+		},
 		ics03_connection::{
 			connection::ConnectionEnd,
 			context::{ConnectionKeeper, ConnectionReader},
 			error::Error as Ics03Error,
 		},
 		ics23_commitment::commitment::CommitmentPrefix,
-		ics24_host::identifier::{ClientId, ConnectionId},
+		ics24_host::{
+			identifier::{ClientId, ConnectionId},
+			path::{ClientConnectionsPath, ConnectionsPath},
+		},
 	},
 	Height,
 };
-use ibc::core::ics02_client::context::ClientReader;
-use ibc::core::ics24_host::path::{ClientConnectionsPath, ConnectionsPath};
 
 impl<T: Config> ConnectionReader for Context<T> {
 	fn connection_end(&self, conn_id: &ConnectionId) -> Result<ConnectionEnd, Ics03Error> {
@@ -84,9 +88,11 @@ impl<T: Config> ConnectionReader for Context<T> {
 	) -> Result<AnyConsensusState, Ics03Error> {
 		trace!(target:"runtime::pallet-ibc","in connection : [client_consensus_state]");
 
-		let ret = ClientReader::consensus_state(self, client_id, height).map_err(Ics03Error::ics02_client);
+		let ret = ClientReader::consensus_state(self, client_id, height)
+			.map_err(Ics03Error::ics02_client);
 
-		if ret.is_err() { // TODO(davirain) template deatil with
+		if ret.is_err() {
+			// TODO(davirain) template deatil with
 			Ok(AnyConsensusState::Grandpa(
 				ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
 			))
@@ -120,20 +126,12 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 	) -> Result<(), Ics03Error> {
 		trace!(target:"runtime::pallet-ibc","in connection : [store_connection]");
 
-		let connections_path = ConnectionsPath(connection_id.clone()).to_string().as_bytes().to_vec();
+		let connections_path =
+			ConnectionsPath(connection_id.clone()).to_string().as_bytes().to_vec();
 		let data = connection_end.encode_vec().map_err(Ics03Error::invalid_encode)?;
 
 		// store connection end
 		<Connections<T>>::insert(connections_path, data);
-
-		// store connection id vector for rpc
-		let ret = <ConnectionsKeys<T>>::try_mutate(|val| -> Result<(), Ics03Error> {
-			if let Some(_value) = val.iter().find(|&x| x == connection_id.as_bytes()) {
-			} else {
-				val.push(connection_id.as_bytes().to_vec());
-			}
-			Ok(())
-		});
 
 		Ok(())
 	}
@@ -145,12 +143,10 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 	) -> Result<(), Ics03Error> {
 		trace!(target:"runtime::pallet-ibc","in connection : [store_connection_to_client]");
 
-		let client_connection_paths = ClientConnectionsPath(client_id.clone()).to_string().as_bytes().to_vec();
+		let client_connection_paths =
+			ClientConnectionsPath(client_id.clone()).to_string().as_bytes().to_vec();
 
-		<ConnectionClient<T>>::insert(
-			client_connection_paths,
-			connection_id.as_bytes().to_vec(),
-		);
+		<ConnectionClient<T>>::insert(client_connection_paths, connection_id.as_bytes().to_vec());
 		Ok(())
 	}
 

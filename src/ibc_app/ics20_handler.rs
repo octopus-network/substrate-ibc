@@ -215,7 +215,24 @@ where
 			let token_name = String::from_utf8(token_name).unwrap();
 			trace!(target:"runtime::pallet-ibc","🤮ics20_handle handle_transfer token_name = {:?}", token_name);
 
-			<T::Assets as fungibles::Mutate<T::AccountId>>::burn_from(token_id, &sender, amount)?;
+			trace!(target:"runtime::pallet-ibc",
+				"🤮ics20_handle handle_transfer free_balance = {:?}",
+				T::Currency::free_balance(&sender)
+			);
+			trace!(target:"runtime::pallet-ibc",
+				"🤮ics20_handle handle_transfer total_balance = {:?}",
+				T::Currency::total_balance(&sender)
+			);
+			trace!(target:"runtime::pallet-ibc",
+				"🤮ics20_handle handle_transfer total_issuance = {:?}",
+				T::Currency::total_issuance()
+			);
+			trace!(target:"runtime::pallet-ibc",
+				"🤮ics20_handle handle_transfer minimum_balance = {:?}",
+				T::Currency::minimum_balance()
+			);
+			<T::Assets as fungibles::Mutate<T::AccountId>>::burn_from(token_id, &sender, amount)
+				.unwrap(); // todo(davirain)
 			Pallet::<T>::deposit_event(Event::<T>::BurnToken(token_id, sender, amount));
 
 			info!("🔥🔥🔥🔥🔥ics20_handle handle_transfer: receiver is source chain, burn vouchers, Success!!!!!");

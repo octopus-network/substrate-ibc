@@ -130,13 +130,15 @@ pub mod pallet {
 				Version,
 			},
 			ics05_port::capabilities::Capability,
-			ics24_host::identifier::{ChannelId as IbcChannelId, PortId as IbcPortId},
+			ics24_host::{
+				identifier::{ChannelId as IbcChannelId, PortId as IbcPortId},
+				path::{ClientConsensusStatePath, ClientStatePath},
+			},
 			ics26_routing::error::Error as Ics26Error,
 		},
 		events::IbcEvent,
 		signer::Signer,
 	};
-	use ibc::core::ics24_host::path::{ClientConsensusStatePath, ClientStatePath};
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -189,10 +191,6 @@ pub mod pallet {
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
-	/// vector client_id for rpc
-	pub type ClientStatesKeys<T: Config> = StorageValue<_, Vec<Vec<u8>>, ValueQuery>;
-
-	#[pallet::storage]
 	/// (client_id, height) => timestamp
 	pub type ClientProcessedTimes<T: Config> = StorageDoubleMap<
 		_,
@@ -222,30 +220,12 @@ pub mod pallet {
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
-	/// vector (client_id, height) for rpc
-	pub type ConsensusStatesKeys<T: Config> = StorageValue<_, Vec<(Vec<u8>, Vec<u8>)>, ValueQuery>;
-
-	#[pallet::storage]
 	/// ConnectionsPath(connection_id) => ConnectionEnd
 	pub type Connections<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
-	/// vector connection id for rpc
-	pub type ConnectionsKeys<T: Config> = StorageValue<_, Vec<Vec<u8>>, ValueQuery>;
-
-	#[pallet::storage]
 	/// ChannelEndPath(port_id, channel_id) => ChannelEnd
-	pub type Channels<T: Config> = StorageMap<
-		_,
-		Blake2_128Concat,
-		Vec<u8>,
-		Vec<u8>,
-		ValueQuery,
-	>;
-
-	#[pallet::storage]
-	/// vector of (port id, channel id) for rpc
-	pub type ChannelsKeys<T: Config> = StorageValue<_, Vec<(Vec<u8>, Vec<u8>)>, ValueQuery>;
+	pub type Channels<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
 	/// ConnectionsPath(connection_id) => Vec<ChannelEndPath(port_id, channel_id)>
@@ -254,11 +234,13 @@ pub mod pallet {
 
 	#[pallet::storage]
 	/// SeqSendsPath(port_id, channel_id) => sequence
-	pub type NextSequenceSend<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, u64, ValueQuery>;
+	pub type NextSequenceSend<T: Config> =
+		StorageMap<_, Blake2_128Concat, Vec<u8>, u64, ValueQuery>;
 
 	#[pallet::storage]
 	/// SeqRecvsPath(port_id, channel_id) => sequence
-	pub type NextSequenceRecv<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, u64, ValueQuery>;
+	pub type NextSequenceRecv<T: Config> =
+		StorageMap<_, Blake2_128Concat, Vec<u8>, u64, ValueQuery>;
 
 	#[pallet::storage]
 	/// SeqAcksPath(port_id, channel_id) => sequence
@@ -266,12 +248,8 @@ pub mod pallet {
 
 	#[pallet::storage]
 	/// AcksPath(port_id, channel_id, sequence) => hash of acknowledgement
-	pub type Acknowledgements<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
-
-	#[pallet::storage]
-	/// vector of (port_identifier, channel_identifier, sequence) for rpc
-	pub type AcknowledgementsKeys<T: Config> =
-		StorageValue<_, Vec<(Vec<u8>, Vec<u8>, u64)>, ValueQuery>;
+	pub type Acknowledgements<T: Config> =
+		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
 	/// ClientTypePath(client_id) => client_type
@@ -298,16 +276,13 @@ pub mod pallet {
 
 	#[pallet::storage]
 	/// ReceiptsPath(port_id, channel_id, sequence) => receipt
-	pub type PacketReceipt<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
+	pub type PacketReceipt<T: Config> =
+		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
 	/// CommitmentsPath(port_id, channel_id, sequence) => hash of (timestamp, height, packet)
-	pub type PacketCommitment<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
-
-	#[pallet::storage]
-	/// vector of (port_id, channel_id, sequence) for rpc
-	pub type PacketCommitmentKeys<T: Config> =
-		StorageValue<_, Vec<(Vec<u8>, Vec<u8>, u64)>, ValueQuery>;
+	pub type PacketCommitment<T: Config> =
+		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
 	/// (height, port_id, channel_id, sequence) => sendpacket event
@@ -1115,7 +1090,8 @@ pub mod pallet {
 			let mut client_state = ClientState::default();
 
 			// read client state key, here is client state path
-			let client_state_path = ClientStatePath(ibc_client_id.clone()).to_string().as_bytes().to_vec();
+			let client_state_path =
+				ClientStatePath(ibc_client_id.clone()).to_string().as_bytes().to_vec();
 			if !<ClientStates<T>>::contains_key(client_state_path.clone()) {
 				log::error!(
 					"in inner_update_client_state: {:?} client_state not found !",
@@ -1210,16 +1186,6 @@ pub mod pallet {
 					// store client states key-value
 					<ClientStates<T>>::insert(client_state_path.clone(), data);
 
-					// store client states keys
-					let _ = <ClientStatesKeys<T>>::try_mutate(|val| -> Result<(), &'static str> {
-						if let Some(_value) = val.iter().find(|&x| x == &client_id.clone()) {
-						} else {
-							val.push(client_id.clone());
-						}
-
-						Ok(())
-					});
-
 					log::trace!(
 						target: LOG_TARGET,
 						"the updated client state is : {:?}",
@@ -1244,28 +1210,21 @@ pub mod pallet {
 
 					log::trace!(target: LOG_TARGET,"in ibc-lib : [store_consensus_state] >> client_id: {:?}, height = {:?}, consensus_state = {:?}", client_id, height, any_consensus_state);
 
-
 					// store key
 					let client_consensus_state_path = ClientConsensusStatePath {
 						client_id: ibc_client_id.clone(),
 						epoch: height.revision_number,
 						height: height.revision_height,
-					}.to_string().as_bytes().to_vec();
+					}
+					.to_string()
+					.as_bytes()
+					.to_vec();
 					// store value
 					let data =
 						any_consensus_state.encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
 
 					// if consensus state is empty insert a new item.
 					<ConsensusStates<T>>::insert(client_consensus_state_path, data);
-
-
-					let height = height.encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
-					// store consensus state key
-					let _ = <ConsensusStatesKeys<T>>::try_mutate(|val| -> Result<(), &'static str> {
-						val.push((client_id, height));
-						Ok(())
-					});
-
 
 					// emit update state success event
 					let event_height = Height {

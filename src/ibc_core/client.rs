@@ -13,13 +13,14 @@ use ibc::{
 			context::{ClientKeeper, ClientReader},
 			error::Error as Ics02Error,
 		},
-		ics24_host::identifier::ClientId,
-		ics24_host::path::{ClientTypePath, ClientStatePath},
+		ics24_host::{
+			identifier::ClientId,
+			path::{ClientConsensusStatePath, ClientStatePath, ClientTypePath},
+		},
 	},
 	timestamp::Timestamp,
 	Height,
 };
-use ibc::core::ics24_host::path::ClientConsensusStatePath;
 
 impl<T: Config> ClientReader for Context<T> {
 	fn client_type(&self, client_id: &ClientId) -> Result<ClientType, Ics02Error> {
@@ -70,23 +71,24 @@ impl<T: Config> ClientReader for Context<T> {
 		let client_consensus_state_path = ClientConsensusStatePath {
 			client_id: client_id.clone(),
 			epoch: height.revision_number,
-			height: height.revision_height
-		}.to_string().as_bytes().to_vec();
-
+			height: height.revision_height,
+		}
+		.to_string()
+		.as_bytes()
+		.to_vec();
 
 		if <ConsensusStates<T>>::contains_key(client_consensus_state_path.clone()) {
 			let values = <ConsensusStates<T>>::get(client_consensus_state_path.clone());
 			let any_consensus_state =
 				AnyConsensusState::decode_vec(&*values).map_err(Ics02Error::invalid_decode)?;
-				trace!(target:"runtime::pallet-ibc",
-					"in client : [consensus_state] >> any consensus state = {:?}",
-					any_consensus_state
-				);
+			trace!(target:"runtime::pallet-ibc",
+				"in client : [consensus_state] >> any consensus state = {:?}",
+				any_consensus_state
+			);
 			Ok(any_consensus_state)
 		} else {
 			Err(Ics02Error::consensus_state_not_found(client_id.clone(), height))
 		}
-
 	}
 
 	fn next_consensus_state(
@@ -100,28 +102,30 @@ impl<T: Config> ClientReader for Context<T> {
 		let client_consensus_state_path = ClientConsensusStatePath {
 			client_id: client_id.clone(),
 			epoch: height.revision_number,
-			height: height.revision_height
-		}.to_string().as_bytes().to_vec();
+			height: height.revision_height,
+		}
+		.to_string()
+		.as_bytes()
+		.to_vec();
 
 		if <ConsensusStates<T>>::contains_key(client_consensus_state_path.clone()) {
 			let values = <ConsensusStates<T>>::get(client_consensus_state_path.clone());
 			let any_consensus_state =
 				AnyConsensusState::decode_vec(&*values).map_err(Ics02Error::invalid_decode)?;
 			trace!(target:"runtime::pallet-ibc",
-					"in client : [next_consensus_state] >> any consensus state = {:?}",
-					any_consensus_state
-				);
+				"in client : [next_consensus_state] >> any consensus state = {:?}",
+				any_consensus_state
+			);
 			Ok(Some(any_consensus_state))
 		} else {
 			trace!(target:"runtime::pallet-ibc",
-					"in client : [next_consensus_state] >> any consensus state is not contains at ConsensusStates : client_id = {:?}, height = {:?}", client_id, height
-				);
+				"in client : [next_consensus_state] >> any consensus state is not contains at ConsensusStates : client_id = {:?}, height = {:?}", client_id, height
+			);
 			// Err(Ics02Error::consensus_state_not_found(client_id.clone(), height))
 			Ok(Some(AnyConsensusState::Grandpa(
 				ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
 			)))
 		}
-
 	}
 
 	fn prev_consensus_state(
@@ -135,22 +139,25 @@ impl<T: Config> ClientReader for Context<T> {
 		let client_consensus_state_path = ClientConsensusStatePath {
 			client_id: client_id.clone(),
 			epoch: height.revision_number,
-			height: height.revision_height
-		}.to_string().as_bytes().to_vec();
+			height: height.revision_height,
+		}
+		.to_string()
+		.as_bytes()
+		.to_vec();
 
 		if <ConsensusStates<T>>::contains_key(client_consensus_state_path.clone()) {
 			let values = <ConsensusStates<T>>::get(client_consensus_state_path.clone());
 			let any_consensus_state =
 				AnyConsensusState::decode_vec(&*values).map_err(Ics02Error::invalid_decode)?;
 			trace!(target:"runtime::pallet-ibc",
-					"in client : [prev_consensus_state] >> any consensus state = {:?}",
-					any_consensus_state
-				);
+				"in client : [prev_consensus_state] >> any consensus state = {:?}",
+				any_consensus_state
+			);
 			Ok(Some(any_consensus_state))
 		} else {
 			trace!(target:"runtime::pallet-ibc",
-					"in client : [prev_consensus_state] >> any consensus state is not contains at ConsensusStates : client_id = {:?}, height = {:?}", client_id, height
-				);
+				"in client : [prev_consensus_state] >> any consensus state is not contains at ConsensusStates : client_id = {:?}, height = {:?}", client_id, height
+			);
 			// Err(Ics02Error::consensus_state_not_found(client_id.clone(), height))
 			Ok(Some(AnyConsensusState::Grandpa(
 				ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
@@ -220,15 +227,6 @@ impl<T: Config> ClientKeeper for Context<T> {
 		// store client states key-value
 		<ClientStates<T>>::insert(client_state_path.clone(), data);
 
-		let ret = <ClientStatesKeys<T>>::try_mutate(|val| -> Result<(), Ics02Error> {
-			if let Some(_value) = val.iter().find(|&x| x == client_id.as_bytes()) {
-			} else {
-				val.push(client_id.as_bytes().to_vec());
-			}
-
-			Ok(())
-		});
-
 		Ok(())
 	}
 
@@ -244,21 +242,16 @@ impl<T: Config> ClientKeeper for Context<T> {
 		let client_consensus_state_path = ClientConsensusStatePath {
 			client_id: client_id.clone(),
 			epoch: height.revision_number,
-			height: height.revision_height
-		}.to_string().as_bytes().to_vec();
+			height: height.revision_height,
+		}
+		.to_string()
+		.as_bytes()
+		.to_vec();
 
 		// store value
 		let consensus_state = consensus_state.encode_vec().map_err(Ics02Error::invalid_encode)?;
 		// store client_consensus_state path as key, consensus_state as value
 		<ConsensusStates<T>>::insert(client_consensus_state_path, consensus_state);
-
-		// store consensus state key(client_id, and height)
-		let client_id = client_id.as_bytes().to_vec();
-		let height = height.encode_vec().map_err(Ics02Error::invalid_encode)?;
-		let ret = <ConsensusStatesKeys<T>>::try_mutate(|val| -> Result<(), Ics02Error> {
-			val.push((client_id, height));
-			Ok(())
-		});
 
 		Ok(())
 	}
