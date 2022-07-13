@@ -34,7 +34,7 @@ use ibc::{
 	Height,
 };
 use ibc::core::ics24_host::Path;
-use ibc::core::ics24_host::path::{AcksPath, ChannelEndsPath, CommitmentsPath, ConnectionsPath, ReceiptsPath, SeqAcksPath};
+use ibc::core::ics24_host::path::{AcksPath, ChannelEndsPath, CommitmentsPath, ConnectionsPath, ReceiptsPath, SeqAcksPath, SeqRecvsPath};
 
 impl<T: Config> ChannelReader for Context<T> {
 	fn channel_end(&self, port_channel_id: &(PortId, ChannelId)) -> Result<ChannelEnd, Ics04Error> {
@@ -158,9 +158,10 @@ impl<T: Config> ChannelReader for Context<T> {
 	) -> Result<Sequence, Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel : [get_next_sequence_recv]");
 
+		let seq_recvs_path = SeqRecvsPath(port_channel_id.0.clone(), port_channel_id.1.clone()).to_string().as_bytes().to_vec();
+
 		let sequence = <NextSequenceRecv<T>>::get(
-			port_channel_id.0.as_bytes(),
-			from_channel_id_to_vec(port_channel_id.1),
+			&seq_recvs_path
 		);
 
 		trace!(target:"runtime::pallet-ibc","in channel : [get_next_sequence_recv] >> sequence = {:?}", sequence);
@@ -651,11 +652,11 @@ impl<T: Config> ChannelKeeper for Context<T> {
 	) -> Result<(), Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel: [store_next_sequence_recv]");
 
+		let seq_recvs_path = SeqRecvsPath(port_channel_id.0.clone(), port_channel_id.1.clone()).to_string().as_bytes().to_vec();
 		let sequence = u64::from(seq);
 
 		<NextSequenceRecv<T>>::insert(
-			port_channel_id.0.as_bytes().to_vec(),
-			from_channel_id_to_vec(port_channel_id.1),
+			seq_recvs_path,
 			sequence,
 		);
 
