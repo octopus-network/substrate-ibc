@@ -34,7 +34,7 @@ use ibc::{
 	Height,
 };
 use ibc::core::ics24_host::Path;
-use ibc::core::ics24_host::path::{AcksPath, ChannelEndsPath, CommitmentsPath, ConnectionsPath, ReceiptsPath};
+use ibc::core::ics24_host::path::{AcksPath, ChannelEndsPath, CommitmentsPath, ConnectionsPath, ReceiptsPath, SeqAcksPath};
 
 impl<T: Config> ChannelReader for Context<T> {
 	fn channel_end(&self, port_channel_id: &(PortId, ChannelId)) -> Result<ChannelEnd, Ics04Error> {
@@ -173,9 +173,11 @@ impl<T: Config> ChannelReader for Context<T> {
 	) -> Result<Sequence, Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel : [get_next_sequence_ack]");
 
+		let seq_acks_path = SeqAcksPath(port_channel_id.0.clone(), port_channel_id.1.clone()).to_string().as_bytes().to_vec();
+
+
 		let sequence = <NextSequenceAck<T>>::get(
-			port_channel_id.0.as_bytes(),
-			from_channel_id_to_vec(port_channel_id.1),
+			&seq_acks_path
 		);
 
 		trace!(target:"runtime::pallet-ibc","in channel : [get_next_sequence_ack] >> sequence = {}", sequence);
@@ -247,7 +249,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		key: &(PortId, ChannelId, Sequence),
 	) -> Result<IbcAcknowledgementCommitment, Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel : [get_packet_acknowledgement]");
-		
+
 		let acks_path = AcksPath {
 			port_id: key.0.clone(),
 			channel_id: key.1.clone(),
@@ -667,11 +669,11 @@ impl<T: Config> ChannelKeeper for Context<T> {
 	) -> Result<(), Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel: [store_next_sequence_ack]");
 
+		let seq_acks_path = SeqAcksPath(port_channel_id.0.clone(), port_channel_id.1.clone()).to_string().as_bytes().to_vec();
 		let sequence = u64::from(seq);
 
 		<NextSequenceAck<T>>::insert(
-			port_channel_id.0.as_bytes().to_vec(),
-			from_channel_id_to_vec(port_channel_id.1),
+			seq_acks_path,
 			sequence,
 		);
 
