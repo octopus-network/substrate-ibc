@@ -271,18 +271,8 @@ pub mod pallet {
 		StorageDoubleMap<_, Blake2_128Concat, Vec<u8>, Blake2_128Concat, Vec<u8>, u64, ValueQuery>;
 
 	#[pallet::storage]
-	/// (port_id, channel_id, sequence) => hash of acknowledgement
-	/// Need AcksPath
-	pub type Acknowledgements<T: Config> = StorageNMap<
-		_,
-		(
-			NMapKey<Blake2_128Concat, Vec<u8>>,
-			NMapKey<Blake2_128Concat, Vec<u8>>,
-			NMapKey<Blake2_128Concat, u64>,
-		),
-		Vec<u8>,
-		ValueQuery,
-	>;
+	/// AcksPath(port_id, channel_id, sequence) => hash of acknowledgement
+	pub type Acknowledgements<T: Config> =StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
 	/// vector of (port_identifier, channel_identifier, sequence) for rpc

@@ -34,7 +34,7 @@ use ibc::{
 	Height,
 };
 use ibc::core::ics24_host::Path;
-use ibc::core::ics24_host::path::{ChannelEndsPath, CommitmentsPath, ConnectionsPath, ReceiptsPath};
+use ibc::core::ics24_host::path::{AcksPath, ChannelEndsPath, CommitmentsPath, ConnectionsPath, ReceiptsPath};
 
 impl<T: Config> ChannelReader for Context<T> {
 	fn channel_end(&self, port_channel_id: &(PortId, ChannelId)) -> Result<ChannelEnd, Ics04Error> {
@@ -247,16 +247,17 @@ impl<T: Config> ChannelReader for Context<T> {
 		key: &(PortId, ChannelId, Sequence),
 	) -> Result<IbcAcknowledgementCommitment, Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel : [get_packet_acknowledgement]");
+		
+		let acks_path = AcksPath {
+			port_id: key.0.clone(),
+			channel_id: key.1.clone(),
+			sequence: key.2.clone()
+		}.to_string().as_bytes().to_vec();
 
-		let seq = u64::from(key.2);
 
-		if <Acknowledgements<T>>::contains_key((
-			key.0.as_bytes(),
-			from_channel_id_to_vec(key.1),
-			seq,
-		)) {
+		if <Acknowledgements<T>>::contains_key(&acks_path) {
 			let data =
-				<Acknowledgements<T>>::get((key.0.as_bytes(), from_channel_id_to_vec(key.1), seq));
+				<Acknowledgements<T>>::get(&acks_path);
 
 			let acknowledgement = IbcAcknowledgementCommitment::from(data);
 			trace!(target:"runtime::pallet-ibc",
@@ -495,14 +496,21 @@ impl<T: Config> ChannelKeeper for Context<T> {
 	) -> Result<(), Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel: [store_packet_acknowledgement]");
 
-		let sequence = u64::from(key.2);
+
+		let acks_path = AcksPath {
+			port_id: key.0.clone(),
+			channel_id: key.1.clone(),
+			sequence: key.2.clone()
+		}.to_string().as_bytes().to_vec();
+
 
 		// store packet acknowledgement key-value
 		<Acknowledgements<T>>::insert(
-			(key.0.as_bytes().to_vec(), from_channel_id_to_vec(key.1), sequence),
+			&acks_path,
 			ack_commitment.into_vec(),
 		);
 
+		let sequence = u64::from(key.2);
 		// store packet acknowledgement keys
 		let ret = <AcknowledgementsKeys<T>>::try_mutate(|val| -> Result<(), Ics04Error> {
 			val.push((key.0.as_bytes().to_vec(), from_channel_id_to_vec(key.1), sequence));
@@ -518,15 +526,18 @@ impl<T: Config> ChannelKeeper for Context<T> {
 	) -> Result<(), Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel: [delete_packet_acknowledgement]");
 
-		let sequence = u64::from(key.2);
+
+		let acks_path = AcksPath {
+			port_id: key.0.clone(),
+			channel_id: key.1.clone(),
+			sequence: key.2.clone()
+		}.to_string().as_bytes().to_vec();
 
 		// remove acknowledgements
-		<Acknowledgements<T>>::remove((
-			key.0.as_bytes().to_vec(),
-			from_channel_id_to_vec(key.1),
-			sequence,
-		));
+		<Acknowledgements<T>>::remove(&acks_path);
 
+
+		let sequence = u64::from(key.2);
 		// remove acknowledgement keys for rpc
 		let ret = <AcknowledgementsKeys<T>>::try_mutate(|val| -> Result<(), Ics04Error> {
 			let index = val
