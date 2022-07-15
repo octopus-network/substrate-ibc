@@ -41,7 +41,6 @@ pub fn get_signer<T: Config>(
 			PacketMsg::ToPacket(val) => val.signer,
 			PacketMsg::ToClosePacket(val) => val.signer,
 		},
-		Ics26Envelope::Ics20Msg(value) => value.sender,
 	};
 
 	Ok(signer)
@@ -75,12 +74,6 @@ pub fn event_from_ibc_event<T: Config>(value: IbcEvent) -> Event<T> {
 			)
 		},
 		// Upgrade client events are not currently being used
-		// UpgradeClient(
-		// 	height: Height,
-		// 	client_id: ClientId,
-		// 	client_type: ClientType,
-		// 	consensus_height: Height,
-		// )
 		IbcEvent::UpgradeClient(value) => {
 			let height = value.0.height;
 			let client_id = value.0.client_id;
@@ -156,7 +149,7 @@ pub fn event_from_ibc_event<T: Config>(value: IbcEvent) -> Event<T> {
 				counterparty_client_id.into(),
 			)
 		},
-		ibc::events::IbcEvent::OpenConfirmConnection(value) => {
+		IbcEvent::OpenConfirmConnection(value) => {
 			let height = value.attributes().height;
 			let connection_id: Option<ConnectionId> =
 				value.attributes().connection_id.clone().map(|val| val.into());
@@ -176,7 +169,7 @@ pub fn event_from_ibc_event<T: Config>(value: IbcEvent) -> Event<T> {
 		IbcEvent::OpenInitChannel(value) => {
 			let height = value.height;
 			let port_id = value.port_id.clone();
-			let channel_id: Option<ChannelId> = value.channel_id.map(|val| val.into());
+			let channel_id: Option<ChannelId> = value.channel_id.clone().map(|val| val.into());
 			let connection_id = value.connection_id.clone();
 			let counterparty_port_id = value.counterparty_port_id.clone();
 			let counterparty_channel_id: Option<ChannelId> = value.channel_id.map(|val| val.into());
@@ -189,10 +182,10 @@ pub fn event_from_ibc_event<T: Config>(value: IbcEvent) -> Event<T> {
 				counterparty_channel_id,
 			)
 		},
-		ibc::events::IbcEvent::OpenTryChannel(value) => {
+		IbcEvent::OpenTryChannel(value) => {
 			let height = value.height;
 			let port_id = value.port_id.clone();
-			let channel_id: Option<ChannelId> = value.channel_id.map(|val| val.into());
+			let channel_id: Option<ChannelId> = value.channel_id.clone().map(|val| val.into());
 			let connection_id = value.connection_id.clone();
 			let counterparty_port_id = value.counterparty_port_id.clone();
 			let counterparty_channel_id: Option<ChannelId> = value.channel_id.map(|val| val.into());
@@ -208,7 +201,7 @@ pub fn event_from_ibc_event<T: Config>(value: IbcEvent) -> Event<T> {
 		IbcEvent::OpenAckChannel(value) => {
 			let height = value.height;
 			let port_id = value.port_id.clone();
-			let channel_id: Option<ChannelId> = value.channel_id.map(|val| val.into());
+			let channel_id: Option<ChannelId> = value.channel_id.clone().map(|val| val.into());
 			let connection_id = value.connection_id.clone();
 			let counterparty_port_id = value.counterparty_port_id.clone();
 			let counterparty_channel_id: Option<ChannelId> = value.channel_id.map(|val| val.into());
@@ -224,7 +217,7 @@ pub fn event_from_ibc_event<T: Config>(value: IbcEvent) -> Event<T> {
 		IbcEvent::OpenConfirmChannel(value) => {
 			let height = value.height;
 			let port_id = value.port_id.clone();
-			let channel_id: Option<ChannelId> = value.channel_id.map(|val| val.into());
+			let channel_id: Option<ChannelId> = value.channel_id.clone().map(|val| val.into());
 			let connection_id = value.connection_id.clone();
 			let counterparty_port_id = value.counterparty_port_id;
 			let counterparty_channel_id: Option<ChannelId> = value.channel_id.map(|val| val.into());
@@ -237,7 +230,7 @@ pub fn event_from_ibc_event<T: Config>(value: IbcEvent) -> Event<T> {
 				counterparty_channel_id,
 			)
 		},
-		ibc::events::IbcEvent::CloseInitChannel(value) => {
+		IbcEvent::CloseInitChannel(value) => {
 			let height = value.height;
 			let port_id = value.port_id.clone();
 			let channel_id: Option<ChannelId> = Some(value.channel_id.into());
@@ -257,7 +250,7 @@ pub fn event_from_ibc_event<T: Config>(value: IbcEvent) -> Event<T> {
 		IbcEvent::CloseConfirmChannel(value) => {
 			let height = value.height;
 			let port_id = value.port_id.clone();
-			let channel_id: Option<ChannelId> = value.channel_id.map(|val| val.into());
+			let channel_id: Option<ChannelId> = value.channel_id.clone().map(|val| val.into());
 			let connection_id = value.connection_id.clone();
 			let counterparty_port_id = value.counterparty_port_id.clone();
 			let counterparty_channel_id: Option<ChannelId> = value.channel_id.map(|val| val.into());
@@ -301,7 +294,8 @@ pub fn event_from_ibc_event<T: Config>(value: IbcEvent) -> Event<T> {
 			let packet = value.packet;
 			Event::TimeoutOnClosePacket(height.into(), packet.into())
 		},
-		IbcEvent::Empty(value) => Event::Empty(value.as_bytes().to_vec()),
 		IbcEvent::ChainError(value) => Event::ChainError(value.as_bytes().to_vec()),
+		// TODO(davirain)
+		IbcEvent::AppModule(value) => unimplemented!(),
 	}
 }

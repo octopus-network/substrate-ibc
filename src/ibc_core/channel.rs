@@ -23,7 +23,6 @@ use ibc::{
 			packet::{Receipt, Sequence},
 		},
 		ics05_port::{
-			capabilities::{Capability, ChannelCapability, PortCapability},
 			context::PortReader,
 			error::Error as Ics05Error,
 		},
@@ -128,22 +127,6 @@ impl<T: Config> ChannelReader for Context<T> {
 			))
 		} else {
 			Ok(ret.unwrap())
-		}
-	}
-
-	fn authenticated_capability(&self, port_id: &PortId) -> Result<ChannelCapability, Ics04Error> {
-		trace!(target:"runtime::pallet-ibc","in channel : [authenticated_capability]");
-
-		match PortReader::lookup_module_by_port(self, port_id) {
-			Ok((_, key)) =>
-				if !PortReader::authenticate(self, port_id.clone(), &key) {
-					Err(Ics04Error::invalid_port_capability())
-				} else {
-					Ok(Capability::from(key).into())
-				},
-			Err(e) if e.detail() == Ics05Error::unknown_port(port_id.clone()).detail() =>
-				Err(Ics04Error::no_port_capability(port_id.clone())),
-			Err(_) => Err(Ics04Error::implementation_specific()),
 		}
 	}
 
@@ -309,9 +292,9 @@ impl<T: Config> ChannelReader for Context<T> {
 
 		trace!(target:"runtime::pallet-ibc",
 			"in channel: [host_height] >> host_height = {:?}",
-			Height::new(0, current_height)
+			Height::new(REVISION_NUMBER, current_height)
 		);
-		Height::new(0, current_height)
+		Height::new(REVISION_NUMBER, current_height).unwrap()
 	}
 
 	/// Returns the current timestamp of the local chain.
@@ -405,19 +388,6 @@ impl<T: Config> ChannelReader for Context<T> {
 		trace!(target:"runtime::pallet-ibc","in channel: [max_expected_time_per_block]");
 
 		Duration::from_secs(6)
-	}
-
-	/// Return the module_id along with the capability associated with a given (channel-id, port_id)
-	fn lookup_module_by_channel(
-		&self,
-		channel_id: &ChannelId,
-		port_id: &PortId,
-	) -> Result<(ModuleId, ChannelCapability), Ics04Error> {
-		trace!(target:"runtime::pallet-ibc", "in channel: [lookup_module_by_channel]");
-
-		// todo
-		let module_id = ModuleId::new("ibcmodule".to_string().into()).unwrap();
-		Ok((module_id, Capability::new().into()))
 	}
 }
 

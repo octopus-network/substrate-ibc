@@ -1,5 +1,5 @@
 pub mod primitive {
-	use crate::{alloc::string::ToString, from_channel_id_to_vec};
+	use crate::{alloc::string::ToString, from_channel_id_to_vec, REVISION_NUMBER};
 	use alloc::string::String;
 	use ibc::{
 		clients::ics10_grandpa::{
@@ -30,6 +30,7 @@ pub mod primitive {
 	use sp_runtime::RuntimeDebug;
 
 	use flex_error::{define_error, DisplayOnly, TraceError};
+	use ibc::core::ics04_channel::timeout::TimeoutHeight;
 	use tendermint_proto::Error as TendermintError;
 
 	define_error! {
@@ -97,8 +98,8 @@ pub mod primitive {
 	}
 
 	impl From<IbcHeight> for Height {
-		fn from(IbcHeight { revision_number, revision_height }: IbcHeight) -> Self {
-			Height { revision_number, revision_height }
+		fn from(ibc_height: IbcHeight) -> Self {
+			Height::new(ibc_height.revision_number(), ibc_height.revision_height())
 		}
 	}
 
@@ -108,10 +109,7 @@ pub mod primitive {
 		}
 
 		pub fn to_ibc_height(self) -> IbcHeight {
-			IbcHeight {
-				revision_number: self.revision_number,
-				revision_height: self.revision_height,
-			}
+			IbcHeight::new(REVISION_NUMBER, self.revision_height).unwrap()
 		}
 	}
 
@@ -230,7 +228,10 @@ pub mod primitive {
 				destination_port: val.destination_port.into(),
 				destination_channel: val.destination_channel.into(),
 				data: val.data,
-				timeout_height: val.timeout_height.into(),
+				timeout_height: match val.timeout_height {
+					TimeoutHeight::Never => Height::new(REVISION_NUMBER, u64::MAX),
+					TimeoutHeight::At(value) => value.into(),
+				},
 				timeout_timestamp: val.timeout_timestamp.into(),
 			}
 		}
@@ -245,7 +246,7 @@ pub mod primitive {
 				destination_port: self.destination_port.to_ibc_port_id()?,
 				destination_channel: self.destination_channel.to_ibc_channel_id()?,
 				data: self.data,
-				timeout_height: self.timeout_height.to_ibc_height(),
+				timeout_height: TimeoutHeight::At(self.timeout_height.to_ibc_height()),
 				timeout_timestamp: self.timeout_timestamp.to_ibc_timestamp()?,
 			})
 		}

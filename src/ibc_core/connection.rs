@@ -58,9 +58,9 @@ impl<T: Config> ConnectionReader for Context<T> {
 
 		trace!(target:"runtime::pallet-ibc",
 			"in connection : [host_current_height] >> Host current height = {:?}",
-			Height::new(0, current_height)
+			Height::new(REVISION_NUMBER, current_height)
 		);
-		Height::new(0, current_height)
+		Height::new(REVISION_NUMBER, current_height).unwrap()
 	}
 
 	fn host_oldest_height(&self) -> Height {
@@ -72,7 +72,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 			"in connection : [host_oldest_height] >> Host oldest height = {:?}",
 			Height::new(0, height)
 		);
-		Height::new(0, height)
+		Height::new(REVISION_NUMBER, height).unwrap()
 	}
 
 	fn commitment_prefix(&self) -> CommitmentPrefix {

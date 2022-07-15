@@ -70,8 +70,8 @@ impl<T: Config> ClientReader for Context<T> {
 		// search key
 		let client_consensus_state_path = ClientConsensusStatePath {
 			client_id: client_id.clone(),
-			epoch: height.revision_number,
-			height: height.revision_height,
+			epoch: height.revision_number(),
+			height: height.revision_height(),
 		}
 		.to_string()
 		.as_bytes()
@@ -101,8 +101,8 @@ impl<T: Config> ClientReader for Context<T> {
 		// search key
 		let client_consensus_state_path = ClientConsensusStatePath {
 			client_id: client_id.clone(),
-			epoch: height.revision_number,
-			height: height.revision_height,
+			epoch: height.revision_number(),
+			height: height.revision_height(),
 		}
 		.to_string()
 		.as_bytes()
@@ -138,8 +138,8 @@ impl<T: Config> ClientReader for Context<T> {
 		// search key
 		let client_consensus_state_path = ClientConsensusStatePath {
 			client_id: client_id.clone(),
-			epoch: height.revision_number,
-			height: height.revision_height,
+			epoch: height.revision_number(),
+			height: height.revision_height(),
 		}
 		.to_string()
 		.as_bytes()
@@ -172,9 +172,9 @@ impl<T: Config> ClientReader for Context<T> {
 
 		trace!(target:"runtime::pallet-ibc",
 			"in channel: [host_height] >> host_height = {:?}",
-			Height::new(0, current_height)
+			Height::new(REVISION_NUMBER, current_height)
 		);
-		Height::new(0, current_height)
+		Height::new(REVISION_NUMBER, current_height).unwrap()
 	}
 
 	fn host_consensus_state(&self, _height: Height) -> Result<AnyConsensusState, Ics02Error> {
@@ -241,8 +241,8 @@ impl<T: Config> ClientKeeper for Context<T> {
 		// store key
 		let client_consensus_state_path = ClientConsensusStatePath {
 			client_id: client_id.clone(),
-			epoch: height.revision_number,
-			height: height.revision_height,
+			epoch: height.revision_number(),
+			height: height.revision_height(),
 		}
 		.to_string()
 		.as_bytes()

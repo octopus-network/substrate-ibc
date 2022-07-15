@@ -7,8 +7,8 @@ use alloc::{
 use scale_info::TypeInfo;
 
 use ibc::{
-	applications::ics20_fungible_token_transfer::{
-		context::Ics20Context, error::Error as ICS20Error, msgs::denom_trace::DenomTrace,
+	applications::transfer::{
+		context::Ics20Context, error::Error as ICS20Error,
 	},
 	core::{
 		ics04_channel::{
@@ -16,11 +16,11 @@ use ibc::{
 			error::Error as Ics04Error,
 			Version,
 		},
-		ics05_port::capabilities::ChannelCapability,
 		ics24_host::identifier::{ChannelId, ConnectionId, PortId},
-		ics26_routing::context::{Ics26Context, Module, ModuleId, ModuleOutput, RouterBuilder},
+		ics26_routing::context::{Ics26Context, Module, ModuleId, RouterBuilder},
 	},
 };
+use ibc::core::ics26_routing::context::ModuleOutputBuilder;
 
 #[derive(Debug, Default)]
 struct IbcModule;
@@ -28,16 +28,16 @@ struct IbcModule;
 impl Module for IbcModule {
 	fn on_chan_open_try(
 		&mut self,
-		_output: &mut ModuleOutput,
+		_output: &mut ModuleOutputBuilder,
 		_order: Order,
 		_connection_hops: &[ConnectionId],
 		_port_id: &PortId,
-		_channel_id: &ChannelId,
-		_channel_cap: &ChannelCapability,
+		_channel_id: &IbcChannelId,
 		_counterparty: &Counterparty,
-		_counterparty_version: &Version,
+		_version: &Version,
+		_counterparty_version: &Version
 	) -> Result<Version, Ics04Error> {
-		Ok(Version::ics20())
+		todo!()
 	}
 }
 
@@ -59,7 +59,7 @@ impl RouterBuilder for MockRouterBuilder {
 	}
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Default, Clone)]
 pub struct MockRouter(BTreeMap<ModuleId, Arc<dyn Module>>);
 
 impl ibc::core::ics26_routing::context::Router for MockRouter {
