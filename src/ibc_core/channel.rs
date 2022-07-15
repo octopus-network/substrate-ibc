@@ -22,10 +22,7 @@ use ibc::{
 			error::Error as Ics04Error,
 			packet::{Receipt, Sequence},
 		},
-		ics05_port::{
-			context::PortReader,
-			error::Error as Ics05Error,
-		},
+		ics05_port::{context::PortReader, error::Error as Ics05Error},
 		ics24_host::{
 			identifier::{ChannelId, ClientId, ConnectionId, PortId},
 			path::{

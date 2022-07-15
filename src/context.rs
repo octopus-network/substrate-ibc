@@ -7,9 +7,7 @@ use alloc::{
 use scale_info::TypeInfo;
 
 use ibc::{
-	applications::transfer::{
-		context::Ics20Context, error::Error as ICS20Error,
-	},
+	applications::transfer::{context::Ics20Context, error::Error as ICS20Error},
 	core::{
 		ics04_channel::{
 			channel::{Counterparty, Order},
@@ -17,10 +15,11 @@ use ibc::{
 			Version,
 		},
 		ics24_host::identifier::{ChannelId, ConnectionId, PortId},
-		ics26_routing::context::{Ics26Context, Module, ModuleId, RouterBuilder},
+		ics26_routing::context::{
+			Ics26Context, Module, ModuleId, ModuleOutputBuilder, RouterBuilder,
+		},
 	},
 };
-use ibc::core::ics26_routing::context::ModuleOutputBuilder;
 
 #[derive(Debug, Default)]
 struct IbcModule;
@@ -35,7 +34,7 @@ impl Module for IbcModule {
 		_channel_id: &IbcChannelId,
 		_counterparty: &Counterparty,
 		_version: &Version,
-		_counterparty_version: &Version
+		_counterparty_version: &Version,
 	) -> Result<Version, Ics04Error> {
 		todo!()
 	}
