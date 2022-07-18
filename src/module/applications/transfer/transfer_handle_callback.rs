@@ -16,9 +16,9 @@ use ibc::{
 };
 
 #[derive(Debug, Default)]
-pub struct IBCTransferModule;
+pub struct TransferModule;
 
-impl Module for IBCTransferModule {
+impl Module for TransferModule {
 	fn on_chan_open_init(
 		&mut self,
 		_output: &mut ModuleOutputBuilder,

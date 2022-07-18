@@ -20,6 +20,7 @@ use ibc::{
 		},
 	},
 };
+use crate::module::applications::transfer::transfer_handle_callback::TransferModule;
 
 #[derive(Debug, Default)]
 struct IbcModule;
@@ -83,7 +84,7 @@ pub struct Context<T: Config> {
 impl<T: Config> Context<T> {
 	pub fn new() -> Self {
 		let r = MockRouterBuilder::default()
-			.add_route("ibcmodule".parse().unwrap(), IbcModule::default())
+			.add_route("TransferModule".parse().unwrap(), TransferModule::default()) // register transfer Module
 			.unwrap()
 			.build();
 
