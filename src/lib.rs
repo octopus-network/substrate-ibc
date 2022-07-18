@@ -329,32 +329,10 @@ pub mod pallet {
 
 	#[pallet::storage]
 	pub type OldHeight<T: Config> = StorageValue<_, u64, ValueQuery>;
+	
 
 	#[pallet::storage]
-	/// sha256(tracePath + "/" + baseDenom) => DenomTrace
-	pub type Denomination<T: Config> =
-		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
-
-	#[pallet::type_value]
-	pub fn DefaultAccountId<T: Config>() -> T::AccountId {
-		PalletId(*b"defaultd").into_account()
-	}
-
-	#[pallet::storage]
-	// port, channel -> escrow address
-	pub type EscrowAddresses<T: Config> = StorageDoubleMap<
-		_,
-		Blake2_128Concat,
-		PortId,
-		Blake2_128Concat,
-		ChannelId,
-		T::AccountId,
-		ValueQuery,
-		DefaultAccountId<T>,
-	>;
-
-	#[pallet::storage]
-	/// key-value asserid with asset name
+	/// key-value asset id with asset name
 	pub type AssetIdByName<T: Config> =
 		StorageMap<_, Twox64Concat, Vec<u8>, T::AssetId, ValueQuery>;
 

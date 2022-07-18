@@ -635,35 +635,3 @@ fn test_next_sequence_ack_fail() {
 		assert_eq!(result, ICS04Error::missing_next_ack_seq(port_channel).to_string());
 	})
 }
-
-#[test]
-fn test_denomination_ok() {
-	let path = "transfer/channel-01".to_string();
-	let base_denom = "atom".to_string();
-	let denom_trace = DenomTrace::new(path, base_denom);
-	let mut context: Context<Test> = Context::new();
-	new_test_ext().execute_with(|| {
-		assert_eq!(context.set_denom_trace(&denom_trace).is_ok(), true);
-
-		let denom_trace_hash = denom_trace.hash().unwrap();
-		assert_eq!(context.has_denom_trace(&denom_trace_hash), true);
-
-		assert_eq!(context.get_denom_trace(&denom_trace_hash).unwrap(), denom_trace);
-	})
-}
-fn test_denomination_fail() {
-	let path = "transfer/channel-01".to_string();
-	let base_denom = "atom".to_string();
-	let denom_trace = DenomTrace::new(path, base_denom);
-	let mut context: Context<Test> = Context::new();
-
-	new_test_ext().execute_with(|| {
-		let denom_trace_hash = denom_trace.hash().unwrap();
-		assert_eq!(context.has_denom_trace(&denom_trace_hash), false);
-		let result = context.get_denom_trace(&denom_trace_hash).unwrap_err().to_string();
-		assert_eq!(
-			result,
-			Error::denom_trace_not_found(String::from("denom trace not found")).to_string()
-		);
-	})
-}
