@@ -66,19 +66,17 @@ use tendermint_proto::Protobuf;
 pub mod context;
 pub mod event;
 pub mod module;
-pub mod utils;
 pub mod traits;
+pub mod utils;
 
-use crate::{
-	context::Context,
-	utils::event_from_ibc_event,
-	traits::AssetIdAndNameProvider,
-};
+use crate::{context::Context, traits::AssetIdAndNameProvider, utils::event_from_ibc_event};
 
-use crate::module::core::ics24_host::{ChannelId, ClientId, ClientType, ConnectionId, Height, Packet,
-	PortId, Timestamp
+use crate::module::{
+	clients::ics10_grandpa::ClientState as EventClientState,
+	core::ics24_host::{
+		ChannelId, ClientId, ClientType, ConnectionId, Height, Packet, PortId, Timestamp,
+	},
 };
-use crate::module::clients::ics10_grandpa::ClientState as EventClientState;
 
 pub(crate) const LOG_TARGET: &str = "runtime::pallet-ibc";
 pub const REVISION_NUMBER: u64 = 8888;
@@ -108,17 +106,24 @@ mod tests;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
-
-
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use crate::module::core::ics24_host::{ChannelId, ClientId, ClientType, ConnectionId, Height, Packet,
-										  PortId, Timestamp, Sequence
+	use crate::module::{
+		clients::ics10_grandpa::ClientState as EventClientState,
+		core::ics24_host::{
+			ChannelId, ClientId, ClientType, ConnectionId, Height, Packet, PortId, Sequence,
+			Timestamp,
+		},
 	};
-	use crate::module::clients::ics10_grandpa::ClientState as EventClientState;
-	use frame_support::{dispatch::DispatchResult, pallet_prelude::*, traits::UnixTime};
-	use frame_support::traits::fungibles::{Inspect, Mutate, Transfer};
+	use frame_support::{
+		dispatch::DispatchResult,
+		pallet_prelude::*,
+		traits::{
+			fungibles::{Inspect, Mutate, Transfer},
+			UnixTime,
+		},
+	};
 	use frame_system::pallet_prelude::*;
 	use ibc::{
 		applications::transfer::context::Ics20Context,
