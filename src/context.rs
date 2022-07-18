@@ -22,25 +22,6 @@ use ibc::{
 };
 use crate::module::applications::transfer::transfer_handle_callback::TransferModule;
 
-#[derive(Debug, Default)]
-struct IbcModule;
-
-impl Module for IbcModule {
-	fn on_chan_open_try(
-		&mut self,
-		_output: &mut ModuleOutputBuilder,
-		_order: Order,
-		_connection_hops: &[ConnectionId],
-		_port_id: &PortId,
-		_channel_id: &IbcChannelId,
-		_counterparty: &Counterparty,
-		_version: &Version,
-		_counterparty_version: &Version,
-	) -> Result<Version, Ics04Error> {
-		todo!()
-	}
-}
-
 #[derive(Default)]
 pub struct MockRouterBuilder(MockRouter);
 
