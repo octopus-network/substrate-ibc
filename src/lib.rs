@@ -68,11 +68,12 @@ pub mod event;
 pub mod module;
 pub mod ibc_help;
 pub mod utils;
+pub mod traits;
 
 use crate::{
 	context::Context,
 	ibc_help::{event_from_ibc_event, get_signer},
-	utils::AssetIdAndNameProvider,
+	traits::AssetIdAndNameProvider,
 };
 
 use event::primitive::{
@@ -109,6 +110,7 @@ mod tests;
 mod benchmarking;
 
 
+
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
@@ -118,6 +120,7 @@ pub mod pallet {
 		Packet, PortId, Timestamp,
 	};
 	use frame_support::{dispatch::DispatchResult, pallet_prelude::*, traits::UnixTime};
+	use frame_support::traits::fungibles::{Inspect, Mutate, Transfer};
 	use frame_system::pallet_prelude::*;
 	use ibc::{
 		applications::transfer::context::Ics20Context,
@@ -139,6 +142,7 @@ pub mod pallet {
 		events::IbcEvent,
 		signer::Signer,
 	};
+	use sp_runtime::traits::IdentifyAccount;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -171,13 +175,19 @@ pub mod pallet {
 			+ MaybeSerializeDeserialize
 			+ Debug;
 
-		type Assets: fungibles::Mutate<
-			<Self as frame_system::Config>::AccountId,
-			AssetId = Self::AssetId,
-			Balance = Self::AssetBalance,
-		>;
+		type Assets: Transfer<Self::AccountId, AssetId = Self::AssetId, Balance = Self::AssetBalance>
+			+ Mutate<Self::AccountId, AssetId = Self::AssetId, Balance = Self::AssetBalance>
+			+ Inspect<Self::AccountId, AssetId = Self::AssetId, Balance = Self::AssetBalance>;
 
 		type AssetIdByName: AssetIdAndNameProvider<Self::AssetId>;
+
+		/// Account Id Conversion from SS58 string or hex string
+		type AccountIdConversion: TryFrom<Signer>
+			+ IdentifyAccount<AccountId = Self::AccountId>
+			+ Clone;
+
+		// config native token name
+		const NATIVE_TOKEN_NAME: &'static [u8];
 	}
 
 	#[pallet::pallet]
