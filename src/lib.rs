@@ -66,20 +66,19 @@ use tendermint_proto::Protobuf;
 pub mod context;
 pub mod event;
 pub mod module;
-pub mod ibc_help;
 pub mod utils;
 pub mod traits;
 
 use crate::{
 	context::Context,
-	ibc_help::{event_from_ibc_event, get_signer},
+	utils::event_from_ibc_event,
 	traits::AssetIdAndNameProvider,
 };
 
-use event::primitive::{
-	ChannelId, ClientId, ClientState as EventClientState, ClientType, ConnectionId, Height, Packet,
-	PortId, Timestamp,
+use crate::module::core::ics24_host::{ChannelId, ClientId, ClientType, ConnectionId, Height, Packet,
+	PortId, Timestamp
 };
+use crate::module::clients::ics10_grandpa::ClientState as EventClientState;
 
 pub(crate) const LOG_TARGET: &str = "runtime::pallet-ibc";
 pub const REVISION_NUMBER: u64 = 8888;
@@ -114,11 +113,10 @@ mod benchmarking;
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use crate::event::primitive::Sequence;
-	use event::primitive::{
-		ChannelId, ClientId, ClientState as EventClientState, ClientType, ConnectionId, Height,
-		Packet, PortId, Timestamp,
+	use crate::module::core::ics24_host::{ChannelId, ClientId, ClientType, ConnectionId, Height, Packet,
+										  PortId, Timestamp, Sequence
 	};
+	use crate::module::clients::ics10_grandpa::ClientState as EventClientState;
 	use frame_support::{dispatch::DispatchResult, pallet_prelude::*, traits::UnixTime};
 	use frame_support::traits::fungibles::{Inspect, Mutate, Transfer};
 	use frame_system::pallet_prelude::*;
@@ -873,7 +871,7 @@ pub mod pallet {
 }
 
 fn store_send_packet<T: Config>(_send_packet_event: &ibc::core::ics04_channel::events::SendPacket) {
-	use crate::event::primitive::Sequence;
+	use crate::module::core::ics24_host::Sequence;
 
 	// store send-packet
 	let send_packet_event = _send_packet_event.clone();
