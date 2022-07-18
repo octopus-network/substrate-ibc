@@ -65,8 +65,7 @@ use tendermint_proto::Protobuf;
 
 pub mod context;
 pub mod event;
-pub mod ibc_app;
-pub mod ibc_core;
+pub mod module;
 pub mod ibc_help;
 pub mod utils;
 
@@ -108,6 +107,7 @@ mod tests;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
+
 
 #[frame_support::pallet]
 pub mod pallet {
