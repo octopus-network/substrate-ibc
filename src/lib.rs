@@ -20,6 +20,7 @@
 //! which implements the generic cross-chain logic in [ICS spec](https://github.com/cosmos/ibc/tree/ee71d0640c23ec4e05e924f52f557b5e06c1d82f).
 
 extern crate alloc;
+extern crate core;
 
 pub use pallet::*;
 

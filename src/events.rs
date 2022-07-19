@@ -1,4 +1,6 @@
+use core::borrow::Borrow;
 use crate::*;
+use ibc::core::ics26_routing;
 use ibc::events::IbcEvent as RawIbcEvent;
 
 /// IBC Events
@@ -137,8 +139,75 @@ pub enum IbcEvent {
 	/// Chain Error
 	ChainError(Vec<u8>),
 	/// App Module
-	AppModule,
+	AppModule(ModuleEvent),
 }
+
+#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
+pub struct ModuleEvent {
+	pub kind: Vec<u8>,
+	pub module_name: ModuleId,
+	pub attributes: Vec<ModuleEventAttribute>,
+}
+
+impl From<ibc::events::ModuleEvent> for ModuleEvent {
+	fn from(module_event: ibc::events::ModuleEvent) -> Self {
+		Self {
+			kind: module_event.kind.as_bytes().to_vec(),
+			module_name: module_event.module_name.into(),
+			attributes: module_event.attributes.into_iter().map(|event| event.into()).collect(),
+		}
+	}
+}
+
+impl From<ModuleEvent> for ibc::events::ModuleEvent {
+	fn from(module_event: ModuleEvent) -> Self {
+		Self {
+			kind: String::from_utf8(module_event.kind).expect("never failed"),
+			module_name: module_event.module_name.into(),
+			attributes: module_event.attributes.into_iter().map(|event| event.into()).collect(),
+		}
+	}
+}
+
+#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
+pub struct ModuleId(pub Vec<u8>);
+
+impl From<ics26_routing::context::ModuleId> for ModuleId {
+	fn from(module_id: ics26_routing::context::ModuleId) -> Self {
+		Self(format!("{}", module_id).as_bytes().to_vec())
+	}
+}
+
+impl From<ModuleId> for ics26_routing::context::ModuleId {
+	fn from(module_id: ModuleId) -> Self {
+		ics26_routing::context::ModuleId::from_str(&String::from_utf8(module_id.0).unwrap()).expect("should never fiaild")
+	}
+}
+
+#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
+pub struct ModuleEventAttribute {
+	pub key: Vec<u8>,
+	pub value: Vec<u8>,
+}
+
+impl From<ibc::events::ModuleEventAttribute> for ModuleEventAttribute {
+	fn from(module_event_attribute: ibc::events::ModuleEventAttribute) -> Self {
+		Self {
+			key: module_event_attribute.key.as_bytes().to_vec(),
+			value: module_event_attribute.value.as_bytes().to_vec(),
+		}
+	}
+}
+
+impl From<ModuleEventAttribute> for ibc::events::ModuleEventAttribute {
+	fn from(module_event_attribute: ModuleEventAttribute) -> Self {
+		Self {
+			key: String::from_utf8(module_event_attribute.key).expect("should not be filled"),
+			value: String::from_utf8(module_event_attribute.value).expect("should not be filled"),
+		}
+	}
+}
+
 
 impl From<RawIbcEvent> for IbcEvent {
 	fn from(value: RawIbcEvent) -> IbcEvent {
@@ -394,7 +463,9 @@ impl From<RawIbcEvent> for IbcEvent {
 				let packet = value.packet;
 				IbcEvent::TimeoutOnClosePacket { height: height.into(), packet: packet.into() }
 			},
-			RawIbcEvent::AppModule(_) => IbcEvent::AppModule,
+			RawIbcEvent::AppModule(value) => {
+				IbcEvent::AppModule(value.into())
+			},
 			RawIbcEvent::ChainError(value) => IbcEvent::ChainError(value.as_bytes().to_vec()),
 		}
 	}
