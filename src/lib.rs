@@ -329,7 +329,6 @@ pub mod pallet {
 
 	#[pallet::storage]
 	pub type OldHeight<T: Config> = StorageValue<_, u64, ValueQuery>;
-	
 
 	#[pallet::storage]
 	/// key-value asset id with asset name
@@ -854,13 +853,13 @@ pub mod pallet {
 }
 
 fn store_send_packet<T: Config>(send_packet_event: &ibc::core::ics04_channel::events::SendPacket) {
-
 	// store key port_id and channel_id
 	let port_id = send_packet_event.packet.source_port.as_bytes().to_vec();
 	let channel_id = from_channel_id_to_vec(send_packet_event.packet.source_channel.clone());
 
 	// store value packet
-	let packet = serde_json::to_string(&send_packet_event.packet.clone()).expect("serde packet error");
+	let packet =
+		serde_json::to_string(&send_packet_event.packet.clone()).expect("serde packet error");
 
 	log::trace!(
 		target: LOG_TARGET,

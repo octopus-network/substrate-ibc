@@ -6,6 +6,7 @@ use alloc::{
 };
 use scale_info::TypeInfo;
 
+use crate::module::applications::transfer::transfer_handle_callback::TransferModule;
 use ibc::{
 	applications::transfer::{context::Ics20Context, error::Error as ICS20Error},
 	core::{
@@ -20,7 +21,6 @@ use ibc::{
 		},
 	},
 };
-use crate::module::applications::transfer::transfer_handle_callback::TransferModule;
 
 #[derive(Default)]
 pub struct MockRouterBuilder(MockRouter);
