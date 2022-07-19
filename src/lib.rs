@@ -188,7 +188,7 @@ pub mod pallet {
 		/// Account Id Conversion from SS58 string or hex string
 		type AccountIdConversion: TryFrom<Signer>
 			+ IdentifyAccount<AccountId = Self::AccountId>
-			+ Clone;
+			+ Clone + PartialEq + core::fmt::Debug;
 
 		// config native token name
 		const NATIVE_TOKEN_NAME: &'static [u8];
@@ -365,14 +365,14 @@ pub mod pallet {
 		UpdateClientState(Height, EventClientState),
 		/// Raw Ibc events
 		IbcEvents { events: Vec<events::IbcEvent> },
-		/// emit escrow token
-		EscrowToken(T::AccountId, T::AccountId, BalanceOf<T>),
-		/// emit burn token
-		BurnToken(T::AssetId, T::AccountId, T::AssetBalance),
-		/// unescrow token
-		UnEscrowToken(T::AccountId, T::AccountId, BalanceOf<T>),
-		/// mint token
-		MintToken(T::AssetId, T::AccountId, T::AssetBalance),
+		/// transfer native token
+		TransferNativeToken(T::AccountIdConversion, T::AccountIdConversion, BalanceOf<T>),
+		/// transfer no native token
+		TransferNoNativeToken(T::AccountIdConversion, T::AccountIdConversion, <T as pallet::Config>::AssetBalance),
+		/// Burn cross chain token
+		BurnToken(T::AssetId, T::AccountIdConversion, T::AssetBalance),
+		/// Mint chairperson  token
+		MintToken(T::AssetId, T::AccountIdConversion, T::AssetBalance),
 	}
 
 	/// Errors in MMR verification informing users that something went wrong.

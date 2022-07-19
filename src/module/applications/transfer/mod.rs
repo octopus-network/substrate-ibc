@@ -58,6 +58,9 @@ impl<T: Config> BankKeeper for Context<T> {
 					error!("❎ [send_coins] : Error: ({:?})", error);
 					Ics20Error::invalid_token()
 				})?;
+
+				// add emit transfer native token event
+				Pallet::<T>::deposit_event(Event::<T>::TransferNativeToken(from.clone(), to.clone(), amount))
 			},
 			// transfer non-native token
 			false => {
@@ -77,6 +80,9 @@ impl<T: Config> BankKeeper for Context<T> {
 							error!("❎ [send_coins] : Error: ({:?})", error);
 							Ics20Error::invalid_token()
 						})?;
+
+						// add emit transfer no native token event
+						Pallet::<T>::deposit_event(Event::<T>::TransferNoNativeToken(from.clone(), to.clone(), amount));
 					},
 					Err(_error) => {
 						error!("❎ [send_coins]: denom: ({:?})", denom);
@@ -108,6 +114,9 @@ impl<T: Config> BankKeeper for Context<T> {
 					error!("❎ [mint_coins] : Error: ({:?})", error);
 					Ics20Error::invalid_token()
 				})?;
+
+				// add mint token event
+				Pallet::<T>::deposit_event(Event::<T>::MintToken(token_id, account.clone(), amount));
 			},
 			Err(_error) => {
 				error!("❎ [mint_coins]: denom: ({:?})", denom);
@@ -136,6 +145,9 @@ impl<T: Config> BankKeeper for Context<T> {
 					error!("❎ [burn_coins] : Error: ({:?})", error);
 					Ics20Error::invalid_token()
 				})?;
+
+				// add burn token event
+				Pallet::<T>::deposit_event(Event::<T>::BurnToken(token_id, account.clone(), amount));
 			},
 			Err(_error) => {
 				error!("❎ [burn_coins]: denom: ({:?})", denom);
