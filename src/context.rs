@@ -65,7 +65,7 @@ pub struct Context<T: Config> {
 impl<T: Config> Context<T> {
 	pub fn new() -> Self {
 		let r = MockRouterBuilder::default()
-			.add_route("TransferModule".parse().unwrap(), TransferModule::default()) // register transfer Module
+			.add_route("TransferModule".parse().unwrap(), TransferModule(PhantomData::<T>)) // register transfer Module
 			.unwrap()
 			.build();
 

@@ -149,7 +149,7 @@ pub mod pallet {
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
-	pub trait Config: frame_system::Config {
+	pub trait Config: frame_system::Config + core::marker::Sync + core::marker::Send {
 		/// The overarching event type.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
@@ -298,7 +298,7 @@ pub mod pallet {
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
-	/// (height, port_id, channel_id, sequence) => sendpacket event
+	/// (height, port_id, channel_id, sequence) => send-packet event
 	pub type SendPacketEvent<T: Config> = StorageNMap<
 		_,
 		(
@@ -311,7 +311,7 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
-	/// (port_id, channel_id, sequence) => writeack event
+	/// (port_id, channel_id, sequence) => writ ack event
 	pub type WriteAckPacketEvent<T: Config> = StorageNMap<
 		_,
 		(
@@ -853,40 +853,24 @@ pub mod pallet {
 	}
 }
 
-fn store_send_packet<T: Config>(_send_packet_event: &ibc::core::ics04_channel::events::SendPacket) {
-	use crate::module::core::ics24_host::Sequence;
+fn store_send_packet<T: Config>(send_packet_event: &ibc::core::ics04_channel::events::SendPacket) {
 
-	// store send-packet
-	let send_packet_event = _send_packet_event.clone();
-	let packet = Packet {
-		sequence: Sequence::from(send_packet_event.packet.sequence),
-		source_channel: ChannelId::from(send_packet_event.packet.source_channel.clone()),
-		source_port: PortId::from(send_packet_event.packet.source_port.clone()),
-		destination_channel: ChannelId::from(send_packet_event.packet.destination_channel),
-		destination_port: PortId::from(send_packet_event.packet.destination_port),
-		data: send_packet_event.packet.data,
-		timeout_timestamp: Timestamp::from(send_packet_event.packet.timeout_timestamp),
-		timeout_height: match send_packet_event.packet.timeout_height {
-			TimeoutHeight::Never => Height::new(REVISION_NUMBER, u64::MAX),
-			TimeoutHeight::At(value) => value.into(),
-		},
-	};
-
-	// packet serde TODO (davirian)
-	// let packet = packet.to_ibc_packet().unwrap().encode_vec().unwrap();
-
+	// store key port_id and channel_id
 	let port_id = send_packet_event.packet.source_port.as_bytes().to_vec();
 	let channel_id = from_channel_id_to_vec(send_packet_event.packet.source_channel.clone());
 
+	// store value packet
+	let packet = serde_json::to_string(&send_packet_event.packet.clone()).expect("serde packet error");
+
 	log::trace!(
 		target: LOG_TARGET,
-		"in lib: [store_send_packet]. _send_packet_event={:?}",
-		_send_packet_event.clone()
+		"in lib: [store_send_packet]. send_packet_event={:?}",
+		send_packet_event
 	);
-	// <SendPacketEvent<T>>::insert(
-	// 	(port_id, channel_id, u64::from(send_packet_event.packet.sequence)),
-	// 	packet,
-	// );
+	<SendPacketEvent<T>>::insert(
+		(port_id, channel_id, u64::from(send_packet_event.packet.sequence)),
+		packet.as_bytes(),
+	);
 }
 
 fn store_write_ack<T: Config>(
@@ -898,11 +882,9 @@ fn store_write_ack<T: Config>(
 	let port_id = write_ack_event.packet.source_port.as_bytes().to_vec();
 	let channel_id = from_channel_id_to_vec(write_ack_event.packet.source_channel.clone());
 	let sequence = u64::from(write_ack_event.packet.sequence);
-	// TODO  todo!(davirian)
-	// let write_ack = write_ack_event.encode_vec().unwrap();
-	// let _write_ack = WriteAcknowledgement::decode(&*write_ack).unwrap();
+	let write_ack = serde_json::to_string(&write_ack_event).expect("serde write ack event error");
 	// store.Set((portID, channelID, sequence), WriteAckEvent)
-	// <WriteAckPacketEvent<T>>::insert((port_id, channel_id, sequence), write_ack);
+	<WriteAckPacketEvent<T>>::insert((port_id, channel_id, sequence), write_ack.as_bytes());
 }
 
 impl<T: Config> AssetIdAndNameProvider<T::AssetId> for Pallet<T> {
