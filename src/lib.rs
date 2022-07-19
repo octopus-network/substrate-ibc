@@ -374,7 +374,6 @@ pub mod pallet {
 		MintToken(T::AssetId, T::AccountId, T::AssetBalance),
 	}
 
-
 	/// Errors in MMR verification informing users that something went wrong.
 	#[pallet::error]
 	pub enum Error<T> {

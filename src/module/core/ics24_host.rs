@@ -63,9 +63,11 @@ impl From<IbcPortId> for PortId {
 	}
 }
 
-impl PortId {
-	pub fn to_ibc_port_id(self) -> Result<IbcPortId, Error> {
-		let value = String::from_utf8(self.0).map_err(Error::invalid_from_utf8)?;
+impl TryFrom<PortId> for IbcPortId {
+	type Error = Error;
+
+	fn try_from(value: PortId) -> Result<Self, Self::Error> {
+		let value = String::from_utf8(value.0).map_err(Error::invalid_from_utf8)?;
 		Ok(IbcPortId(value))
 	}
 }
@@ -80,9 +82,11 @@ impl From<IbcChannelId> for ChannelId {
 	}
 }
 
-impl ChannelId {
-	pub fn to_ibc_channel_id(self) -> Result<IbcChannelId, Error> {
-		let value = String::from_utf8(self.0).map_err(Error::invalid_from_utf8)?;
+impl TryFrom<ChannelId> for IbcChannelId {
+	type Error = Error;
+
+	fn try_from(value: ChannelId) -> Result<Self, Self::Error> {
+		let value = String::from_utf8(value.0).map_err(Error::invalid_from_utf8)?;
 		IbcChannelId::from_str(&value).map_err(Error::validation_failed)
 	}
 }
@@ -186,9 +190,11 @@ impl From<IbcTimestamp> for Timestamp {
 	}
 }
 
-impl Timestamp {
-	pub fn to_ibc_timestamp(self) -> Result<IbcTimestamp, Error> {
-		let value = String::from_utf8(self.time).map_err(Error::invalid_from_utf8)?;
+impl TryFrom<Timestamp> for IbcTimestamp {
+	type Error = Error;
+
+	fn try_from(value: Timestamp) -> Result<Self, Self::Error> {
+		let value = String::from_utf8(value.time).map_err(Error::invalid_from_utf8)?;
 		IbcTimestamp::from_str(&value).map_err(Error::parse_timestamp_failed)
 	}
 }
@@ -202,9 +208,9 @@ impl From<IbcSequence> for Sequence {
 	}
 }
 
-impl Sequence {
-	pub fn to_ibc_sequence(self) -> IbcSequence {
-		IbcSequence::from(self.0)
+impl From<Sequence> for IbcSequence {
+	fn from(val: Sequence) -> Self {
+		IbcSequence::from(val.0)
 	}
 }
 
@@ -238,17 +244,19 @@ impl From<IbcPacket> for Packet {
 	}
 }
 
-impl Packet {
-	pub fn to_ibc_packet(self) -> Result<IbcPacket, Error> {
+impl TryFrom<Packet> for IbcPacket {
+	type Error = Error;
+
+	fn try_from(value: Packet) -> Result<Self, Self::Error> {
 		Ok(IbcPacket {
-			sequence: self.sequence.to_ibc_sequence(),
-			source_port: self.source_port.to_ibc_port_id()?,
-			source_channel: self.source_channel.to_ibc_channel_id()?,
-			destination_port: self.destination_port.to_ibc_port_id()?,
-			destination_channel: self.destination_channel.to_ibc_channel_id()?,
-			data: self.data,
-			timeout_height: TimeoutHeight::At(self.timeout_height.into()),
-			timeout_timestamp: self.timeout_timestamp.to_ibc_timestamp()?,
+			sequence: value.sequence.into(),
+			source_port: value.source_port.try_into()?,
+			source_channel: value.source_channel.try_into()?,
+			destination_port: value.destination_port.try_into()?,
+			destination_channel: value.destination_channel.try_into()?,
+			data: value.data,
+			timeout_height: TimeoutHeight::At(value.timeout_height.into()),
+			timeout_timestamp: value.timeout_timestamp.try_into()?,
 		})
 	}
 }
