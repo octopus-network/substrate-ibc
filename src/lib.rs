@@ -64,12 +64,12 @@ use ibc::{
 use tendermint_proto::Protobuf;
 
 pub mod context;
-pub mod event;
+pub mod events;
 pub mod module;
 pub mod traits;
 pub mod utils;
 
-use crate::{context::Context, traits::AssetIdAndNameProvider, utils::event_from_ibc_event};
+use crate::{context::Context, traits::AssetIdAndNameProvider};
 
 use crate::module::{
 	clients::ics10_grandpa::ClientState as EventClientState,
@@ -360,81 +360,10 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		/// emit new block event
-		NewBlock(Height),
-		/// emit create client event
-		CreateClient(Height, ClientId, ClientType, Height),
-		/// emit updte client event
-		UpdateClient(Height, ClientId, ClientType, Height),
 		/// emit update client state event
 		UpdateClientState(Height, EventClientState),
-		/// emit upgrade client event
-		UpgradeClient(Height, ClientId, ClientType, Height),
-		/// emit client misbehaviour event
-		ClientMisbehaviour(Height, ClientId, ClientType, Height),
-		/// emit open init connection event
-		OpenInitConnection(Height, Option<ConnectionId>, ClientId, Option<ConnectionId>, ClientId),
-		/// emit open try connection event
-		OpenTryConnection(Height, Option<ConnectionId>, ClientId, Option<ConnectionId>, ClientId),
-		/// emit open ack connection event
-		OpenAckConnection(Height, Option<ConnectionId>, ClientId, Option<ConnectionId>, ClientId),
-		/// emit open confirm connection event
-		OpenConfirmConnection(
-			Height,
-			Option<ConnectionId>,
-			ClientId,
-			Option<ConnectionId>,
-			ClientId,
-		),
-		/// emit open init channel event
-		OpenInitChannel(Height, PortId, Option<ChannelId>, ConnectionId, PortId, Option<ChannelId>),
-		/// emit open try channel event
-		OpenTryChannel(Height, PortId, Option<ChannelId>, ConnectionId, PortId, Option<ChannelId>),
-		/// emit open ack channel event
-		OpenAckChannel(Height, PortId, Option<ChannelId>, ConnectionId, PortId, Option<ChannelId>),
-		/// emit open confirm channel event
-		OpenConfirmChannel(
-			Height,
-			PortId,
-			Option<ChannelId>,
-			ConnectionId,
-			PortId,
-			Option<ChannelId>,
-		),
-		/// emit close init channel event
-		CloseInitChannel(
-			Height,
-			PortId,
-			Option<ChannelId>,
-			ConnectionId,
-			PortId,
-			Option<ChannelId>,
-		),
-		/// emit close confirm channel event
-		CloseConfirmChannel(
-			Height,
-			PortId,
-			Option<ChannelId>,
-			ConnectionId,
-			PortId,
-			Option<ChannelId>,
-		),
-		/// emit send packet event
-		SendPacket(Height, Packet),
-		/// emit receive packet
-		ReceivePacket(Height, Packet),
-		/// emit write acknowledgement packet event
-		WriteAcknowledgement(Height, Packet, Vec<u8>),
-		/// emit acknowledgement packet event
-		AcknowledgePacket(Height, Packet),
-		/// emit timeout packet event
-		TimeoutPacket(Height, Packet),
-		/// emit timeout on close packet event
-		TimeoutOnClosePacket(Height, Packet),
-		/// emit empty event
-		Empty(Vec<u8>),
-		/// emit chain error event
-		ChainError(Vec<u8>),
+		/// Raw Ibc events
+		IbcEvents { events: Vec<events::IbcEvent> },
 		/// emit escrow token
 		EscrowToken(T::AccountId, T::AccountId, BalanceOf<T>),
 		/// emit burn token
@@ -445,12 +374,6 @@ pub mod pallet {
 		MintToken(T::AssetId, T::AccountId, T::AssetBalance),
 	}
 
-	/// Convert events of ibc-rs to the corresponding events in substrate-ibc
-	impl<T: Config> From<IbcEvent> for Event<T> {
-		fn from(value: IbcEvent) -> Self {
-			event_from_ibc_event(value)
-		}
-	}
 
 	/// Errors in MMR verification informing users that something went wrong.
 	#[pallet::error]

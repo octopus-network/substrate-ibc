@@ -114,7 +114,7 @@ impl ClientState {
 		Ok(IbcClientState {
 			chain_id: IbcChainId::from_str(&chain_id_str).map_err(Error::invalid_chain_id)?,
 			block_number: self.block_number,
-			frozen_height: self.frozen_height.map(|value| value.to_ibc_height()),
+			frozen_height: self.frozen_height.map(|value| value.into()),
 			block_header: BlockHeader::decode(&mut &self.block_header[..])
 				.map_err(Error::invalid_decode)?,
 			latest_commitment: Commitment::decode(&mut &self.latest_commitment[..])

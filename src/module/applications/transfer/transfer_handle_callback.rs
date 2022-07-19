@@ -171,11 +171,11 @@ impl<T: Config> Module for TransferModule<T> {
 
 						// Emit write acknowledgement event
 						let host_current_height = host_height::<T>();
-						Pallet::<T>::deposit_event(Event::<T>::WriteAcknowledgement(
-							Height::new(REVISION_NUMBER, host_current_height),
-							packet.clone().into(),
-							ack.as_ref().to_vec(),
-						));
+						Pallet::<T>::deposit_event(Event::<T>::from(vec![IbcEvent::WriteAcknowledgement(ibc::core::ics04_channel::events::WriteAcknowledgement {
+							height: Height::new(REVISION_NUMBER, host_current_height).into(),
+							packet: packet.clone().into(),
+							ack: ack.as_ref().to_vec(),
+						})]));
 
 						// write ack acknowledgement
 						if let IbcEvent::WriteAcknowledgement(write_ack_event) =

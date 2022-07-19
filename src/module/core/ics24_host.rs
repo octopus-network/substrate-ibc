@@ -102,13 +102,15 @@ impl From<IbcHeight> for Height {
 	}
 }
 
+impl From<Height> for IbcHeight {
+	fn from(height: Height) -> Self {
+		IbcHeight::new(REVISION_NUMBER, height.revision_height).unwrap()
+	}
+}
+
 impl Height {
 	pub fn new(revision_number: u64, revision_height: u64) -> Self {
 		Self { revision_number, revision_height }
-	}
-
-	pub fn to_ibc_height(self) -> IbcHeight {
-		IbcHeight::new(REVISION_NUMBER, self.revision_height).unwrap()
 	}
 }
 
@@ -245,7 +247,7 @@ impl Packet {
 			destination_port: self.destination_port.to_ibc_port_id()?,
 			destination_channel: self.destination_channel.to_ibc_channel_id()?,
 			data: self.data,
-			timeout_height: TimeoutHeight::At(self.timeout_height.to_ibc_height()),
+			timeout_height: TimeoutHeight::At(self.timeout_height.into()),
 			timeout_timestamp: self.timeout_timestamp.to_ibc_timestamp()?,
 		})
 	}
