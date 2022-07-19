@@ -78,7 +78,7 @@ use crate::module::{
 	},
 };
 
-pub(crate) const LOG_TARGET: &str = "runtime::pallet-ibc";
+pub const LOG_TARGET: &str = "runtime::pallet-ibc";
 pub const REVISION_NUMBER: u64 = 8888;
 
 type BalanceOf<T> =
