@@ -428,27 +428,21 @@ pub mod pallet {
 
 				log::trace!(target: LOG_TARGET, "received deliver : {:?} ", messages.iter().map(|message| message.type_url.clone()).collect::<Vec<_>>());
 
-				let mut results: Vec<IbcEvent> = vec![];
+				let mut events: Vec<IbcEvent> = vec![];
 				for (index, message) in messages.clone().into_iter().enumerate() {
 
-					let mut result = Vec::new();
 					match ibc::core::ics26_routing::handler::deliver(&mut ctx, message.clone()) {
-						Ok(ibc::core::ics26_routing::handler::MsgReceipt { events, log: _log}) => {
+						Ok(ibc::core::ics26_routing::handler::MsgReceipt { events: mut event, log: _log}) => {
 							log::trace!(target: LOG_TARGET, "deliver event  : {:?} ", events);
-							results.append(&mut result);
-
+							events.append(&mut event);
 						}
 						Err(error) => {
 							log::trace!(target: LOG_TARGET, "deliver error  : {:?} ", error);
 						}
 					};
-
-					log::info!("result: {:?}", result);
-
-					results.append(&mut result);
 				}
 
-				// Self::deposit_event()
+				Self::handle_events(events)?;
 
 				Ok(().into())
 			})
@@ -490,6 +484,27 @@ pub mod pallet {
 	}
 
 	impl<T: Config> Pallet<T> {
+		/// handle the event returned by ics26 route module
+		fn handle_events(events: Vec<IbcEvent>) -> DispatchResultWithPostInfo {
+			for event in events.into_iter() {
+				match event.clone() {
+					IbcEvent::SendPacket(value) => {
+						Self::deposit_event(vec![event.clone()].into());
+						store_send_packet::<T>(&value);
+					},
+					_ => {
+						log::warn!(
+							target: LOG_TARGET,
+							"[handle_result] Unhandled event: {:?}",
+							event
+						);
+						Self::deposit_event(vec![event.clone()].into());
+					},
+				}
+			}
+			Ok(().into())
+		}
+
 		/// inner update mmr root
 		fn inner_update_mmr_root(
 			client_id: Vec<u8>,
@@ -685,6 +700,7 @@ fn store_send_packet<T: Config>(send_packet_event: &ibc::core::ics04_channel::ev
 	let channel_id = from_channel_id_to_vec(send_packet_event.packet.source_channel.clone());
 
 	// store value packet
+	// and serde packet use serde_json
 	let packet =
 		serde_json::to_string(&send_packet_event.packet.clone()).expect("serde packet error");
 
