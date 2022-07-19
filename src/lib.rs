@@ -467,60 +467,10 @@ pub mod pallet {
 		InvalidDecode,
 		/// FromUtf8Error
 		InvalidFromUtf8,
-		/// ics26router error
-		Ics26Error,
-		/// invalid signer
-		InvalidSigner,
-		/// empty channel id
-		EmptyChannelId,
-		/// ics20 error
-		Ics20Error,
-		/// parse ibc packet error
-		InvalidPacket,
 		/// invalid signed_commitment
 		InvalidSignedCommitment,
-		/// invalid identifier
-		InvalidIdentifier,
-		/// invalid timestamp
-		InvalidTimestamp,
 		/// empty latest_commitment
 		EmptyLatestCommitment,
-		/// send packet error
-		SendPacketError,
-		/// ReceivePacket error
-		ReceivePacketError,
-		/// TimeoutPacket error
-		TimeoutPacketError,
-		/// AcknowledgePacket error
-		AcknowledgePacketError,
-		/// OpenInitChannel error
-		OpenInitChannelError,
-		/// OpenTryChannel error
-		OpenTryChannelError,
-		/// OpenAckChannel error
-		OpenAckChannelError,
-		/// OpenConfirmChannel error
-		OpenConfirmChannelError,
-		/// CloseInitChannel error
-		CloseInitChannelError,
-		/// CloseConfirmChannel error
-		CloseConfirmChannelError,
-		/// AmountOverflow
-		AmountOverflow,
-		// Serde IBCFungibleTokenPacketData error
-		SerdeIBCFungibleTokenPacketDataError,
-		/// Invalid parse
-		InvalidParse,
-		/// parse denom trace error
-		ParseDenomTraceError,
-		/// acknowledgement_response_empty
-		AcknowledgementResponseEmpty,
-		/// Get Ibc denom Error
-		GetIbcDenomError,
-		/// invalid_validation
-		InvalidValidation,
-		/// store packet result error
-		StorePacketResultError,
 		/// invalid token id
 		InvalidTokenId,
 		/// wrong assert id
@@ -594,51 +544,6 @@ pub mod pallet {
 			let _who = ensure_signed(origin)?;
 
 			Self::inner_update_mmr_root(client_id, mmr_root)
-		}
-
-		/// Transfer interface for user test by explore
-		#[pallet::weight(0)]
-		pub fn transfer(
-			origin: OriginFor<T>,
-			source_port: Vec<u8>,
-			source_channel: Vec<u8>,
-			token: Vec<u8>,
-			amount: u128,
-			receiver: Vec<u8>,
-			timeout_height: u64,
-			timeout_timestamp: u64,
-		) -> DispatchResult {
-			todo!()
-			// sp_tracing::within_span!(
-			// 	sp_tracing::Level::TRACE, "transfer";
-			// 	{
-			// 		// todo!(daviiran)
-			// 		// let msg = MsgTransfer {
-			// 		// 	source_port,
-			// 		// 	source_channel,
-			// 		// 	token,
-			// 		// 	sender,
-			// 		// 	receiver,
-			// 		// 	timeout_height,
-			// 		// 	timeout_timestamp,
-			// 		// };
-			// 		//
-			// 		// // send to router
-			// 		// let mut ctx = Context::<T>::new();
-			// 		// let mut handle_result =  ibc::handler::HandlerOutputBuilder::new();
-			// 		// let ret = ibc::applications::transfer::relay::send_transfer::send_transfer(&mut
-			// ctx, &mut handle_result,  msg).unwrap(); // todo unwrap() 		//
-			// 		// // store send packet event to OCW
-			// 		// let hadler_output = handle_result.with_result(()).events;
-			// 		// store send packet event to OCW
-			//
-			// 		// handle the result
-			//
-			// 		// Self::deposit_event()
-			// 		// Ok(())
-			//
-			// 	}
-			// )
 		}
 
 		#[pallet::weight(0)]
