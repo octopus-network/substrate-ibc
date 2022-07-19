@@ -1,7 +1,6 @@
-use core::borrow::Borrow;
 use crate::*;
-use ibc::core::ics26_routing;
-use ibc::events::IbcEvent as RawIbcEvent;
+use core::borrow::Borrow;
+use ibc::{core::ics26_routing, events::IbcEvent as RawIbcEvent};
 
 /// IBC Events
 #[derive(Encode, Decode, Clone, PartialEq, Eq, RuntimeDebug, TypeInfo)]
@@ -180,7 +179,8 @@ impl From<ics26_routing::context::ModuleId> for ModuleId {
 
 impl From<ModuleId> for ics26_routing::context::ModuleId {
 	fn from(module_id: ModuleId) -> Self {
-		ics26_routing::context::ModuleId::from_str(&String::from_utf8(module_id.0).unwrap()).expect("should never fiaild")
+		ics26_routing::context::ModuleId::from_str(&String::from_utf8(module_id.0).unwrap())
+			.expect("should never fiaild")
 	}
 }
 
@@ -207,7 +207,6 @@ impl From<ModuleEventAttribute> for ibc::events::ModuleEventAttribute {
 		}
 	}
 }
-
 
 impl From<RawIbcEvent> for IbcEvent {
 	fn from(value: RawIbcEvent) -> IbcEvent {
@@ -463,9 +462,7 @@ impl From<RawIbcEvent> for IbcEvent {
 				let packet = value.packet;
 				IbcEvent::TimeoutOnClosePacket { height: height.into(), packet: packet.into() }
 			},
-			RawIbcEvent::AppModule(value) => {
-				IbcEvent::AppModule(value.into())
-			},
+			RawIbcEvent::AppModule(value) => IbcEvent::AppModule(value.into()),
 			RawIbcEvent::ChainError(value) => IbcEvent::ChainError(value.as_bytes().to_vec()),
 		}
 	}

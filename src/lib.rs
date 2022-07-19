@@ -188,7 +188,9 @@ pub mod pallet {
 		/// Account Id Conversion from SS58 string or hex string
 		type AccountIdConversion: TryFrom<Signer>
 			+ IdentifyAccount<AccountId = Self::AccountId>
-			+ Clone + PartialEq + core::fmt::Debug;
+			+ Clone
+			+ PartialEq
+			+ core::fmt::Debug;
 
 		// config native token name
 		const NATIVE_TOKEN_NAME: &'static [u8];
@@ -368,7 +370,11 @@ pub mod pallet {
 		/// transfer native token
 		TransferNativeToken(T::AccountIdConversion, T::AccountIdConversion, BalanceOf<T>),
 		/// transfer no native token
-		TransferNoNativeToken(T::AccountIdConversion, T::AccountIdConversion, <T as pallet::Config>::AssetBalance),
+		TransferNoNativeToken(
+			T::AccountIdConversion,
+			T::AccountIdConversion,
+			<T as pallet::Config>::AssetBalance,
+		),
 		/// Burn cross chain token
 		BurnToken(T::AssetId, T::AccountIdConversion, T::AssetBalance),
 		/// Mint chairperson  token
