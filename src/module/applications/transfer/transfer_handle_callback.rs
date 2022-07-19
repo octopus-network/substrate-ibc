@@ -25,122 +25,113 @@ pub struct TransferModule<T: Config>(pub core::marker::PhantomData<T>);
 impl<T: Config> Module for TransferModule<T> {
 	fn on_chan_open_init(
 		&mut self,
-		_output: &mut ModuleOutputBuilder,
-		_order: Order,
-		_connection_hops: &[ConnectionId],
-		_port_id: &PortId,
-		_channel_id: &IbcChannelId,
-		_counterparty: &Counterparty,
-		_version: &Version,
+		output: &mut ModuleOutputBuilder,
+		order: Order,
+		connection_hops: &[ConnectionId],
+		port_id: &PortId,
+		channel_id: &IbcChannelId,
+		counterparty: &Counterparty,
+		version: &Version,
 	) -> Result<(), Ics04Error> {
 		let mut ctx = Context::<T>::new();
 
 		ibc::applications::transfer::context::on_chan_open_init(
 			&mut ctx,
-			_output,
-			_order,
-			_connection_hops,
-			_port_id,
-			_channel_id,
-			_counterparty,
-			_version,
+			output,
+			order,
+			connection_hops,
+			port_id,
+			channel_id,
+			counterparty,
+			version,
 		)
 		.map_err(Ics04Error::ics20_transfer)
 	}
 
 	fn on_chan_open_try(
 		&mut self,
-		_output: &mut ModuleOutputBuilder,
-		_order: Order,
-		_connection_hops: &[ConnectionId],
-		_port_id: &PortId,
-		_channel_id: &IbcChannelId,
-		_counterparty: &Counterparty,
-		_version: &Version,
-		_counterparty_version: &Version,
+		output: &mut ModuleOutputBuilder,
+		order: Order,
+		connection_hops: &[ConnectionId],
+		port_id: &PortId,
+		channel_id: &IbcChannelId,
+		counterparty: &Counterparty,
+		version: &Version,
+		counterparty_version: &Version,
 	) -> Result<Version, Ics04Error> {
 		let mut ctx = Context::<T>::new();
 
 		ibc::applications::transfer::context::on_chan_open_try(
 			&mut ctx,
-			_output,
-			_order,
-			_connection_hops,
-			_port_id,
-			_channel_id,
-			_counterparty,
-			_version,
-			_counterparty_version,
+			output,
+			order,
+			connection_hops,
+			port_id,
+			channel_id,
+			counterparty,
+			version,
+			counterparty_version,
 		)
 		.map_err(Ics04Error::ics20_transfer)
 	}
 
 	fn on_chan_open_ack(
 		&mut self,
-		_output: &mut ModuleOutputBuilder,
-		_port_id: &PortId,
-		_channel_id: &IbcChannelId,
-		_counterparty_version: &Version,
+		output: &mut ModuleOutputBuilder,
+		port_id: &PortId,
+		channel_id: &IbcChannelId,
+		counterparty_version: &Version,
 	) -> Result<(), Ics04Error> {
 		let mut ctx = Context::<T>::new();
 
 		ibc::applications::transfer::context::on_chan_open_ack(
 			&mut ctx,
-			_output,
-			_port_id,
-			_channel_id,
-			_counterparty_version,
+			output,
+			port_id,
+			channel_id,
+			counterparty_version,
 		)
 		.map_err(Ics04Error::ics20_transfer)
 	}
 
 	fn on_chan_open_confirm(
 		&mut self,
-		_output: &mut ModuleOutputBuilder,
-		_port_id: &PortId,
-		_channel_id: &IbcChannelId,
+		output: &mut ModuleOutputBuilder,
+		port_id: &PortId,
+		channel_id: &IbcChannelId,
 	) -> Result<(), Ics04Error> {
 		let mut ctx = Context::<T>::new();
 
 		ibc::applications::transfer::context::on_chan_open_confirm(
-			&mut ctx,
-			_output,
-			_port_id,
-			_channel_id,
+			&mut ctx, output, port_id, channel_id,
 		)
 		.map_err(Ics04Error::ics20_transfer)
 	}
 
 	fn on_chan_close_init(
 		&mut self,
-		_output: &mut ModuleOutputBuilder,
-		_port_id: &PortId,
-		_channel_id: &IbcChannelId,
+		output: &mut ModuleOutputBuilder,
+		port_id: &PortId,
+		channel_id: &IbcChannelId,
 	) -> Result<(), Ics04Error> {
 		let mut ctx = Context::<T>::new();
 
 		ibc::applications::transfer::context::on_chan_close_init(
-			&mut ctx,
-			_output,
-			_port_id,
-			_channel_id,
+			&mut ctx, output, port_id, channel_id,
 		)
 		.map_err(Ics04Error::ics20_transfer)
 	}
 
 	fn on_chan_close_confirm(
 		&mut self,
-		_output: &mut ModuleOutputBuilder,
-		_port_id: &PortId,
-		_channel_id: &IbcChannelId,
+		output: &mut ModuleOutputBuilder,
+		port_id: &PortId,
+		channel_id: &IbcChannelId,
 	) -> Result<(), Ics04Error> {
 		let mut ctx = Context::<T>::new();
 
 		ibc::applications::transfer::context::on_chan_close_confirm(
-			&mut ctx,
-			_output,
-			_port_id,
-			_channel_id,
+			&mut ctx, output, port_id, channel_id,
 		)
 		.map_err(Ics04Error::ics20_transfer)
 	}
@@ -149,13 +140,12 @@ impl<T: Config> Module for TransferModule<T> {
 		&self,
 		output: &mut ModuleOutputBuilder,
 		packet: &IbcPacket,
-		_relayer: &Signer,
+		relayer: &Signer,
 	) -> OnRecvPacketAck {
 		let mut ctx = Context::<T>::new();
 
-		let on_recv_packet_ack = ibc::applications::transfer::context::on_recv_packet(
-			&mut ctx, output, packet, _relayer,
-		);
+		let on_recv_packet_ack =
+			ibc::applications::transfer::context::on_recv_packet(&mut ctx, output, packet, relayer);
 
 		match on_recv_packet_ack {
 			OnRecvPacketAck::Nil(write_fn) => OnRecvPacketAck::Nil(write_fn),
@@ -208,34 +198,32 @@ impl<T: Config> Module for TransferModule<T> {
 
 	fn on_acknowledgement_packet(
 		&mut self,
-		_output: &mut ModuleOutputBuilder,
-		_packet: &IbcPacket,
-		_acknowledgement: &GenericAcknowledgement,
-		_relayer: &Signer,
+		output: &mut ModuleOutputBuilder,
+		packet: &IbcPacket,
+		acknowledgement: &GenericAcknowledgement,
+		relayer: &Signer,
 	) -> Result<(), Ics04Error> {
 		let mut ctx = Context::<T>::new();
 
 		ibc::applications::transfer::context::on_acknowledgement_packet(
 			&mut ctx,
-			_output,
-			_packet,
-			_acknowledgement,
-			_relayer,
+			output,
+			packet,
+			acknowledgement,
+			relayer,
 		)
 		.map_err(Ics04Error::ics20_transfer)
 	}
 
 	fn on_timeout_packet(
 		&mut self,
-		_output: &mut ModuleOutputBuilder,
-		_packet: &IbcPacket,
-		_relayer: &Signer,
+		output: &mut ModuleOutputBuilder,
+		packet: &IbcPacket,
+		relayer: &Signer,
 	) -> Result<(), Ics04Error> {
 		let mut ctx = Context::<T>::new();
 
-		ibc::applications::transfer::context::on_timeout_packet(
-			&mut ctx, _output, _packet, _relayer,
-		)
-		.map_err(Ics04Error::ics20_transfer)
+		ibc::applications::transfer::context::on_timeout_packet(&mut ctx, output, packet, relayer)
+			.map_err(Ics04Error::ics20_transfer)
 	}
 }
