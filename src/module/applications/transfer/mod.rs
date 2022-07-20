@@ -207,11 +207,14 @@ impl<T: Config> Ics20Context for Context<T> {
 	type AccountId = <T as Config>::AccountIdConversion; // Need Setting Account TODO(davirian)
 }
 
-// this is just mock, when at add this pallet to runtime need to config
-// TODO IBC Account ID
-type AccountId = <<MultiSignature as Verify>::Signer as IdentifyAccount>::AccountId;
+/// Alias to 512-bit hash when used in the context of a transaction signature on the chain.
+pub type Signature = MultiSignature;
 
-#[derive(Clone)]
+/// Some way of identifying an account on the chain. We intentionally make it equivalent
+/// to the public key of our transaction signing scheme.
+pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
+
+#[derive(Clone, Debug, PartialEq, TypeInfo, Encode, Decode)]
 pub struct IbcAccount(AccountId);
 
 impl IdentifyAccount for IbcAccount {
@@ -221,10 +224,29 @@ impl IdentifyAccount for IbcAccount {
 	}
 }
 
-impl TryFrom<Signer> for IbcAccount {
+impl TryFrom<Signer> for IbcAccount
+	where
+		AccountId: From<[u8; 32]>,
+{
 	type Error = &'static str;
-	// TODO
-	fn try_from(_: Signer) -> Result<Self, Self::Error> {
-		Ok(IbcAccount(AccountId::new([0u8; 32])))
+
+	/// Convert a signer to an IBC account.
+	/// Only valid hex strings are supported for now.
+	fn try_from(signer: Signer) -> Result<Self, Self::Error> {
+		let acc_str = signer.as_ref();
+		if acc_str.starts_with("0x") {
+			match acc_str.strip_prefix("0x") {
+				Some(hex_string) => TryInto::<[u8; 32]>::try_into(
+					hex::decode(hex_string).map_err(|_| "Error decoding invalid hex string")?,
+				)
+					.map_err(|_| "Invalid account id hex string")
+					.map(|acc| Self(acc.into())),
+				_ => Err("Signer does not hold a valid hex string"),
+			}
+		}
+		// Do SS58 decoding instead
+		else {
+			Err("invalid ibc address or substrate address")
+		}
 	}
 }

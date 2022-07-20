@@ -20,7 +20,7 @@ use ibc::{
 };
 
 #[derive(Debug)]
-pub struct TransferModule<T: Config>(pub core::marker::PhantomData<T>);
+pub struct TransferModule<T: Config>(pub PhantomData<T>);
 
 impl<T: Config> Module for TransferModule<T> {
 	fn on_chan_open_init(
@@ -171,7 +171,7 @@ impl<T: Config> Module for TransferModule<T> {
 
 						// Emit write acknowledgement event
 						let host_current_height = host_height::<T>();
-						Pallet::<T>::deposit_event(Event::<T>::from(vec![
+						Pallet::<T>::deposit_event(
 							IbcEvent::WriteAcknowledgement(
 								ibc::core::ics04_channel::events::WriteAcknowledgement {
 									height: Height::new(REVISION_NUMBER, host_current_height)
@@ -179,8 +179,8 @@ impl<T: Config> Module for TransferModule<T> {
 									packet: packet.clone().into(),
 									ack: ack.as_ref().to_vec(),
 								},
-							),
-						]));
+							).into()
+						);
 
 						// write ack acknowledgement
 						if let IbcEvent::WriteAcknowledgement(write_ack_event) =

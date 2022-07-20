@@ -147,6 +147,7 @@ pub mod pallet {
 		signer::Signer,
 	};
 	use sp_runtime::traits::IdentifyAccount;
+	use crate::events::ModuleEvent;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -365,15 +366,147 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		/// emit update client state event
 		UpdateClientState(Height, EventClientState),
-		/// Raw Ibc events
-		IbcEvents { events: Vec<events::IbcEvent> },
+		/// New block
+		NewBlock { height: Height },
+		/// Client Created
+		CreateClient {
+			height: Height,
+			client_id: ClientId,
+			client_type: ClientType,
+			consensus_height: Height,
+		},
+		/// Client updated
+		UpdateClient {
+			height: Height,
+			client_id: ClientId,
+			client_type: ClientType,
+			consensus_height: Height,
+		},
+		/// Client upgraded
+		UpgradeClient {
+			height: Height,
+			client_id: ClientId,
+			client_type: ClientType,
+			consensus_height: Height,
+		},
+		/// Client misbehaviour
+		ClientMisbehaviour {
+			height: Height,
+			client_id: ClientId,
+			client_type: ClientType,
+			consensus_height: Height,
+		},
+		/// Connection open init
+		OpenInitConnection {
+			height: Height,
+			connection_id: Option<ConnectionId>,
+			client_id: ClientId,
+			counterparty_connection_id: Option<ConnectionId>,
+			counterparty_client_id: ClientId,
+		},
+		/// Connection open try
+		OpenTryConnection {
+			height: Height,
+			connection_id: Option<ConnectionId>,
+			client_id: ClientId,
+			counterparty_connection_id: Option<ConnectionId>,
+			counterparty_client_id: ClientId,
+		},
+		/// Connection open acknowledgement
+		OpenAckConnection {
+			height: Height,
+			connection_id: Option<ConnectionId>,
+			client_id: ClientId,
+			counterparty_connection_id: Option<ConnectionId>,
+			counterparty_client_id: ClientId,
+		},
+		/// Connection open confirm
+		OpenConfirmConnection {
+			height: Height,
+			connection_id: Option<ConnectionId>,
+			client_id: ClientId,
+			counterparty_connection_id: Option<ConnectionId>,
+			counterparty_client_id: ClientId,
+		},
+		/// Channel open init
+		OpenInitChannel {
+			height: Height,
+			port_id: PortId,
+			channel_id: Option<ChannelId>,
+			connection_id: ConnectionId,
+			counterparty_port_id: PortId,
+			counterparty_channel_id: Option<ChannelId>,
+		},
+		/// Channel open try
+		OpenTryChannel {
+			height: Height,
+			port_id: PortId,
+			channel_id: Option<ChannelId>,
+			connection_id: ConnectionId,
+			counterparty_port_id: PortId,
+			counterparty_channel_id: Option<ChannelId>,
+		},
+		/// Channel open acknowledgement
+		OpenAckChannel {
+			height: Height,
+			port_id: PortId,
+			channel_id: Option<ChannelId>,
+			connection_id: ConnectionId,
+			counterparty_port_id: PortId,
+			counterparty_channel_id: Option<ChannelId>,
+		},
+		/// Channel open confirm
+		OpenConfirmChannel {
+			height: Height,
+			port_id: PortId,
+			channel_id: Option<ChannelId>,
+			connection_id: ConnectionId,
+			counterparty_port_id: PortId,
+			counterparty_channel_id: Option<ChannelId>,
+		},
+		/// Channel close init
+		CloseInitChannel {
+			height: Height,
+			port_id: PortId,
+			channel_id: Option<ChannelId>,
+			connection_id: ConnectionId,
+			counterparty_port_id: PortId,
+			counterparty_channel_id: Option<ChannelId>,
+		},
+		/// Channel close confirm
+		CloseConfirmChannel {
+			height: Height,
+			port_id: PortId,
+			channel_id: Option<ChannelId>,
+			connection_id: ConnectionId,
+			counterparty_port_id: PortId,
+			counterparty_channel_id: Option<ChannelId>,
+		},
+		/// Send packet
+		SendPacket { height: Height, packet: Packet },
+		/// Receive packet
+		ReceivePacket { height: Height, packet: Packet },
+		/// WriteAcknowledgement packet
+		WriteAcknowledgement { height: Height, packet: Packet, ack: Vec<u8> },
+		/// Acknowledgements packet
+		AcknowledgePacket { height: Height, packet: Packet },
+		/// Timeout packet
+		TimeoutPacket { height: Height, packet: Packet },
+		/// TimoutOnClose packet
+		TimeoutOnClosePacket { height: Height, packet: Packet },
+		/// Empty
+		Empty(Vec<u8>),
+		/// Chain Error
+		ChainError(Vec<u8>),
+		/// App Module
+		AppModule(ModuleEvent),
 		/// transfer native token
 		TransferNativeToken(T::AccountIdConversion, T::AccountIdConversion, BalanceOf<T>),
 		/// transfer no native token
 		TransferNoNativeToken(
 			T::AccountIdConversion,
 			T::AccountIdConversion,
-			<T as pallet::Config>::AssetBalance,
+			<T as Config>::AssetBalance,
 		),
 		/// Burn cross chain token
 		BurnToken(T::AssetId, T::AccountIdConversion, T::AssetBalance),
@@ -496,7 +629,7 @@ pub mod pallet {
 			for event in events.into_iter() {
 				match event.clone() {
 					IbcEvent::SendPacket(value) => {
-						Self::deposit_event(vec![event.clone()].into());
+						Self::deposit_event(event.clone().into());
 						store_send_packet::<T>(&value);
 					},
 					_ => {
@@ -505,7 +638,7 @@ pub mod pallet {
 							"[handle_result] Unhandled event: {:?}",
 							event
 						);
-						Self::deposit_event(vec![event.clone()].into());
+						Self::deposit_event(event.clone().into());
 					},
 				}
 			}
