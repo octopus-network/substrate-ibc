@@ -573,7 +573,7 @@ pub mod pallet {
 
 					match ibc::core::ics26_routing::handler::deliver(&mut ctx, message.clone()) {
 						Ok(ibc::core::ics26_routing::handler::MsgReceipt { events: mut event, log: _log}) => {
-							log::trace!(target: LOG_TARGET, "deliver event  : {:?} ", events);
+							log::trace!(target: LOG_TARGET, "deliver event  : {:?} ", event);
 							events.append(&mut event);
 						}
 						Err(error) => {
