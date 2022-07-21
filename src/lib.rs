@@ -367,10 +367,142 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
+		/// New block
+		NewBlock { height: Height },
+		/// Client Created
+		CreateClient {
+			height: Height,
+			client_id: ClientId,
+			client_type: ClientType,
+			consensus_height: Height,
+		},
+		/// Client updated
+		UpdateClient {
+			height: Height,
+			client_id: ClientId,
+			client_type: ClientType,
+			consensus_height: Height,
+		},
+		/// Client upgraded
+		UpgradeClient {
+			height: Height,
+			client_id: ClientId,
+			client_type: ClientType,
+			consensus_height: Height,
+		},
+		/// Client misbehaviour
+		ClientMisbehaviour {
+			height: Height,
+			client_id: ClientId,
+			client_type: ClientType,
+			consensus_height: Height,
+		},
+		/// Connection open init
+		OpenInitConnection {
+			height: Height,
+			connection_id: Option<ConnectionId>,
+			client_id: ClientId,
+			counterparty_connection_id: Option<ConnectionId>,
+			counterparty_client_id: ClientId,
+		},
+		/// Connection open try
+		OpenTryConnection {
+			height: Height,
+			connection_id: Option<ConnectionId>,
+			client_id: ClientId,
+			counterparty_connection_id: Option<ConnectionId>,
+			counterparty_client_id: ClientId,
+		},
+		/// Connection open acknowledgement
+		OpenAckConnection {
+			height: Height,
+			connection_id: Option<ConnectionId>,
+			client_id: ClientId,
+			counterparty_connection_id: Option<ConnectionId>,
+			counterparty_client_id: ClientId,
+		},
+		/// Connection open confirm
+		OpenConfirmConnection {
+			height: Height,
+			connection_id: Option<ConnectionId>,
+			client_id: ClientId,
+			counterparty_connection_id: Option<ConnectionId>,
+			counterparty_client_id: ClientId,
+		},
+		/// Channel open init
+		OpenInitChannel {
+			height: Height,
+			port_id: PortId,
+			channel_id: Option<ChannelId>,
+			connection_id: ConnectionId,
+			counterparty_port_id: PortId,
+			counterparty_channel_id: Option<ChannelId>,
+		},
+		/// Channel open try
+		OpenTryChannel {
+			height: Height,
+			port_id: PortId,
+			channel_id: Option<ChannelId>,
+			connection_id: ConnectionId,
+			counterparty_port_id: PortId,
+			counterparty_channel_id: Option<ChannelId>,
+		},
+		/// Channel open acknowledgement
+		OpenAckChannel {
+			height: Height,
+			port_id: PortId,
+			channel_id: Option<ChannelId>,
+			connection_id: ConnectionId,
+			counterparty_port_id: PortId,
+			counterparty_channel_id: Option<ChannelId>,
+		},
+		/// Channel open confirm
+		OpenConfirmChannel {
+			height: Height,
+			port_id: PortId,
+			channel_id: Option<ChannelId>,
+			connection_id: ConnectionId,
+			counterparty_port_id: PortId,
+			counterparty_channel_id: Option<ChannelId>,
+		},
+		/// Channel close init
+		CloseInitChannel {
+			height: Height,
+			port_id: PortId,
+			channel_id: Option<ChannelId>,
+			connection_id: ConnectionId,
+			counterparty_port_id: PortId,
+			counterparty_channel_id: Option<ChannelId>,
+		},
+		/// Channel close confirm
+		CloseConfirmChannel {
+			height: Height,
+			port_id: PortId,
+			channel_id: Option<ChannelId>,
+			connection_id: ConnectionId,
+			counterparty_port_id: PortId,
+			counterparty_channel_id: Option<ChannelId>,
+		},
+		/// Send packet
+		SendPacket { height: Height, packet: Packet },
+		/// Receive packet
+		ReceivePacket { height: Height, packet: Packet },
+		/// WriteAcknowledgement packet
+		WriteAcknowledgement { height: Height, packet: Packet, ack: Vec<u8> },
+		/// Acknowledgements packet
+		AcknowledgePacket { height: Height, packet: Packet },
+		/// Timeout packet
+		TimeoutPacket { height: Height, packet: Packet },
+		/// TimoutOnClose packet
+		TimeoutOnClosePacket { height: Height, packet: Packet },
+		/// Empty
+		Empty(Vec<u8>),
+		/// Chain Error
+		ChainError(Vec<u8>),
+		/// App Module
+		AppModule(ModuleEvent),
 		/// emit update client state event
 		UpdateClientState(Height, EventClientState),
-		/// Raw Ibc events
-		IbcEvents { events: Vec<events::IbcEvent> },
 		/// transfer native token
 		TransferNativeToken(T::AccountIdConversion, T::AccountIdConversion, BalanceOf<T>),
 		/// transfer no native token
@@ -442,8 +574,9 @@ pub mod pallet {
 					match ibc::core::ics26_routing::handler::deliver(&mut ctx, message.clone()) {
 						Ok(ibc::core::ics26_routing::handler::MsgReceipt { events, log: _log}) => {
 							log::trace!(target: LOG_TARGET, "deliver events  : {:?} ", events);
-
-							Self::deposit_event(events.clone().into());
+							for event in events {
+								Self::deposit_event(event.clone().into());
+							}
 						}
 						Err(error) => {
 							log::trace!(target: LOG_TARGET, "deliver error  : {:?} ", error);
@@ -496,8 +629,12 @@ pub mod pallet {
 
 				let HandlerOutput::<()> { result, log, events } = handle_out.with_result(());
 
+				log::trace!(target: LOG_TARGET, "raw_transfer log : {:?} ", log);
+
 				// deposit events about send packet event and ics20 transfer event
-				Self::deposit_event(events.into());
+				for event in events {
+					Self::deposit_event(event.clone().into());
+				}
 			}
 
 			Ok(().into())
