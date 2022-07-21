@@ -146,6 +146,7 @@ pub mod pallet {
 		events::IbcEvent,
 		signer::Signer,
 	};
+	use ibc::handler::{HandlerOutputBuilder, HandlerOutput};
 	use sp_runtime::traits::IdentifyAccount;
 	use crate::events::ModuleEvent;
 
@@ -418,7 +419,6 @@ pub mod pallet {
 		pub fn deliver(
 			origin: OriginFor<T>,
 			messages: Vec<Any>,
-			_tmp: u8,
 		) -> DispatchResultWithPostInfo {
 			sp_tracing::within_span!(
 			sp_tracing::Level::TRACE, "deliver";
@@ -436,7 +436,7 @@ pub mod pallet {
 
 				log::trace!(target: LOG_TARGET, "received deliver : {:?} ", messages.iter().map(|message| message.type_url.clone()).collect::<Vec<_>>());
 
-				for (index, message) in messages.clone().into_iter().enumerate() {
+				for (_, message) in messages.clone().into_iter().enumerate() {
 
 					match ibc::core::ics26_routing::handler::deliver(&mut ctx, message.clone()) {
 						Ok(ibc::core::ics26_routing::handler::MsgReceipt { events, log: _log}) => {
@@ -452,6 +452,39 @@ pub mod pallet {
 
 				Ok(().into())
 			})
+		}
+
+		#[pallet::weight(0)]
+		pub fn raw_transfer(
+			origin: OriginFor<T>,
+			messages: Vec<Any>,
+		) -> DispatchResultWithPostInfo {
+
+			let _sender = ensure_signed(origin)?;
+			let mut ctx = Context::<T>::new();
+
+			let messages: Vec<ibc_proto::google::protobuf::Any> = messages
+				.into_iter()
+				.map(|message| ibc_proto::google::protobuf::Any {
+					type_url: String::from_utf8(message.type_url.clone()).unwrap(),
+					value: message.value,
+				})
+				.collect();
+
+			log::trace!(target: LOG_TARGET, "raw_transfer : {:?} ", messages.iter().map(|message| message.type_url.clone()).collect::<Vec<_>>());
+
+			for message in messages {
+				let mut handle_out = HandlerOutputBuilder::new();
+				let msg_transfer = MsgTransfer::try_from(message).unwrap();// todo(daviria) messages
+				let result = ibc::applications::transfer::relay::send_transfer::send_transfer(&mut ctx, &mut handle_out, msg_transfer ).unwrap(); // todo(daivian) need to handle unwrap
+
+				let HandlerOutput::<()> {result, log, events } = handle_out.with_result(());
+
+				// deposit events about send packet event and ics20 transfer event
+				Self::deposit_event(events.into());
+			}
+
+			Ok(().into())
 		}
 
 		/// Update the MMR root stored in client_state
