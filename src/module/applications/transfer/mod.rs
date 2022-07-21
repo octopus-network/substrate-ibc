@@ -55,7 +55,7 @@ impl<T: Config> BankKeeper for Context<T> {
 					AllowDeath,
 				)
 				.map_err(|error| {
-					error!("❎ [send_coins] : Error: ({:?})", error);
+					error!("❌ [send_coins] : Error: ({:?})", error);
 					Ics20Error::invalid_token()
 				})?;
 
@@ -81,7 +81,7 @@ impl<T: Config> BankKeeper for Context<T> {
 							true,
 						)
 						.map_err(|error| {
-							error!("❎ [send_coins] : Error: ({:?})", error);
+							error!("❌ [send_coins] : Error: ({:?})", error);
 							Ics20Error::invalid_token()
 						})?;
 
@@ -93,7 +93,7 @@ impl<T: Config> BankKeeper for Context<T> {
 						));
 					},
 					Err(_error) => {
-						error!("❎ [send_coins]: denom: ({:?})", denom);
+						error!("❌ [send_coins]: denom: ({:?})", denom);
 						return Err(Ics20Error::invalid_token())
 					},
 				}
@@ -119,7 +119,7 @@ impl<T: Config> BankKeeper for Context<T> {
 					amount,
 				)
 				.map_err(|error| {
-					error!("❎ [mint_coins] : Error: ({:?})", error);
+					error!("❌ [mint_coins] : Error: ({:?})", error);
 					Ics20Error::invalid_token()
 				})?;
 
@@ -131,7 +131,7 @@ impl<T: Config> BankKeeper for Context<T> {
 				));
 			},
 			Err(_error) => {
-				error!("❎ [mint_coins]: denom: ({:?})", denom);
+				error!("❌ [mint_coins]: denom: ({:?})", denom);
 				return Err(Ics20Error::invalid_token())
 			},
 		}
@@ -154,7 +154,7 @@ impl<T: Config> BankKeeper for Context<T> {
 					amount,
 				)
 				.map_err(|error| {
-					error!("❎ [burn_coins] : Error: ({:?})", error);
+					error!("❌ [burn_coins] : Error: ({:?})", error);
 					Ics20Error::invalid_token()
 				})?;
 
@@ -166,7 +166,7 @@ impl<T: Config> BankKeeper for Context<T> {
 				));
 			},
 			Err(_error) => {
-				error!("❎ [burn_coins]: denom: ({:?})", denom);
+				error!("❌ [burn_coins]: denom: ({:?})", denom);
 				return Err(Ics20Error::invalid_token())
 			},
 		}
@@ -233,8 +233,10 @@ where
 	/// Convert a signer to an IBC account.
 	/// Only valid hex strings are supported for now.
 	fn try_from(signer: Signer) -> Result<Self, Self::Error> {
+		log::info!("Convert Signer : {:?} ", signer);
 		let acc_str = signer.as_ref();
 		if acc_str.starts_with("0x") {
+			log::info!("Convert Signer 🎈: Successful! ");
 			match acc_str.strip_prefix("0x") {
 				Some(hex_string) => TryInto::<[u8; 32]>::try_into(
 					hex::decode(hex_string).map_err(|_| "Error decoding invalid hex string")?,
@@ -246,6 +248,7 @@ where
 		}
 		// Do SS58 decoding instead
 		else {
+			log::info!("Convert Signer ❌ : Failed! ");
 			Err("invalid ibc address or substrate address")
 		}
 	}
