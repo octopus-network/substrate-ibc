@@ -408,6 +408,8 @@ pub mod pallet {
 		InvalidTokenId,
 		/// wrong assert id
 		WrongAssetId,
+		// Parser Msg Transfer Error
+		ParserMsgTransferError,
 	}
 
 	/// Dispatchable functions allows users to interact with the pallet and invoke state changes.
@@ -477,13 +479,20 @@ pub mod pallet {
 
 			for message in messages {
 				let mut handle_out = HandlerOutputBuilder::new();
-				let msg_transfer = MsgTransfer::try_from(message).unwrap(); // todo(daviria) messages
+				let msg_transfer = MsgTransfer::try_from(message).map_err(|_|Error::<T>::ParserMsgTransferError)?;
 				let result = ibc::applications::transfer::relay::send_transfer::send_transfer(
 					&mut ctx,
 					&mut handle_out,
 					msg_transfer,
-				)
-				.unwrap(); // todo(daivian) need to handle unwrap
+				);
+				match result {
+					Ok(_value) => {
+						log::trace!(target: LOG_TARGET, "raw_transfer Successful!");
+					}
+					Err(error) => {
+						log::trace!(target: LOG_TARGET, "raw_transfer Error : {:?} ", error);
+					}
+				}
 
 				let HandlerOutput::<()> { result, log, events } = handle_out.with_result(());
 
