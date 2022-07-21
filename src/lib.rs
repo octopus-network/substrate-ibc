@@ -110,11 +110,14 @@ mod benchmarking;
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use crate::module::{
-		clients::ics10_grandpa::ClientState as EventClientState,
-		core::ics24_host::{
-			ChannelId, ClientId, ClientType, ConnectionId, Height, Packet, PortId, Sequence,
-			Timestamp,
+	use crate::{
+		events::ModuleEvent,
+		module::{
+			clients::ics10_grandpa::ClientState as EventClientState,
+			core::ics24_host::{
+				ChannelId, ClientId, ClientType, ConnectionId, Height, Packet, PortId, Sequence,
+				Timestamp,
+			},
 		},
 	};
 	use frame_support::{
@@ -144,11 +147,10 @@ pub mod pallet {
 			ics26_routing::error::Error as Ics26Error,
 		},
 		events::IbcEvent,
+		handler::{HandlerOutput, HandlerOutputBuilder},
 		signer::Signer,
 	};
-	use ibc::handler::{HandlerOutputBuilder, HandlerOutput};
 	use sp_runtime::traits::IdentifyAccount;
-	use crate::events::ModuleEvent;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -416,10 +418,7 @@ pub mod pallet {
 		/// This function acts as an entry for all of the IBC request(except MMR root update).
 		/// I.e., create clients, update clients, handshakes to create channels, ...etc
 		#[pallet::weight(0)]
-		pub fn deliver(
-			origin: OriginFor<T>,
-			messages: Vec<Any>,
-		) -> DispatchResultWithPostInfo {
+		pub fn deliver(origin: OriginFor<T>, messages: Vec<Any>) -> DispatchResultWithPostInfo {
 			sp_tracing::within_span!(
 			sp_tracing::Level::TRACE, "deliver";
 			{
@@ -459,7 +458,6 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			messages: Vec<Any>,
 		) -> DispatchResultWithPostInfo {
-
 			let _sender = ensure_signed(origin)?;
 			let mut ctx = Context::<T>::new();
 
@@ -471,14 +469,23 @@ pub mod pallet {
 				})
 				.collect();
 
-			log::trace!(target: LOG_TARGET, "raw_transfer : {:?} ", messages.iter().map(|message| message.type_url.clone()).collect::<Vec<_>>());
+			log::trace!(
+				target: LOG_TARGET,
+				"raw_transfer : {:?} ",
+				messages.iter().map(|message| message.type_url.clone()).collect::<Vec<_>>()
+			);
 
 			for message in messages {
 				let mut handle_out = HandlerOutputBuilder::new();
-				let msg_transfer = MsgTransfer::try_from(message).unwrap();// todo(daviria) messages
-				let result = ibc::applications::transfer::relay::send_transfer::send_transfer(&mut ctx, &mut handle_out, msg_transfer ).unwrap(); // todo(daivian) need to handle unwrap
+				let msg_transfer = MsgTransfer::try_from(message).unwrap(); // todo(daviria) messages
+				let result = ibc::applications::transfer::relay::send_transfer::send_transfer(
+					&mut ctx,
+					&mut handle_out,
+					msg_transfer,
+				)
+				.unwrap(); // todo(daivian) need to handle unwrap
 
-				let HandlerOutput::<()> {result, log, events } = handle_out.with_result(());
+				let HandlerOutput::<()> { result, log, events } = handle_out.with_result(());
 
 				// deposit events about send packet event and ics20 transfer event
 				Self::deposit_event(events.into());

@@ -225,8 +225,8 @@ impl IdentifyAccount for IbcAccount {
 }
 
 impl TryFrom<Signer> for IbcAccount
-	where
-		AccountId: From<[u8; 32]>,
+where
+	AccountId: From<[u8; 32]>,
 {
 	type Error = &'static str;
 
@@ -239,8 +239,8 @@ impl TryFrom<Signer> for IbcAccount
 				Some(hex_string) => TryInto::<[u8; 32]>::try_into(
 					hex::decode(hex_string).map_err(|_| "Error decoding invalid hex string")?,
 				)
-					.map_err(|_| "Invalid account id hex string")
-					.map(|acc| Self(acc.into())),
+				.map_err(|_| "Invalid account id hex string")
+				.map(|acc| Self(acc.into())),
 				_ => Err("Signer does not hold a valid hex string"),
 			}
 		}

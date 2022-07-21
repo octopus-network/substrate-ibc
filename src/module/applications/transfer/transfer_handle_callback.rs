@@ -178,8 +178,9 @@ impl<T: Config> Module for TransferModule<T> {
 										.into(),
 									packet: packet.clone().into(),
 									ack: ack.as_ref().to_vec(),
-								}
-							)].into()
+								},
+							)]
+							.into(),
 						);
 
 						// write ack acknowledgement
