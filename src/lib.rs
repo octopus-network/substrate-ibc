@@ -633,7 +633,16 @@ pub mod pallet {
 
 				// deposit events about send packet event and ics20 transfer event
 				for event in events {
-					Self::deposit_event(event.clone().into());
+					match event {
+						IbcEvent::SendPacket(ref send_packet) => {
+							store_send_packet::<T>(send_packet);
+							Self::deposit_event(event.clone().into());
+						}
+						_ => {
+							log::trace!(target: LOG_TARGET, "raw_transfer event : {:?} ", event);
+							Self::deposit_event(event.clone().into());
+						}
+					}
 				}
 			}
 
