@@ -78,6 +78,7 @@ use crate::module::{
 		ChannelId, ClientId, ClientType, ConnectionId, Height, Packet, PortId, Timestamp,
 	},
 };
+use crate::module::core::ics24_host::WriteAcknowledgement;
 
 pub const LOG_TARGET: &str = "runtime::pallet-ibc";
 pub const REVISION_NUMBER: u64 = 8888;
@@ -880,9 +881,8 @@ fn store_send_packet<T: Config>(send_packet_event: &ibc::core::ics04_channel::ev
 	let channel_id = from_channel_id_to_vec(send_packet_event.packet.source_channel.clone());
 
 	// store value packet
-	// and serde packet use serde_json
-	let packet =
-		serde_json::to_string(&send_packet_event.packet.clone()).expect("serde packet error");
+	let packet = Packet::from(send_packet_event.packet.clone());
+	let encode_packet = packet.encode();
 
 	log::trace!(
 		target: LOG_TARGET,
@@ -891,22 +891,20 @@ fn store_send_packet<T: Config>(send_packet_event: &ibc::core::ics04_channel::ev
 	);
 	<SendPacketEvent<T>>::insert(
 		(port_id, channel_id, u64::from(send_packet_event.packet.sequence)),
-		packet.as_bytes(),
+		encode_packet,
 	);
 }
 
 fn store_write_ack<T: Config>(
 	write_ack_event: &ibc::core::ics04_channel::events::WriteAcknowledgement,
 ) {
-	use ibc::core::ics04_channel::events::WriteAcknowledgement;
-
 	// store ack
 	let port_id = write_ack_event.packet.source_port.as_bytes().to_vec();
 	let channel_id = from_channel_id_to_vec(write_ack_event.packet.source_channel.clone());
 	let sequence = u64::from(write_ack_event.packet.sequence);
-	let write_ack = serde_json::to_string(&write_ack_event).expect("serde write ack event error");
+	let write_ack = WriteAcknowledgement::from(write_ack_event.clone());
 	// store.Set((portID, channelID, sequence), WriteAckEvent)
-	<WriteAckPacketEvent<T>>::insert((port_id, channel_id, sequence), write_ack.as_bytes());
+	<WriteAckPacketEvent<T>>::insert((port_id, channel_id, sequence), write_ack.encode());
 }
 
 impl<T: Config> AssetIdAndNameProvider<T::AssetId> for Pallet<T> {
