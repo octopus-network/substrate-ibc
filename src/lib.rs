@@ -489,7 +489,7 @@ pub mod pallet {
 		/// Receive packet
 		ReceivePacket { height: Height, packet: Packet },
 		/// WriteAcknowledgement packet
-		WriteAcknowledgement { height: Height, packet: Packet, ack: Vec<u8> },
+		WriteAcknowledgement(module::core::ics24_host::WriteAcknowledgement),
 		/// Acknowledgements packet
 		AcknowledgePacket { height: Height, packet: Packet },
 		/// Timeout packet
