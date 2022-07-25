@@ -23,7 +23,7 @@ use ibc::{
 };
 
 use crate::module::core::ics26_routing::{MockRouter, MockRouterBuilder};
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Context<T: Config> {
 	pub _pd: PhantomData<T>,
 	pub router: MockRouter,
@@ -31,6 +31,7 @@ pub struct Context<T: Config> {
 
 impl<T: Config> Context<T> {
 	pub fn new() -> Self {
+
 		let r = MockRouterBuilder::default()
 			.add_route(MODULE_ID_STR.parse().unwrap(), TransferModule(PhantomData::<T>)) // register transfer Module
 			.unwrap()

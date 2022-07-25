@@ -151,10 +151,11 @@ pub mod pallet {
 		signer::Signer,
 	};
 	use sp_runtime::traits::IdentifyAccount;
+	use crate::module::applications::transfer::transfer_handle_callback::TransferModule;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
-	pub trait Config: frame_system::Config + core::marker::Sync + core::marker::Send {
+	pub trait Config: frame_system::Config + Sync + Send + Debug {
 		/// The overarching event type.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
@@ -594,7 +595,7 @@ pub mod pallet {
 			messages: Vec<Any>,
 		) -> DispatchResultWithPostInfo {
 			let _sender = ensure_signed(origin)?;
-			let mut ctx = Context::<T>::new();
+			let mut ctx = TransferModule(PhantomData::<T>);
 
 			let messages: Vec<ibc_proto::google::protobuf::Any> = messages
 				.into_iter()
@@ -636,6 +637,10 @@ pub mod pallet {
 					match event {
 						IbcEvent::SendPacket(ref send_packet) => {
 							store_send_packet::<T>(send_packet);
+							Self::deposit_event(event.clone().into());
+						}
+						IbcEvent::WriteAcknowledgement(ref write_ack) => {
+							store_write_ack::<T>(write_ack);
 							Self::deposit_event(event.clone().into());
 						}
 						_ => {

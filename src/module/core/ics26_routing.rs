@@ -4,6 +4,8 @@ use alloc::{
 	collections::BTreeMap,
 	sync::Arc,
 };
+use alloc::fmt::format;
+use core::fmt::Formatter;
 use ibc::core::ics26_routing::context::{Ics26Context, Module, ModuleId, RouterBuilder};
 use log::{error, info, trace, warn};
 use scale_info::TypeInfo;
@@ -29,15 +31,26 @@ impl RouterBuilder for MockRouterBuilder {
 #[derive(Default, Clone)]
 pub struct MockRouter(BTreeMap<ModuleId, Arc<dyn Module>>);
 
+impl Debug for MockRouter {
+	fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+		let mut keys = vec![];
+		for (key, _) in self.0.iter() {
+			keys.push(format!("{}", key));
+		}
+
+		write!(f, "MockRouter(BTreeMap(key({:?})", keys.join(","))
+	}
+}
+
 impl ibc::core::ics26_routing::context::Router for MockRouter {
 	fn get_route_mut(&mut self, module_id: &impl Borrow<ModuleId>) -> Option<&mut dyn Module> {
-		log::trace!(target:"runtime::pallet-ibc","in routing: [get_route_mut]");
+		trace!(target:"runtime::pallet-ibc","in routing: [get_route_mut]");
 
 		self.0.get_mut(module_id.borrow()).and_then(Arc::get_mut)
 	}
 
 	fn has_route(&self, module_id: &impl Borrow<ModuleId>) -> bool {
-		log::trace!(target:"runtime::pallet-ibc","in routing: [has_route]");
+		trace!(target:"runtime::pallet-ibc","in routing: [has_route]");
 		self.0.get(module_id.borrow()).is_some()
 	}
 }

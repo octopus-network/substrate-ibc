@@ -1,4 +1,6 @@
 pub mod transfer_handle_callback;
+pub mod channel;
+
 use crate::{context::Context, *};
 use frame_support::traits::{
 	fungibles::{Mutate, Transfer},
@@ -21,11 +23,13 @@ use sp_runtime::{
 	MultiSignature,
 };
 
-impl<T: Config> Ics20Keeper for Context<T> {
+use transfer_handle_callback::TransferModule;
+
+impl<T: Config> Ics20Keeper for TransferModule<T> {
 	type AccountId = <Self as Ics20Context>::AccountId;
 }
 
-impl<T: Config> BankKeeper for Context<T> {
+impl<T: Config> BankKeeper for TransferModule<T> {
 	type AccountId = <Self as Ics20Context>::AccountId;
 
 	fn send_coins(
@@ -174,7 +178,7 @@ impl<T: Config> BankKeeper for Context<T> {
 	}
 }
 
-impl<T: Config> Ics20Reader for Context<T> {
+impl<T: Config> Ics20Reader for TransferModule<T> {
 	type AccountId = <Self as Ics20Context>::AccountId;
 
 	fn get_port(&self) -> Result<PortId, Ics20Error> {
@@ -203,7 +207,7 @@ impl<T: Config> Ics20Reader for Context<T> {
 	}
 }
 
-impl<T: Config> Ics20Context for Context<T> {
+impl<T: Config> Ics20Context for TransferModule<T> {
 	type AccountId = <T as Config>::AccountIdConversion; // Need Setting Account TODO(davirian)
 }
 
