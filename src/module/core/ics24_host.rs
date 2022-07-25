@@ -1,4 +1,4 @@
-use crate::{alloc::string::ToString, from_channel_id_to_vec, REVISION_NUMBER};
+use crate::{alloc::string::ToString, Config, Event, from_channel_id_to_vec, REVISION_NUMBER};
 use alloc::string::String;
 use ibc::{
 	clients::ics10_grandpa::{
@@ -250,34 +250,6 @@ impl From<Packet> for IbcPacket {
 			data: value.data,
 			timeout_height: TimeoutHeight::At(value.timeout_height.into()),
 			timeout_timestamp: value.timeout_timestamp.into(),
-		}
-	}
-}
-
-#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
-pub struct WriteAcknowledgement {
-	pub height: Height,
-	pub packet: Packet,
-	pub ack: Vec<u8>,
-}
-
-use ibc::core::ics04_channel::events::WriteAcknowledgement as IbcWriteAcknowledgement;
-impl From<IbcWriteAcknowledgement> for WriteAcknowledgement {
-	fn from(ibc_write_ack: IbcWriteAcknowledgement) -> Self {
-		Self {
-			height: ibc_write_ack.height.into(),
-			packet: ibc_write_ack.packet.into(),
-			ack: ibc_write_ack.ack,
-		}
-	}
-}
-
-impl From<WriteAcknowledgement> for IbcWriteAcknowledgement {
-	fn from(write_ack: WriteAcknowledgement) -> Self {
-		Self {
-			height: write_ack.height.into(),
-			packet: write_ack.packet.into(),
-			ack: write_ack.ack,
 		}
 	}
 }

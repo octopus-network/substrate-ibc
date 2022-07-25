@@ -78,7 +78,6 @@ use crate::module::{
 		ChannelId, ClientId, ClientType, ConnectionId, Height, Packet, PortId, Timestamp,
 	},
 };
-use crate::module::core::ics24_host::WriteAcknowledgement;
 
 pub const LOG_TARGET: &str = "runtime::pallet-ibc";
 pub const REVISION_NUMBER: u64 = 8888;
@@ -489,7 +488,7 @@ pub mod pallet {
 		/// Receive packet
 		ReceivePacket { height: Height, packet: Packet },
 		/// WriteAcknowledgement packet
-		WriteAcknowledgement(module::core::ics24_host::WriteAcknowledgement),
+		WriteAcknowledgement{ height: Height, packet: Packet, ack: Vec<u8> },
 		/// Acknowledgements packet
 		AcknowledgePacket { height: Height, packet: Packet },
 		/// Timeout packet
@@ -881,9 +880,7 @@ fn store_send_packet<T: Config>(send_packet_event: &ibc::core::ics04_channel::ev
 	let channel_id = from_channel_id_to_vec(send_packet_event.packet.source_channel.clone());
 
 	// store value packet
-	let packet = Packet::from(send_packet_event.packet.clone());
-	let encode_packet = packet.encode();
-
+	let packet = send_packet_event.packet.encode_vec().unwrap();
 	log::trace!(
 		target: LOG_TARGET,
 		"in lib: [store_send_packet]. send_packet_event={:?}",
@@ -891,20 +888,22 @@ fn store_send_packet<T: Config>(send_packet_event: &ibc::core::ics04_channel::ev
 	);
 	<SendPacketEvent<T>>::insert(
 		(port_id, channel_id, u64::from(send_packet_event.packet.sequence)),
-		encode_packet,
+		packet,
 	);
 }
 
 fn store_write_ack<T: Config>(
 	write_ack_event: &ibc::core::ics04_channel::events::WriteAcknowledgement,
 ) {
+	// use ibc::core::ics04_channel::events::WriteAcknowledgement;
 	// store ack
 	let port_id = write_ack_event.packet.source_port.as_bytes().to_vec();
 	let channel_id = from_channel_id_to_vec(write_ack_event.packet.source_channel.clone());
 	let sequence = u64::from(write_ack_event.packet.sequence);
-	let write_ack = WriteAcknowledgement::from(write_ack_event.clone());
+	let write_ack = write_ack_event.encode_vec().unwrap();
+	// let _write_ack = WriteAcknowledgement::decode(&*write_ack).unwrap();
 	// store.Set((portID, channelID, sequence), WriteAckEvent)
-	<WriteAckPacketEvent<T>>::insert((port_id, channel_id, sequence), write_ack.encode());
+	<WriteAckPacketEvent<T>>::insert((port_id, channel_id, sequence), write_ack);
 }
 
 impl<T: Config> AssetIdAndNameProvider<T::AssetId> for Pallet<T> {

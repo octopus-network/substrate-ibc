@@ -307,13 +307,8 @@ impl<T: Config> From<RawIbcEvent> for Event<T> {
 				let height = value.height;
 				let packet = value.packet;
 				let ack = value.ack;
-				
-				let write_ack = WriteAcknowledgement {
-					height: height.into(),
-					packet: packet.into(),
-					ack,
-				};
-				Event::<T>::WriteAcknowledgement(write_ack)
+
+				Event::<T>::WriteAcknowledgement { height: height.into(), packet: packet.into(), ack }
 			},
 			RawIbcEvent::AcknowledgePacket(value) => {
 				let height = value.height;
