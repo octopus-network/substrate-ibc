@@ -575,8 +575,18 @@ pub mod pallet {
 					match ibc::core::ics26_routing::handler::deliver(&mut ctx, message.clone()) {
 						Ok(ibc::core::ics26_routing::handler::MsgReceipt { events, log: _log}) => {
 							log::trace!(target: LOG_TARGET, "deliver events  : {:?} ", events);
+							// deposit events about send packet event and ics20 transfer event
 							for event in events {
-								Self::deposit_event(event.clone().into());
+								match event {
+									IbcEvent::WriteAcknowledgement(ref write_ack) => {
+										store_write_ack::<T>(write_ack);
+										Self::deposit_event(event.clone().into());
+									}
+									_ => {
+										log::trace!(target: LOG_TARGET, "raw_transfer event : {:?} ", event);
+										Self::deposit_event(event.clone().into());
+									}
+								}
 							}
 						}
 						Err(error) => {
@@ -900,13 +910,15 @@ fn store_send_packet<T: Config>(send_packet_event: &ibc::core::ics04_channel::ev
 fn store_write_ack<T: Config>(
 	write_ack_event: &ibc::core::ics04_channel::events::WriteAcknowledgement,
 ) {
-	// use ibc::core::ics04_channel::events::WriteAcknowledgement;
 	// store ack
 	let port_id = write_ack_event.packet.source_port.as_bytes().to_vec();
+	log::info!("[store_write_ack] port_id = {}", write_ack_event.packet.source_port);
 	let channel_id = from_channel_id_to_vec(write_ack_event.packet.source_channel.clone());
+	log::info!("[store_write_ack] channel_id = {}",write_ack_event.packet.source_channel);
 	let sequence = u64::from(write_ack_event.packet.sequence);
+	log::info!("[store_write_ack] sequence = {}", write_ack_event.packet.sequence);
 	let write_ack = write_ack_event.encode_vec().unwrap();
-	// let _write_ack = WriteAcknowledgement::decode(&*write_ack).unwrap();
+
 	// store.Set((portID, channelID, sequence), WriteAckEvent)
 	<WriteAckPacketEvent<T>>::insert((port_id, channel_id, sequence), write_ack);
 }
