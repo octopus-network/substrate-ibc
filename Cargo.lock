@@ -1523,6 +1523,7 @@ dependencies = [
  "sp-tracing",
  "substrate-wasm-builder",
  "tendermint-proto",
+ "time 0.3.11",
 ]
 
 [[package]]

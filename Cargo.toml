@@ -48,6 +48,14 @@ tendermint-proto = { version = "=0.23.7", default-features = false }
 beefy-light-client = { git = "https://github.com/octopus-network/beefy-light-client.git", branch="main", default-features = false }
 # beefy-light-client = { path = "../beefy-light-client", default-features = false}
 
+[dependencies.time]
+version = "0.3"
+features = [
+	"macros",
+	"parsing",
+]
+default-features = false
+
 [dev-dependencies]
 hex = '0.4.0'
 sha2 = '0.10.2'
@@ -84,6 +92,7 @@ std = [
 	'serde/std',	
 	'flex-error/std',
 	'hex/std',
+	'time/std',
 ]
 runtime-benchmarks = ["frame-benchmarking"]
 try-runtime = ["frame-support/try-runtime"]
