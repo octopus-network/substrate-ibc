@@ -25,7 +25,7 @@ use ibc::{
 
 impl<T: Config> ConnectionReader for Context<T> {
 	fn connection_end(&self, conn_id: &ConnectionId) -> Result<ConnectionEnd, Ics03Error> {
-		trace!(target:"runtime::pallet-ibc","in connection : [connection_end]");
+		trace!(target:"runtime::pallet-ibc","in connection : [connection_end] conn_id:{:?}",conn_id);
 
 		if <Connections<T>>::contains_key(conn_id.as_bytes()) {
 			let data = <Connections<T>>::get(conn_id.as_bytes());
@@ -40,7 +40,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 	}
 
 	fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, Ics03Error> {
-		trace!(target:"runtime::pallet-ibc","in connection : [client_state]");
+		trace!(target:"runtime::pallet-ibc","in connection : [client_state] client_id:{:?}",client_id);
 
 		// ClientReader::client_state(self, client_id)
 		if <ClientStates<T>>::contains_key(client_id.as_bytes()) {
@@ -101,7 +101,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 		client_id: &ClientId,
 		height: Height,
 	) -> Result<AnyConsensusState, Ics03Error> {
-		trace!(target:"runtime::pallet-ibc","in connection : [client_consensus_state]");
+		trace!(target:"runtime::pallet-ibc","in connection : [client_consensus_state] client_id:{:?},heigh:{:?}",client_id,height);
 
 		// ClientReader::consensus_state(self, client_id, height)
 		let encode_height = height.clone().encode_vec().map_err(Ics03Error::invalid_encode)?;
@@ -127,7 +127,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 	}
 
 	fn host_consensus_state(&self, _height: Height) -> Result<AnyConsensusState, Ics03Error> {
-		trace!(target:"runtime::pallet-ibc","in connection : [host_consensus_state]");
+		trace!(target:"runtime::pallet-ibc","in connection : [host_consensus_state] _height:{:?}",_height);
 		// let result = AnyConsensusState::Grandpa(GPConsensusState::from(Header::default()));
 
 		// trace!(target:"runtime::pallet-ibc","in connection : [host_consensus_state] >> any_consensus_state = {:?}", result);
@@ -183,7 +183,7 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		connection_id: ConnectionId,
 		connection_end: &ConnectionEnd,
 	) -> Result<(), Ics03Error> {
-		trace!(target:"runtime::pallet-ibc","in connection : [store_connection]");
+		trace!(target:"runtime::pallet-ibc","in connection : [store_connection] connection_id:{:?}, connection_end:{:?}",connection_id,connection_end);
 
 		let data = connection_end.encode_vec().map_err(Ics03Error::invalid_encode)?;
 
@@ -207,7 +207,7 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		connection_id: ConnectionId,
 		client_id: &ClientId,
 	) -> Result<(), Ics03Error> {
-		trace!(target:"runtime::pallet-ibc","in connection : [store_connection_to_client]");
+		trace!(target:"runtime::pallet-ibc","in connection : [store_connection_to_client] connection_id:{:?}, client_id:{:?}",connection_id,client_id);
 
 		<ConnectionClient<T>>::insert(
 			client_id.as_bytes().to_vec(),
