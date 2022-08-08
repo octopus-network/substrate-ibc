@@ -363,11 +363,6 @@ impl<T: Config> ChannelReader for Context<T> {
 
 		//TODO: need to build a real consensus state from substrate chain
 		let cs = ibc::clients::ics10_grandpa::consensus_state::ConsensusState {
-			parent_hash: vec![0; 10],
-			block_number: current_height,
-			state_root: vec![0; 10],
-			extrinsics_root: vec![0; 10],
-			digest: vec![0; 10],
 			root: CommitmentRoot::from(vec![1, 2, 3]),
 			timestamp: ts,
 		};
@@ -399,11 +394,6 @@ impl<T: Config> ChannelReader for Context<T> {
 		//TODO: need to build a real consensus state from substrate chain
 
 		let cs = ibc::clients::ics10_grandpa::consensus_state::ConsensusState {
-			parent_hash: vec![0; 10],
-			block_number: current_height,
-			state_root: vec![0; 10],
-			extrinsics_root: vec![0; 10],
-			digest: vec![0; 10],
 			root: CommitmentRoot::from(vec![1, 2, 3]),
 			timestamp: ts,
 		};

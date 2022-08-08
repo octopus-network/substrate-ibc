@@ -1609,7 +1609,7 @@ pub mod pallet {
 						help::ValidatorSet::from(light_client.validator_set.clone());
 
 					// update block header
-					client_state.block_header = decode_received_mmr_root.block_header;
+					// client_state.block_header = decode_received_mmr_root.block_header;
 
 					// save to chain
 					let any_client_state = AnyClientState::Grandpa(client_state.clone());
@@ -1633,41 +1633,41 @@ pub mod pallet {
 						client_state
 					);
 
-					use ibc::{
-						clients::ics10_grandpa::consensus_state::ConsensusState as GPConsensusState,
-						core::ics02_client::client_consensus::AnyConsensusState,
-					};
+					// use ibc::{
+					// 	clients::ics10_grandpa::consensus_state::ConsensusState as GPConsensusState,
+					// 	core::ics02_client::client_consensus::AnyConsensusState,
+					// };
 
-					let mut consensus_state =
-						GPConsensusState::new(client_state.block_header.clone());
-					consensus_state.digest = client_state.latest_commitment.payload.clone();
-					let any_consensus_state = AnyConsensusState::Grandpa(consensus_state);
+					// let mut consensus_state =
+					// 	GPConsensusState::new(client_state.block_header.clone());
+					// consensus_state.digest = client_state.latest_commitment.payload.clone();
+					// let any_consensus_state = AnyConsensusState::Grandpa(consensus_state);
 
-					let height = ibc::Height {
-						revision_number: 0,
-						revision_height: client_state.block_number as u64,
-					};
+					// let height = ibc::Height {
+					// 	revision_number: 0,
+					// 	revision_height: client_state.block_number as u64,
+					// };
 
-					log::trace!(target: LOG_TARGET,"in ibc-lib : [store_consensus_state] >> client_id: {:?}, height = {:?}, consensus_state = {:?}", client_id, height, any_consensus_state);
+					// log::trace!(target: LOG_TARGET,"in ibc-lib : [store_consensus_state] >> client_id: {:?}, height = {:?}, consensus_state = {:?}", client_id, height, any_consensus_state);
 
-					let height = height.encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
-					let data =
-						any_consensus_state.encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
+					// let height = height.encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
+					// let data =
+					// 	any_consensus_state.encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
 
-					if <ConsensusStates<T>>::contains_key(client_id.clone()) {
-						// if consensus_state is no empty use push insert an exist
-						// ConsensusStates
-						let _ = <ConsensusStates<T>>::try_mutate(
-							client_id,
-							|val| -> Result<(), &'static str> {
-								val.push((height, data));
-								Ok(())
-							},
-						);
-					} else {
-						// if consensus state is empty insert a new item.
-						<ConsensusStates<T>>::insert(client_id, vec![(height, data)]);
-					}
+					// if <ConsensusStates<T>>::contains_key(client_id.clone()) {
+					// 	// if consensus_state is no empty use push insert an exist
+					// 	// ConsensusStates
+					// 	let _ = <ConsensusStates<T>>::try_mutate(
+					// 		client_id,
+					// 		|val| -> Result<(), &'static str> {
+					// 			val.push((height, data));
+					// 			Ok(())
+					// 		},
+					// 	);
+					// } else {
+					// 	// if consensus state is empty insert a new item.
+					// 	<ConsensusStates<T>>::insert(client_id, vec![(height, data)]);
+					// }
 
 					// emit update state sucesse event
 					let event_height = Height {
