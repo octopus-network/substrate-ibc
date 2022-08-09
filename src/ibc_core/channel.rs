@@ -335,7 +335,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		let time = T::TimeProvider::now();
 		let ts = Timestamp::from_nanoseconds(time.as_nanos() as u64)
 			.map_err(|e| panic!("{:?}, caused by {:?} from pallet timestamp_pallet", e, time));
-		log::trace!(target:"runtime::pallet-ibc","in channel: [host_timestamp] >> host_timestamp = {:?}", ts.clone().unwrap());
+		log::trace!(target:"runtime::pallet-ibc","in channel: [host_timestamp] >> host_timestamp = {:?}", ts.unwrap());
 
 		ts.unwrap()
 	}

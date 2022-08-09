@@ -58,7 +58,7 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 	where
 		Ctx: Ics20Context,
 	{
-		let ret = validate_transfer_channel_params(ctx, order, port_id, channel_id)?;
+		validate_transfer_channel_params(ctx, order, port_id, channel_id)?;
 
 		if version != Version::ics20() {
 			return Err(Ics20Error::invalid_version(version, Version::ics20()));
@@ -83,7 +83,7 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 	where
 		Ctx: Ics20Context,
 	{
-		let ret = validate_transfer_channel_params(ctx, order, port_id, channel_id)?;
+		validate_transfer_channel_params(ctx, order, port_id, channel_id)?;
 
 		if counterparty_version != Version::ics20() {
 			return Err(Ics20Error::invalid_version(counterparty_version, Version::ics20()));
@@ -197,6 +197,7 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 		let ack = serde_json::to_vec::<RawAcknowledgement>(&acknowledgement)
 			.map_err(|_| Ics20Error::invalid_serde_data())?;
 		trace!(target:  "runtime::pallet-ibc", "on_recv_packet impl --> serde json encode ack : {:?}", ack);
+
 
 		Ok(ack)
 	}
