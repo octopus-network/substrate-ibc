@@ -29,7 +29,7 @@ use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
 
 use flex_error::{define_error, DisplayOnly, TraceError};
-use ibc::core::ics04_channel::timeout::TimeoutHeight;
+use ibc::core::ics04_channel::timeout::TimeoutHeight as IbcTimeoutHeight;
 use tendermint_proto::Error as TendermintError;
 
 define_error! {
@@ -85,6 +85,12 @@ impl From<ChannelId> for IbcChannelId {
 		let value = String::from_utf8(value.0).expect("convert from utf8 Error");
 		Self::from_str(&value).expect("convert channel id from str Error")
 	}
+}
+
+#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
+pub enum TimeoutHeight {
+	Never,
+	At(Height),
 }
 
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
@@ -217,7 +223,7 @@ pub struct Packet {
 	pub destination_port: PortId,
 	pub destination_channel: ChannelId,
 	pub data: Vec<u8>,
-	pub timeout_height: Height,
+	pub timeout_height: TimeoutHeight,
 	pub timeout_timestamp: Timestamp,
 }
 
@@ -231,8 +237,9 @@ impl From<IbcPacket> for Packet {
 			destination_channel: val.destination_channel.into(),
 			data: val.data,
 			timeout_height: match val.timeout_height {
-				TimeoutHeight::Never => Height::new(REVISION_NUMBER, u64::MAX),
-				TimeoutHeight::At(value) => value.into(),
+				IbcTimeoutHeight::Never => TimeoutHeight::Never,
+				IbcTimeoutHeight::At(value) =>
+					TimeoutHeight::At(Height::new(value.revision_number(), value.revision_height())),
 			},
 			timeout_timestamp: val.timeout_timestamp.into(),
 		}
@@ -248,7 +255,11 @@ impl From<Packet> for IbcPacket {
 			destination_port: value.destination_port.into(),
 			destination_channel: value.destination_channel.into(),
 			data: value.data,
-			timeout_height: TimeoutHeight::At(value.timeout_height.into()),
+			timeout_height: match value.timeout_height {
+				TimeoutHeight::Never => IbcTimeoutHeight::Never,
+				TimeoutHeight::At(value) =>
+					IbcTimeoutHeight::At(IbcHeight::new(value.revision_number, value.revision_height).unwrap()),
+			},
 			timeout_timestamp: value.timeout_timestamp.into(),
 		}
 	}
