@@ -253,7 +253,6 @@ pub mod primitive {
 
 	#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 	pub struct MmrRoot {
-		pub block_header: Vec<u8>,
 		pub signed_commitment: Vec<u8>,
 		pub validator_merkle_proofs: Vec<Vec<u8>>,
 		pub mmr_leaf: Vec<u8>,
@@ -269,7 +268,6 @@ pub mod primitive {
 				.collect();
 
 			Self {
-				block_header: BlockHeader::encode(&val.block_header),
 				signed_commitment: SignedCommitment::encode(&val.signed_commitment),
 				validator_merkle_proofs: encode_validator_proofs,
 				mmr_leaf: val.mmr_leaf,
@@ -288,8 +286,6 @@ pub mod primitive {
 				})
 				.collect();
 			Ok(IbcMmrRoot {
-				block_header: BlockHeader::decode(&mut &self.block_header[..])
-					.map_err(Error::invalid_decode)?,
 				signed_commitment: SignedCommitment::decode(&mut &self.signed_commitment[..])
 					.map_err(Error::invalid_decode)?,
 				validator_merkle_proofs: decode_validator_proofs,
@@ -306,7 +302,7 @@ pub mod primitive {
 		pub block_number: u32,
 		/// Block height when the client was frozen due to a misbehaviour
 		pub frozen_height: Option<Height>,
-		pub block_header: Vec<u8>,
+		// pub block_header: Vec<u8>,
 		pub latest_commitment: Vec<u8>,
 		pub validator_set: Vec<u8>,
 	}
@@ -316,7 +312,6 @@ pub mod primitive {
 				chain_id: val.chain_id.as_str().as_bytes().to_vec(),
 				block_number: val.block_number,
 				frozen_height: val.frozen_height.map(|val| val.into()),
-				block_header: BlockHeader::encode(&val.block_header),
 				latest_commitment: Commitment::encode(&val.latest_commitment),
 				validator_set: ValidatorSet::encode(&val.validator_set),
 			}
@@ -331,8 +326,6 @@ pub mod primitive {
 				chain_id: IbcChainId::from_str(&chain_id_str).map_err(Error::invalid_chain_id)?,
 				block_number: self.block_number,
 				frozen_height: self.frozen_height.map(|value| value.to_ibc_height()),
-				block_header: BlockHeader::decode(&mut &self.block_header[..])
-					.map_err(Error::invalid_decode)?,
 				latest_commitment: Commitment::decode(&mut &self.latest_commitment[..])
 					.map_err(Error::invalid_decode)?,
 				validator_set: ValidatorSet::decode(&mut &self.validator_set[..])

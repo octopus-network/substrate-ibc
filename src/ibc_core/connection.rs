@@ -6,21 +6,26 @@ use log::{error, info, trace, warn};
 use ibc::{
 	clients::ics10_grandpa::{consensus_state::ConsensusState as GPConsensusState, header::Header},
 	core::{
-		ics02_client::{client_consensus::AnyConsensusState, client_state::AnyClientState},
+		ics02_client::{
+			client_consensus::AnyConsensusState, client_state::AnyClientState,
+			error::Error as Ics02Error,
+		},
 		ics03_connection::{
 			connection::ConnectionEnd,
 			context::{ConnectionKeeper, ConnectionReader},
 			error::Error as Ics03Error,
 		},
 		ics23_commitment::commitment::CommitmentPrefix,
+		ics23_commitment::commitment::CommitmentRoot,
 		ics24_host::identifier::{ClientId, ConnectionId},
 	},
+	timestamp::Timestamp,
 	Height,
 };
 
 impl<T: Config> ConnectionReader for Context<T> {
 	fn connection_end(&self, conn_id: &ConnectionId) -> Result<ConnectionEnd, Ics03Error> {
-		trace!(target:"runtime::pallet-ibc","in connection : [connection_end]");
+		trace!(target:"runtime::pallet-ibc","in connection : [connection_end] conn_id:{:?}",conn_id);
 
 		if <Connections<T>>::contains_key(conn_id.as_bytes()) {
 			let data = <Connections<T>>::get(conn_id.as_bytes());
@@ -35,7 +40,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 	}
 
 	fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, Ics03Error> {
-		trace!(target:"runtime::pallet-ibc","in connection : [client_state]");
+		trace!(target:"runtime::pallet-ibc","in connection : [client_state] client_id:{:?}",client_id);
 
 		// ClientReader::client_state(self, client_id)
 		if <ClientStates<T>>::contains_key(client_id.as_bytes()) {
@@ -96,32 +101,63 @@ impl<T: Config> ConnectionReader for Context<T> {
 		client_id: &ClientId,
 		height: Height,
 	) -> Result<AnyConsensusState, Ics03Error> {
-		trace!(target:"runtime::pallet-ibc","in connection : [client_consensus_state]");
+		trace!(target:"runtime::pallet-ibc","in connection : [client_consensus_state] client_id:{:?},heigh:{:?}",client_id,height);
 
 		// ClientReader::consensus_state(self, client_id, height)
-		let height = height.encode_vec().map_err(Ics03Error::invalid_encode)?;
+		let encode_height = height.clone().encode_vec().map_err(Ics03Error::invalid_encode)?;
 		let value = <ConsensusStates<T>>::get(client_id.as_bytes());
 
 		for item in value.iter() {
-			if item.0 == height {
+			if item.0 == encode_height {
 				let any_consensus_state =
 					AnyConsensusState::decode_vec(&*item.1).map_err(Ics03Error::invalid_decode)?;
-				return Ok(any_consensus_state)
+				trace!(target:"runtime::pallet-ibc",
+					"in connection : [client_consensus_state] consensus_state: {:?}",any_consensus_state
+				);
+
+				return Ok(any_consensus_state);
 			}
 		}
 
-		// Err(ICS03Error::missing_consensus_height())
-		Ok(AnyConsensusState::Grandpa(
-			ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
-		))
+		Err(Ics03Error::missing_consensus_height())
+		// Ok(AnyConsensusState::Grandpa(
+		// 	ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
+		// ))
+		// Ok()
 	}
 
 	fn host_consensus_state(&self, _height: Height) -> Result<AnyConsensusState, Ics03Error> {
-		trace!(target:"runtime::pallet-ibc","in connection : [host_consensus_state]");
-		let result = AnyConsensusState::Grandpa(GPConsensusState::from(Header::default()));
+		trace!(target:"runtime::pallet-ibc","in connection : [host_consensus_state] _height:{:?}",_height);
+		// let result = AnyConsensusState::Grandpa(GPConsensusState::from(Header::default()));
 
-		trace!(target:"runtime::pallet-ibc","in connection : [host_consensus_state] >> any_consensus_state = {:?}", result);
-		Ok(result)
+		// trace!(target:"runtime::pallet-ibc","in connection : [host_consensus_state] >> any_consensus_state = {:?}", result);
+		// Ok(result)
+		// get local chain timestamp
+		use frame_support::traits::UnixTime;
+		let time = T::TimeProvider::now();
+		let ts = Timestamp::from_nanoseconds(time.as_nanos() as u64)
+			.map_err(|e| panic!("{:?}, caused by {:?} from pallet timestamp_pallet", e, time));
+
+		let ts = ts.unwrap().into_tm_time().unwrap();
+		log::trace!(target:"runtime::pallet-ibc","in connection : [host_timestamp] >> host_timestamp = {:?}", ts);
+
+		let block_number = format!("{:?}", <frame_system::Pallet<T>>::block_number());
+		let current_height: u32 = block_number.parse().unwrap_or_default();
+
+		trace!(target:"runtime::pallet-ibc",
+			"in connection: [host_height] >> host_height = {:?}",current_height
+
+		);
+
+		//TODO: need to build a real consensus state from substrate chain
+
+		let cs = ibc::clients::ics10_grandpa::consensus_state::ConsensusState {
+	
+			root: CommitmentRoot::from(vec![1, 2, 3]),
+			timestamp: ts,
+		};
+		trace!(target:"runtime::pallet-ibc","in connection : [host_consensus_state] consensus_state = {:?}", cs);
+		Ok(AnyConsensusState::Grandpa(cs))
 	}
 }
 
@@ -143,7 +179,7 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		connection_id: ConnectionId,
 		connection_end: &ConnectionEnd,
 	) -> Result<(), Ics03Error> {
-		trace!(target:"runtime::pallet-ibc","in connection : [store_connection]");
+		trace!(target:"runtime::pallet-ibc","in connection : [store_connection] connection_id:{:?}, connection_end:{:?}",connection_id,connection_end);
 
 		let data = connection_end.encode_vec().map_err(Ics03Error::invalid_encode)?;
 
@@ -167,7 +203,7 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		connection_id: ConnectionId,
 		client_id: &ClientId,
 	) -> Result<(), Ics03Error> {
-		trace!(target:"runtime::pallet-ibc","in connection : [store_connection_to_client]");
+		trace!(target:"runtime::pallet-ibc","in connection : [store_connection_to_client] connection_id:{:?}, client_id:{:?}",connection_id,client_id);
 
 		<ConnectionClient<T>>::insert(
 			client_id.as_bytes().to_vec(),

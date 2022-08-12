@@ -11,7 +11,8 @@ use ibc::{
 	core::{
 		ics04_channel::{
 			channel::{Counterparty, Order},
-			msgs::acknowledgement_response::Acknowledgement,
+			// msgs::acknowledgement_response::Acknowledgement,
+			msgs::acknowledgement::{Acknowledgement, MsgAcknowledgement},
 			packet::Packet,
 			Version,
 		},
@@ -21,6 +22,8 @@ use ibc::{
 	},
 	signer::Signer,
 };
+use ibc_proto::ibc::core::channel::v1::acknowledgement::Response as RawResponse;
+use ibc_proto::ibc::core::channel::v1::Acknowledgement as RawAcknowledgement;
 use prost::Message;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -58,7 +61,7 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 		validate_transfer_channel_params(ctx, order, port_id, channel_id)?;
 
 		if version != Version::ics20() {
-			return Err(Ics20Error::invalid_version(version, Version::ics20()))
+			return Err(Ics20Error::invalid_version(version, Version::ics20()));
 		}
 
 		Ok(())
@@ -83,7 +86,7 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 		validate_transfer_channel_params(ctx, order, port_id, channel_id)?;
 
 		if counterparty_version != Version::ics20() {
-			return Err(Ics20Error::invalid_version(counterparty_version, Version::ics20()))
+			return Err(Ics20Error::invalid_version(counterparty_version, Version::ics20()));
 		}
 
 		Ok(Version::ics20())
@@ -102,7 +105,7 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 		Ctx: Ics20Context,
 	{
 		if counterparty_version != Version::ics20() {
-			return Err(Ics20Error::invalid_version(counterparty_version, Version::ics20()))
+			return Err(Ics20Error::invalid_version(counterparty_version, Version::ics20()));
 		}
 		Ok(())
 	}
@@ -161,30 +164,41 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 	where
 		Ctx: Ics20Context,
 	{
-		trace!(target:  "runtime::pallet-ibc", "on_recv_packet impl --> packet: {:?}", packet);
+		trace!(target:"runtime::pallet-ibc", "on_recv_packet impl --> packet: {:?}", packet);
 
 		// construct Acknowledgement
-		let mut acknowledgement = Acknowledgement::new_success(vec![1]);
-		trace!(target:  "runtime::pallet-ibc", "on_recv_packet impl --> init acknowledgement : {:?}", acknowledgement);
+		// let mut acknowledgement =
+		// 	RawAcknowledgement { response: Some(RawResponse::Result(vec![1])) };
+			let mut acknowledgement =
+			RawAcknowledgement { response: None};
+		trace!(target:"runtime::pallet-ibc", "on_recv_packet impl --> init acknowledgement : {:?}", acknowledgement);
 
-		// build FungibleTokenPacketData
-		let data: FungibleTokenPacketData = serde_json::from_slice(&packet.data)
-			.map_err(Ics20Error::invalid_serde_ibc_fungible_token_packet_data)?;
-		trace!(target:  "runtime::pallet-ibc", "on_recv_packet impl --> fungible token packet data: {:?}", data);
+		// decode FungibleTokenPacketData
+		match serde_json::from_slice(&packet.data) {
+			// only attempt the application logic if the packet data
+			// was successfully decoded
+			Ok(data) => {
+				trace!(target:"runtime::pallet-ibc", "on_recv_packet impl --> fungible token packet data: {:?}", data);
+				// attempt the application logic
+				let result = ics20_handler::handle_recv_packet::<Ctx, T>(ctx, packet, data);
+				trace!(target:  "runtime::pallet-ibc", "on_recv_packet impl --> handle_recv_packet result : {:?}", result);
 
-		// only attempt the application logic if the packet data
-		// was successfully decoded
-		if acknowledgement.success().map_err(Ics20Error::ics04_channel)? {
-			// handle recv packet
-			let result = ics20_handler::handle_recv_packet::<Ctx, T>(ctx, packet, data);
-			if let Err(err) = result {
-				acknowledgement =
-					Acknowledgement::new_error(format!("handle rev packet error: [{:?}]", err));
-				error!(target:  "runtime::pallet-ibc", "on_recv_packet impl --> handle recv packet error : {:?}", err);
-			}
-		}
+				if let Err(err) = result {
+					error!(target:  "runtime::pallet-ibc", "on_recv_packet impl --> handle recv packet error : {:?}", err);
+					acknowledgement.response = Some(RawResponse::Error(format!("{:?}", err)));
+				}
+			},
+			Err(error) => {
+				trace!(target:"runtime::pallet-ibc", "on_recv_packet impl --> serde json decode error: {:?}", error);
+				acknowledgement.response = Some(RawResponse::Error(error.to_string()));
+			},
+		};
 
-		let ack = acknowledgement.encode_vec().map_err(Ics20Error::invalid_encode)?;
+		let ack = serde_json::to_vec::<RawAcknowledgement>(&acknowledgement)
+			.map_err(|_| Ics20Error::invalid_serde_data())?;
+		trace!(target:  "runtime::pallet-ibc", "on_recv_packet impl --> serde json encode ack : {:?}", ack);
+
+
 		Ok(ack)
 	}
 
@@ -200,13 +214,17 @@ impl<T: Config> IBCModule for Ics20IBCModule<T> {
 	where
 		Ctx: Ics20Context,
 	{
-		let ack = Acknowledgement::decode(&mut &acknowledgement[..])
-			.map_err(Ics20Error::invalid_decode)?;
+		// let ack = Acknowledgement::decode(&mut &acknowledgement[..])
+		// 	.map_err(Ics20Error::invalid_decode)?;
+		let ack: RawAcknowledgement = serde_json::from_slice(&acknowledgement)
+			.map_err(|_| Ics20Error::invalid_serde_data())?;
+		trace!(target:"runtime::pallet-ibc", "on_acknowledgement_packet ack: {:?}", ack);
 
 		let data: FungibleTokenPacketData = serde_json::from_slice(&packet.data)
 			.map_err(Ics20Error::invalid_serde_ibc_fungible_token_packet_data)?;
+		trace!(target:"runtime::pallet-ibc", "on_acknowledgement_packet data: {:?}", data);
 
-		let ret = ics20_handler::handle_ack_packet::<Ctx, T>(ctx, packet, data, ack.into());
+		let ret = ics20_handler::handle_ack_packet::<Ctx, T>(ctx, packet, data, ack);
 
 		Ok(())
 	}
@@ -246,17 +264,17 @@ fn validate_transfer_channel_params<Ctx: Ics20Context>(
 	let channel_sequence = parse_channel_sequence(channel_id)?;
 
 	if channel_sequence > u32::MAX.into() {
-		return Err(Ics20Error::overflow_channel_sequence(channel_sequence, u32::MAX.into()))
+		return Err(Ics20Error::overflow_channel_sequence(channel_sequence, u32::MAX.into()));
 	}
 
 	if order != Order::Unordered {
-		return Err(Ics20Error::invalid_equal_order(Order::Unordered, order))
+		return Err(Ics20Error::invalid_equal_order(Order::Unordered, order));
 	}
 
 	// Require portID is the portID transfer module is bound to
 	let bound_port = ctx.get_port()?;
 	if bound_port != port_id {
-		return Err(Ics20Error::invalid_equal_port_id(bound_port, port_id))
+		return Err(Ics20Error::invalid_equal_port_id(bound_port, port_id));
 	}
 
 	Ok(())

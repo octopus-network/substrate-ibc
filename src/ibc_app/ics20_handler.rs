@@ -1,6 +1,7 @@
 use crate::*;
 
 use crate::alloc::string::ToString;
+use hex::FromHex;
 use log::{error, info, trace, warn};
 
 use frame_support::{
@@ -66,8 +67,12 @@ fn receiver_chain_is_source(
 	denom: &str,
 ) -> bool {
 	let voucher_prefix = get_denom_prefix(source_port, source_channel);
+	trace!(target:"runtime::pallet-ibc","🤮ics20_handle receiver_chain_is_source voucher_prefix = {:?}", voucher_prefix);
 
-	denom.starts_with(voucher_prefix.as_str())
+	let result = denom.starts_with(voucher_prefix.as_str());
+	trace!(target:"runtime::pallet-ibc","🤮ics20_handle receiver_chain_is_source bool = {:?}", result);
+
+	return result;
 }
 
 fn get_denom_prefix(port_id: &IbcPortId, channel_id: &IbcChannelId) -> String {
@@ -132,11 +137,25 @@ where
 	trace!(target:"runtime::pallet-ibc","🤮ics20_handle handle_transfer source_port = {:?}", source_port);
 
 	// convert IBC FungibleTokenPacketData to substrate FungibleTokenPacketData
-	let pallet_data: FungibleTokenPacketData<T> = packet_data.into();
+	// let pallet_data: FungibleTokenPacketData<T> = packet_data.into();
+	let sender_hex = <Vec<u8>>::from_hex(packet_data.sender.as_str()).unwrap();
+	log::trace!(target:"runtime::pallet-ibc","ics20_handle handle_transfer sender is {:?}", sender_hex);
+	// let receiver_hex = <Vec<u8>>::from_hex(value.receiver.as_str()).unwrap();
+	// log::trace!(target:"runtime::pallet-ibc","from IBCFungibleTokenPacketData into  FungibleTokenPacketData, receiver is {:?}", receiver_hex);
+	let denom = packet_data.denom.as_bytes().to_vec();
+	log::trace!(target:"runtime::pallet-ibc","fics20_handle handle_transfer, denom is {:?}", denom);
+	let amount = packet_data.amount.parse::<u128>().unwrap_or_default();
+	log::trace!(target:"runtime::pallet-ibc","ics20_handle handle_transfer, amount is {:?}", amount);
+	let sender = T::AccountId::decode(&mut sender_hex.as_ref()).unwrap();
+	log::trace!(target:"runtime::pallet-ibc","ics20_handle handle_transfer, sender is {:?}", sender);
+	// let receiver = T::AccountId::decode(&mut receiver_hex.as_ref()).unwrap();
+	// log::trace!(target:"runtime::pallet-ibc","from IBCFungibleTokenPacketData into  FungibleTokenPacketData, sender is {:?}", receiver);
 
-	let denomination = pallet_data.denomination.clone();
+	// let denomination = pallet_data.denomination.clone();
+	let denomination = denom.clone();
 	// NOTE: denomination and hex hash correctness checked during msg.ValidateBasic
-	let mut full_denom_path = String::from_utf8(pallet_data.denomination).unwrap();
+	// let mut full_denom_path = String::from_utf8(pallet_data.denomination).unwrap();
+	let mut full_denom_path = String::from_utf8(denom).unwrap();
 	trace!(target:"runtime::pallet-ibc","🤮ics20_handle handle_transfer full_denom_path = {:?}", full_denom_path);
 
 	// deconstruct the token denomination into the denomination trace info
@@ -146,11 +165,11 @@ where
 			.map_err(|_| Error::<T>::GetIbcDenomError)?;
 	}
 
-	let amount = pallet_data.amount;
-	trace!(target:"runtime::pallet-ibc","🤮ics20_handle handle_transfer amount = {:?}", amount);
+	// let amount = pallet_data.amount;
+	// trace!(target:"runtime::pallet-ibc","🤮ics20_handle handle_transfer amount = {:?}", amount);
 
-	let sender = pallet_data.sender;
-	trace!(target:"runtime::pallet-ibc","🤮ics20_handle handle_transfer sendr = {:?}", sender);
+	// let sender = pallet_data.sender;
+	// trace!(target:"runtime::pallet-ibc","🤮ics20_handle handle_transfer sendr = {:?}", sender);
 
 	if sender_chain_is_source(&source_port, &source_channel, &full_denom_path) {
 		// todo this different with ibc-go
@@ -206,7 +225,7 @@ where
 		let amount = amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
 		trace!(target:"runtime::pallet-ibc","🤮ics20_handle handle_transfer amount = {:?}", amount);
 
-		// get assert id buy denomination
+		// get assert id by denomination
 		if let Ok(token_id) = T::AssetIdByName::try_get_asset_id(denomination) {
 			trace!(target:"runtime::pallet-ibc","🤮ics20_handle handle_transfer token_id = {:?}", token_id);
 
@@ -262,7 +281,20 @@ where
 	}
 
 	if receiver_chain_is_source(&packet.source_port, &packet.source_channel, &full_denom_path) {
-		let pallet_data: FungibleTokenPacketData<T> = data.into();
+		trace!(target:"runtime::pallet-ibc","🤮ics20_handle receiver chain is the source, escrow tokens");
+		// let pallet_data: FungibleTokenPacketData<T> = data.into();
+		// let sender_hex = <Vec<u8>>::from_hex(data.sender.as_str()).unwrap();
+		// log::trace!(target:"runtime::pallet-ibc","from IBCFungibleTokenPacketData into  FungibleTokenPacketData, sender is {:?}", sender_hex);
+		let receiver_hex = <Vec<u8>>::from_hex(data.receiver.as_str()).unwrap();
+		log::trace!(target:"runtime::pallet-ibc","ics20_handle handle_recv_packet, receiver is {:?}", receiver_hex);
+		let denom = data.denom.as_bytes().to_vec();
+		log::trace!(target:"runtime::pallet-ibc","ics20_handle handle_recv_packet, denom is {:?}", denom);
+		let amount = data.amount.parse::<u128>().unwrap_or_default();
+		log::trace!(target:"runtime::pallet-ibc","ics20_handle handle_recv_packet, amount is {:?}", amount);
+		// let sender = T::AccountId::decode(&mut sender_hex.as_ref()).unwrap();
+		// log::trace!(target:"runtime::pallet-ibc","from IBCFungibleTokenPacketData into  FungibleTokenPacketData, sender is {:?}", sender);
+		let receiver = T::AccountId::decode(&mut receiver_hex.as_ref()).unwrap();
+		log::trace!(target:"runtime::pallet-ibc","ics20_handle handle_recv_packet, sender is {:?}", receiver);
 
 		// create escrow account by source_prot, and source channel
 		let escrow_account = generate_escrow_account::<T>(packet.source_channel)?;
@@ -274,33 +306,51 @@ where
 			escrow_account.clone(),
 		);
 
-		let amount = pallet_data.amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
+		// let amount = pallet_data.amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
+		// trace!(target:"runtime::pallet-ibc","🤮ics20_handle handle_recv_packet amount = {:?}", amount);
+		let amount = amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
 		trace!(target:"runtime::pallet-ibc","🤮ics20_handle handle_recv_packet amount = {:?}", amount);
 
-		let result =
-			T::Currency::transfer(&escrow_account, &pallet_data.receiver, amount, AllowDeath);
+		// let result =
+		// 	T::Currency::transfer(&escrow_account, &pallet_data.receiver, amount, AllowDeath);
+		let result = T::Currency::transfer(&escrow_account, &receiver, amount, AllowDeath);
+
 		match result {
 			Ok(_) => {},
-			Err(_err) =>
+			Err(_err) => {
 				ack = FungibleTokenPacketAcknowledgement::Err(FungibleTokenPacketError {
 					error: "transfer coin failed".to_string(),
-				}),
+				})
+			},
 		}
 
-		Pallet::<T>::deposit_event(Event::<T>::UnEscrowToken(
-			escrow_account,
-			pallet_data.receiver,
-			amount,
-		));
+		Pallet::<T>::deposit_event(Event::<T>::UnEscrowToken(escrow_account, receiver, amount));
 
 		info!("🔥🔥🔥🔥🔥ics20_handle handle_recv_packet: unescrow tokens to receiver (assumed to fail if balance insufficient), success!!");
 	} else {
 		// sender chain is the source, mint vouchers
-		let pallet_data: FungibleTokenPacketData<T> = data.into();
+		trace!(target:"runtime::pallet-ibc","🤮ics20_handle sender chain is the source, mint vouchers");
+		trace!(target:"runtime::pallet-ibc","🤮ics20_handle sender data is {:?}", data);
 
-		let denomination = pallet_data.denomination.clone();
+		// let pallet_data: FungibleTokenPacketData<T> = data.into();
+		// trace!(target:"runtime::pallet-ibc","🤮ics20_handle handle_recv_packet amount = {}", data.amount);
+		// let sender_hex = <Vec<u8>>::from_hex(data.sender.as_str()).unwrap();
+		// log::trace!(target:"runtime::pallet-ibc","ics20_handle handle_recv_packet, sender is {:?}", sender_hex);
+		let receiver_hex = <Vec<u8>>::from_hex(data.receiver.as_str()).unwrap();
+		log::trace!(target:"runtime::pallet-ibc","ics20_handle handle_recv_packet, receiver is {:?}", receiver_hex);
+		let denom = data.denom.as_bytes().to_vec();
+		log::trace!(target:"runtime::pallet-ibc","ics20_handle handle_recv_packet, denom is {:?}", denom);
+		let amount = data.amount.parse::<u128>().unwrap_or_default();
+		log::trace!(target:"runtime::pallet-ibc","ics20_handle handle_recv_packet, amount is {:?}", amount);
+		// let sender = T::AccountId::decode(&mut sender_hex.as_ref()).unwrap();
+		// log::trace!(target:"runtime::pallet-ibc","from IBCFungibleTokenPacketData into  FungibleTokenPacketData, sender is {:?}", sender);
+		let receiver = T::AccountId::decode(&mut receiver_hex.as_ref()).unwrap();
+		log::trace!(target:"runtime::pallet-ibc","ics20_handle handle_recv_packet, sender is {:?}", receiver);
 
-		let str_denomination = String::from_utf8(pallet_data.denomination).unwrap();
+		// let denomination = pallet_data.denomination.clone();
+		let denomination = denom.clone();
+		// let str_denomination = String::from_utf8(pallet_data.denomination).unwrap();
+		let str_denomination = String::from_utf8(denom).unwrap();
 		trace!(target:"runtime::pallet-ibc","🤮ics20_handle handle_recv_packet str_denomination = {:?}", str_denomination);
 
 		// since SendPacket did not prefix the denomination, we must prefix denomination here
@@ -323,9 +373,10 @@ where
 			trace!(target:"runtime::pallet-ibc","🤮ics20_handle handle_recv_packet set denom trace");
 		}
 
-		let receiver = pallet_data.receiver;
+		// let receiver = pallet_data.receiver;
 
-		let amount = pallet_data.amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
+		// let amount = pallet_data.amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
+		let amount = amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
 		trace!(target:"runtime::pallet-ibc","🤮ics20_handle handle_recv_packet amount = {:?}", amount);
 
 		if let Ok(token_id) = T::AssetIdByName::try_get_asset_id(denomination) {
@@ -370,7 +421,7 @@ pub fn handle_timeout_packet<Ctx, T: Config>(
 where
 	Ctx: Ics20Context,
 {
-	trace!(target:"runtime::pallet-ibc","in ics20_handler : handle timeout packet !");
+	trace!(target:"runtime::pallet-ibc","in ics20_handler  handle_timeout_packet!");
 
 	refund_packet_token::<Ctx, T>(ctx, packet, data)
 }
@@ -390,7 +441,9 @@ pub fn handle_ack_packet<Ctx, T: Config>(
 where
 	Ctx: Ics20Context,
 {
+	trace!(target:"runtime::pallet-ibc","in ics20_handler  handle_ack_packet!");
 	let response = acknowledgement.response.ok_or(Error::<T>::AcknowledgementResponseEmpty)?;
+	trace!(target:"runtime::pallet-ibc","n ics20_handler : handle_ack_packet response is {:?}",response);
 
 	match response {
 		Response::Error(e) => {
@@ -415,9 +468,24 @@ fn refund_packet_token<Ctx, T: Config>(
 where
 	Ctx: Ics20Context,
 {
-	let pallet_data: FungibleTokenPacketData<T> = data.into();
-	let denomination = pallet_data.denomination.clone();
-	let str_denomination = String::from_utf8(pallet_data.denomination).unwrap();
+	// let pallet_data: FungibleTokenPacketData<T> = data.into();
+	let sender_hex = <Vec<u8>>::from_hex(data.sender.as_str()).unwrap();
+	log::trace!(target:"runtime::pallet-ibc","ics20_handle refund_packet_token, sender is {:?}", sender_hex);
+	// let receiver_hex = <Vec<u8>>::from_hex(data.receiver.as_str()).unwrap();
+	// log::trace!(target:"runtime::pallet-ibc","from IBCFungibleTokenPacketData into  FungibleTokenPacketData, receiver is {:?}", receiver_hex);
+	let denom = data.denom.as_bytes().to_vec();
+	log::trace!(target:"runtime::pallet-ibc","ics20_handle refund_packet_token, denom is {:?}", denom);
+	let amount = data.amount.parse::<u128>().unwrap_or_default();
+	log::trace!(target:"runtime::pallet-ibc","ics20_handle refund_packet_token, amount is {:?}", amount);
+	let sender = T::AccountId::decode(&mut sender_hex.as_ref()).unwrap();
+	log::trace!(target:"runtime::pallet-ibc","ics20_handle refund_packet_token, sender is {:?}", sender);
+	// let receiver = T::AccountId::decode(&mut receiver_hex.as_ref()).unwrap();
+	// log::trace!(target:"runtime::pallet-ibc","from IBCFungibleTokenPacketData into  FungibleTokenPacketData, sender is {:?}", receiver);
+
+	// let denomination = pallet_data.denomination.clone();
+	let denomination = denom.clone();
+	// let str_denomination = String::from_utf8(pallet_data.denomination).unwrap();
+	let str_denomination = String::from_utf8(denom).unwrap();
 	trace!(target:"runtime::pallet-ibc","🤮ics20_handle refund_packet_token str_denomination = {:?}", str_denomination);
 
 	let source_port = packet.source_port;
@@ -448,16 +516,14 @@ where
 			escrow_account.clone(),
 		);
 
-		let amount = pallet_data.amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
+		// let amount = pallet_data.amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
+		let amount = amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
 		trace!(target:"runtime::pallet-ibc","🤮ics20_handle refund_packet_token amount = {:?}", amount);
 
-		T::Currency::transfer(&escrow_account, &pallet_data.sender, amount, AllowDeath)?;
+		// T::Currency::transfer(&escrow_account, &pallet_data.sender, amount, AllowDeath)?;
+		T::Currency::transfer(&escrow_account, &sender, amount, AllowDeath)?;
 
-		Pallet::<T>::deposit_event(Event::<T>::UnEscrowToken(
-			escrow_account,
-			pallet_data.sender,
-			amount,
-		));
+		Pallet::<T>::deposit_event(Event::<T>::UnEscrowToken(escrow_account, sender, amount));
 
 		trace!("🔥🔥🔥🔥🔥ics20_handle refund_packet_token transfer successful!!");
 	} else {
@@ -469,7 +535,8 @@ where
 		let denomination = full_denom_path[prefix.len()..].as_bytes().to_vec();
 		trace!(target:"runtime::pallet-ibc","🤮ics20_handle refund_packet_token denomination = {:?}", denomination);
 
-		let amount = pallet_data.amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
+		// let amount = pallet_data.amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
+		let amount = amount.checked_into().ok_or(Error::<T>::AmountOverflow)?;
 		trace!(target:"runtime::pallet-ibc","🤮ics20_handle refund_packet_token amount = {:?}", amount);
 
 		if let Ok(token_id) = T::AssetIdByName::try_get_asset_id(denomination) {
@@ -480,17 +547,9 @@ where
 			let token_name = String::from_utf8(token_name).unwrap();
 			trace!(target:"runtime::pallet-ibc","🤮ics20_handle refund_packet_token token_name = {:?}", token_name);
 
-			<T::Assets as fungibles::Mutate<T::AccountId>>::mint_into(
-				token_id,
-				&pallet_data.receiver,
-				amount,
-			)?;
+			<T::Assets as fungibles::Mutate<T::AccountId>>::mint_into(token_id, &sender, amount)?;
 
-			Pallet::<T>::deposit_event(Event::<T>::MintToken(
-				token_id,
-				pallet_data.receiver,
-				amount,
-			));
+			Pallet::<T>::deposit_event(Event::<T>::MintToken(token_id, sender, amount));
 
 			info!("🔥🔥🔥🔥🔥ics20_refund_packet_token mint_into successful!!");
 		} else {
