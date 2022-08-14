@@ -299,7 +299,7 @@ pub mod primitive {
 	pub struct ClientState {
 		pub chain_id: Vec<u8>,
 		/// block_number is height?
-		pub block_number: u32,
+		pub latest_height: u32,
 		/// Block height when the client was frozen due to a misbehaviour
 		pub frozen_height: Option<Height>,
 		// pub block_header: Vec<u8>,
@@ -310,7 +310,7 @@ pub mod primitive {
 		fn from(val: IbcClientState) -> Self {
 			Self {
 				chain_id: val.chain_id.as_str().as_bytes().to_vec(),
-				block_number: val.block_number,
+				latest_height: val.latest_height,
 				frozen_height: val.frozen_height.map(|val| val.into()),
 				latest_commitment: Commitment::encode(&val.latest_commitment),
 				validator_set: ValidatorSet::encode(&val.validator_set),
@@ -324,7 +324,7 @@ pub mod primitive {
 				String::from_utf8(self.chain_id).map_err(Error::invalid_from_utf8)?;
 			Ok(IbcClientState {
 				chain_id: IbcChainId::from_str(&chain_id_str).map_err(Error::invalid_chain_id)?,
-				block_number: self.block_number,
+				latest_height: self.latest_height,
 				frozen_height: self.frozen_height.map(|value| value.to_ibc_height()),
 				latest_commitment: Commitment::decode(&mut &self.latest_commitment[..])
 					.map_err(Error::invalid_decode)?,
