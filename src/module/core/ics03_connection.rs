@@ -9,6 +9,8 @@ use ibc::{
 		ics02_client::{
 			client_consensus::AnyConsensusState, client_state::AnyClientState,
 			context::ClientReader,
+			error::Error as Ics02Error,
+
 		},
 		ics03_connection::{
 			connection::ConnectionEnd,
@@ -20,13 +22,15 @@ use ibc::{
 			identifier::{ClientId, ConnectionId},
 			path::{ClientConnectionsPath, ConnectionsPath},
 		},
+		ics23_commitment::commitment::CommitmentRoot,
 	},
+	timestamp::Timestamp,
 	Height,
 };
 
 impl<T: Config> ConnectionReader for Context<T> {
 	fn connection_end(&self, conn_id: &ConnectionId) -> Result<ConnectionEnd, Ics03Error> {
-		trace!(target:"runtime::pallet-ibc","in connection : [connection_end]");
+		trace!(target:"runtime::pallet-ibc","in connection : [connection_end] conn_id:{:?}",conn_id);
 
 		let connections_path = ConnectionsPath(conn_id.clone()).to_string().as_bytes().to_vec();
 
@@ -43,7 +47,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 	}
 
 	fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, Ics03Error> {
-		trace!(target:"runtime::pallet-ibc","in connection : [client_state]");
+		trace!(target:"runtime::pallet-ibc","in connection : [client_state] client_id:{:?}",client_id);
 
 		ClientReader::client_state(self, client_id).map_err(Ics03Error::ics02_client)
 	}
@@ -86,7 +90,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 		client_id: &ClientId,
 		height: Height,
 	) -> Result<AnyConsensusState, Ics03Error> {
-		trace!(target:"runtime::pallet-ibc","in connection : [client_consensus_state]");
+		trace!(target:"runtime::pallet-ibc","in connection : [client_consensus_state] client_id:{:?},heigh:{:?}",client_id,height);
 
 		let ret = ClientReader::consensus_state(self, client_id, height)
 			.map_err(Ics03Error::ics02_client);
@@ -99,14 +103,41 @@ impl<T: Config> ConnectionReader for Context<T> {
 		} else {
 			Ok(ret.unwrap())
 		}
+
 	}
 
 	fn host_consensus_state(&self, _height: Height) -> Result<AnyConsensusState, Ics03Error> {
-		trace!(target:"runtime::pallet-ibc","in connection : [host_consensus_state]");
-		let result = AnyConsensusState::Grandpa(GPConsensusState::from(Header::default()));
+		trace!(target:"runtime::pallet-ibc","in connection : [host_consensus_state] _height:{:?}",_height);
+		// let result = AnyConsensusState::Grandpa(GPConsensusState::from(Header::default()));
 
-		trace!(target:"runtime::pallet-ibc","in connection : [host_consensus_state] >> any_consensus_state = {:?}", result);
-		Ok(result)
+		// trace!(target:"runtime::pallet-ibc","in connection : [host_consensus_state] >> any_consensus_state = {:?}", result);
+		// Ok(result)
+		// get local chain timestamp
+		use frame_support::traits::UnixTime;
+		let time = T::TimeProvider::now();
+		let ts = Timestamp::from_nanoseconds(time.as_nanos() as u64)
+			.map_err(|e| panic!("{:?}, caused by {:?} from pallet timestamp_pallet", e, time));
+
+		let ts = ts.unwrap().into_tm_time().unwrap();
+		log::trace!(target:"runtime::pallet-ibc","in connection : [host_timestamp] >> host_timestamp = {:?}", ts);
+
+		let block_number = format!("{:?}", <frame_system::Pallet<T>>::block_number());
+		let current_height: u32 = block_number.parse().unwrap_or_default();
+
+		trace!(target:"runtime::pallet-ibc",
+			"in connection: [host_height] >> host_height = {:?}",current_height
+
+		);
+
+		//TODO: need to build a real consensus state from substrate chain
+
+		let cs = ibc::clients::ics10_grandpa::consensus_state::ConsensusState {
+	
+			root: CommitmentRoot::from(vec![1, 2, 3]),
+			timestamp: ts,
+		};
+		trace!(target:"runtime::pallet-ibc","in connection : [host_consensus_state] consensus_state = {:?}", cs);
+		Ok(AnyConsensusState::Grandpa(cs))
 	}
 
 	fn connection_counter(&self) -> Result<u64, Ics03Error> {
@@ -124,7 +155,7 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		connection_id: ConnectionId,
 		connection_end: &ConnectionEnd,
 	) -> Result<(), Ics03Error> {
-		trace!(target:"runtime::pallet-ibc","in connection : [store_connection]");
+		trace!(target:"runtime::pallet-ibc","in connection : [store_connection] connection_id:{:?}, connection_end:{:?}",connection_id,connection_end);
 
 		let connections_path =
 			ConnectionsPath(connection_id.clone()).to_string().as_bytes().to_vec();
@@ -141,7 +172,7 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		connection_id: ConnectionId,
 		client_id: &ClientId,
 	) -> Result<(), Ics03Error> {
-		trace!(target:"runtime::pallet-ibc","in connection : [store_connection_to_client]");
+		trace!(target:"runtime::pallet-ibc","in connection : [store_connection_to_client] connection_id:{:?}, client_id:{:?}",connection_id,client_id);
 
 		let client_connection_paths =
 			ClientConnectionsPath(client_id.clone()).to_string().as_bytes().to_vec();

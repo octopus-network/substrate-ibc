@@ -54,10 +54,11 @@ use ibc::{
 	},
 	core::{
 		ics02_client::{client_state::AnyClientState, height},
-		ics04_channel::timeout::TimeoutHeight,
 		ics24_host::identifier::{self, ChainId as ICS24ChainId, ChannelId as IbcChannelId},
+		ics26_routing::handler,
 		ics26_routing::msgs::Ics26Envelope,
 	},
+	events::IbcEvent,
 	timestamp,
 	tx_msg::Msg,
 };
@@ -363,7 +364,6 @@ pub mod pallet {
 			}
 		}
 	}
-
 	/// Substrate IBC event list
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -568,8 +568,6 @@ pub mod pallet {
 					})
 					.collect();
 
-				log::trace!(target: LOG_TARGET, "received deliver : {:?} ", messages.iter().map(|message| message.type_url.clone()).collect::<Vec<_>>());
-
 				for (_, message) in messages.clone().into_iter().enumerate() {
 
 					match ibc::core::ics26_routing::handler::deliver(&mut ctx, message.clone()) {
@@ -739,7 +737,7 @@ pub mod pallet {
 					client_id_str
 				);
 
-				return Err(Error::<T>::ClientIdNotFound.into())
+				return Err(Error::<T>::ClientIdNotFound.into());
 			} else {
 				// get client state from chain storage
 				let data = <ClientStates<T>>::get(client_state_path.clone());
@@ -818,7 +816,7 @@ pub mod pallet {
 						help::ValidatorSet::from(light_client.validator_set.clone());
 
 					// update block header
-					client_state.block_header = decode_received_mmr_root.block_header;
+					// client_state.block_header = decode_received_mmr_root.block_header;
 
 					// save to chain
 					let any_client_state = AnyClientState::Grandpa(client_state.clone());
@@ -880,7 +878,7 @@ pub mod pallet {
 						e
 					);
 
-					return Err(Error::<T>::UpdateBeefyLightClientFailure.into())
+					return Err(Error::<T>::UpdateBeefyLightClientFailure.into());
 				},
 			}
 
