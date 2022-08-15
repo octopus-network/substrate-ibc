@@ -15,8 +15,7 @@ use ibc::{
 			context::{ConnectionKeeper, ConnectionReader},
 			error::Error as Ics03Error,
 		},
-		ics23_commitment::commitment::CommitmentPrefix,
-		ics23_commitment::commitment::CommitmentRoot,
+		ics23_commitment::commitment::{CommitmentPrefix, CommitmentRoot},
 		ics24_host::identifier::{ClientId, ConnectionId},
 	},
 	timestamp::Timestamp,
@@ -115,7 +114,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 					"in connection : [client_consensus_state] consensus_state: {:?}",any_consensus_state
 				);
 
-				return Ok(any_consensus_state);
+				return Ok(any_consensus_state)
 			}
 		}
 
@@ -130,8 +129,8 @@ impl<T: Config> ConnectionReader for Context<T> {
 		trace!(target:"runtime::pallet-ibc","in connection : [host_consensus_state] _height:{:?}",_height);
 		// let result = AnyConsensusState::Grandpa(GPConsensusState::from(Header::default()));
 
-		// trace!(target:"runtime::pallet-ibc","in connection : [host_consensus_state] >> any_consensus_state = {:?}", result);
-		// Ok(result)
+		// trace!(target:"runtime::pallet-ibc","in connection : [host_consensus_state] >>
+		// any_consensus_state = {:?}", result); Ok(result)
 		// get local chain timestamp
 		use frame_support::traits::UnixTime;
 		let time = T::TimeProvider::now();
@@ -152,8 +151,8 @@ impl<T: Config> ConnectionReader for Context<T> {
 		//TODO: need to build a real consensus state from substrate chain
 
 		let cs = ibc::clients::ics10_grandpa::consensus_state::ConsensusState {
-	
-			root: CommitmentRoot::from(vec![1, 2, 3]),
+			commitment: Commitment::default(),
+			state_root: CommitmentRoot::from(vec![1, 2, 3]),
 			timestamp: ts,
 		};
 		trace!(target:"runtime::pallet-ibc","in connection : [host_consensus_state] consensus_state = {:?}", cs);
