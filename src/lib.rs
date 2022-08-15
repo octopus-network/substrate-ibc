@@ -55,8 +55,7 @@ use ibc::{
 	core::{
 		ics02_client::{client_state::AnyClientState, height},
 		ics24_host::identifier::{self, ChainId as ICS24ChainId, ChannelId as IbcChannelId},
-		ics26_routing::handler,
-		ics26_routing::msgs::Ics26Envelope,
+		ics26_routing::{handler, msgs::Ics26Envelope},
 	},
 	events::IbcEvent,
 	timestamp,
@@ -737,7 +736,7 @@ pub mod pallet {
 					client_id_str
 				);
 
-				return Err(Error::<T>::ClientIdNotFound.into());
+				return Err(Error::<T>::ClientIdNotFound.into())
 			} else {
 				// get client state from chain storage
 				let data = <ClientStates<T>>::get(client_state_path.clone());
@@ -808,7 +807,7 @@ pub mod pallet {
 					// update client_client block number and latest commitment
 					let latest_commitment =
 						light_client.latest_commitment.ok_or(Error::<T>::EmptyLatestCommitment)?;
-					client_state.block_number = latest_commitment.block_number;
+					client_state.latest_height = latest_commitment.block_number;
 					client_state.latest_commitment = help::Commitment::from(latest_commitment);
 
 					// update validator_set
@@ -860,10 +859,11 @@ pub mod pallet {
 					// if consensus state is empty insert a new item.
 					<ConsensusStates<T>>::insert(client_consensus_state_path, data);
 
+
 					// emit update state success event
 					let event_height = Height {
 						revision_number: 0,
-						revision_height: client_state.block_number as u64,
+						revision_height: client_state.latest_height as u64,
 					};
 					let event_client_state = EventClientState::from(client_state);
 					Self::deposit_event(Event::<T>::UpdateClientState(
@@ -878,7 +878,7 @@ pub mod pallet {
 						e
 					);
 
-					return Err(Error::<T>::UpdateBeefyLightClientFailure.into());
+					return Err(Error::<T>::UpdateBeefyLightClientFailure.into())
 				},
 			}
 
