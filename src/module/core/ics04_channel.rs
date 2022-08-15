@@ -499,6 +499,10 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		.as_bytes()
 		.to_vec();
 
+		let receipt = match receipt {
+			Receipt::Ok => "Ok".as_bytes().to_vec(),
+		};
+		
 		<PacketReceipt<T>>::insert(packet_receipt_path, receipt);
 
 		Ok(())

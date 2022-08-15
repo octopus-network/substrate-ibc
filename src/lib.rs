@@ -830,36 +830,6 @@ pub mod pallet {
 						client_state
 					);
 
-					let mut consensus_state =
-						GPConsensusState::new(client_state.block_header.clone());
-					consensus_state.digest = client_state
-						.latest_commitment
-						.payload
-						.get_raw(&MMR_ROOT_ID)
-						.map(|value| value.clone())
-						.unwrap_or_default();
-
-					let any_consensus_state = AnyConsensusState::Grandpa(consensus_state);
-
-					log::trace!(target: LOG_TARGET,"in ibc-lib : [store_consensus_state] >> client_id: {:?}, consensus_state = {:?}", client_id,  any_consensus_state);
-
-					// store key
-					let client_consensus_state_path = ClientConsensusStatePath {
-						client_id: ibc_client_id.clone(),
-						epoch: 8888,
-						height: client_state.block_number as u64,
-					}
-					.to_string()
-					.as_bytes()
-					.to_vec();
-					// store value
-					let data =
-						any_consensus_state.encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
-
-					// if consensus state is empty insert a new item.
-					<ConsensusStates<T>>::insert(client_consensus_state_path, data);
-
-
 					// emit update state success event
 					let event_height = Height {
 						revision_number: 0,
