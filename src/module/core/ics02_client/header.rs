@@ -6,6 +6,6 @@ use sp_runtime::RuntimeDebug;
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 #[allow(clippy::large_enum_variant)]
 pub enum AnyHeader {
-    Tendermint(TendermintHeader),
-    // Grandpa(GrandpaHeader),
+	Tendermint(TendermintHeader),
+	// Grandpa(GrandpaHeader),
 }

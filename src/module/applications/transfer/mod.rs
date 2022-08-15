@@ -1,5 +1,5 @@
-pub mod transfer_handle_callback;
 pub mod channel;
+pub mod transfer_handle_callback;
 
 use crate::{context::Context, *};
 use frame_support::traits::{

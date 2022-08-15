@@ -113,6 +113,7 @@ pub mod pallet {
 	use crate::{
 		events::ModuleEvent,
 		module::{
+			applications::transfer::transfer_handle_callback::TransferModule,
 			clients::ics10_grandpa::ClientState as EventClientState,
 			core::ics24_host::{
 				ChannelId, ClientId, ClientType, ConnectionId, Height, Packet, PortId, Sequence,
@@ -151,7 +152,6 @@ pub mod pallet {
 		signer::Signer,
 	};
 	use sp_runtime::traits::IdentifyAccount;
-	use crate::module::applications::transfer::transfer_handle_callback::TransferModule;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -488,7 +488,7 @@ pub mod pallet {
 		/// Receive packet
 		ReceivePacket { height: Height, packet: Packet },
 		/// WriteAcknowledgement packet
-		WriteAcknowledgement{ height: Height, packet: Packet, ack: Vec<u8> },
+		WriteAcknowledgement { height: Height, packet: Packet, ack: Vec<u8> },
 		/// Acknowledgements packet
 		AcknowledgePacket { height: Height, packet: Packet },
 		/// Timeout packet
@@ -620,7 +620,8 @@ pub mod pallet {
 
 			for message in messages {
 				let mut handle_out = HandlerOutputBuilder::new();
-				let msg_transfer = MsgTransfer::try_from(message).map_err(|_|Error::<T>::ParserMsgTransferError)?;
+				let msg_transfer = MsgTransfer::try_from(message)
+					.map_err(|_| Error::<T>::ParserMsgTransferError)?;
 				let result = ibc::applications::transfer::relay::send_transfer::send_transfer(
 					&mut ctx,
 					&mut handle_out,
@@ -629,10 +630,10 @@ pub mod pallet {
 				match result {
 					Ok(_value) => {
 						log::trace!(target: LOG_TARGET, "raw_transfer Successful!");
-					}
+					},
 					Err(error) => {
 						log::trace!(target: LOG_TARGET, "raw_transfer Error : {:?} ", error);
-					}
+					},
 				}
 
 				let HandlerOutput::<()> { result, log, events } = handle_out.with_result(());
@@ -645,15 +646,15 @@ pub mod pallet {
 						IbcEvent::SendPacket(ref send_packet) => {
 							store_send_packet::<T>(send_packet);
 							Self::deposit_event(event.clone().into());
-						}
+						},
 						IbcEvent::WriteAcknowledgement(ref write_ack) => {
 							store_write_ack::<T>(write_ack);
 							Self::deposit_event(event.clone().into());
-						}
+						},
 						_ => {
 							log::trace!(target: LOG_TARGET, "raw_transfer event : {:?} ", event);
 							Self::deposit_event(event.clone().into());
-						}
+						},
 					}
 				}
 			}
@@ -882,7 +883,7 @@ fn store_write_ack<T: Config>(
 	let port_id = write_ack_event.packet.source_port.as_bytes().to_vec();
 	log::info!("[store_write_ack] port_id = {}", write_ack_event.packet.source_port);
 	let channel_id = from_channel_id_to_vec(write_ack_event.packet.source_channel.clone());
-	log::info!("[store_write_ack] channel_id = {}",write_ack_event.packet.source_channel);
+	log::info!("[store_write_ack] channel_id = {}", write_ack_event.packet.source_channel);
 	let sequence = u64::from(write_ack_event.packet.sequence);
 	log::info!("[store_write_ack] sequence = {}", write_ack_event.packet.sequence);
 	let write_ack = write_ack_event.encode_vec().unwrap();

@@ -8,20 +8,18 @@ use ibc::{
 	core::{
 		ics02_client::{
 			client_consensus::AnyConsensusState, client_state::AnyClientState,
-			context::ClientReader,
-			error::Error as Ics02Error,
-
+			context::ClientReader, error::Error as Ics02Error,
 		},
 		ics03_connection::{
 			connection::ConnectionEnd,
 			context::{ConnectionKeeper, ConnectionReader},
 			error::Error as Ics03Error,
 		},
+		ics23_commitment::commitment::{CommitmentPrefix, CommitmentRoot},
 		ics24_host::{
 			identifier::{ClientId, ConnectionId},
 			path::{ClientConnectionsPath, ConnectionsPath},
 		},
-		ics23_commitment::commitment::{CommitmentPrefix, CommitmentRoot},
 	},
 	timestamp::Timestamp,
 	Height,
@@ -102,7 +100,6 @@ impl<T: Config> ConnectionReader for Context<T> {
 		} else {
 			Ok(ret.unwrap())
 		}
-
 	}
 
 	fn host_consensus_state(&self, _height: Height) -> Result<AnyConsensusState, Ics03Error> {

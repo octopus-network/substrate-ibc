@@ -2,7 +2,6 @@ use crate::*;
 use core::borrow::Borrow;
 use ibc::{core::ics26_routing, events::IbcEvent as RawIbcEvent};
 
-
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub struct ModuleEvent {
 	pub kind: Vec<u8>,
@@ -308,7 +307,11 @@ impl<T: Config> From<RawIbcEvent> for Event<T> {
 				let packet = value.packet;
 				let ack = value.ack;
 
-				Event::<T>::WriteAcknowledgement { height: height.into(), packet: packet.into(), ack }
+				Event::<T>::WriteAcknowledgement {
+					height: height.into(),
+					packet: packet.into(),
+					ack,
+				}
 			},
 			RawIbcEvent::AcknowledgePacket(value) => {
 				let height = value.height;

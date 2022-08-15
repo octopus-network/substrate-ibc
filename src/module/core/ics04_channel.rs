@@ -23,6 +23,7 @@ use ibc::{
 			packet::{Receipt, Sequence},
 		},
 		ics05_port::{context::PortReader, error::Error as Ics05Error},
+		ics23_commitment::commitment::CommitmentRoot,
 		ics24_host::{
 			identifier::{ChannelId, ClientId, ConnectionId, PortId},
 			path::{
@@ -31,7 +32,6 @@ use ibc::{
 			},
 			Path,
 		},
-		ics23_commitment::commitment::CommitmentRoot,
 		ics26_routing::context::ModuleId,
 	},
 	timestamp::Timestamp,
@@ -117,7 +117,7 @@ impl<T: Config> ChannelReader for Context<T> {
 
 		let ret = ClientReader::consensus_state(self, client_id, height)
 			.map_err(Ics04Error::ics02_client);
-			
+
 		if ret.is_err() {
 			// TODO(davirain) template deatil with
 			Ok(AnyConsensusState::Grandpa(
@@ -502,7 +502,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		let receipt = match receipt {
 			Receipt::Ok => "Ok".as_bytes().to_vec(),
 		};
-		
+
 		<PacketReceipt<T>>::insert(packet_receipt_path, receipt);
 
 		Ok(())

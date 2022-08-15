@@ -33,7 +33,6 @@ impl<T: Config> Module for TransferModule<T> {
 		counterparty: &Counterparty,
 		version: &Version,
 	) -> Result<(), Ics04Error> {
-
 		ibc::applications::transfer::context::on_chan_open_init(
 			self,
 			output,
@@ -58,7 +57,6 @@ impl<T: Config> Module for TransferModule<T> {
 		version: &Version,
 		counterparty_version: &Version,
 	) -> Result<Version, Ics04Error> {
-
 		ibc::applications::transfer::context::on_chan_open_try(
 			self,
 			output,
@@ -80,7 +78,6 @@ impl<T: Config> Module for TransferModule<T> {
 		channel_id: &IbcChannelId,
 		counterparty_version: &Version,
 	) -> Result<(), Ics04Error> {
-
 		ibc::applications::transfer::context::on_chan_open_ack(
 			self,
 			output,
@@ -97,7 +94,6 @@ impl<T: Config> Module for TransferModule<T> {
 		port_id: &PortId,
 		channel_id: &IbcChannelId,
 	) -> Result<(), Ics04Error> {
-
 		ibc::applications::transfer::context::on_chan_open_confirm(
 			self, output, port_id, channel_id,
 		)
@@ -110,11 +106,8 @@ impl<T: Config> Module for TransferModule<T> {
 		port_id: &PortId,
 		channel_id: &IbcChannelId,
 	) -> Result<(), Ics04Error> {
-
-		ibc::applications::transfer::context::on_chan_close_init(
-			self, output, port_id, channel_id,
-		)
-		.map_err(Ics04Error::ics20_transfer)
+		ibc::applications::transfer::context::on_chan_close_init(self, output, port_id, channel_id)
+			.map_err(Ics04Error::ics20_transfer)
 	}
 
 	fn on_chan_close_confirm(
@@ -123,7 +116,6 @@ impl<T: Config> Module for TransferModule<T> {
 		port_id: &PortId,
 		channel_id: &IbcChannelId,
 	) -> Result<(), Ics04Error> {
-
 		ibc::applications::transfer::context::on_chan_close_confirm(
 			self, output, port_id, channel_id,
 		)
@@ -136,7 +128,6 @@ impl<T: Config> Module for TransferModule<T> {
 		packet: &IbcPacket,
 		relayer: &Signer,
 	) -> OnRecvPacketAck {
-
 		ibc::applications::transfer::context::on_recv_packet(self, output, packet, relayer)
 	}
 
@@ -147,7 +138,6 @@ impl<T: Config> Module for TransferModule<T> {
 		acknowledgement: &GenericAcknowledgement,
 		relayer: &Signer,
 	) -> Result<(), Ics04Error> {
-
 		ibc::applications::transfer::context::on_acknowledgement_packet(
 			self,
 			output,
@@ -164,7 +154,6 @@ impl<T: Config> Module for TransferModule<T> {
 		packet: &IbcPacket,
 		relayer: &Signer,
 	) -> Result<(), Ics04Error> {
-
 		ibc::applications::transfer::context::on_timeout_packet(self, output, packet, relayer)
 			.map_err(Ics04Error::ics20_transfer)
 	}

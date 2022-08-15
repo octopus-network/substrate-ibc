@@ -2,9 +2,9 @@ use crate::{context::Context, *};
 use alloc::{
 	borrow::{Borrow, Cow, ToOwned},
 	collections::BTreeMap,
+	fmt::format,
 	sync::Arc,
 };
-use alloc::fmt::format;
 use core::fmt::Formatter;
 use ibc::core::ics26_routing::context::{Ics26Context, Module, ModuleId, RouterBuilder};
 use log::{error, info, trace, warn};

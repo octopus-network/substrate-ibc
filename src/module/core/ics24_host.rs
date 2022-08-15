@@ -1,4 +1,4 @@
-use crate::{alloc::string::ToString, Config, Event, from_channel_id_to_vec, REVISION_NUMBER};
+use crate::{alloc::string::ToString, from_channel_id_to_vec, Config, Event, REVISION_NUMBER};
 use alloc::string::String;
 use ibc::{
 	clients::ics10_grandpa::{
@@ -173,7 +173,6 @@ impl From<IbcConnectionId> for ConnectionId {
 	}
 }
 
-
 impl From<ConnectionId> for IbcConnectionId {
 	fn from(value: ConnectionId) -> Self {
 		let value = String::from_utf8(value.0).expect("convert from utf8 Error");
@@ -257,8 +256,9 @@ impl From<Packet> for IbcPacket {
 			data: value.data,
 			timeout_height: match value.timeout_height {
 				TimeoutHeight::Never => IbcTimeoutHeight::Never,
-				TimeoutHeight::At(value) =>
-					IbcTimeoutHeight::At(IbcHeight::new(value.revision_number, value.revision_height).unwrap()),
+				TimeoutHeight::At(value) => IbcTimeoutHeight::At(
+					IbcHeight::new(value.revision_number, value.revision_height).unwrap(),
+				),
 			},
 			timeout_timestamp: value.timeout_timestamp.into(),
 		}
