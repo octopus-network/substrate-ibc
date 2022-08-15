@@ -41,20 +41,28 @@ sp-tracing = { git = "https://github.com/paritytech/substrate.git", branch = "po
 
 
 ## for ibc protocl
-ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/integrate_mmr_srv", default-features = false }
-ibc-proto = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/integrate_mmr_srv", default-features = false }
+ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "dev", default-features = false }
+ibc-proto = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "dev", default-features = false }
 # ibc = { path = "../ibc-rs/modules", default-features = false }
 # ibc-proto = { path = "../ibc-rs/proto", default-features = false }
-tendermint-proto = { version = "=0.23.6", default-features = false }
+tendermint-proto = { version = "=0.23.7", default-features = false }
 beefy-light-client = { git = "https://github.com/octopus-network/beefy-light-client.git", branch="main", default-features = false }
 # beefy-light-client = { path = "../beefy-light-client", default-features = false}
+
+[dependencies.time]
+version = "0.3"
+features = [
+	"macros",
+	"parsing",
+]
+default-features = false
 
 [dev-dependencies]
 hex = '0.4.0'
 sha2 = '0.10.2'
 serde = { version = "1.0" }
-ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/integrate_mmr_srv", features = ["mocks"]}
-# ibc = { path = "../ibc-rs/modules", features = ["mocks"]}
+ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "dev", features = ["mocks"]}
+#ibc = { path = "../ibc-rs/modules", features = ["mocks"]}
 sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.18"}
 sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.18" }
 sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.18" }
@@ -85,6 +93,7 @@ std = [
 	'serde/std',	
 	'flex-error/std',
 	'hex/std',
+	'time/std',
 ]
 runtime-benchmarks = ["frame-benchmarking"]
 try-runtime = ["frame-support/try-runtime"]
