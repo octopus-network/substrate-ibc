@@ -41,10 +41,10 @@ sp-tracing = { git = "https://github.com/paritytech/substrate.git", branch = "po
 
 
 ## for ibc protocl
-# ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/integrate_mmr_srv", default-features = false }
-# ibc-proto = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/integrate_mmr_srv", default-features = false }
-ibc = { path = "../ibc-rs/modules", default-features = false }
-ibc-proto = { path = "../ibc-rs/proto", default-features = false }
+ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/integrate_mmr_srv", default-features = false }
+ibc-proto = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/integrate_mmr_srv", default-features = false }
+# ibc = { path = "../ibc-rs/modules", default-features = false }
+# ibc-proto = { path = "../ibc-rs/proto", default-features = false }
 tendermint-proto = { version = "=0.23.6", default-features = false }
 beefy-light-client = { git = "https://github.com/octopus-network/beefy-light-client.git", branch="main", default-features = false }
 # beefy-light-client = { path = "../beefy-light-client", default-features = false}
