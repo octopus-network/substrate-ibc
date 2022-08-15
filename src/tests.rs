@@ -78,6 +78,7 @@ fn test_store_client_state_ok() {
 		0,
 		BlockHeader::default(),
 		Commitment::default(),
+		ValidatorSet::default(),
 	)
 	.unwrap();
 	let gp_client_state = AnyClientState::Grandpa(gp_client_state);
@@ -104,6 +105,7 @@ fn test_read_client_state_failed_by_supply_error_client_id() {
 		0,
 		BlockHeader::default(),
 		Commitment::default(),
+		ValidatorSet::default(),
 	)
 	.unwrap();
 	let gp_client_state = AnyClientState::Grandpa(gp_client_state);
