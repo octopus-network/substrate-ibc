@@ -1049,6 +1049,7 @@ dependencies = [
 [[package]]
 name = "ibc"
 version = "0.14.1"
+source = "git+https://github.com/octopus-network/ibc-rs.git?branch=feature/integrate_mmr_srv#6ee684d0046c35770611e8f20157f0c813bb1870"
 dependencies = [
  "beefy-light-client",
  "beefy-merkle-tree",
@@ -1088,6 +1089,7 @@ dependencies = [
 [[package]]
 name = "ibc-proto"
 version = "0.17.1"
+source = "git+https://github.com/octopus-network/ibc-rs.git?branch=feature/integrate_mmr_srv#6ee684d0046c35770611e8f20157f0c813bb1870"
 dependencies = [
  "base64",
  "bytes",
