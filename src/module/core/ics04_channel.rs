@@ -48,14 +48,18 @@ impl<T: Config> ChannelReader for Context<T> {
 				.as_bytes()
 				.to_vec();
 
-		let data = <Channels<T>>::get(channel_end_path);
+		if <Channels<T>>::contains_key(&channel_end_path) {
+			let data = <Channels<T>>::get(&channel_end_path);
 
-		let channel_end = ChannelEnd::decode_vec(&*data).map_err(|_| {
-			Ics04Error::channel_not_found(port_channel_id.clone().0, port_channel_id.clone().1)
-		})?;
-
-		trace!(target:"runtime::pallet-ibc","in channel : [channel_end] >> channel_end = {:?}", channel_end);
-		Ok(channel_end)
+			let channel_end = ChannelEnd::decode_vec(&*data).map_err(|_| {
+				Ics04Error::channel_not_found(port_channel_id.clone().0, port_channel_id.clone().1)
+			})?;
+	
+			trace!(target:"runtime::pallet-ibc","in channel : [channel_end] >> channel_end = {:?}", channel_end);
+			Ok(channel_end)
+		} else {
+			Err(Ics04Error::channel_not_found(port_channel_id.0.clone(), port_channel_id.1.clone()))
+		}
 	}
 
 	fn connection_end(&self, connection_id: &ConnectionId) -> Result<ConnectionEnd, Ics04Error> {
@@ -139,10 +143,14 @@ impl<T: Config> ChannelReader for Context<T> {
 			.as_bytes()
 			.to_vec();
 
-		let sequence = <NextSequenceSend<T>>::get(&seq_sends_path);
+		if <NextSequenceSend<T>>::contains_key(&seq_sends_path) {
+			let sequence = <NextSequenceSend<T>>::get(&seq_sends_path);
 
-		trace!(target:"runtime::pallet-ibc","in channel : [get_next_sequence] >> sequence  = {:?}", sequence);
-		Ok(Sequence::from(sequence))
+			trace!(target:"runtime::pallet-ibc","in channel : [get_next_sequence] >> sequence  = {:?}", sequence);
+			Ok(Sequence::from(sequence))
+		} else {
+			Err(Ics04Error::missing_next_send_seq(port_channel_id.clone()))
+		}		
 	}
 
 	fn get_next_sequence_recv(
@@ -150,16 +158,21 @@ impl<T: Config> ChannelReader for Context<T> {
 		port_channel_id: &(PortId, ChannelId),
 	) -> Result<Sequence, Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel : [get_next_sequence_recv] port_channel_id:{:?}",port_channel_id);
-
 		let seq_recvs_path = SeqRecvsPath(port_channel_id.0.clone(), port_channel_id.1.clone())
-			.to_string()
-			.as_bytes()
-			.to_vec();
+		.to_string()
+		.as_bytes()
+		.to_vec();
 
-		let sequence = <NextSequenceRecv<T>>::get(&seq_recvs_path);
+		if <NextSequenceRecv<T>>::contains_key(&seq_recvs_path) {
 
-		trace!(target:"runtime::pallet-ibc","in channel : [get_next_sequence_recv] >> sequence = {:?}", sequence);
-		Ok(Sequence::from(sequence))
+			let sequence = <NextSequenceRecv<T>>::get(&seq_recvs_path);
+
+			trace!(target:"runtime::pallet-ibc","in channel : [get_next_sequence_recv] >> sequence = {:?}", sequence);
+			Ok(Sequence::from(sequence))
+		} else {
+			Err(Ics04Error::missing_next_recv_seq(port_channel_id.clone()))
+		}
+		
 	}
 
 	fn get_next_sequence_ack(
@@ -173,10 +186,15 @@ impl<T: Config> ChannelReader for Context<T> {
 			.as_bytes()
 			.to_vec();
 
-		let sequence = <NextSequenceAck<T>>::get(&seq_acks_path);
+		if <NextSequenceAck<T>>::contains_key(&seq_acks_path) {
+			let sequence = <NextSequenceAck<T>>::get(&seq_acks_path);
 
-		trace!(target:"runtime::pallet-ibc","in channel : [get_next_sequence_ack] >> sequence = {}", sequence);
-		Ok(Sequence::from(sequence))
+			trace!(target:"runtime::pallet-ibc","in channel : [get_next_sequence_ack] >> sequence = {}", sequence);
+			Ok(Sequence::from(sequence))
+		} else {
+			Err(Ics04Error::missing_next_ack_seq(port_channel_id.clone()))
+		}
+		
 	}
 
 	/// Returns the `PacketCommitment` for the given identifier `(PortId, ChannelId, Sequence)`.
