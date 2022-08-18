@@ -567,7 +567,7 @@ pub mod pallet {
 					})
 					.collect();
 
-				for (_, message) in messages.clone().into_iter().enumerate() {
+				for (_, message) in messages.into_iter().enumerate() {
 
 					match ibc::core::ics26_routing::handler::deliver(&mut ctx, message.clone()) {
 						Ok(ibc::core::ics26_routing::handler::MsgReceipt { events, log: _log}) => {
@@ -710,7 +710,7 @@ pub mod pallet {
 
 			// check if the client id exist?
 			let client_id_str =
-				String::from_utf8(client_id.clone()).map_err(|_| Error::<T>::InvalidFromUtf8)?;
+				String::from_utf8(client_id).map_err(|_| Error::<T>::InvalidFromUtf8)?;
 			log::trace!(
 				target: LOG_TARGET,
 				"inner_update_client_state:  client id is {:?}",
@@ -729,8 +729,7 @@ pub mod pallet {
 			let mut client_state = ClientState::default();
 
 			// read client state key, here is client state path
-			let client_state_path =
-				ClientStatePath(ibc_client_id.clone()).to_string().as_bytes().to_vec();
+			let client_state_path = ClientStatePath(ibc_client_id).to_string().as_bytes().to_vec();
 			if !<ClientStates<T>>::contains_key(client_state_path.clone()) {
 				log::error!(
 					"in inner_update_client_state: {:?} client_state not found !",
@@ -823,7 +822,7 @@ pub mod pallet {
 					let data =
 						any_client_state.encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
 					// store client states key-value
-					<ClientStates<T>>::insert(client_state_path.clone(), data);
+					<ClientStates<T>>::insert(client_state_path, data);
 
 					log::trace!(
 						target: LOG_TARGET,

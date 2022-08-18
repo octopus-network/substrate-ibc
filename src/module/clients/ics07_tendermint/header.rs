@@ -287,6 +287,7 @@ mod block {
 	/// CommitSig represents a signature of a validator.
 	/// It's a part of the Commit and can be used to reconstruct the vote set given the validator
 	/// set.
+	#[allow(clippy::enum_variant_names)]
 	#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 	pub enum CommitSig {
 		/// no vote was received from a validator.

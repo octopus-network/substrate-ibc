@@ -78,7 +78,7 @@ impl<T: Config> ClientReader for Context<T> {
 		.to_vec();
 
 		if <ConsensusStates<T>>::contains_key(client_consensus_state_path.clone()) {
-			let values = <ConsensusStates<T>>::get(client_consensus_state_path.clone());
+			let values = <ConsensusStates<T>>::get(client_consensus_state_path);
 			let any_consensus_state =
 				AnyConsensusState::decode_vec(&*values).map_err(Ics02Error::invalid_decode)?;
 			trace!(target:"runtime::pallet-ibc",
@@ -109,7 +109,7 @@ impl<T: Config> ClientReader for Context<T> {
 		.to_vec();
 
 		if <ConsensusStates<T>>::contains_key(client_consensus_state_path.clone()) {
-			let values = <ConsensusStates<T>>::get(client_consensus_state_path.clone());
+			let values = <ConsensusStates<T>>::get(client_consensus_state_path);
 			let any_consensus_state =
 				AnyConsensusState::decode_vec(&*values).map_err(Ics02Error::invalid_decode)?;
 			trace!(target:"runtime::pallet-ibc",
@@ -146,7 +146,7 @@ impl<T: Config> ClientReader for Context<T> {
 		.to_vec();
 
 		if <ConsensusStates<T>>::contains_key(client_consensus_state_path.clone()) {
-			let values = <ConsensusStates<T>>::get(client_consensus_state_path.clone());
+			let values = <ConsensusStates<T>>::get(client_consensus_state_path);
 			let any_consensus_state =
 				AnyConsensusState::decode_vec(&*values).map_err(Ics02Error::invalid_decode)?;
 			trace!(target:"runtime::pallet-ibc",
@@ -208,7 +208,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 	) -> Result<(), Ics02Error> {
 		info!("in client : [store_client_type]");
 
-		let client_type_path = ClientTypePath(client_id.clone()).to_string().as_bytes().to_vec();
+		let client_type_path = ClientTypePath(client_id).to_string().as_bytes().to_vec();
 		let client_type = client_type.as_str().encode();
 		<Clients<T>>::insert(client_type_path, client_type);
 		Ok(())
@@ -221,11 +221,11 @@ impl<T: Config> ClientKeeper for Context<T> {
 	) -> Result<(), Ics02Error> {
 		trace!(target:"runtime::pallet-ibc","in client : [store_client_state]");
 
-		let client_state_path = ClientStatePath(client_id.clone()).to_string().as_bytes().to_vec();
+		let client_state_path = ClientStatePath(client_id).to_string().as_bytes().to_vec();
 
 		let data = client_state.encode_vec().map_err(Ics02Error::invalid_encode)?;
 		// store client states key-value
-		<ClientStates<T>>::insert(client_state_path.clone(), data);
+		<ClientStates<T>>::insert(client_state_path, data);
 
 		Ok(())
 	}
@@ -240,7 +240,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 
 		// store key
 		let client_consensus_state_path = ClientConsensusStatePath {
-			client_id: client_id.clone(),
+			client_id,
 			epoch: height.revision_number(),
 			height: height.revision_height(),
 		}

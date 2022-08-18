@@ -78,7 +78,7 @@ impl<T: Config> BankKeeper for TransferModule<T> {
 				match T::AssetIdByName::try_get_asset_id(denom) {
 					Ok(token_id) => {
 						<T::Assets as Transfer<T::AccountId>>::transfer(
-							token_id.into(),
+							token_id,
 							&from.clone().into_account(),
 							&to.clone().into_account(),
 							amount,
@@ -118,7 +118,7 @@ impl<T: Config> BankKeeper for TransferModule<T> {
 		match T::AssetIdByName::try_get_asset_id(denom) {
 			Ok(token_id) => {
 				<T::Assets as Mutate<T::AccountId>>::mint_into(
-					token_id.into(),
+					token_id,
 					&account.clone().into_account(),
 					amount,
 				)
@@ -153,7 +153,7 @@ impl<T: Config> BankKeeper for TransferModule<T> {
 		match T::AssetIdByName::try_get_asset_id(denom) {
 			Ok(token_id) => {
 				<T::Assets as Mutate<T::AccountId>>::burn_from(
-					token_id.into(),
+					token_id,
 					&account.clone().into_account(),
 					amount,
 				)

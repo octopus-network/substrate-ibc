@@ -92,13 +92,13 @@ impl<T: Config> ConnectionReader for Context<T> {
 		let ret = ClientReader::consensus_state(self, client_id, height)
 			.map_err(Ics03Error::ics02_client);
 
-		if ret.is_err() {
+		if let Ok(value) = ret {
+			Ok(value)
+		} else {
 			// TODO(davirain) template deatil with
 			Ok(AnyConsensusState::Grandpa(
 				ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
 			))
-		} else {
-			Ok(ret.unwrap())
 		}
 	}
 
@@ -153,8 +153,7 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 	) -> Result<(), Ics03Error> {
 		trace!(target:"runtime::pallet-ibc","in connection : [store_connection] connection_id:{:?}, connection_end:{:?}",connection_id,connection_end);
 
-		let connections_path =
-			ConnectionsPath(connection_id.clone()).to_string().as_bytes().to_vec();
+		let connections_path = ConnectionsPath(connection_id).to_string().as_bytes().to_vec();
 		let data = connection_end.encode_vec().map_err(Ics03Error::invalid_encode)?;
 
 		// store connection end

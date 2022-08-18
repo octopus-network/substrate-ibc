@@ -3,9 +3,7 @@ use crate::{mock::*, Context};
 use core::str::FromStr;
 
 use ibc::{
-	applications::transfer::{
-		context::Ics20Context, error::Error as ICS20Error
-	},
+	applications::transfer::{context::Ics20Context, error::Error as ICS20Error},
 	clients::ics10_grandpa::{
 		client_state::ClientState as GPClientState,
 		consensus_state::ConsensusState as GPConsensusState, help::ValidatorSet,
@@ -183,7 +181,6 @@ fn test_get_identified_any_client_state_ok() {
 		let gp_client_state = GPClientState::new(
 			ChainId::new("ibc".to_string(), 0),
 			0,
-
 			Commitment::default(),
 			ValidatorSet::default(),
 		)
@@ -227,7 +224,6 @@ fn test_get_packet_commitment_state_ok() {
 		channel_id_vec.push(channel_id);
 		let sequence = Sequence::from(index as u64);
 		sequence_vec.push(sequence);
-		
 	}
 	let com = PacketCommitment::from(vec![1, 2, 3]);
 

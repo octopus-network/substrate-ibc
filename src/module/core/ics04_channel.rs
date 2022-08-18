@@ -54,7 +54,7 @@ impl<T: Config> ChannelReader for Context<T> {
 			let channel_end = ChannelEnd::decode_vec(&*data).map_err(|_| {
 				Ics04Error::channel_not_found(port_channel_id.clone().0, port_channel_id.clone().1)
 			})?;
-	
+
 			trace!(target:"runtime::pallet-ibc","in channel : [channel_end] >> channel_end = {:?}", channel_end);
 			Ok(channel_end)
 		} else {
@@ -122,13 +122,13 @@ impl<T: Config> ChannelReader for Context<T> {
 		let ret = ClientReader::consensus_state(self, client_id, height)
 			.map_err(Ics04Error::ics02_client);
 
-		if ret.is_err() {
+		if let Ok(value) = ret {
+			Ok(value)
+		} else {
 			// TODO(davirain) template deatil with
 			Ok(AnyConsensusState::Grandpa(
 				ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
 			))
-		} else {
-			Ok(ret.unwrap())
 		}
 	}
 
@@ -150,7 +150,7 @@ impl<T: Config> ChannelReader for Context<T> {
 			Ok(Sequence::from(sequence))
 		} else {
 			Err(Ics04Error::missing_next_send_seq(port_channel_id.clone()))
-		}		
+		}
 	}
 
 	fn get_next_sequence_recv(
@@ -159,12 +159,11 @@ impl<T: Config> ChannelReader for Context<T> {
 	) -> Result<Sequence, Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel : [get_next_sequence_recv] port_channel_id:{:?}",port_channel_id);
 		let seq_recvs_path = SeqRecvsPath(port_channel_id.0.clone(), port_channel_id.1.clone())
-		.to_string()
-		.as_bytes()
-		.to_vec();
+			.to_string()
+			.as_bytes()
+			.to_vec();
 
 		if <NextSequenceRecv<T>>::contains_key(&seq_recvs_path) {
-
 			let sequence = <NextSequenceRecv<T>>::get(&seq_recvs_path);
 
 			trace!(target:"runtime::pallet-ibc","in channel : [get_next_sequence_recv] >> sequence = {:?}", sequence);
@@ -172,7 +171,6 @@ impl<T: Config> ChannelReader for Context<T> {
 		} else {
 			Err(Ics04Error::missing_next_recv_seq(port_channel_id.clone()))
 		}
-		
 	}
 
 	fn get_next_sequence_ack(
@@ -194,7 +192,6 @@ impl<T: Config> ChannelReader for Context<T> {
 		} else {
 			Err(Ics04Error::missing_next_ack_seq(port_channel_id.clone()))
 		}
-		
 	}
 
 	/// Returns the `PacketCommitment` for the given identifier `(PortId, ChannelId, Sequence)`.
@@ -204,14 +201,11 @@ impl<T: Config> ChannelReader for Context<T> {
 	) -> Result<IbcPacketCommitment, Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel : [get_packet_commitment] key:{:?}",key);
 
-		let packet_commitments_path = CommitmentsPath {
-			port_id: key.0.clone(),
-			channel_id: key.1.clone(),
-			sequence: key.2.clone(),
-		}
-		.to_string()
-		.as_bytes()
-		.to_vec();
+		let packet_commitments_path =
+			CommitmentsPath { port_id: key.0.clone(), channel_id: key.1.clone(), sequence: key.2 }
+				.to_string()
+				.as_bytes()
+				.to_vec();
 
 		if <PacketCommitment<T>>::contains_key(&packet_commitments_path) {
 			let data = <PacketCommitment<T>>::get(&packet_commitments_path);
@@ -237,14 +231,11 @@ impl<T: Config> ChannelReader for Context<T> {
 	) -> Result<Receipt, Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel : [get_packet_receipt] key:{:?}",key);
 
-		let packet_receipt_path = ReceiptsPath {
-			port_id: key.0.clone(),
-			channel_id: key.1.clone(),
-			sequence: key.2.clone(),
-		}
-		.to_string()
-		.as_bytes()
-		.to_vec();
+		let packet_receipt_path =
+			ReceiptsPath { port_id: key.0.clone(), channel_id: key.1.clone(), sequence: key.2 }
+				.to_string()
+				.as_bytes()
+				.to_vec();
 
 		if <PacketReceipt<T>>::contains_key(&packet_receipt_path) {
 			let data = <PacketReceipt<T>>::get(&packet_receipt_path);
@@ -269,7 +260,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		trace!(target:"runtime::pallet-ibc","in channel : [get_packet_acknowledgement] key:{:?}",key);
 
 		let acks_path =
-			AcksPath { port_id: key.0.clone(), channel_id: key.1.clone(), sequence: key.2.clone() }
+			AcksPath { port_id: key.0.clone(), channel_id: key.1.clone(), sequence: key.2 }
 				.to_string()
 				.as_bytes()
 				.to_vec();
@@ -465,14 +456,11 @@ impl<T: Config> ChannelKeeper for Context<T> {
 	) -> Result<(), Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel: [store_packet_commitment]. key={:?}", key);
 
-		let packet_commitments_path = CommitmentsPath {
-			port_id: key.0.clone(),
-			channel_id: key.1.clone(),
-			sequence: key.2.clone(),
-		}
-		.to_string()
-		.as_bytes()
-		.to_vec();
+		let packet_commitments_path =
+			CommitmentsPath { port_id: key.0.clone(), channel_id: key.1.clone(), sequence: key.2 }
+				.to_string()
+				.as_bytes()
+				.to_vec();
 
 		// insert packet commitment key-value
 		<PacketCommitment<T>>::insert(packet_commitments_path, commitment.into_vec());
@@ -486,14 +474,11 @@ impl<T: Config> ChannelKeeper for Context<T> {
 	) -> Result<(), Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel: [delete_packet_commitment]. key={:?}", key);
 
-		let packet_commitments_path = CommitmentsPath {
-			port_id: key.0.clone(),
-			channel_id: key.1.clone(),
-			sequence: key.2.clone(),
-		}
-		.to_string()
-		.as_bytes()
-		.to_vec();
+		let packet_commitments_path =
+			CommitmentsPath { port_id: key.0.clone(), channel_id: key.1.clone(), sequence: key.2 }
+				.to_string()
+				.as_bytes()
+				.to_vec();
 
 		// delete packet commitment
 		<PacketCommitment<T>>::remove(&packet_commitments_path);
@@ -508,14 +493,11 @@ impl<T: Config> ChannelKeeper for Context<T> {
 	) -> Result<(), Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel: [store_packet_receipt]");
 
-		let packet_receipt_path = ReceiptsPath {
-			port_id: key.0.clone(),
-			channel_id: key.1.clone(),
-			sequence: key.2.clone(),
-		}
-		.to_string()
-		.as_bytes()
-		.to_vec();
+		let packet_receipt_path =
+			ReceiptsPath { port_id: key.0.clone(), channel_id: key.1.clone(), sequence: key.2 }
+				.to_string()
+				.as_bytes()
+				.to_vec();
 
 		let receipt = match receipt {
 			Receipt::Ok => "Ok".as_bytes().to_vec(),
@@ -534,7 +516,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		trace!(target:"runtime::pallet-ibc","in channel: [store_packet_acknowledgement]");
 
 		let acks_path =
-			AcksPath { port_id: key.0.clone(), channel_id: key.1.clone(), sequence: key.2.clone() }
+			AcksPath { port_id: key.0.clone(), channel_id: key.1.clone(), sequence: key.2 }
 				.to_string()
 				.as_bytes()
 				.to_vec();
@@ -552,7 +534,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		trace!(target:"runtime::pallet-ibc","in channel: [delete_packet_acknowledgement]");
 
 		let acks_path =
-			AcksPath { port_id: key.0.clone(), channel_id: key.1.clone(), sequence: key.2.clone() }
+			AcksPath { port_id: key.0.clone(), channel_id: key.1.clone(), sequence: key.2 }
 				.to_string()
 				.as_bytes()
 				.to_vec();
@@ -571,7 +553,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		trace!(target:"runtime::pallet-ibc","in channel: [store_connection_channels] conn_id:{:?},port_channel_id:{:?}",conn_id,port_channel_id);
 
 		// store key
-		let connections_path = ConnectionsPath(conn_id.clone()).to_string().as_bytes().to_vec();
+		let connections_path = ConnectionsPath(conn_id).to_string().as_bytes().to_vec();
 
 		// store value
 		let channel_ends_path =
@@ -608,11 +590,10 @@ impl<T: Config> ChannelKeeper for Context<T> {
 	) -> Result<(), Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel: [store_channel] channel_end:{:?},port_channel_id:{:?}",channel_end,port_channel_id);
 
-		let channel_end_path =
-			ChannelEndsPath(port_channel_id.0.clone(), port_channel_id.1.clone())
-				.to_string()
-				.as_bytes()
-				.to_vec();
+		let channel_end_path = ChannelEndsPath(port_channel_id.0.clone(), port_channel_id.1)
+			.to_string()
+			.as_bytes()
+			.to_vec();
 		let channel_end = channel_end.encode_vec().map_err(|_| Ics04Error::invalid_encode())?;
 
 		// store channels key-value
@@ -628,7 +609,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 	) -> Result<(), Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel: [store_next_sequence_send] port_channel_id:{:?},seq:{:?}",port_channel_id,seq);
 
-		let seq_sends_path = SeqSendsPath(port_channel_id.0.clone(), port_channel_id.1.clone())
+		let seq_sends_path = SeqSendsPath(port_channel_id.0.clone(), port_channel_id.1)
 			.to_string()
 			.as_bytes()
 			.to_vec();
@@ -647,7 +628,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 	) -> Result<(), Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel: [store_next_sequence_recv] port_channel_id:{:?},seq:{:?}",port_channel_id,seq);
 
-		let seq_recvs_path = SeqRecvsPath(port_channel_id.0.clone(), port_channel_id.1.clone())
+		let seq_recvs_path = SeqRecvsPath(port_channel_id.0.clone(), port_channel_id.1)
 			.to_string()
 			.as_bytes()
 			.to_vec();
@@ -665,7 +646,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 	) -> Result<(), Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel: [store_next_sequence_ack] port_channel_id:{:?},seq:{:?}",port_channel_id,seq);
 
-		let seq_acks_path = SeqAcksPath(port_channel_id.0.clone(), port_channel_id.1.clone())
+		let seq_acks_path = SeqAcksPath(port_channel_id.0.clone(), port_channel_id.1)
 			.to_string()
 			.as_bytes()
 			.to_vec();
