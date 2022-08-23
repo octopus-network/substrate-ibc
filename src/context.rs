@@ -22,16 +22,18 @@ use ibc::{
 	},
 };
 
-use crate::module::core::ics26_routing::{MockRouter, MockRouterBuilder};
+/// A struct capturing all the functional dependencies (i.e., context)
+/// which the ICS26 module requires to be able to dispatch and process IBC messages.
+use crate::module::core::ics26_routing::{Router, SubstrateRouterBuilder};
 #[derive(Clone, Debug)]
 pub struct Context<T: Config> {
 	pub _pd: PhantomData<T>,
-	pub router: MockRouter,
+	pub router: Router,
 }
 
 impl<T: Config> Context<T> {
 	pub fn new() -> Self {
-		let r = MockRouterBuilder::default()
+		let r = SubstrateRouterBuilder::default()
 			.add_route(MODULE_ID_STR.parse().unwrap(), TransferModule(PhantomData::<T>)) // register transfer Module
 			.unwrap()
 			.build();

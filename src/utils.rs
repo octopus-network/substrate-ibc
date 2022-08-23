@@ -19,12 +19,18 @@ use ibc::{
 	events::IbcEvent,
 };
 
+/// Get the latest block height of the host chain
 pub fn host_height<T: Config>() -> u64 {
 	let block_number = format!("{:?}", <frame_system::Pallet<T>>::block_number());
 	let current_height: u64 = block_number.parse().unwrap_or_default();
 	current_height
 }
 
+/// In ICS20 fungible token transfer, get the escrow address by channel ID and port ID
+///
+/// Parameters:
+/// - `port_id`: The ID of the port corresponding to the escrow.
+/// - `channel_id`: The ID of the channel corresponding to the escrow.
 pub fn get_channel_escrow_address(
 	port_id: &PortId,
 	channel_id: &IbcChannelId,

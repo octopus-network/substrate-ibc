@@ -2,6 +2,8 @@ use crate::*;
 use core::borrow::Borrow;
 use ibc::{core::ics26_routing, events::IbcEvent as RawIbcEvent};
 
+
+/// ibc-rs' `ModuleEvent` representation in substrate
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub struct ModuleEvent {
 	pub kind: Vec<u8>,
@@ -29,6 +31,7 @@ impl From<ModuleEvent> for ibc::events::ModuleEvent {
 	}
 }
 
+/// ibc-rs' `ModuleId` representation in substrate
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub struct ModuleId(pub Vec<u8>);
 
@@ -45,6 +48,7 @@ impl From<ModuleId> for ics26_routing::context::ModuleId {
 	}
 }
 
+/// ibc-rs' `ModuleEventAttribute` representation in substrate
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub struct ModuleEventAttribute {
 	pub key: Vec<u8>,

@@ -19,6 +19,7 @@ use ibc::{
 	signer::Signer,
 };
 
+/// A structure handling ICS20 callback
 #[derive(Debug)]
 pub struct TransferModule<T: Config>(pub PhantomData<T>);
 
