@@ -86,10 +86,6 @@ fn test_store_client_state_ok() {
 		assert!(context
 			.store_client_state(gp_client_id.clone(), gp_client_state.clone())
 			.is_ok());
-
-		// let ret = ClientReader::client_state(&context, &gp_client_id).unwrap();
-
-		// assert_eq!(ret, gp_client_state);
 	})
 }
 
@@ -134,10 +130,6 @@ fn test_store_consensus_state_ok() {
 		assert!(context
 			.store_consensus_state(gp_client_id.clone(), height, consensus_state.clone())
 			.is_ok());
-
-		// let ret = context.consensus_state(&gp_client_id, height).unwrap();
-
-		// assert_eq!(ret, consensus_state);
 	})
 }
 
@@ -220,7 +212,7 @@ fn test_get_packet_commitment_state_ok() {
 	for index in range.clone() {
 		let port_id = PortId::default();
 		port_id_vec.push(port_id);
-		let channel_id = ChannelId::from_str(&format!("channel-{}", index)).unwrap();
+		let channel_id = ChannelId::default();
 		channel_id_vec.push(channel_id);
 		let sequence = Sequence::from(index as u64);
 		sequence_vec.push(sequence);
@@ -326,8 +318,8 @@ fn test_connection_client_ok() {
 fn test_delete_packet_acknowledgement_ok() {
 	use ibc::core::ics04_channel::commitment::AcknowledgementCommitment;
 
-	let port_id = PortId::from_str("transfer").unwrap();
-	let channel_id = ChannelId::from_str("channel-0").unwrap();
+	let port_id = PortId::default();
+	let channel_id = ChannelId::default();
 	let sequence = Sequence::from(0);
 	let ack = AcknowledgementCommitment::from(vec![1, 2, 3]);
 
@@ -369,9 +361,9 @@ fn test_get_acknowledge_state() {
 	let mut context: Context<Test> = Context::new();
 
 	for index in 0..range.len() {
-		let port_id = PortId::from_str(&format!("transfer-{}", index)).unwrap();
+		let port_id = PortId::default();
 		port_id_vec.push(port_id);
-		let channel_id = ChannelId::from_str(&format!("channel-{}", index)).unwrap();
+		let channel_id = ChannelId::default();
 		channel_id_vec.push(channel_id);
 		let sequence = Sequence::from(index as u64);
 		sequence_vec.push(sequence);
@@ -399,8 +391,8 @@ fn test_get_acknowledge_state() {
 #[test]
 fn test_store_connection_channles_ok() {
 	let connection_id = ConnectionId::new(0);
-	let port_id = PortId::from_str(String::from_str("port-0").unwrap().as_str()).unwrap();
-	let channel_id = ChannelId::from_str(String::from_str("channel-0").unwrap().as_str()).unwrap();
+	let port_id = PortId::default();
+	let channel_id = ChannelId::default();
 
 	let mut context: Context<Test> = Context::new();
 	new_test_ext().execute_with(|| {
@@ -437,8 +429,8 @@ fn test_next_sequence_send_ok() {
 fn test_read_conection_channels_failed_by_suppley_error_conneciton_id() {
 	let connection_id = ConnectionId::new(0);
 	let connection_id_failed = ConnectionId::new(1);
-	let port_id = PortId::from_str(String::from_str("port-0").unwrap().as_str()).unwrap();
-	let channel_id = ChannelId::from_str(String::from_str("channel-0").unwrap().as_str()).unwrap();
+	let port_id = PortId::default();
+	let channel_id = ChannelId::default();
 
 	let mut context: Context<Test> = Context::new();
 	new_test_ext().execute_with(|| {
@@ -460,8 +452,8 @@ fn test_read_conection_channels_failed_by_suppley_error_conneciton_id() {
 
 #[test]
 fn test_store_channel_ok() {
-	let port_id = PortId::from_str(String::from_str("port-0").unwrap().as_str()).unwrap();
-	let channel_id = ChannelId::from_str(String::from_str("channel-0").unwrap().as_str()).unwrap();
+	let port_id = PortId::default();
+	let channel_id = ChannelId::default();
 	let channel_end = ChannelEnd::default();
 
 	let mut context: Context<Test> = Context::new();
@@ -504,8 +496,8 @@ fn test_next_sequence_recv_ok() {
 
 #[test]
 fn test_read_channel_end_failed_by_supply_error_channel_id_port_id() {
-	let port_id = PortId::from_str(String::from_str("port-0").unwrap().as_str()).unwrap();
-	let channel_id = ChannelId::from_str(String::from_str("channel-0").unwrap().as_str()).unwrap();
+	let port_id = PortId::default();
+	let channel_id = ChannelId::default();
 	let port_id_1 = PortId::from_str(String::from_str("port-1").unwrap().as_str()).unwrap();
 	let channel_id_1 =
 		ChannelId::from_str(String::from_str("channel-1").unwrap().as_str()).unwrap();
@@ -561,12 +553,10 @@ fn test_get_identified_channel_end() {
 
 	for index in 0..range.len() {
 		let port_id =
-			PortId::from_str(String::from_str(&format!("prot-{}", index)).unwrap().as_str())
-				.unwrap();
+			PortId::default();
 		port_id_vec.push(port_id);
 		let channel_id =
-			ChannelId::from_str(String::from_str(&format!("channel-{}", index)).unwrap().as_str())
-				.unwrap();
+			ChannelId::default();
 		channel_id_vec.push(channel_id);
 	}
 

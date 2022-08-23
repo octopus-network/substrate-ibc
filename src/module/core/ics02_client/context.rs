@@ -63,9 +63,7 @@ impl<T: Config> ClientReader for Context<T> {
 		client_id: &ClientId,
 		height: Height,
 	) -> Result<AnyConsensusState, Ics02Error> {
-		trace!(target:"runtime::pallet-ibc",
-			"in client : [consensus_state]"
-		);
+		trace!(target:"runtime::pallet-ibc","in client : [consensus_state]");
 
 		// search key
 		let client_consensus_state_path = ClientConsensusStatePath {
@@ -206,7 +204,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 		client_id: ClientId,
 		client_type: ClientType,
 	) -> Result<(), Ics02Error> {
-		info!("in client : [store_client_type]");
+		trace!(target:"runtime::pallet-ibc","in client : [store_client_type]");
 
 		let client_type_path = ClientTypePath(client_id).to_string().as_bytes().to_vec();
 		let client_type = client_type.as_str().encode();
@@ -257,7 +255,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 	}
 
 	fn increase_client_counter(&mut self) {
-		info!("in client : [increase_client_counter]");
+		trace!(target:"runtime::pallet-ibc","in client : [increase_client_counter]");
 
 		let ret = <ClientCounter<T>>::try_mutate(|val| -> Result<(), Ics02Error> {
 			let new = val.checked_add(1).ok_or_else(Ics02Error::invalid_increase_client_counter)?;

@@ -45,7 +45,6 @@ impl<T: Config> ChannelReader for TransferModule<T> {
 	}
 
 	fn connection_end(&self, connection_id: &ConnectionId) -> Result<ConnectionEnd, Ics04Error> {
-		trace!(target:"runtime::pallet-ibc","in channel : [connection_end]");
 		let connect = Context::<T>::new();
 		ChannelReader::connection_end(&connect, connection_id)
 	}

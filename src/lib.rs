@@ -889,14 +889,8 @@ fn store_send_packet<T: Config>(send_packet_event: &ibc::core::ics04_channel::ev
 	// store key port_id and channel_id
 	let port_id = send_packet_event.packet.source_port.as_bytes().to_vec();
 	let channel_id = from_channel_id_to_vec(send_packet_event.packet.source_channel.clone());
-
 	// store value packet
 	let packet = send_packet_event.packet.encode_vec().unwrap();
-	log::trace!(
-		target: LOG_TARGET,
-		"in lib: [store_send_packet]. send_packet_event={:?}",
-		send_packet_event
-	);
 	<SendPacketEvent<T>>::insert(
 		(port_id, channel_id, u64::from(send_packet_event.packet.sequence)),
 		packet,
@@ -908,11 +902,8 @@ fn store_write_ack<T: Config>(
 ) {
 	// store ack
 	let port_id = write_ack_event.packet.source_port.as_bytes().to_vec();
-	log::info!("[store_write_ack] port_id = {}", write_ack_event.packet.source_port);
 	let channel_id = from_channel_id_to_vec(write_ack_event.packet.source_channel.clone());
-	log::info!("[store_write_ack] channel_id = {}", write_ack_event.packet.source_channel);
 	let sequence = u64::from(write_ack_event.packet.sequence);
-	log::info!("[store_write_ack] sequence = {}", write_ack_event.packet.sequence);
 	let write_ack = write_ack_event.encode_vec().unwrap();
 
 	// store.Set((portID, channelID, sequence), WriteAckEvent)

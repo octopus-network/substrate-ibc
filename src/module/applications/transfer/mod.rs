@@ -237,10 +237,8 @@ where
 	/// Convert a signer to an IBC account.
 	/// Only valid hex strings are supported for now.
 	fn try_from(signer: Signer) -> Result<Self, Self::Error> {
-		log::info!("Convert Signer : {:?} ", signer);
 		let acc_str = signer.as_ref();
 		if acc_str.starts_with("0x") {
-			log::info!("Convert Signer 🎈: Successful! ");
 			match acc_str.strip_prefix("0x") {
 				Some(hex_string) => TryInto::<[u8; 32]>::try_into(
 					hex::decode(hex_string).map_err(|_| "Error decoding invalid hex string")?,
@@ -252,7 +250,7 @@ where
 		}
 		// Do SS58 decoding instead
 		else {
-			log::info!("Convert Signer ❌ : Failed! ");
+			error!("Convert Signer ❌ : Failed! ");
 			Err("invalid ibc address or substrate address")
 		}
 	}
