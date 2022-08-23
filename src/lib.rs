@@ -187,12 +187,12 @@ pub mod pallet {
 			+ MaybeSerializeDeserialize
 			+ Debug;
 
-		/// Todo:
+		/// Expose customizable associated type of asset transfer, lock and unlock
 		type Assets: Transfer<Self::AccountId, AssetId = Self::AssetId, Balance = Self::AssetBalance>
 			+ Mutate<Self::AccountId, AssetId = Self::AssetId, Balance = Self::AssetBalance>
 			+ Inspect<Self::AccountId, AssetId = Self::AssetId, Balance = Self::AssetBalance>;
 
-		/// Todo:
+		/// Map of cross-chain asset ID & name
 		type AssetIdByName: AssetIdAndNameProvider<Self::AssetId>;
 
 		/// Account Id Conversion from SS58 string or hex string
@@ -341,7 +341,7 @@ pub mod pallet {
 	pub type LatestHeight<T: Config> = StorageValue<_, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
-	/// Todo:
+	/// Previous host block height
 	pub type OldHeight<T: Config> = StorageValue<_, u64, ValueQuery>;
 
 	#[pallet::storage]
