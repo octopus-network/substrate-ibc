@@ -1,5 +1,3 @@
-pub mod header;
-
 use ibc::clients::ics10_grandpa::{
 	client_state::ClientState as IbcClientState,
 	help::{
