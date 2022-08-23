@@ -159,11 +159,13 @@ pub mod pallet {
 		/// The overarching event type.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
+		/// The provider providing timestamp of host chain
 		type TimeProvider: UnixTime;
 
-		/// Currency type of the runtime
+		/// The currency type of the runtime
 		type Currency: Currency<Self::AccountId>;
 
+		/// Identifier for the class of asset.
 		type AssetId: Member
 			+ Parameter
 			+ AtLeast32BitUnsigned
@@ -173,6 +175,7 @@ pub mod pallet {
 			+ Default
 			+ MaybeSerializeDeserialize;
 
+		/// The units in which we record balances.
 		type AssetBalance: Parameter
 			+ Member
 			+ AtLeast32BitUnsigned
@@ -184,10 +187,12 @@ pub mod pallet {
 			+ MaybeSerializeDeserialize
 			+ Debug;
 
+		/// Expose customizable associated type of asset transfer, lock and unlock
 		type Assets: Transfer<Self::AccountId, AssetId = Self::AssetId, Balance = Self::AssetBalance>
 			+ Mutate<Self::AccountId, AssetId = Self::AssetId, Balance = Self::AssetBalance>
 			+ Inspect<Self::AccountId, AssetId = Self::AssetId, Balance = Self::AssetBalance>;
 
+		/// Map of cross-chain asset ID & name
 		type AssetIdByName: AssetIdAndNameProvider<Self::AssetId>;
 
 		/// Account Id Conversion from SS58 string or hex string
@@ -197,7 +202,7 @@ pub mod pallet {
 			+ PartialEq
 			+ Debug;
 
-		// config native token name
+		// The native token name
 		const NATIVE_TOKEN_NAME: &'static [u8];
 	}
 
@@ -332,14 +337,15 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
-	/// store latest height
+	/// Latest height
 	pub type LatestHeight<T: Config> = StorageValue<_, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
+	/// Previous host block height
 	pub type OldHeight<T: Config> = StorageValue<_, u64, ValueQuery>;
 
 	#[pallet::storage]
-	/// key-value asset id with asset name
+	/// (asset name) => asset id
 	pub type AssetIdByName<T: Config> =
 		StorageMap<_, Twox64Concat, Vec<u8>, T::AssetId, ValueQuery>;
 
@@ -367,37 +373,37 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		/// New block
+		/// New block event
 		NewBlock { height: Height },
-		/// Client Created
+		/// Client created event
 		CreateClient {
 			height: Height,
 			client_id: ClientId,
 			client_type: ClientType,
 			consensus_height: Height,
 		},
-		/// Client updated
+		/// Client updated event
 		UpdateClient {
 			height: Height,
 			client_id: ClientId,
 			client_type: ClientType,
 			consensus_height: Height,
 		},
-		/// Client upgraded
+		/// Client upgraded event
 		UpgradeClient {
 			height: Height,
 			client_id: ClientId,
 			client_type: ClientType,
 			consensus_height: Height,
 		},
-		/// Client misbehaviour
+		/// Client misbehaviour event
 		ClientMisbehaviour {
 			height: Height,
 			client_id: ClientId,
 			client_type: ClientType,
 			consensus_height: Height,
 		},
-		/// Connection open init
+		/// Connection open init event
 		OpenInitConnection {
 			height: Height,
 			connection_id: Option<ConnectionId>,
@@ -405,7 +411,7 @@ pub mod pallet {
 			counterparty_connection_id: Option<ConnectionId>,
 			counterparty_client_id: ClientId,
 		},
-		/// Connection open try
+		/// Connection open try event
 		OpenTryConnection {
 			height: Height,
 			connection_id: Option<ConnectionId>,
@@ -413,7 +419,7 @@ pub mod pallet {
 			counterparty_connection_id: Option<ConnectionId>,
 			counterparty_client_id: ClientId,
 		},
-		/// Connection open acknowledgement
+		/// Connection open acknowledgement event
 		OpenAckConnection {
 			height: Height,
 			connection_id: Option<ConnectionId>,
@@ -421,7 +427,7 @@ pub mod pallet {
 			counterparty_connection_id: Option<ConnectionId>,
 			counterparty_client_id: ClientId,
 		},
-		/// Connection open confirm
+		/// Connection open confirm event
 		OpenConfirmConnection {
 			height: Height,
 			connection_id: Option<ConnectionId>,
@@ -429,7 +435,7 @@ pub mod pallet {
 			counterparty_connection_id: Option<ConnectionId>,
 			counterparty_client_id: ClientId,
 		},
-		/// Channel open init
+		/// Channel open init event
 		OpenInitChannel {
 			height: Height,
 			port_id: PortId,
@@ -438,7 +444,7 @@ pub mod pallet {
 			counterparty_port_id: PortId,
 			counterparty_channel_id: Option<ChannelId>,
 		},
-		/// Channel open try
+		/// Channel open try event
 		OpenTryChannel {
 			height: Height,
 			port_id: PortId,
@@ -447,7 +453,7 @@ pub mod pallet {
 			counterparty_port_id: PortId,
 			counterparty_channel_id: Option<ChannelId>,
 		},
-		/// Channel open acknowledgement
+		/// Channel open acknowledgement event
 		OpenAckChannel {
 			height: Height,
 			port_id: PortId,
@@ -456,7 +462,7 @@ pub mod pallet {
 			counterparty_port_id: PortId,
 			counterparty_channel_id: Option<ChannelId>,
 		},
-		/// Channel open confirm
+		/// Channel open confirm event
 		OpenConfirmChannel {
 			height: Height,
 			port_id: PortId,
@@ -465,7 +471,7 @@ pub mod pallet {
 			counterparty_port_id: PortId,
 			counterparty_channel_id: Option<ChannelId>,
 		},
-		/// Channel close init
+		/// Channel close init event
 		CloseInitChannel {
 			height: Height,
 			port_id: PortId,
@@ -474,7 +480,7 @@ pub mod pallet {
 			counterparty_port_id: PortId,
 			counterparty_channel_id: Option<ChannelId>,
 		},
-		/// Channel close confirm
+		/// Channel close confirm event
 		CloseConfirmChannel {
 			height: Height,
 			port_id: PortId,
@@ -483,48 +489,48 @@ pub mod pallet {
 			counterparty_port_id: PortId,
 			counterparty_channel_id: Option<ChannelId>,
 		},
-		/// Send packet
+		/// Send packet event
 		SendPacket { height: Height, packet: Packet },
-		/// Receive packet
+		/// Receive packet event
 		ReceivePacket { height: Height, packet: Packet },
-		/// WriteAcknowledgement packet
+		/// WriteAcknowledgement packet event
 		WriteAcknowledgement { height: Height, packet: Packet, ack: Vec<u8> },
-		/// Acknowledgements packet
+		/// Acknowledgements packet event
 		AcknowledgePacket { height: Height, packet: Packet },
-		/// Timeout packet
+		/// Timeout packet event
 		TimeoutPacket { height: Height, packet: Packet },
-		/// TimoutOnClose packet
+		/// TimoutOnClose packet event
 		TimeoutOnClosePacket { height: Height, packet: Packet },
-		/// Empty
+		/// Empty event
 		Empty(Vec<u8>),
-		/// Chain Error
+		/// Chain Error event
 		ChainError(Vec<u8>),
-		/// App Module
+		/// App Module event
 		AppModule(ModuleEvent),
-		/// emit update client state event
+		/// Emit update client state event
 		UpdateClientState(Height, EventClientState),
-		/// transfer native token
+		/// Transfer native token  event
 		TransferNativeToken(T::AccountIdConversion, T::AccountIdConversion, BalanceOf<T>),
-		/// transfer no native token
+		/// Transfer non-native token event
 		TransferNoNativeToken(
 			T::AccountIdConversion,
 			T::AccountIdConversion,
 			<T as Config>::AssetBalance,
 		),
-		/// Burn cross chain token
+		/// Burn cross chain token event
 		BurnToken(T::AssetId, T::AccountIdConversion, T::AssetBalance),
-		/// Mint chairperson  token
+		/// Mint chairperson token event
 		MintToken(T::AssetId, T::AccountIdConversion, T::AssetBalance),
 	}
 
 	/// Errors in MMR verification informing users that something went wrong.
 	#[pallet::error]
 	pub enum Error<T> {
-		/// update the beefy light client failure!
+		/// Update the beefy light client failure!
 		UpdateBeefyLightClientFailure,
-		/// receive mmr root block number less than client_state.latest_commitment.block_number
+		/// Receive mmr root block number less than client_state.latest_commitment.block_number
 		ReceiveMmrRootBlockNumberLessThanClientStateLatestCommitmentBlockNumber,
-		/// client id not found
+		/// Client id not found
 		ClientIdNotFound,
 		/// Encode error
 		InvalidEncode,
@@ -532,13 +538,13 @@ pub mod pallet {
 		InvalidDecode,
 		/// FromUtf8Error
 		InvalidFromUtf8,
-		/// invalid signed_commitment
+		/// Invalid signed_commitment
 		InvalidSignedCommitment,
-		/// empty latest_commitment
+		/// Empty latest_commitment
 		EmptyLatestCommitment,
-		/// invalid token id
+		/// Invalid token id
 		InvalidTokenId,
-		/// wrong assert id
+		/// Wrong assert id
 		WrongAssetId,
 		// Parser Msg Transfer Error
 		ParserMsgTransferError,
@@ -549,8 +555,16 @@ pub mod pallet {
 	/// Dispatch able functions must be annotated with a weight and must return a DispatchResult.
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
-		/// This function acts as an entry for all of the IBC request(except MMR root update).
+		/// This function acts as an entry for most of the IBC request.
 		/// I.e., create clients, update clients, handshakes to create channels, ...etc
+		///
+		/// The origin must be Signed and the sender must have sufficient funds fee.
+		///
+		/// Parameters:
+		/// - `messages`: The arbitrary ICS message's representation in Substrate, which contains an URL and
+		///  a serialized protocol buffer message. The URL name that uniquely identifies the type of the serialized protocol buffer message.
+		///
+		/// The relevant events are emitted when successful.
 		#[pallet::weight(0)]
 		pub fn deliver(origin: OriginFor<T>, messages: Vec<Any>) -> DispatchResultWithPostInfo {
 			sp_tracing::within_span!(
@@ -596,6 +610,13 @@ pub mod pallet {
 			})
 		}
 
+		/// ICS20 fungible token transfer.
+		/// Handling transfer request as sending chain or receiving chain.
+		///
+		/// Parameters:
+		/// - `messages`: A serialized protocol buffer message containing the transfer request.
+		///
+		/// The relevant events are emitted when successful.
 		#[pallet::weight(0)]
 		pub fn raw_transfer(
 			origin: OriginFor<T>,
@@ -663,7 +684,12 @@ pub mod pallet {
 		}
 
 		/// Update the MMR root stored in client_state
-		/// Example of invoking this function via subxt
+		///
+		/// Parameters:
+		/// - `client_id`: The ID of the chain whose MMR root will be updated.
+		/// - `mmr_root`: The mmr_root received, which will be used to update existing mmr root.
+		///
+		/// The `UpdateClientState` event is emitted when successful.
 		#[pallet::weight(0)]
 		pub fn update_client_state(
 			origin: OriginFor<T>,
@@ -676,6 +702,7 @@ pub mod pallet {
 			Self::inner_update_mmr_root(client_id, mmr_root)
 		}
 
+		/// Delete all previously stored `SendPacketEvent`
 		#[pallet::weight(0)]
 		pub fn delete_send_packet_event(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
 			log::trace!(target: LOG_TARGET, "delete_send_packet_event");
@@ -686,6 +713,7 @@ pub mod pallet {
 			Ok(().into())
 		}
 
+		/// Delete all previously stored `WriteAckPacketEvent`
 		#[pallet::weight(0)]
 		pub fn delete_ack_packet_event(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
 			log::trace!(target: LOG_TARGET, "delete_ack_packet_event");
