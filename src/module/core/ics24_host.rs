@@ -53,6 +53,7 @@ define_error! {
 	}
 }
 
+/// ibc-rs' `PortId` representation in substrate
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub struct PortId(pub Vec<u8>);
 
@@ -70,6 +71,7 @@ impl From<PortId> for IbcPortId {
 	}
 }
 
+/// ibc-rs' `ChannelId` representation in substrate
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub struct ChannelId(pub Vec<u8>);
 
@@ -87,12 +89,14 @@ impl From<ChannelId> for IbcChannelId {
 	}
 }
 
+/// ibc-rs' `TimeoutHeight` representation in substrate
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub enum TimeoutHeight {
 	Never,
 	At(Height),
 }
 
+/// ibc-rs' `Height` representation in substrate
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub struct Height {
 	/// Previously known as "epoch"
@@ -120,6 +124,7 @@ impl Height {
 	}
 }
 
+/// ibc-rs' `ClientType` representation in substrate
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub enum ClientType {
 	Tendermint,
@@ -146,6 +151,7 @@ impl ClientType {
 	}
 }
 
+/// ibc-rs' `ClientId` representation in substrate
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub struct ClientId(pub Vec<u8>);
 
@@ -163,6 +169,7 @@ impl From<ClientId> for IbcClientId {
 	}
 }
 
+/// ibc-rs' `ConnectionId` representation in substrate
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub struct ConnectionId(pub Vec<u8>);
 
@@ -180,7 +187,7 @@ impl From<ConnectionId> for IbcConnectionId {
 	}
 }
 
-/// Helper to convert between IBC timestamp and Substrate timestamp
+/// ibc-rs' `Timestamp` representation in substrate
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub struct Timestamp {
 	pub time: Vec<u8>,
@@ -199,6 +206,7 @@ impl From<Timestamp> for IbcTimestamp {
 	}
 }
 
+/// ibc-rs' `Sequence` representation in substrate
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub struct Sequence(u64);
 
@@ -214,6 +222,7 @@ impl From<Sequence> for IbcSequence {
 	}
 }
 
+/// ibc-rs' `Packet` representation in substrate
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub struct Packet {
 	pub sequence: Sequence,
