@@ -9,7 +9,6 @@ repository 	= "https://github.com/octopus-network/substrate-ibc/"
 description = "An IBC implementation on Substrate."
 readme = "README.md"
 build = 'build.rs'
-# documentation = "https://docs.rs/pallet-ibc" // TODO
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
@@ -22,8 +21,8 @@ git = 'https://github.com/paritytech/substrate.git'
 codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive"] }
 scale-info = { version = "2.1.2", default-features = false, features = ["derive"] }
 log = { version = "0.4.0", default-features = false }
-prost-types = { version = "0.9.0", default-features = false }
-prost = { version = "0.9.0", default-features = false }
+prost-types = { version = "0.11.1", default-features = false }
+prost = { version = "0.11.0", default-features = false }
 serde_json = { version = "1.0", default-features = false }
 serde = { version = "1.0", default-features = false }
 flex-error = { version = "0.4.4", default-features = false }
@@ -41,11 +40,11 @@ sp-tracing = { git = "https://github.com/paritytech/substrate.git", branch = "po
 
 
 ## for ibc protocl
-ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "dev", default-features = false }
-ibc-proto = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "dev", default-features = false }
+ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/merge-master", default-features = false }
+ibc-proto = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/merge-master", default-features = false }
 # ibc = { path = "../ibc-rs/modules", default-features = false }
 # ibc-proto = { path = "../ibc-rs/proto", default-features = false }
-tendermint-proto = { version = "=0.23.7", default-features = false }
+tendermint-proto = { version = "=0.23.9", default-features = false }
 beefy-light-client = { git = "https://github.com/octopus-network/beefy-light-client.git", branch="main", default-features = false }
 # beefy-light-client = { path = "../beefy-light-client", default-features = false}
 
@@ -61,7 +60,7 @@ default-features = false
 hex = '0.4.0'
 sha2 = '0.10.2'
 serde = { version = "1.0" }
-ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "dev", features = ["mocks"]}
+ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "feature/merge-master", features = ["mocks"]}
 #ibc = { path = "../ibc-rs/modules", features = ["mocks"]}
 sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.18"}
 sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.18" }
