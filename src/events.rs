@@ -2,7 +2,6 @@ use crate::*;
 use core::borrow::Borrow;
 use ibc::{core::ics26_routing, events::IbcEvent as RawIbcEvent};
 
-
 /// ibc-rs' `ModuleEvent` representation in substrate
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub struct ModuleEvent {
@@ -78,24 +77,20 @@ impl<T: Config> From<RawIbcEvent> for Event<T> {
 		match value {
 			RawIbcEvent::NewBlock(value) => Event::<T>::NewBlock { height: value.height.into() },
 			RawIbcEvent::CreateClient(value) => {
-				
 				let client_id = value.0.client_id;
 				let client_type = value.0.client_type;
 				let consensus_height = value.0.consensus_height;
 				Event::<T>::CreateClient {
-					
 					client_id: client_id.into(),
 					client_type: client_type.into(),
 					consensus_height: consensus_height.into(),
 				}
 			},
 			RawIbcEvent::UpdateClient(value) => {
-				
 				let client_id = value.common.client_id;
 				let client_type = value.common.client_type;
 				let consensus_height = value.common.consensus_height;
 				Event::<T>::UpdateClient {
-					
 					client_id: client_id.into(),
 					client_type: client_type.into(),
 					consensus_height: consensus_height.into(),
@@ -103,31 +98,26 @@ impl<T: Config> From<RawIbcEvent> for Event<T> {
 			},
 			// Upgrade client events are not currently being used
 			RawIbcEvent::UpgradeClient(value) => {
-				
 				let client_id = value.0.client_id;
 				let client_type = value.0.client_type;
 				let consensus_height = value.0.consensus_height;
 				Event::<T>::UpgradeClient {
-					
 					client_id: client_id.into(),
 					client_type: client_type.into(),
 					consensus_height: consensus_height.into(),
 				}
 			},
 			RawIbcEvent::ClientMisbehaviour(value) => {
-				
 				let client_id = value.0.client_id;
 				let client_type = value.0.client_type;
 				let consensus_height = value.0.consensus_height;
 				Event::<T>::ClientMisbehaviour {
-					
 					client_id: client_id.into(),
 					client_type: client_type.into(),
 					consensus_height: consensus_height.into(),
 				}
 			},
 			RawIbcEvent::OpenInitConnection(value) => {
-				
 				let connection_id: Option<ConnectionId> =
 					value.attributes().connection_id.clone().map(|val| val.into());
 				let client_id = value.attributes().client_id.clone();
@@ -136,7 +126,6 @@ impl<T: Config> From<RawIbcEvent> for Event<T> {
 
 				let counterparty_client_id = value.attributes().counterparty_client_id.clone();
 				Event::<T>::OpenInitConnection {
-					
 					connection_id,
 					client_id: client_id.into(),
 					counterparty_connection_id,
@@ -144,7 +133,6 @@ impl<T: Config> From<RawIbcEvent> for Event<T> {
 				}
 			},
 			RawIbcEvent::OpenTryConnection(value) => {
-				
 				let connection_id: Option<ConnectionId> =
 					value.attributes().connection_id.clone().map(|val| val.into());
 				let client_id = value.attributes().client_id.clone();
@@ -153,7 +141,6 @@ impl<T: Config> From<RawIbcEvent> for Event<T> {
 
 				let counterparty_client_id = value.attributes().counterparty_client_id.clone();
 				Event::<T>::OpenTryConnection {
-					
 					connection_id,
 					client_id: client_id.into(),
 					counterparty_connection_id,
@@ -161,7 +148,6 @@ impl<T: Config> From<RawIbcEvent> for Event<T> {
 				}
 			},
 			RawIbcEvent::OpenAckConnection(value) => {
-				
 				let connection_id: Option<ConnectionId> =
 					value.attributes().connection_id.clone().map(|val| val.into());
 				let client_id = value.attributes().client_id.clone();
@@ -170,7 +156,6 @@ impl<T: Config> From<RawIbcEvent> for Event<T> {
 
 				let counterparty_client_id = value.attributes().counterparty_client_id.clone();
 				Event::<T>::OpenAckConnection {
-					
 					connection_id,
 					client_id: client_id.into(),
 					counterparty_connection_id,
@@ -178,7 +163,6 @@ impl<T: Config> From<RawIbcEvent> for Event<T> {
 				}
 			},
 			RawIbcEvent::OpenConfirmConnection(value) => {
-				
 				let connection_id: Option<ConnectionId> =
 					value.attributes().connection_id.clone().map(|val| val.into());
 				let client_id = value.attributes().client_id.clone();
@@ -187,7 +171,6 @@ impl<T: Config> From<RawIbcEvent> for Event<T> {
 
 				let counterparty_client_id = value.attributes().counterparty_client_id.clone();
 				Event::<T>::OpenConfirmConnection {
-					
 					connection_id,
 					client_id: client_id.into(),
 					counterparty_connection_id,
@@ -195,7 +178,6 @@ impl<T: Config> From<RawIbcEvent> for Event<T> {
 				}
 			},
 			RawIbcEvent::OpenInitChannel(value) => {
-				
 				let port_id = value.port_id.clone();
 				let channel_id: Option<ChannelId> = value.channel_id.clone().map(|val| val.into());
 				let connection_id = value.connection_id.clone();
@@ -203,7 +185,6 @@ impl<T: Config> From<RawIbcEvent> for Event<T> {
 				let counterparty_channel_id: Option<ChannelId> =
 					value.channel_id.map(|val| val.into());
 				Event::<T>::OpenInitChannel {
-					
 					port_id: port_id.into(),
 					channel_id,
 					connection_id: connection_id.into(),
@@ -212,7 +193,6 @@ impl<T: Config> From<RawIbcEvent> for Event<T> {
 				}
 			},
 			RawIbcEvent::OpenTryChannel(value) => {
-				
 				let port_id = value.port_id.clone();
 				let channel_id: Option<ChannelId> = value.channel_id.clone().map(|val| val.into());
 				let connection_id = value.connection_id.clone();
@@ -220,7 +200,6 @@ impl<T: Config> From<RawIbcEvent> for Event<T> {
 				let counterparty_channel_id: Option<ChannelId> =
 					value.channel_id.map(|val| val.into());
 				Event::<T>::OpenTryChannel {
-					
 					port_id: port_id.into(),
 					channel_id,
 					connection_id: connection_id.into(),
@@ -229,7 +208,6 @@ impl<T: Config> From<RawIbcEvent> for Event<T> {
 				}
 			},
 			RawIbcEvent::OpenAckChannel(value) => {
-				
 				let port_id = value.port_id.clone();
 				let channel_id: Option<ChannelId> = value.channel_id.clone().map(|val| val.into());
 				let connection_id = value.connection_id.clone();
@@ -237,7 +215,6 @@ impl<T: Config> From<RawIbcEvent> for Event<T> {
 				let counterparty_channel_id: Option<ChannelId> =
 					value.channel_id.map(|val| val.into());
 				Event::<T>::OpenAckChannel {
-					
 					port_id: port_id.into(),
 					channel_id,
 					connection_id: connection_id.into(),
@@ -246,7 +223,6 @@ impl<T: Config> From<RawIbcEvent> for Event<T> {
 				}
 			},
 			RawIbcEvent::OpenConfirmChannel(value) => {
-				
 				let port_id = value.port_id.clone();
 				let channel_id: Option<ChannelId> = value.channel_id.clone().map(|val| val.into());
 				let connection_id = value.connection_id.clone();
@@ -254,7 +230,6 @@ impl<T: Config> From<RawIbcEvent> for Event<T> {
 				let counterparty_channel_id: Option<ChannelId> =
 					value.channel_id.map(|val| val.into());
 				Event::<T>::OpenConfirmChannel {
-					
 					port_id: port_id.into(),
 					channel_id,
 					connection_id: connection_id.into(),
@@ -263,7 +238,6 @@ impl<T: Config> From<RawIbcEvent> for Event<T> {
 				}
 			},
 			RawIbcEvent::CloseInitChannel(value) => {
-				
 				let port_id = value.port_id.clone();
 				let channel_id: Option<ChannelId> = Some(value.channel_id.into());
 				let connection_id = value.connection_id.clone();
@@ -271,7 +245,6 @@ impl<T: Config> From<RawIbcEvent> for Event<T> {
 				let counterparty_channel_id: Option<ChannelId> =
 					value.counterparty_channel_id.map(|val| val.into());
 				Event::<T>::CloseInitChannel {
-					
 					port_id: port_id.into(),
 					channel_id,
 					connection_id: connection_id.into(),
@@ -280,7 +253,6 @@ impl<T: Config> From<RawIbcEvent> for Event<T> {
 				}
 			},
 			RawIbcEvent::CloseConfirmChannel(value) => {
-				
 				let port_id = value.port_id.clone();
 				let channel_id: Option<ChannelId> = value.channel_id.clone().map(|val| val.into());
 				let connection_id = value.connection_id.clone();
@@ -288,7 +260,6 @@ impl<T: Config> From<RawIbcEvent> for Event<T> {
 				let counterparty_channel_id: Option<ChannelId> =
 					value.channel_id.map(|val| val.into());
 				Event::<T>::CloseConfirmChannel {
-					
 					port_id: port_id.into(),
 					channel_id,
 					connection_id: connection_id.into(),
@@ -297,38 +268,28 @@ impl<T: Config> From<RawIbcEvent> for Event<T> {
 				}
 			},
 			RawIbcEvent::SendPacket(value) => {
-				
 				let packet = value.packet;
-				Event::<T>::SendPacket {  packet: packet.into() }
+				Event::<T>::SendPacket { packet: packet.into() }
 			},
 			RawIbcEvent::ReceivePacket(value) => {
-				
 				let packet = value.packet;
-				Event::<T>::ReceivePacket {  packet: packet.into() }
+				Event::<T>::ReceivePacket { packet: packet.into() }
 			},
 			RawIbcEvent::WriteAcknowledgement(value) => {
-				
 				let packet = value.packet;
 				let ack = value.ack;
 
-				Event::<T>::WriteAcknowledgement {
-					
-					packet: packet.into(),
-					ack,
-				}
+				Event::<T>::WriteAcknowledgement { packet: packet.into(), ack }
 			},
 			RawIbcEvent::AcknowledgePacket(value) => {
-				
 				let packet = value.packet;
 				Event::<T>::AcknowledgePacket { packet: packet.into() }
 			},
 			RawIbcEvent::TimeoutPacket(value) => {
-				
 				let packet = value.packet;
-				Event::<T>::TimeoutPacket {  packet: packet.into() }
+				Event::<T>::TimeoutPacket { packet: packet.into() }
 			},
 			RawIbcEvent::TimeoutOnClosePacket(value) => {
-				
 				let packet = value.packet;
 				Event::<T>::TimeoutOnClosePacket { packet: packet.into() }
 			},
