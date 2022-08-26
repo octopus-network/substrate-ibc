@@ -552,9 +552,11 @@ fn test_get_identified_channel_end() {
 	let channel_end_vec = vec![ChannelEnd::default(); range.len()];
 
 	for index in 0..range.len() {
-		let port_id = PortId::default();
+		let port_id =
+			PortId::default();
 		port_id_vec.push(port_id);
-		let channel_id = ChannelId::default();
+		let channel_id =
+			ChannelId::default();
 		channel_id_vec.push(channel_id);
 	}
 
