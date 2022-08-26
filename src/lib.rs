@@ -373,36 +373,19 @@ pub mod pallet {
 		/// New block event
 		NewBlock { height: Height },
 		/// Client created event
-		CreateClient {
-			height: Height,
-			client_id: ClientId,
-			client_type: ClientType,
-			consensus_height: Height,
-		},
+		CreateClient { client_id: ClientId, client_type: ClientType, consensus_height: Height },
 		/// Client updated event
-		UpdateClient {
-			height: Height,
-			client_id: ClientId,
-			client_type: ClientType,
-			consensus_height: Height,
-		},
+		UpdateClient { client_id: ClientId, client_type: ClientType, consensus_height: Height },
 		/// Client upgraded event
-		UpgradeClient {
-			height: Height,
-			client_id: ClientId,
-			client_type: ClientType,
-			consensus_height: Height,
-		},
+		UpgradeClient { client_id: ClientId, client_type: ClientType, consensus_height: Height },
 		/// Client misbehaviour event
 		ClientMisbehaviour {
-			height: Height,
 			client_id: ClientId,
 			client_type: ClientType,
 			consensus_height: Height,
 		},
 		/// Connection open init event
 		OpenInitConnection {
-			height: Height,
 			connection_id: Option<ConnectionId>,
 			client_id: ClientId,
 			counterparty_connection_id: Option<ConnectionId>,
@@ -410,7 +393,6 @@ pub mod pallet {
 		},
 		/// Connection open try event
 		OpenTryConnection {
-			height: Height,
 			connection_id: Option<ConnectionId>,
 			client_id: ClientId,
 			counterparty_connection_id: Option<ConnectionId>,
@@ -418,7 +400,6 @@ pub mod pallet {
 		},
 		/// Connection open acknowledgement event
 		OpenAckConnection {
-			height: Height,
 			connection_id: Option<ConnectionId>,
 			client_id: ClientId,
 			counterparty_connection_id: Option<ConnectionId>,
@@ -426,7 +407,6 @@ pub mod pallet {
 		},
 		/// Connection open confirm event
 		OpenConfirmConnection {
-			height: Height,
 			connection_id: Option<ConnectionId>,
 			client_id: ClientId,
 			counterparty_connection_id: Option<ConnectionId>,
@@ -434,7 +414,6 @@ pub mod pallet {
 		},
 		/// Channel open init event
 		OpenInitChannel {
-			height: Height,
 			port_id: PortId,
 			channel_id: Option<ChannelId>,
 			connection_id: ConnectionId,
@@ -443,7 +422,6 @@ pub mod pallet {
 		},
 		/// Channel open try event
 		OpenTryChannel {
-			height: Height,
 			port_id: PortId,
 			channel_id: Option<ChannelId>,
 			connection_id: ConnectionId,
@@ -452,7 +430,6 @@ pub mod pallet {
 		},
 		/// Channel open acknowledgement event
 		OpenAckChannel {
-			height: Height,
 			port_id: PortId,
 			channel_id: Option<ChannelId>,
 			connection_id: ConnectionId,
@@ -461,7 +438,6 @@ pub mod pallet {
 		},
 		/// Channel open confirm event
 		OpenConfirmChannel {
-			height: Height,
 			port_id: PortId,
 			channel_id: Option<ChannelId>,
 			connection_id: ConnectionId,
@@ -470,7 +446,6 @@ pub mod pallet {
 		},
 		/// Channel close init event
 		CloseInitChannel {
-			height: Height,
 			port_id: PortId,
 			channel_id: Option<ChannelId>,
 			connection_id: ConnectionId,
@@ -479,7 +454,6 @@ pub mod pallet {
 		},
 		/// Channel close confirm event
 		CloseConfirmChannel {
-			height: Height,
 			port_id: PortId,
 			channel_id: Option<ChannelId>,
 			connection_id: ConnectionId,
@@ -487,17 +461,17 @@ pub mod pallet {
 			counterparty_channel_id: Option<ChannelId>,
 		},
 		/// Send packet event
-		SendPacket { height: Height, packet: Packet },
+		SendPacket { packet: Packet },
 		/// Receive packet event
-		ReceivePacket { height: Height, packet: Packet },
+		ReceivePacket { packet: Packet },
 		/// WriteAcknowledgement packet event
-		WriteAcknowledgement { height: Height, packet: Packet, ack: Vec<u8> },
+		WriteAcknowledgement { packet: Packet, ack: Vec<u8> },
 		/// Acknowledgements packet event
-		AcknowledgePacket { height: Height, packet: Packet },
+		AcknowledgePacket { packet: Packet },
 		/// Timeout packet event
-		TimeoutPacket { height: Height, packet: Packet },
+		TimeoutPacket { packet: Packet },
 		/// TimoutOnClose packet event
-		TimeoutOnClosePacket { height: Height, packet: Packet },
+		TimeoutOnClosePacket { packet: Packet },
 		/// Empty event
 		Empty(Vec<u8>),
 		/// Chain Error event
@@ -558,8 +532,10 @@ pub mod pallet {
 		/// The origin must be Signed and the sender must have sufficient funds fee.
 		///
 		/// Parameters:
-		/// - `messages`: The arbitrary ICS message's representation in Substrate, which contains an URL and
-		///  a serialized protocol buffer message. The URL name that uniquely identifies the type of the serialized protocol buffer message.
+		/// - `messages`: The arbitrary ICS message's representation in Substrate, which contains an
+		///   URL and
+		///  a serialized protocol buffer message. The URL name that uniquely identifies the type of
+		/// the serialized protocol buffer message.
 		///
 		/// The relevant events are emitted when successful.
 		#[pallet::weight(0)]
