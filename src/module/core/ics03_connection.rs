@@ -32,7 +32,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 
 		if <Connections<T>>::contains_key(&connections_path) {
 			let data = <Connections<T>>::get(&connections_path);
-			let ret = ConnectionEnd::decode_vec(&*data).map_err(Ics03Error::invalid_decode)?;
+			let ret = ConnectionEnd::decode_vec(&data).map_err(Ics03Error::invalid_decode)?;
 
 			trace!(target:"runtime::pallet-ibc","in connection : [connection_end] >>  connection_end = {:?}", ret);
 			Ok(ret)

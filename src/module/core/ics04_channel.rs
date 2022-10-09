@@ -47,7 +47,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		if <Channels<T>>::contains_key(&channel_end_path) {
 			let data = <Channels<T>>::get(&channel_end_path);
 
-			let channel_end = ChannelEnd::decode_vec(&*data).map_err(|_| {
+			let channel_end = ChannelEnd::decode_vec(&data).map_err(|_| {
 				Ics04Error::channel_not_found(port_channel_id.clone().0, port_channel_id.clone().1)
 			})?;
 

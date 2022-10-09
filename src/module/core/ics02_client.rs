@@ -46,7 +46,7 @@ impl<T: Config> ClientReader for Context<T> {
 
 		if <ClientStates<T>>::contains_key(&client_state_path) {
 			let data = <ClientStates<T>>::get(&client_state_path);
-			let result = AnyClientState::decode_vec(&*data).map_err(Ics02Error::invalid_decode)?;
+			let result = AnyClientState::decode_vec(&data).map_err(Ics02Error::invalid_decode)?;
 			trace!(target:"runtime::pallet-ibc","in client : [client_state] >> any client_state: {:?}", result);
 
 			Ok(result)
@@ -78,7 +78,7 @@ impl<T: Config> ClientReader for Context<T> {
 		if <ConsensusStates<T>>::contains_key(client_consensus_state_path.clone()) {
 			let values = <ConsensusStates<T>>::get(client_consensus_state_path);
 			let any_consensus_state =
-				AnyConsensusState::decode_vec(&*values).map_err(Ics02Error::invalid_decode)?;
+				AnyConsensusState::decode_vec(&values).map_err(Ics02Error::invalid_decode)?;
 			trace!(target:"runtime::pallet-ibc",
 				"in client : [consensus_state] >> any consensus state = {:?}",
 				any_consensus_state
@@ -109,7 +109,7 @@ impl<T: Config> ClientReader for Context<T> {
 		if <ConsensusStates<T>>::contains_key(client_consensus_state_path.clone()) {
 			let values = <ConsensusStates<T>>::get(client_consensus_state_path);
 			let any_consensus_state =
-				AnyConsensusState::decode_vec(&*values).map_err(Ics02Error::invalid_decode)?;
+				AnyConsensusState::decode_vec(&values).map_err(Ics02Error::invalid_decode)?;
 			trace!(target:"runtime::pallet-ibc",
 				"in client : [next_consensus_state] >> any consensus state = {:?}",
 				any_consensus_state
@@ -146,7 +146,7 @@ impl<T: Config> ClientReader for Context<T> {
 		if <ConsensusStates<T>>::contains_key(client_consensus_state_path.clone()) {
 			let values = <ConsensusStates<T>>::get(client_consensus_state_path);
 			let any_consensus_state =
-				AnyConsensusState::decode_vec(&*values).map_err(Ics02Error::invalid_decode)?;
+				AnyConsensusState::decode_vec(&values).map_err(Ics02Error::invalid_decode)?;
 			trace!(target:"runtime::pallet-ibc",
 				"in client : [prev_consensus_state] >> any consensus state = {:?}",
 				any_consensus_state
