@@ -104,9 +104,47 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
+
+mod type_define {
+	use alloc::vec::Vec;
+
+	pub type OctopusClientStatePath = Vec<u8>;
+	pub type OctopusClientState = Vec<u8>;
+	pub type OctopusClientId = Vec<u8>;
+	pub type OctopusIbcHeight = Vec<u8>;
+	pub type OctopusTimeStamp = Vec<u8>;
+	pub type OctopusIbcHostHeight = Vec<u8>;
+	pub type OctopusClientConsensusStatePath = Vec<u8>;
+	pub type OctopusConsensusState = Vec<u8>;
+	pub type OctopusConnectionsPath = Vec<u8>;
+	pub type OctopusConnectionEnd = Vec<u8>;
+	pub type OctopusChannelEndPath = Vec<u8>;
+	pub type OctopusChannelEnd = Vec<u8>;
+	pub type OctopusSeqSendsPath = Vec<u8>;
+	pub type OctopusSeqRecvsPath = Vec<u8>;
+	pub type OctopusSeqAcksPath = Vec<u8>;
+	pub type OctopusAcksPath = Vec<u8>;
+	pub type OctopusAcksHash = Vec<u8>;
+	pub type OctopusClientTypePath = Vec<u8>;
+	pub type OctopusClientType = Vec<u8>;
+	pub type OctopusClientConnectionsPath = Vec<u8>;
+	pub type OctopusConnectionId = Vec<u8>;
+	pub type OctopusRecipientsPath = Vec<u8>;
+	pub type OctopusRecipient = Vec<u8>;
+	pub type OctopusCommitmentsPath = Vec<u8>;
+	pub type OctopusCommitmentHash = Vec<u8>;
+	pub type OctopusPortId = Vec<u8>;
+	pub type OctopusChannelId = Vec<u8>;
+	pub type OctopusSequence = u64;
+	pub type OctopusWriteAckEvent = Vec<u8>;
+	pub type PreviousHostHeight = u64;
+	pub type AssetName = Vec<u8>;
+}
+
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
+	use super::type_define::*;
 	use crate::{
 		events::ModuleEvent,
 		module::{
@@ -196,17 +234,17 @@ pub mod pallet {
 	#[pallet::storage]
 	/// ClientStatePath(client_id) => ClientState
 	pub type ClientStates<T: Config> =
-		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
+		StorageMap<_, Blake2_128Concat, OctopusClientStatePath, OctopusClientState, ValueQuery>;
 
 	#[pallet::storage]
 	/// (client_id, height) => timestamp
 	pub type ClientProcessedTimes<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
-		Vec<u8>,
+		OctopusClientId,
 		Blake2_128Concat,
-		Vec<u8>,
-		Vec<u8>,
+		OctopusIbcHeight,
+		OctopusTimeStamp,
 		ValueQuery,
 	>;
 
@@ -215,53 +253,53 @@ pub mod pallet {
 	pub type ClientProcessedHeights<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
-		Vec<u8>,
+		OctopusClientId,
 		Blake2_128Concat,
-		Vec<u8>,
-		Vec<u8>,
+		OctopusIbcHeight,
+		OctopusIbcHostHeight,
 		ValueQuery,
 	>;
 
 	#[pallet::storage]
 	/// ClientConsensusStatePath(client_id, Height) => ConsensusState
 	pub type ConsensusStates<T: Config> =
-		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
+		StorageMap<_, Blake2_128Concat, OctopusClientConsensusStatePath, OctopusConsensusState, ValueQuery>;
 
 	#[pallet::storage]
 	/// ConnectionsPath(connection_id) => ConnectionEnd
-	pub type Connections<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
+	pub type Connections<T: Config> = StorageMap<_, Blake2_128Concat, OctopusConnectionsPath, OctopusConnectionEnd, ValueQuery>;
 
 	#[pallet::storage]
 	/// ChannelEndPath(port_id, channel_id) => ChannelEnd
-	pub type Channels<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
+	pub type Channels<T: Config> = StorageMap<_, Blake2_128Concat, OctopusChannelEndPath, OctopusChannelEnd, ValueQuery>;
 
 	#[pallet::storage]
 	/// ConnectionsPath(connection_id) => Vec<ChannelEndPath(port_id, channel_id)>
 	pub type ChannelsConnection<T: Config> =
-		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<Vec<u8>>, ValueQuery>;
+		StorageMap<_, Blake2_128Concat, OctopusConnectionsPath, Vec<OctopusChannelEndPath>, ValueQuery>;
 
 	#[pallet::storage]
 	/// SeqSendsPath(port_id, channel_id) => sequence
 	pub type NextSequenceSend<T: Config> =
-		StorageMap<_, Blake2_128Concat, Vec<u8>, u64, ValueQuery>;
+		StorageMap<_, Blake2_128Concat, OctopusSeqSendsPath, OctopusSequence, ValueQuery>;
 
 	#[pallet::storage]
 	/// SeqRecvsPath(port_id, channel_id) => sequence
 	pub type NextSequenceRecv<T: Config> =
-		StorageMap<_, Blake2_128Concat, Vec<u8>, u64, ValueQuery>;
+		StorageMap<_, Blake2_128Concat, Vec<u8>, OctopusSequence, ValueQuery>;
 
 	#[pallet::storage]
 	/// SeqAcksPath(port_id, channel_id) => sequence
-	pub type NextSequenceAck<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, u64, ValueQuery>;
+	pub type NextSequenceAck<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, OctopusSequence, ValueQuery>;
 
 	#[pallet::storage]
 	/// AcksPath(port_id, channel_id, sequence) => hash of acknowledgement
 	pub type Acknowledgements<T: Config> =
-		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
+		StorageMap<_, Blake2_128Concat, OctopusAcksPath, OctopusAcksHash, ValueQuery>;
 
 	#[pallet::storage]
 	/// ClientTypePath(client_id) => client_type
-	pub type Clients<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
+	pub type Clients<T: Config> = StorageMap<_, Blake2_128Concat, OctopusClientTypePath, OctopusClientType, ValueQuery>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn client_counter)]
@@ -280,42 +318,41 @@ pub mod pallet {
 	#[pallet::storage]
 	/// ClientConnectionsPath(client_id) => connection_id
 	pub type ConnectionClient<T: Config> =
-		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
+		StorageMap<_, Blake2_128Concat, OctopusClientConnectionsPath, OctopusConnectionId, ValueQuery>;
 
 	#[pallet::storage]
 	/// ReceiptsPath(port_id, channel_id, sequence) => receipt
 	pub type PacketReceipt<T: Config> =
-		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
+		StorageMap<_, Blake2_128Concat, OctopusRecipientsPath, OctopusRecipient, ValueQuery>;
+
 
 	#[pallet::storage]
 	/// CommitmentsPath(port_id, channel_id, sequence) => hash of (timestamp, height, packet)
 	pub type PacketCommitment<T: Config> =
-		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
+		StorageMap<_, Blake2_128Concat, OctopusCommitmentsPath, OctopusCommitmentHash, ValueQuery>;
 
 	// TODO
-
-
 	#[pallet::storage]
 	/// (port_id, channel_id, sequence) => writ ack event
 	pub type WriteAckPacketEvent<T: Config> = StorageNMap<
 		_,
 		(
-			NMapKey<Blake2_128Concat, Vec<u8>>,
-			NMapKey<Blake2_128Concat, Vec<u8>>,
-			NMapKey<Blake2_128Concat, u64>,
+			NMapKey<Blake2_128Concat, OctopusPortId>,
+			NMapKey<Blake2_128Concat, OctopusChannelId>,
+			NMapKey<Blake2_128Concat, OctopusSequence>,
 		),
-		Vec<u8>,
+		OctopusWriteAckEvent,
 		ValueQuery,
 	>;
 
 	#[pallet::storage]
 	/// Previous host block height
-	pub type OldHeight<T: Config> = StorageValue<_, u64, ValueQuery>;
+	pub type OldHeight<T: Config> = StorageValue<_, PreviousHostHeight, ValueQuery>;
 
 	#[pallet::storage]
 	/// (asset name) => asset id
 	pub type AssetIdByName<T: Config> =
-		StorageMap<_, Twox64Concat, Vec<u8>, T::AssetId, ValueQuery>;
+		StorageMap<_, Twox64Concat, AssetName, T::AssetId, ValueQuery>;
 
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config> {
@@ -447,7 +484,6 @@ pub mod pallet {
 		}
 	}
 }
-
 
 
 fn store_write_ack<T: Config>(
