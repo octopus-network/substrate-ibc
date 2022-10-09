@@ -80,7 +80,7 @@ use crate::module::{
 };
 
 pub const LOG_TARGET: &str = "runtime::pallet-ibc";
-pub const REVISION_NUMBER: u64 = 8888;
+pub const REVISION_NUMBER: u64 = 0;
 
 type BalanceOf<T> =
 	<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
@@ -293,18 +293,7 @@ pub mod pallet {
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
 	// TODO
-	#[pallet::storage]
-	/// (height, port_id, channel_id, sequence) => send-packet event
-	pub type SendPacketEvent<T: Config> = StorageNMap<
-		_,
-		(
-			NMapKey<Blake2_128Concat, Vec<u8>>,
-			NMapKey<Blake2_128Concat, Vec<u8>>,
-			NMapKey<Blake2_128Concat, u64>,
-		),
-		Vec<u8>,
-		ValueQuery,
-	>;
+
 
 	#[pallet::storage]
 	/// (port_id, channel_id, sequence) => writ ack event
@@ -392,8 +381,7 @@ pub mod pallet {
 		InvalidTokenId,
 		/// Wrong assert id
 		WrongAssetId,
-		// Parser Msg Transfer Error
-		ParserMsgTransferError,
+
 	}
 
 	/// Dispatchable functions allows users to interact with the pallet and invoke state changes.
@@ -457,93 +445,10 @@ pub mod pallet {
 				Ok(().into())
 			})
 		}
-
-		/// ICS20 fungible token transfer.
-		/// Handling transfer request as sending chain or receiving chain.
-		///
-		/// Parameters:
-		/// - `messages`: A serialized protocol buffer message containing the transfer request.
-		///
-		/// The relevant events are emitted when successful.
-		#[pallet::weight(0)]
-		pub fn raw_transfer(
-			origin: OriginFor<T>,
-			messages: Vec<Any>,
-		) -> DispatchResultWithPostInfo {
-			let _sender = ensure_signed(origin)?;
-			let mut ctx = TransferModule(PhantomData::<T>);
-
-			let messages: Vec<ibc_proto::google::protobuf::Any> = messages
-				.into_iter()
-				.map(|message| ibc_proto::google::protobuf::Any {
-					type_url: String::from_utf8(message.type_url.clone()).unwrap(),
-					value: message.value,
-				})
-				.collect();
-
-			log::trace!(
-				target: LOG_TARGET,
-				"raw_transfer : {:?} ",
-				messages.iter().map(|message| message.type_url.clone()).collect::<Vec<_>>()
-			);
-
-			for message in messages {
-				let mut handle_out = HandlerOutputBuilder::new();
-				let msg_transfer = MsgTransfer::try_from(message)
-					.map_err(|_| Error::<T>::ParserMsgTransferError)?;
-				let result = ibc::applications::transfer::relay::send_transfer::send_transfer(
-					&mut ctx,
-					&mut handle_out,
-					msg_transfer,
-				);
-				match result {
-					Ok(_value) => {
-						log::trace!(target: LOG_TARGET, "raw_transfer Successful!");
-					},
-					Err(error) => {
-						log::trace!(target: LOG_TARGET, "raw_transfer Error : {:?} ", error);
-					},
-				}
-
-				let HandlerOutput::<()> { result, log, events } = handle_out.with_result(());
-
-				log::trace!(target: LOG_TARGET, "raw_transfer log : {:?} ", log);
-
-				// deposit events about send packet event and ics20 transfer event
-				for event in events {
-					match event {
-						IbcEvent::SendPacket(ref send_packet) => {
-							store_send_packet::<T>(send_packet);
-							Self::deposit_event(event.clone().into());
-						},
-						IbcEvent::WriteAcknowledgement(ref write_ack) => {
-							store_write_ack::<T>(write_ack);
-							Self::deposit_event(event.clone().into());
-						},
-						_ => {
-							log::trace!(target: LOG_TARGET, "raw_transfer event : {:?} ", event);
-							Self::deposit_event(event.clone().into());
-						},
-					}
-				}
-			}
-
-			Ok(().into())
-		}
 	}
 }
 
-fn store_send_packet<T: Config>(send_packet_event: &ibc::core::ics04_channel::events::SendPacket) {
-	// store key port_id and channel_id
-	let port_id = send_packet_event.packet.source_port.as_bytes().to_vec();
-	let channel_id = from_channel_id_to_vec(send_packet_event.packet.source_channel.clone());
-	// store value packet
-	let packet = send_packet_event.packet.encode_vec().unwrap();
-	<SendPacketEvent<T>>::insert(
-		(port_id, channel_id, u64::from(send_packet_event.packet.sequence)),
-		packet,
-	);
-}
+
 
 fn store_write_ack<T: Config>(
 	write_ack_event: &ibc::core::ics04_channel::events::WriteAcknowledgement,
