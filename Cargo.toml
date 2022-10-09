@@ -9,7 +9,11 @@ repository 	= "https://github.com/octopus-network/substrate-ibc/"
 description = "An IBC implementation on Substrate."
 readme = "README.md"
 build = 'build.rs'
-# documentation = "https://docs.rs/pallet-ibc" // TODO
+
+[workspace]
+members = [
+	"ibc-applications/ics20-transfer",
+]
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]

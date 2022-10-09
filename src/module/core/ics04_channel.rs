@@ -125,7 +125,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		if let Ok(value) = ret {
 			Ok(value)
 		} else {
-			// TODO(davirain) template deatil with
+			// TODO(davirain) ics20-transfer deatil with
 			Ok(AnyConsensusState::Grandpa(
 				ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
 			))
