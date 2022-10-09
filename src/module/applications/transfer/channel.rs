@@ -1,7 +1,6 @@
 use super::transfer_handle_callback::TransferModule;
 use crate::*;
-use core::{str::FromStr, time::Duration};
-use log::{error, info, trace, warn};
+use core::time::Duration;
 
 use crate::context::Context;
 use ibc::{
@@ -23,16 +22,7 @@ use ibc::{
 			error::Error as Ics04Error,
 			packet::{Receipt, Sequence},
 		},
-		ics05_port::{context::PortReader, error::Error as Ics05Error},
-		ics24_host::{
-			identifier::{ChannelId, ClientId, ConnectionId, PortId},
-			path::{
-				AcksPath, ChannelEndsPath, CommitmentsPath, ConnectionsPath, ReceiptsPath,
-				SeqAcksPath, SeqRecvsPath, SeqSendsPath,
-			},
-			Path,
-		},
-		ics26_routing::context::ModuleId,
+		ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
 	},
 	timestamp::Timestamp,
 	Height,

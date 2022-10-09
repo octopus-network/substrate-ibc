@@ -1,15 +1,14 @@
 use ibc::clients::ics10_grandpa::{
 	client_state::ClientState as IbcClientState,
 	help::{
-		BlockHeader, Commitment, MmrRoot as IbcMmrRoot, SignedCommitment, ValidatorMerkleProof,
-		ValidatorSet,
+		Commitment, MmrRoot as IbcMmrRoot, SignedCommitment, ValidatorMerkleProof, ValidatorSet,
 	},
 };
 
 use crate::module::core::ics24_host::Height;
 use alloc::string::String;
 use codec::{Decode, Encode};
-use flex_error::{define_error, DisplayOnly, TraceError};
+use flex_error::{define_error, DisplayOnly};
 use ibc::core::ics24_host::{error::ValidationError, identifier::ChainId as IbcChainId};
 use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;

@@ -1,20 +1,13 @@
-use crate::{alloc::string::ToString, from_channel_id_to_vec, Config, Event, REVISION_NUMBER};
+use crate::{alloc::string::ToString, from_channel_id_to_vec, REVISION_NUMBER};
 use alloc::string::String;
 use ibc::{
-	clients::ics10_grandpa::{
-		client_state::ClientState as IbcClientState,
-		help::{
-			BlockHeader, Commitment, MmrRoot as IbcMmrRoot, SignedCommitment, ValidatorMerkleProof,
-			ValidatorSet,
-		},
-	},
 	core::{
 		ics02_client::{client_type::ClientType as IbcClientType, height::Height as IbcHeight},
 		ics04_channel::packet::{Packet as IbcPacket, Sequence as IbcSequence},
 		ics24_host::{
 			error::ValidationError,
 			identifier::{
-				ChainId as IbcChainId, ChannelId as IbcChannelId, ClientId as IbcClientId,
+				ChannelId as IbcChannelId, ClientId as IbcClientId,
 				ConnectionId as IbcConnectionId, PortId as IbcPortId,
 			},
 		},
@@ -28,9 +21,8 @@ use scale_info::TypeInfo;
 
 use sp_runtime::RuntimeDebug;
 
-use flex_error::{define_error, DisplayOnly, TraceError};
+use flex_error::{define_error, DisplayOnly};
 use ibc::core::ics04_channel::timeout::TimeoutHeight as IbcTimeoutHeight;
-use tendermint_proto::Error as TendermintError;
 
 define_error! {
 	#[derive(Debug, PartialEq, Eq)]
@@ -136,7 +128,6 @@ impl From<IbcClientType> for ClientType {
 		match value {
 			IbcClientType::Tendermint => ClientType::Tendermint,
 			IbcClientType::Grandpa => ClientType::Grandpa,
-			_ => unreachable!(),
 		}
 	}
 }
@@ -146,7 +137,6 @@ impl ClientType {
 		match self {
 			ClientType::Tendermint => IbcClientType::Tendermint,
 			ClientType::Grandpa => IbcClientType::Grandpa,
-			_ => unreachable!(),
 		}
 	}
 }

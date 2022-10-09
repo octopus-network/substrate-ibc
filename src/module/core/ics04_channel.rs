@@ -1,6 +1,6 @@
 use crate::*;
 use core::{str::FromStr, time::Duration};
-use log::{error, info, trace, warn};
+use log::{error, trace};
 
 use crate::context::Context;
 use ibc::{
@@ -9,9 +9,7 @@ use ibc::{
 			client_consensus::AnyConsensusState, client_state::AnyClientState,
 			context::ClientReader,
 		},
-		ics03_connection::{
-			connection::ConnectionEnd, context::ConnectionReader, error::Error as ICS03Error,
-		},
+		ics03_connection::{connection::ConnectionEnd, context::ConnectionReader},
 		ics04_channel::{
 			channel::ChannelEnd,
 			commitment::{
@@ -22,7 +20,6 @@ use ibc::{
 			error::Error as Ics04Error,
 			packet::{Receipt, Sequence},
 		},
-		ics05_port::{context::PortReader, error::Error as Ics05Error},
 		ics23_commitment::commitment::CommitmentRoot,
 		ics24_host::{
 			identifier::{ChannelId, ClientId, ConnectionId, PortId},
@@ -32,7 +29,6 @@ use ibc::{
 			},
 			Path,
 		},
-		ics26_routing::context::ModuleId,
 	},
 	timestamp::Timestamp,
 	Height,
@@ -565,7 +561,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		if <ChannelsConnection<T>>::contains_key(&connections_path) {
 			trace!(target:"runtime::pallet-ibc","in channel: [store_connection_channels] >> insert port_channel_id");
 			// if connection_id exist
-			let ret = <ChannelsConnection<T>>::try_mutate(
+			let _ = <ChannelsConnection<T>>::try_mutate(
 				&connections_path,
 				|val| -> Result<(), Ics04Error> {
 					val.push(channel_ends_path.clone());
@@ -663,7 +659,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 	fn increase_channel_counter(&mut self) {
 		trace!(target:"runtime::pallet-ibc","in channel: [increase_channel_counter]");
 
-		let ret = <ChannelCounter<T>>::try_mutate(|val| -> Result<(), Ics04Error> {
+		let _ = <ChannelCounter<T>>::try_mutate(|val| -> Result<(), Ics04Error> {
 			let new = val.checked_add(1).ok_or_else(Ics04Error::ivalid_increase_channel_counter)?;
 			*val = new;
 			Ok(())

@@ -1,7 +1,4 @@
-use crate::*;
-use log::trace;
-
-use crate::context::Context;
+use crate::{context::Context, *};
 use ibc::{
 	applications::transfer::{
 		MODULE_ID_STR as TRANSFER_MODULE_ID, PORT_ID_STR as TRANSFER_PORT_ID,

@@ -20,17 +20,21 @@ pub const LOG_TARGET: &str = "runtime::pallet-ics20-transfer";
 
 #[frame_support::pallet]
 pub mod pallet {
+	use crate::{store_send_packet, LOG_TARGET};
 	use frame_support::pallet_prelude::*;
 	use frame_system::pallet_prelude::*;
-	use ibc::applications::transfer::msgs::transfer::MsgTransfer;
-	use ibc::events::IbcEvent;
-	use ibc::handler::{HandlerOutput, HandlerOutputBuilder};
-	use pallet_ibc::Any;
-	use pallet_ibc::module::applications::transfer::transfer_handle_callback::TransferModule;
-	use pallet_ibc::module::core::ics24_host::{Height, Packet};
-	use crate::store_send_packet;
-	use crate::LOG_TARGET;
-
+	use ibc::{
+		applications::transfer::msgs::transfer::MsgTransfer,
+		events::IbcEvent,
+		handler::{HandlerOutput, HandlerOutputBuilder},
+	};
+	use pallet_ibc::{
+		module::{
+			applications::transfer::transfer_handle_callback::TransferModule,
+			core::ics24_host::{Height, Packet},
+		},
+		Any,
+	};
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
@@ -43,7 +47,6 @@ pub mod pallet {
 		/// Because this pallet emits events, it depends on the runtime's definition of an event.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 	}
-
 
 	#[pallet::storage]
 	/// (height, port_id, channel_id, sequence) => send-packet event
@@ -64,7 +67,10 @@ pub mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// Send packet event
-		SendPacket { height: Height, packet: Packet },
+		SendPacket {
+			height: Height,
+			packet: Packet,
+		},
 		// unsupported event
 		UnsupportedEvent,
 	}
@@ -72,8 +78,9 @@ pub mod pallet {
 	impl<T: Config> From<IbcEvent> for Event<T> {
 		fn from(event: IbcEvent) -> Self {
 			match event {
-				IbcEvent::SendPacket(value) => {
-					Event::<T>::SendPacket { height: value.height.into(), packet: value.packet.into() }
+				IbcEvent::SendPacket(value) => Event::<T>::SendPacket {
+					height: value.height.into(),
+					packet: value.packet.into(),
 				},
 				_ => Event::<T>::UnsupportedEvent,
 			}
@@ -139,7 +146,7 @@ pub mod pallet {
 					},
 				}
 
-				let HandlerOutput::<()> { result:_, log, events } = handle_out.with_result(());
+				let HandlerOutput::<()> { result: _, log, events } = handle_out.with_result(());
 
 				log::trace!(target: LOG_TARGET, "raw_transfer log : {:?} ", log);
 
@@ -167,7 +174,8 @@ fn store_send_packet<T: Config>(send_packet_event: &ibc::core::ics04_channel::ev
 	use tendermint_proto::Protobuf;
 	// store key port_id and channel_id
 	let port_id = send_packet_event.packet.source_port.as_bytes().to_vec();
-	let channel_id = send_packet_event.packet.source_channel.clone().to_string().as_bytes().to_vec();
+	let channel_id =
+		send_packet_event.packet.source_channel.clone().to_string().as_bytes().to_vec();
 	// store value packet
 	let packet = send_packet_event.packet.encode_vec().unwrap();
 	<SendPacketEvent<T>>::insert(

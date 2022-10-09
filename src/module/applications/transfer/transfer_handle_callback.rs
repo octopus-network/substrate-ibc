@@ -1,21 +1,16 @@
 use crate::*;
-
-use crate::utils::host_height;
 use ibc::{
-	applications::transfer::{acknowledgement::Acknowledgement, error::Error as Ics20Error},
 	core::{
 		ics04_channel::{
 			channel::{Counterparty, Order},
-			context::ChannelKeeper,
 			error::Error as Ics04Error,
 			msgs::acknowledgement::Acknowledgement as GenericAcknowledgement,
-			packet::{Packet as IbcPacket, PacketResult},
+			packet::Packet as IbcPacket,
 			Version,
 		},
 		ics24_host::identifier::{ChannelId as IbcChannelId, ConnectionId, PortId},
 		ics26_routing::context::{Module, ModuleOutputBuilder, OnRecvPacketAck},
 	},
-	events::IbcEvent,
 	signer::Signer,
 };
 

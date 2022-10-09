@@ -1,7 +1,7 @@
 use crate::*;
 use alloc::string::ToString;
 use core::str::FromStr;
-use log::{error, info, trace, warn};
+use log::{info, trace};
 
 use crate::context::Context;
 use ibc::{
@@ -257,7 +257,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 	fn increase_client_counter(&mut self) {
 		info!("in client : [increase_client_counter]");
 
-		let ret = <ClientCounter<T>>::try_mutate(|val| -> Result<(), Ics02Error> {
+		let _ = <ClientCounter<T>>::try_mutate(|val| -> Result<(), Ics02Error> {
 			let new = val.checked_add(1).ok_or_else(Ics02Error::invalid_increase_client_counter)?;
 			*val = new;
 			Ok(())

@@ -1,14 +1,13 @@
 use crate::*;
 
 use crate::context::Context;
-use log::{error, info, trace, warn};
+use log::trace;
 
 use ibc::{
-	clients::ics10_grandpa::{consensus_state::ConsensusState as GPConsensusState, header::Header},
 	core::{
 		ics02_client::{
 			client_consensus::AnyConsensusState, client_state::AnyClientState,
-			context::ClientReader, error::Error as Ics02Error,
+			context::ClientReader,
 		},
 		ics03_connection::{
 			connection::ConnectionEnd,
@@ -179,7 +178,7 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 	fn increase_connection_counter(&mut self) {
 		trace!(target:"runtime::pallet-ibc","in connection : [increase_connection_counter]");
 
-		let ret = <ConnectionCounter<T>>::try_mutate(|val| -> Result<(), Ics03Error> {
+		let _ = <ConnectionCounter<T>>::try_mutate(|val| -> Result<(), Ics03Error> {
 			let new = val
 				.checked_add(1)
 				.ok_or_else(Ics03Error::invalid_increment_connection_counter)?;

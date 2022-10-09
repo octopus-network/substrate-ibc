@@ -1,12 +1,12 @@
 pub mod channel;
 pub mod transfer_handle_callback;
 
-use crate::{context::Context, *};
+use crate::*;
 use frame_support::traits::{
 	fungibles::{Mutate, Transfer},
 	ExistenceRequirement::AllowDeath,
 };
-use log::{error, trace};
+use log::error;
 
 use crate::utils::get_channel_escrow_address;
 use ibc::{

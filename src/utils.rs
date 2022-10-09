@@ -1,22 +1,10 @@
 use crate::Config;
-use codec::Encode;
-use scale_info::prelude::{fmt::Debug, format, vec::Vec};
+use scale_info::prelude::format;
 
-use super::*;
 use ibc::{
 	applications::transfer::{error::Error as Ics20Error, VERSION},
 	core::ics24_host::identifier::{ChannelId as IbcChannelId, PortId},
 	signer::Signer,
-};
-
-use ibc::{
-	core::{
-		ics02_client::msgs::ClientMsg,
-		ics03_connection::msgs::ConnectionMsg,
-		ics04_channel::msgs::{ChannelMsg, PacketMsg},
-		ics26_routing::{handler, msgs::Ics26Envelope},
-	},
-	events::IbcEvent,
 };
 
 /// Get the latest block height of the host chain

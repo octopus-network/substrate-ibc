@@ -1,5 +1,4 @@
 use crate::*;
-use core::borrow::Borrow;
 use ibc::{core::ics26_routing, events::IbcEvent as RawIbcEvent};
 
 /// ibc-rs' `ModuleEvent` representation in substrate
@@ -71,7 +70,6 @@ impl From<ModuleEventAttribute> for ibc::events::ModuleEventAttribute {
 		}
 	}
 }
-
 
 #[derive(Clone, Encode, Decode, RuntimeDebug, TypeInfo, PartialEq, Eq)]
 pub enum IbcEvent {
@@ -449,11 +447,7 @@ impl From<RawIbcEvent> for IbcEvent {
 				let packet = value.packet;
 				let ack = value.ack;
 
-				IbcEvent::WriteAcknowledgement {
-					height: height.into(),
-					packet: packet.into(),
-					ack,
-				}
+				IbcEvent::WriteAcknowledgement { height: height.into(), packet: packet.into(), ack }
 			},
 			RawIbcEvent::AcknowledgePacket(value) => {
 				let height = value.height;
