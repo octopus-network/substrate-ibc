@@ -150,6 +150,7 @@ pub mod pallet {
 		signer::Signer,
 	};
 	use sp_runtime::traits::IdentifyAccount;
+	use sp_tracing::event;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -351,140 +352,7 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		/// New block event
-		NewBlock { height: Height },
-		/// Client created event
-		CreateClient {
-			height: Height,
-			client_id: ClientId,
-			client_type: ClientType,
-			consensus_height: Height,
-		},
-		/// Client updated event
-		UpdateClient {
-			height: Height,
-			client_id: ClientId,
-			client_type: ClientType,
-			consensus_height: Height,
-		},
-		/// Client upgraded event
-		UpgradeClient {
-			height: Height,
-			client_id: ClientId,
-			client_type: ClientType,
-			consensus_height: Height,
-		},
-		/// Client misbehaviour event
-		ClientMisbehaviour {
-			height: Height,
-			client_id: ClientId,
-			client_type: ClientType,
-			consensus_height: Height,
-		},
-		/// Connection open init event
-		OpenInitConnection {
-			height: Height,
-			connection_id: Option<ConnectionId>,
-			client_id: ClientId,
-			counterparty_connection_id: Option<ConnectionId>,
-			counterparty_client_id: ClientId,
-		},
-		/// Connection open try event
-		OpenTryConnection {
-			height: Height,
-			connection_id: Option<ConnectionId>,
-			client_id: ClientId,
-			counterparty_connection_id: Option<ConnectionId>,
-			counterparty_client_id: ClientId,
-		},
-		/// Connection open acknowledgement event
-		OpenAckConnection {
-			height: Height,
-			connection_id: Option<ConnectionId>,
-			client_id: ClientId,
-			counterparty_connection_id: Option<ConnectionId>,
-			counterparty_client_id: ClientId,
-		},
-		/// Connection open confirm event
-		OpenConfirmConnection {
-			height: Height,
-			connection_id: Option<ConnectionId>,
-			client_id: ClientId,
-			counterparty_connection_id: Option<ConnectionId>,
-			counterparty_client_id: ClientId,
-		},
-		/// Channel open init event
-		OpenInitChannel {
-			height: Height,
-			port_id: PortId,
-			channel_id: Option<ChannelId>,
-			connection_id: ConnectionId,
-			counterparty_port_id: PortId,
-			counterparty_channel_id: Option<ChannelId>,
-		},
-		/// Channel open try event
-		OpenTryChannel {
-			height: Height,
-			port_id: PortId,
-			channel_id: Option<ChannelId>,
-			connection_id: ConnectionId,
-			counterparty_port_id: PortId,
-			counterparty_channel_id: Option<ChannelId>,
-		},
-		/// Channel open acknowledgement event
-		OpenAckChannel {
-			height: Height,
-			port_id: PortId,
-			channel_id: Option<ChannelId>,
-			connection_id: ConnectionId,
-			counterparty_port_id: PortId,
-			counterparty_channel_id: Option<ChannelId>,
-		},
-		/// Channel open confirm event
-		OpenConfirmChannel {
-			height: Height,
-			port_id: PortId,
-			channel_id: Option<ChannelId>,
-			connection_id: ConnectionId,
-			counterparty_port_id: PortId,
-			counterparty_channel_id: Option<ChannelId>,
-		},
-		/// Channel close init event
-		CloseInitChannel {
-			height: Height,
-			port_id: PortId,
-			channel_id: Option<ChannelId>,
-			connection_id: ConnectionId,
-			counterparty_port_id: PortId,
-			counterparty_channel_id: Option<ChannelId>,
-		},
-		/// Channel close confirm event
-		CloseConfirmChannel {
-			height: Height,
-			port_id: PortId,
-			channel_id: Option<ChannelId>,
-			connection_id: ConnectionId,
-			counterparty_port_id: PortId,
-			counterparty_channel_id: Option<ChannelId>,
-		},
-		/// Send packet event
-		SendPacket { height: Height, packet: Packet },
-		/// Receive packet event
-		ReceivePacket { height: Height, packet: Packet },
-		/// WriteAcknowledgement packet event
-		WriteAcknowledgement { height: Height, packet: Packet, ack: Vec<u8> },
-		/// Acknowledgements packet event
-		AcknowledgePacket { height: Height, packet: Packet },
-		/// Timeout packet event
-		TimeoutPacket { height: Height, packet: Packet },
-		/// TimoutOnClose packet event
-		TimeoutOnClosePacket { height: Height, packet: Packet },
-		/// Empty event
-		Empty(Vec<u8>),
-		/// Chain Error event
-		ChainError(Vec<u8>),
-		/// App Module event
-		AppModule(ModuleEvent),
+		IbcEvent { event: events::IbcEvent },
 		/// Emit update client state event
 		UpdateClientState(Height, EventClientState),
 		/// Transfer native token  event
