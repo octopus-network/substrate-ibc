@@ -14,8 +14,6 @@ This project is currently in an early stage and will eventually be submitted to 
 
 The pallet implements the chain specific logic of [ICS spec](https://github.com/cosmos/ibc/tree/51f0c9e8d8ebcbe6f7f023a8b80f65a8fab705e3/spec),  and is integrated with [ibc-rs](https://github.com/informalsystems/ibc-rs), which implements the generic cross-chain logic in [ICS spec](https://github.com/cosmos/ibc/tree/51f0c9e8d8ebcbe6f7f023a8b80f65a8fab705e3/spec).
 
-Here is a [demo](~~https://github.com/cdot-network/ibc-demo~~) for showing how to utilize this pallet, which initializes a series of steps for cross-chain communication, from client creation to sending packet data.
-
 ## How to Interact with the Pallet
 The Hermes (IBC Relayer CLI) offers commands to send reqeusts to pallet ibc to trigger the standard ibc communications defined in [ibc spce](https://github.com/cosmos/ibc/tree/ee71d0640c23ec4e05e924f52f557b5e06c1d82f/spec). 
 [Hermes Command List](https://hermes.informal.systems/commands/raw/index.html).

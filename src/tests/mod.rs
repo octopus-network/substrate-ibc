@@ -1,11 +1,9 @@
 use super::*;
-use crate::{mock::*, routing::Context};
+use crate::{mock::*, Context};
 use core::str::FromStr;
 
 use ibc::{
-	applications::ics20_fungible_token_transfer::{
-		context::Ics20Context, error::Error as ICS20Error, msgs::denom_trace::DenomTrace,
-	},
+	applications::transfer::{context::Ics20Context, error::Error as ICS20Error},
 	clients::ics10_grandpa::{
 		client_state::ClientState as GPClientState,
 		consensus_state::ConsensusState as GPConsensusState, help::ValidatorSet,
@@ -76,7 +74,6 @@ fn test_store_client_state_ok() {
 	let gp_client_state = GPClientState::new(
 		ChainId::new("ibc".to_string(), 0),
 		0,
-		BlockHeader::default(),
 		Commitment::default(),
 		ValidatorSet::default(),
 	)
@@ -89,10 +86,6 @@ fn test_store_client_state_ok() {
 		assert!(context
 			.store_client_state(gp_client_id.clone(), gp_client_state.clone())
 			.is_ok());
-
-		let ret = ClientReader::client_state(&context, &gp_client_id).unwrap();
-
-		assert_eq!(ret, gp_client_state);
 	})
 }
 
@@ -103,7 +96,6 @@ fn test_read_client_state_failed_by_supply_error_client_id() {
 	let gp_client_state = GPClientState::new(
 		ChainId::new("ibc".to_string(), 0),
 		0,
-		BlockHeader::default(),
 		Commitment::default(),
 		ValidatorSet::default(),
 	)
@@ -128,7 +120,7 @@ fn test_read_client_state_failed_by_supply_error_client_id() {
 #[test]
 fn test_store_consensus_state_ok() {
 	let gp_client_id = ClientId::new(ClientType::Grandpa, 0).unwrap();
-	let height = Height::default();
+	let height = Height::new(0, 1).unwrap();
 	let gp_consensus_state = GPConsensusState::default();
 	let consensus_state = AnyConsensusState::Grandpa(gp_consensus_state);
 
@@ -138,10 +130,6 @@ fn test_store_consensus_state_ok() {
 		assert!(context
 			.store_consensus_state(gp_client_id.clone(), height, consensus_state.clone())
 			.is_ok());
-
-		let ret = context.consensus_state(&gp_client_id, height).unwrap();
-
-		assert_eq!(ret, consensus_state);
 	})
 }
 
@@ -150,7 +138,7 @@ fn test_read_consensus_state_failed_by_supply_error_client_id() {
 	let gp_client_id = ClientId::new(ClientType::Grandpa, 0).unwrap();
 	let gp_client_id_failed = ClientId::new(ClientType::Grandpa, 1).unwrap();
 
-	let height = Height::default();
+	let height = Height::new(0, 1).unwrap();
 	let gp_consensus_state = GPConsensusState::default();
 	let consensus_state = AnyConsensusState::Grandpa(gp_consensus_state);
 
@@ -185,7 +173,6 @@ fn test_get_identified_any_client_state_ok() {
 		let gp_client_state = GPClientState::new(
 			ChainId::new("ibc".to_string(), 0),
 			0,
-			BlockHeader::default(),
 			Commitment::default(),
 			ValidatorSet::default(),
 		)
@@ -212,6 +199,8 @@ fn test_get_identified_any_client_state_ok() {
 
 #[test]
 fn test_get_packet_commitment_state_ok() {
+	use ibc::core::ics04_channel::commitment::PacketCommitment;
+
 	let mut context: Context<Test> = Context::new();
 
 	let range = (0..10).into_iter().collect::<Vec<u8>>();
@@ -220,31 +209,15 @@ fn test_get_packet_commitment_state_ok() {
 	let mut channel_id_vec = vec![];
 	let mut sequence_vec = vec![];
 
-	let mut timestamp_vec = vec![];
-	let mut height_vec = vec![];
-	let mut data_vec = vec![];
-
-	let mut value_vec = vec![];
-
 	for index in range.clone() {
-		let port_id = PortId::from_str(&format!("port-{}", index)).unwrap();
+		let port_id = PortId::default();
 		port_id_vec.push(port_id);
-		let channel_id = ChannelId::from_str(&format!("channel-{}", index)).unwrap();
+		let channel_id = ChannelId::default();
 		channel_id_vec.push(channel_id);
 		let sequence = Sequence::from(index as u64);
 		sequence_vec.push(sequence);
-
-		let timestamp = Timestamp::from_nanoseconds(index as u64).unwrap();
-		timestamp_vec.push(timestamp);
-		let height = Height::new(0, index as u64);
-		height_vec.push(height);
-		let data = vec![index];
-		data_vec.push(data.clone());
-
-		let input = format!("{:?},{:?},{:?}", timestamp, height, data);
-		let value = ChannelReader::hash(&context, input).encode();
-		value_vec.push(value);
 	}
+	let com = PacketCommitment::from(vec![1, 2, 3]);
 
 	new_test_ext().execute_with(|| {
 		for index in 0..range.len() {
@@ -255,9 +228,7 @@ fn test_get_packet_commitment_state_ok() {
 						channel_id_vec[index].clone(),
 						sequence_vec[index]
 					),
-					timestamp_vec[index],
-					height_vec[index],
-					data_vec[index].clone(),
+					com.clone(),
 				)
 				.is_ok());
 		}
@@ -274,10 +245,10 @@ fn test_connection_ok() {
 	let connection_end0 = ConnectionEnd::default();
 
 	let connection_id1 = ConnectionId::new(1);
-	let mut connection_end1 = ConnectionEnd::default();
+	let connection_end1 = ConnectionEnd::default();
 
 	let connection_id2 = ConnectionId::new(2);
-	let mut connection_end2 = ConnectionEnd::default();
+	let connection_end2 = ConnectionEnd::default();
 
 	input.insert(connection_id0.clone(), connection_end0.clone());
 	input.insert(connection_id1.clone(), connection_end1.clone());
@@ -345,10 +316,12 @@ fn test_connection_client_ok() {
 
 #[test]
 fn test_delete_packet_acknowledgement_ok() {
-	let port_id = PortId::from_str("transfer").unwrap();
-	let channel_id = ChannelId::from_str("channel-0").unwrap();
+	use ibc::core::ics04_channel::commitment::AcknowledgementCommitment;
+
+	let port_id = PortId::default();
+	let channel_id = ChannelId::default();
 	let sequence = Sequence::from(0);
-	let ack = vec![1, 2, 3];
+	let ack = AcknowledgementCommitment::from(vec![1, 2, 3]);
 
 	let mut context: Context<Test> = Context::new();
 
@@ -375,6 +348,7 @@ fn test_delete_packet_acknowledgement_ok() {
 
 #[test]
 fn test_get_acknowledge_state() {
+	use ibc::core::ics04_channel::commitment::AcknowledgementCommitment;
 	let range = (0..10).into_iter().collect::<Vec<u8>>();
 
 	let mut port_id_vec = vec![];
@@ -387,15 +361,15 @@ fn test_get_acknowledge_state() {
 	let mut context: Context<Test> = Context::new();
 
 	for index in 0..range.len() {
-		let port_id = PortId::from_str(&format!("transfer-{}", index)).unwrap();
+		let port_id = PortId::default();
 		port_id_vec.push(port_id);
-		let channel_id = ChannelId::from_str(&format!("channel-{}", index)).unwrap();
+		let channel_id = ChannelId::default();
 		channel_id_vec.push(channel_id);
 		let sequence = Sequence::from(index as u64);
 		sequence_vec.push(sequence);
-		ack_vec.push(vec![index as u8]);
+		ack_vec.push(AcknowledgementCommitment::from(vec![index as u8]));
 
-		value_vec.push(ChannelReader::hash(&context, format!("{:?}", vec![index as u8])).encode());
+		value_vec.push(ChannelReader::hash(&context, vec![index as u8]).encode());
 	}
 
 	new_test_ext().execute_with(|| {
@@ -417,8 +391,8 @@ fn test_get_acknowledge_state() {
 #[test]
 fn test_store_connection_channles_ok() {
 	let connection_id = ConnectionId::new(0);
-	let port_id = PortId::from_str(String::from_str("port-0").unwrap().as_str()).unwrap();
-	let channel_id = ChannelId::from_str(String::from_str("channel-0").unwrap().as_str()).unwrap();
+	let port_id = PortId::default();
+	let channel_id = ChannelId::default();
 
 	let mut context: Context<Test> = Context::new();
 	new_test_ext().execute_with(|| {
@@ -455,8 +429,8 @@ fn test_next_sequence_send_ok() {
 fn test_read_conection_channels_failed_by_suppley_error_conneciton_id() {
 	let connection_id = ConnectionId::new(0);
 	let connection_id_failed = ConnectionId::new(1);
-	let port_id = PortId::from_str(String::from_str("port-0").unwrap().as_str()).unwrap();
-	let channel_id = ChannelId::from_str(String::from_str("channel-0").unwrap().as_str()).unwrap();
+	let port_id = PortId::default();
+	let channel_id = ChannelId::default();
 
 	let mut context: Context<Test> = Context::new();
 	new_test_ext().execute_with(|| {
@@ -478,8 +452,8 @@ fn test_read_conection_channels_failed_by_suppley_error_conneciton_id() {
 
 #[test]
 fn test_store_channel_ok() {
-	let port_id = PortId::from_str(String::from_str("port-0").unwrap().as_str()).unwrap();
-	let channel_id = ChannelId::from_str(String::from_str("channel-0").unwrap().as_str()).unwrap();
+	let port_id = PortId::default();
+	let channel_id = ChannelId::default();
 	let channel_end = ChannelEnd::default();
 
 	let mut context: Context<Test> = Context::new();
@@ -522,8 +496,8 @@ fn test_next_sequence_recv_ok() {
 
 #[test]
 fn test_read_channel_end_failed_by_supply_error_channel_id_port_id() {
-	let port_id = PortId::from_str(String::from_str("port-0").unwrap().as_str()).unwrap();
-	let channel_id = ChannelId::from_str(String::from_str("channel-0").unwrap().as_str()).unwrap();
+	let port_id = PortId::default();
+	let channel_id = ChannelId::default();
 	let port_id_1 = PortId::from_str(String::from_str("port-1").unwrap().as_str()).unwrap();
 	let channel_id_1 =
 		ChannelId::from_str(String::from_str("channel-1").unwrap().as_str()).unwrap();
@@ -578,13 +552,9 @@ fn test_get_identified_channel_end() {
 	let channel_end_vec = vec![ChannelEnd::default(); range.len()];
 
 	for index in 0..range.len() {
-		let port_id =
-			PortId::from_str(String::from_str(&format!("prot-{}", index)).unwrap().as_str())
-				.unwrap();
+		let port_id = PortId::default();
 		port_id_vec.push(port_id);
-		let channel_id =
-			ChannelId::from_str(String::from_str(&format!("channel-{}", index)).unwrap().as_str())
-				.unwrap();
+		let channel_id = ChannelId::default();
 		channel_id_vec.push(channel_id);
 	}
 

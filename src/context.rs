@@ -1,43 +1,23 @@
-use crate::{
-	applications::transfer::transfer_handler::IBCTransferModule,
-	ibc_core::ics26_routing::context::IBCRouter, *,
-};
-use ibc::{
-	applications::transfer::MODULE_ID_STR as TRANSFER_MODULE_ID,
-	core::ics26_routing::context::{Module, ModuleId, RouterBuilder},
-};
-use scale_info::prelude::borrow::ToOwned;
-use sp_std::sync::Arc;
+use crate::{module::applications::transfer::transfer_handle_callback::TransferModule, *};
+use ibc::{applications::transfer::MODULE_ID_STR, core::ics26_routing::context::RouterBuilder};
 
-#[derive(Clone)]
+/// A struct capturing all the functional dependencies (i.e., context)
+/// which the ICS26 module requires to be able to dispatch and process IBC messages.
+use crate::module::core::ics26_routing::{Router, SubstrateRouterBuilder};
+#[derive(Clone, Debug)]
 pub struct Context<T: Config> {
 	pub _pd: PhantomData<T>,
-	pub router: IBCRouter,
+	pub router: Router,
 }
 
 impl<T: Config> Context<T> {
-	fn new() -> Self {
-		let ibc_router = Self::default()
-			.add_route(TRANSFER_MODULE_ID.parse().unwrap(), IBCTransferModule::default())
+	pub fn new() -> Self {
+		let r = SubstrateRouterBuilder::default()
+			.add_route(MODULE_ID_STR.parse().unwrap(), TransferModule(PhantomData::<T>)) // register transfer Module
 			.unwrap()
 			.build();
 
-		Self { _pd: PhantomData::default(), router: ibc_router }
-	}
-}
-
-impl<T: Config> RouterBuilder for Context<T> {
-	type Router = IBCRouter;
-
-	fn add_route(mut self, module_id: ModuleId, module: impl Module) -> Result<Self, String> {
-		match self.router.0.insert(module_id, Arc::new(module)) {
-			None => Ok(self),
-			Some(_) => Err("Duplicate module_id".to_owned()),
-		}
-	}
-
-	fn build(self) -> Self::Router {
-		self.router
+		Self { _pd: PhantomData::default(), router: r }
 	}
 }
 

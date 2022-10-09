@@ -1,0 +1,52 @@
+[package]
+name = "pallet-ics20-transfer"
+version = "0.1.0"
+description = "FRAME pallet ibc protocol ics20 token transfer"
+authors = ["davirain.yin@oct.network"]
+homepage = "https://github.com/octopus-network"
+edition = "2021"
+license = "Unlicense"
+publish = false
+repository = "https://github.com/octopus-network/substrate-ibc"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = [
+	"derive",
+] }
+scale-info = { version = "2.1.1", default-features = false, features = ["derive"] }
+log = { version = "0.4", default-features = false }
+frame-benchmarking = { version = "4.0.0-dev", default-features = false, optional = true, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.18" }
+frame-support = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.18" }
+frame-system = { version = "4.0.0-dev", default-features = false,git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.18" }
+
+
+# pallet-ibc
+pallet-ibc = { version = "3.0.0-dev", default-features = false, path = "../../" }
+## for ibc protocl
+ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "dev", default-features = false }
+ibc-proto = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "dev", default-features = false }
+tendermint-proto = { version = "=0.23.7", default-features = false }
+
+[dev-dependencies]
+sp-core = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.18" }
+sp-io = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.18" }
+sp-runtime = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.18" }
+
+[features]
+default = ["std"]
+std = [
+	"codec/std",
+	"log/std",
+	"frame-benchmarking/std",
+	"frame-support/std",
+	"frame-system/std",
+	"scale-info/std",
+	"pallet-ibc/std",
+	"ibc/std",
+	'ibc-proto/std',
+]
+runtime-benchmarks = ["frame-benchmarking/runtime-benchmarks"]
+try-runtime = ["frame-support/try-runtime"]
