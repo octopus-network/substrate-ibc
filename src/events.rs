@@ -2,7 +2,6 @@ use crate::*;
 use core::borrow::Borrow;
 use ibc::{core::ics26_routing, events::IbcEvent as RawIbcEvent};
 
-
 /// ibc-rs' `ModuleEvent` representation in substrate
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub struct ModuleEvent {

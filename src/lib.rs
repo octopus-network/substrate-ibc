@@ -123,8 +123,8 @@ pub mod pallet {
 		pallet_prelude::*,
 		traits::{
 			fungibles::{Mutate, Transfer},
-			UnixTime,
 			tokens::{AssetId, Balance as AssetBalance},
+			UnixTime,
 		},
 	};
 	use frame_system::pallet_prelude::*;
@@ -317,7 +317,6 @@ pub mod pallet {
 		Vec<u8>,
 		ValueQuery,
 	>;
-
 
 	#[pallet::storage]
 	/// Previous host block height
@@ -540,8 +539,10 @@ pub mod pallet {
 		/// The origin must be Signed and the sender must have sufficient funds fee.
 		///
 		/// Parameters:
-		/// - `messages`: The arbitrary ICS message's representation in Substrate, which contains an URL and
-		///  a serialized protocol buffer message. The URL name that uniquely identifies the type of the serialized protocol buffer message.
+		/// - `messages`: The arbitrary ICS message's representation in Substrate, which contains an
+		///   URL and
+		///  a serialized protocol buffer message. The URL name that uniquely identifies the type of
+		/// the serialized protocol buffer message.
 		///
 		/// The relevant events are emitted when successful.
 		#[pallet::weight(0)]
