@@ -77,7 +77,7 @@ impl<T: Config> BankKeeper for TransferModule<T> {
 				// look cross chain asset have register in host chain
 				match T::AssetIdByName::try_get_asset_id(denom) {
 					Ok(token_id) => {
-						<T::Assets as Transfer<T::AccountId>>::transfer(
+						<T::Fungibles as Transfer<T::AccountId>>::transfer(
 							token_id,
 							&from.clone().into_account(),
 							&to.clone().into_account(),
@@ -117,7 +117,7 @@ impl<T: Config> BankKeeper for TransferModule<T> {
 		// look cross chain asset have register in host chain
 		match T::AssetIdByName::try_get_asset_id(denom) {
 			Ok(token_id) => {
-				<T::Assets as Mutate<T::AccountId>>::mint_into(
+				<T::Fungibles as Mutate<T::AccountId>>::mint_into(
 					token_id,
 					&account.clone().into_account(),
 					amount,
@@ -152,7 +152,7 @@ impl<T: Config> BankKeeper for TransferModule<T> {
 		// look cross chain asset have register in host chain
 		match T::AssetIdByName::try_get_asset_id(denom) {
 			Ok(token_id) => {
-				<T::Assets as Mutate<T::AccountId>>::burn_from(
+				<T::Fungibles as Mutate<T::AccountId>>::burn_from(
 					token_id,
 					&account.clone().into_account(),
 					amount,

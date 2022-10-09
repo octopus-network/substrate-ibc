@@ -204,7 +204,7 @@ impl super::pallet::Config for Test {
 	type Currency = Balances;
 	type AssetId = AssetId;
 	type AssetBalance = AssetBalance;
-	type Assets = Assets;
+	type Fungibles = Assets;
 	type AssetIdByName = Ibc;
 	type AccountIdConversion = pallet_ibc::module::applications::transfer::IbcAccount;
 	const NATIVE_TOKEN_NAME: &'static [u8] = b"DEMO";

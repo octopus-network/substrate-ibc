@@ -38,7 +38,7 @@ impl Debug for Router {
 			keys.push(format!("{}", key));
 		}
 
-		write!(f, "MockRouter(BTreeMap(key({:?})", keys.join(","))
+		write!(f, "Router(BTreeMap(key({:?})", keys.join(","))
 	}
 }
 

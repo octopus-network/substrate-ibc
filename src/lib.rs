@@ -122,8 +122,9 @@ pub mod pallet {
 		dispatch::DispatchResult,
 		pallet_prelude::*,
 		traits::{
-			fungibles::{Inspect, Mutate, Transfer},
+			fungibles::{Mutate, Transfer},
 			UnixTime,
+			tokens::{AssetId, Balance as AssetBalance},
 		},
 	};
 	use frame_system::pallet_prelude::*;
@@ -163,31 +164,14 @@ pub mod pallet {
 		type Currency: Currency<Self::AccountId>;
 
 		/// Identifier for the class of asset.
-		type AssetId: Member
-			+ Parameter
-			+ AtLeast32BitUnsigned
-			+ Codec
-			+ Copy
-			+ Debug
-			+ Default
-			+ MaybeSerializeDeserialize;
+		type AssetId: AssetId + MaybeSerializeDeserialize + Default;
 
 		/// The units in which we record balances.
-		type AssetBalance: Parameter
-			+ Member
-			+ AtLeast32BitUnsigned
-			+ Codec
-			+ Default
-			+ From<u128>
-			+ Into<u128>
-			+ Copy
-			+ MaybeSerializeDeserialize
-			+ Debug;
+		type AssetBalance: AssetBalance + From<u128> + Into<u128>;
 
 		/// Expose customizable associated type of asset transfer, lock and unlock
-		type Assets: Transfer<Self::AccountId, AssetId = Self::AssetId, Balance = Self::AssetBalance>
-			+ Mutate<Self::AccountId, AssetId = Self::AssetId, Balance = Self::AssetBalance>
-			+ Inspect<Self::AccountId, AssetId = Self::AssetId, Balance = Self::AssetBalance>;
+		type Fungibles: Transfer<Self::AccountId, AssetId = Self::AssetId, Balance = Self::AssetBalance>
+			+ Mutate<Self::AccountId, AssetId = Self::AssetId, Balance = Self::AssetBalance>;
 
 		/// Map of cross-chain asset ID & name
 		type AssetIdByName: AssetIdAndNameProvider<Self::AssetId>;
@@ -307,6 +291,7 @@ pub mod pallet {
 	pub type PacketCommitment<T: Config> =
 		StorageMap<_, Blake2_128Concat, Vec<u8>, Vec<u8>, ValueQuery>;
 
+	// TODO
 	#[pallet::storage]
 	/// (height, port_id, channel_id, sequence) => send-packet event
 	pub type SendPacketEvent<T: Config> = StorageNMap<
@@ -333,9 +318,6 @@ pub mod pallet {
 		ValueQuery,
 	>;
 
-	#[pallet::storage]
-	/// Latest height
-	pub type LatestHeight<T: Config> = StorageValue<_, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
 	/// Previous host block height
