@@ -44,6 +44,8 @@ jobs:
 
       - name: Lint rust sources
         run: |
+          git clone --branch master https://github.com/octopus-network/barnacle.git
+          cp ./barnacle/Cargo.lock .
           cargo clippy --all-targets --all-features --tests --benches -- -D warnings
 
       - name: Run tests
