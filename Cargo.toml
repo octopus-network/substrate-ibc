@@ -32,7 +32,7 @@ serde_json = { version = "1.0", default-features = false }
 serde = { version = "1.0", default-features = false }
 flex-error = { version = "0.4.4", default-features = false }
 hex = {version = "0.4.0", default-features = false }
-
+time = { version = "0.3", default-features = false, features = ["macros", "parsing"] }
 
 sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28", default-features = false }
 sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28", default-features = false }
@@ -52,14 +52,6 @@ ibc-proto = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "d
 tendermint-proto = { version = "=0.23.7", default-features = false }
 beefy-light-client = { git = "https://github.com/octopus-network/beefy-light-client.git", branch = "main", default-features = false }
 # beefy-light-client = { path = "../beefy-light-client", default-features = false}
-
-[dependencies.time]
-version = "0.3"
-features = [
-	"macros",
-	"parsing",
-]
-default-features = false
 
 [dev-dependencies]
 hex = '0.4.0'
