@@ -1,4 +1,5 @@
 use crate as pallet_ibc;
+use super::*;
 pub use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{
@@ -35,6 +36,7 @@ construct_runtime!(
 		Assets: pallet_assets::<Instance1>,
 		Balances: pallet_balances,
 		Ibc: pallet_ibc,
+		Ics20Transfer: pallet_ics20_transfer,
 	}
 );
 
@@ -183,19 +185,25 @@ pub const MILLISECS_PER_BLOCK: Moment = 6000;
 //       Attempting to do so will brick block production.
 pub const SLOT_DURATION: Moment = MILLISECS_PER_BLOCK;
 
-pub type AssetBalance = u128;
-pub type AssetId = u32;
 
-impl super::pallet::Config for Test {
+impl pallet_ics20_transfer::Config for Test {
 	type Event = Event;
-	type TimeProvider = pallet_timestamp::Pallet<Test>;
 	type Currency = Balances;
 	type AssetId = AssetId;
 	type AssetBalance = AssetBalance;
 	type Fungibles = Assets;
-	type AssetIdByName = Ibc;
-	type AccountIdConversion = pallet_ibc::module::applications::transfer::IbcAccount;
+	type AssetIdByName = Ics20Transfer;
+	type AccountIdConversion = pallet_ics20_transfer::ics20_impl::IbcAccount;
 	const NATIVE_TOKEN_NAME: &'static [u8] = b"DEMO";
+	type IbcContext = pallet_ibc::context::Context<Test>;
+}
+
+pub type AssetBalance = u128;
+pub type AssetId = u32;
+
+impl pallet::Config for Test {
+	type Event = Event;
+	type TimeProvider = pallet_timestamp::Pallet<Test>;
 }
 
 // Build genesis storage according to the mock runtime.
