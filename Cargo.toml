@@ -13,6 +13,7 @@ build = 'build.rs'
 [workspace]
 members = [
 	"ibc-applications/ics20-transfer",
+	"ibc-support",
 ]
 
 [package.metadata.docs.rs]
@@ -23,17 +24,14 @@ branch = 'polkadot-v0.9.28'
 git = 'https://github.com/paritytech/substrate.git'
 
 [dependencies]
+
+#local crates
+ibc-support = {version = "0.1.0", default-features = false, path = "./ibc-support" }
+pallet-ics20-transfer = { version = "0.1.0", default-features = false, path = "./ibc-applications/ics20-transfer" }
+
+# substate crates
 codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive"] }
 scale-info = { version = "2.1.2", default-features = false, features = ["derive"] }
-log = { version = "0.4.0", default-features = false }
-prost-types = { version = "0.9.0", default-features = false }
-prost = { version = "0.9.0", default-features = false }
-serde_json = { version = "1.0", default-features = false }
-serde = { version = "1.0", default-features = false }
-flex-error = { version = "0.4.4", default-features = false }
-hex = {version = "0.4.0", default-features = false }
-
-
 sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28", default-features = false }
 sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28", default-features = false }
 frame-benchmarking = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28", default-features = false, optional = true }
@@ -42,6 +40,17 @@ frame-system = { git = "https://github.com/paritytech/substrate.git", branch = "
 sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28", default-features = false }
 sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28", default-features = false }
 sp-tracing = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28", default-features = false }
+
+# third-party libraries
+
+log = { version = "0.4.0", default-features = false }
+prost-types = { version = "0.9.0", default-features = false }
+prost = { version = "0.9.0", default-features = false }
+serde_json = { version = "1.0", default-features = false }
+serde = { version = "1.0", default-features = false }
+flex-error = { version = "0.4.4", default-features = false }
+hex = {version = "0.4.0", default-features = false }
+time = { version = "0.3", default-features = false, features = ["macros", "parsing"] }
 
 
 ## for ibc protocl
@@ -52,14 +61,6 @@ ibc-proto = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "d
 tendermint-proto = { version = "=0.23.7", default-features = false }
 beefy-light-client = { git = "https://github.com/octopus-network/beefy-light-client.git", branch="main", default-features = false }
 # beefy-light-client = { path = "../beefy-light-client", default-features = false}
-
-[dependencies.time]
-version = "0.3"
-features = [
-	"macros",
-	"parsing",
-]
-default-features = false
 
 [dev-dependencies]
 hex = '0.4.0'
@@ -83,27 +84,29 @@ chrono = "0.4.19"
 [features]
 default = ['std']
 std = [
-	'codec/std',
-	'log/std',
+	"ibc-support/std",
+	"codec/std",
+	"log/std",
 	"scale-info/std",
-	'frame-benchmarking/std',
-	'frame-support/std',
-	'frame-system/std',
-	'sp-core/std',
-	'sp-runtime/std',
-	'sp-std/std',
-	'sp-io/std',
-	'sp-tracing/std',
-	'prost-types/std',	
-	'prost/std',
-	'ibc/std',
-	'ibc-proto/std',
-	'beefy-light-client/std',
-	'serde_json/std',
-	'serde/std',	
-	'flex-error/std',
-	'hex/std',
-	'time/std',
+	"frame-benchmarking/std",
+	"frame-support/std",
+	"frame-system/std",
+	"sp-core/std",
+	"sp-runtime/std",
+	"sp-std/std",
+	"sp-io/std",
+	"sp-tracing/std",
+	"prost-types/std",
+	"prost/std",
+	"ibc/std",
+	"ibc-proto/std",
+	"beefy-light-client/std",
+	"serde_json/std",
+	"serde/std",
+	"flex-error/std",
+	"hex/std",
+	"time/std",
+	"pallet-ics20-transfer/std"
 ]
 runtime-benchmarks = ["frame-benchmarking"]
 try-runtime = ["frame-support/try-runtime"]

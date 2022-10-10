@@ -47,10 +47,10 @@ use tendermint_proto::Protobuf;
 pub mod context;
 pub mod events;
 pub mod module;
-pub mod traits;
 pub mod utils;
 
-use crate::{context::Context, traits::AssetIdAndNameProvider};
+use crate::context::Context;
+use ibc_support::AssetIdAndNameProvider;
 
 use crate::module::core::ics24_host::{
 	ChannelId, ClientId, ClientType, ConnectionId, Height, Packet, PortId,
@@ -59,21 +59,7 @@ use crate::module::core::ics24_host::{
 pub const LOG_TARGET: &str = "runtime::pallet-ibc";
 pub const REVISION_NUMBER: u64 = 0;
 
-type BalanceOf<T> =
-	<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
-/// A struct corresponds to `Any` in crate "prost-types", used in ibc-rs.
-#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
-pub struct Any {
-	pub type_url: Vec<u8>,
-	pub value: Vec<u8>,
-}
-
-impl From<ibc_proto::google::protobuf::Any> for Any {
-	fn from(any: ibc_proto::google::protobuf::Any) -> Self {
-		Self { type_url: any.type_url.as_bytes().to_vec(), value: any.value }
-	}
-}
 
 #[cfg(test)]
 mod mock;
@@ -114,7 +100,6 @@ mod type_define {
 	pub type OctopusSequence = u64;
 	pub type OctopusWriteAckEvent = Vec<u8>;
 	pub type PreviousHostHeight = u64;
-	pub type AssetName = Vec<u8>;
 }
 
 #[frame_support::pallet]
@@ -137,38 +122,12 @@ pub mod pallet {
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
-	pub trait Config: frame_system::Config + Sync + Send + Debug {
+	pub trait Config: frame_system::Config + Sync + Send + Debug + pallet_ics20_transfer::Config {
 		/// The overarching event type.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
 		/// The provider providing timestamp of host chain
 		type TimeProvider: UnixTime;
-
-		/// The currency type of the runtime
-		type Currency: Currency<Self::AccountId>;
-
-		/// Identifier for the class of asset.
-		type AssetId: AssetId + MaybeSerializeDeserialize + Default;
-
-		/// The units in which we record balances.
-		type AssetBalance: AssetBalance + From<u128> + Into<u128>;
-
-		/// Expose customizable associated type of asset transfer, lock and unlock
-		type Fungibles: Transfer<Self::AccountId, AssetId = Self::AssetId, Balance = Self::AssetBalance>
-			+ Mutate<Self::AccountId, AssetId = Self::AssetId, Balance = Self::AssetBalance>;
-
-		/// Map of cross-chain asset ID & name
-		type AssetIdByName: AssetIdAndNameProvider<Self::AssetId>;
-
-		/// Account Id Conversion from SS58 string or hex string
-		type AccountIdConversion: TryFrom<Signer>
-			+ IdentifyAccount<AccountId = Self::AccountId>
-			+ Clone
-			+ PartialEq
-			+ Debug;
-
-		// The native token name
-		const NATIVE_TOKEN_NAME: &'static [u8];
 	}
 
 	#[pallet::pallet]
@@ -312,31 +271,6 @@ pub mod pallet {
 	/// Previous host block height
 	pub type OldHeight<T: Config> = StorageValue<_, PreviousHostHeight, ValueQuery>;
 
-	#[pallet::storage]
-	/// (asset name) => asset id
-	pub type AssetIdByName<T: Config> =
-		StorageMap<_, Twox64Concat, AssetName, T::AssetId, ValueQuery>;
-
-	#[pallet::genesis_config]
-	pub struct GenesisConfig<T: Config> {
-		pub asset_id_by_name: Vec<(String, T::AssetId)>,
-	}
-
-	#[cfg(feature = "std")]
-	impl<T: Config> Default for GenesisConfig<T> {
-		fn default() -> Self {
-			Self { asset_id_by_name: Vec::new() }
-		}
-	}
-
-	#[pallet::genesis_build]
-	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
-		fn build(&self) {
-			for (token_id, id) in self.asset_id_by_name.iter() {
-				<AssetIdByName<T>>::insert(token_id.as_bytes(), id);
-			}
-		}
-	}
 	/// Substrate IBC event list
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -346,18 +280,6 @@ pub mod pallet {
 		},
 		/// Emit update client state event
 		UpdateClientState(Height, EventClientState),
-		/// Transfer native token  event
-		TransferNativeToken(T::AccountIdConversion, T::AccountIdConversion, BalanceOf<T>),
-		/// Transfer non-native token event
-		TransferNoNativeToken(
-			T::AccountIdConversion,
-			T::AccountIdConversion,
-			<T as Config>::AssetBalance,
-		),
-		/// Burn cross chain token event
-		BurnToken(T::AssetId, T::AccountIdConversion, T::AssetBalance),
-		/// Mint chairperson token event
-		MintToken(T::AssetId, T::AccountIdConversion, T::AssetBalance),
 	}
 
 	/// Errors in MMR verification informing users that something went wrong.
@@ -379,10 +301,6 @@ pub mod pallet {
 		InvalidSignedCommitment,
 		/// Empty latest_commitment
 		EmptyLatestCommitment,
-		/// Invalid token id
-		InvalidTokenId,
-		/// Wrong assert id
-		WrongAssetId,
 	}
 
 	/// Dispatchable functions allows users to interact with the pallet and invoke state changes.
@@ -403,7 +321,7 @@ pub mod pallet {
 		///
 		/// The relevant events are emitted when successful.
 		#[pallet::weight(0)]
-		pub fn deliver(origin: OriginFor<T>, messages: Vec<Any>) -> DispatchResultWithPostInfo {
+		pub fn deliver(origin: OriginFor<T>, messages: Vec<ibc_support::Any>) -> DispatchResultWithPostInfo {
 			sp_tracing::within_span!(
 			sp_tracing::Level::TRACE, "deliver";
 			{
@@ -454,34 +372,10 @@ fn store_write_ack<T: Config>(
 ) {
 	// store ack
 	let port_id = write_ack_event.packet.source_port.as_bytes().to_vec();
-	let channel_id = from_channel_id_to_vec(write_ack_event.packet.source_channel.clone());
+	let channel_id = write_ack_event.packet.source_channel.clone().to_string().as_bytes().to_vec();
 	let sequence = u64::from(write_ack_event.packet.sequence);
 	let write_ack = write_ack_event.encode_vec().unwrap();
 
 	// store.Set((portID, channelID, sequence), WriteAckEvent)
 	<WriteAckPacketEvent<T>>::insert((port_id, channel_id, sequence), write_ack);
-}
-
-impl<T: Config> AssetIdAndNameProvider<T::AssetId> for Pallet<T> {
-	type Err = Error<T>;
-
-	fn try_get_asset_id(name: impl AsRef<[u8]>) -> Result<<T as Config>::AssetId, Self::Err> {
-		let asset_id = <AssetIdByName<T>>::try_get(name.as_ref().to_vec());
-		match asset_id {
-			Ok(id) => Ok(id),
-			_ => Err(Error::<T>::InvalidTokenId),
-		}
-	}
-
-	fn try_get_asset_name(asset_id: T::AssetId) -> Result<Vec<u8>, Self::Err> {
-		let token_id = <AssetIdByName<T>>::iter().find(|p| p.1 == asset_id).map(|p| p.0);
-		match token_id {
-			Some(id) => Ok(id),
-			_ => Err(Error::<T>::WrongAssetId),
-		}
-	}
-}
-
-pub fn from_channel_id_to_vec(value: IbcChannelId) -> Vec<u8> {
-	value.to_string().as_bytes().to_vec()
 }

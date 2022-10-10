@@ -13,6 +13,14 @@ repository = "https://github.com/octopus-network/substrate-ibc"
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
+# local libraries
+#pallet-ibc = { version = "3.0.0-dev", default-features = false, path = "../../" }
+ibc-support = { version = "0.1.0", default-features = false, path = "../../ibc-support" }
+
+# third-party crates
+hex = {version = "0.4.0", default-features = false }
+
+# substrate crates
 codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = [
 	"derive",
 ] }
@@ -21,10 +29,10 @@ log = { version = "0.4", default-features = false }
 frame-benchmarking = { version = "4.0.0-dev", default-features = false, optional = true, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28" }
 frame-support = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28" }
 frame-system = { version = "4.0.0-dev", default-features = false,git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28" }
+sp-runtime = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28" }
+sp-io = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28" }
 
 
-# pallet-ibc
-pallet-ibc = { version = "3.0.0-dev", default-features = false, path = "../../" }
 ## for ibc protocl
 ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "dev", default-features = false }
 ibc-proto = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "dev", default-features = false }
@@ -38,15 +46,19 @@ sp-runtime = { version = "6.0.0", default-features = false, git = "https://githu
 [features]
 default = ["std"]
 std = [
+	"hex/std",
 	"codec/std",
 	"log/std",
 	"frame-benchmarking/std",
 	"frame-support/std",
 	"frame-system/std",
 	"scale-info/std",
-	"pallet-ibc/std",
+#	"pallet-ibc/std",
 	"ibc/std",
-	'ibc-proto/std',
+	"ibc-proto/std",
+	"ibc-support/std",
+	"sp-runtime/std",
+	"sp-io/std",
 ]
 runtime-benchmarks = ["frame-benchmarking/runtime-benchmarks"]
 try-runtime = ["frame-support/try-runtime"]

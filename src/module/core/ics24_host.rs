@@ -1,4 +1,4 @@
-use crate::{alloc::string::ToString, from_channel_id_to_vec, REVISION_NUMBER};
+use crate::{alloc::string::ToString, REVISION_NUMBER};
 use alloc::string::String;
 use ibc::{
 	core::{
@@ -69,7 +69,7 @@ pub struct ChannelId(pub Vec<u8>);
 
 impl From<IbcChannelId> for ChannelId {
 	fn from(value: IbcChannelId) -> Self {
-		let value = from_channel_id_to_vec(value);
+		let value = value.to_string().as_bytes().to_vec();
 		Self(value)
 	}
 }
