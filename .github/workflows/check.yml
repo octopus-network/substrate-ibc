@@ -36,8 +36,6 @@ jobs:
 
       - name: Check Build
         run: |
-          git clone --branch master https://github.com/octopus-network/barnacle.git
-          cp ./barnacle/Cargo.lock .
           SKIP_WASM_BUILD=1 cargo check --release
 
       - name: Check code format
@@ -46,8 +44,6 @@ jobs:
 
       - name: Lint rust sources
         run: |
-          git clone --branch master https://github.com/octopus-network/barnacle.git
-          cp ./barnacle/Cargo.lock .
           cargo clippy --all-targets --all-features --tests --benches -- -D warnings
 
       - name: Run tests
