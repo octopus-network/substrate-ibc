@@ -410,11 +410,11 @@ impl<T: Config> ChannelReader for Context<T> {
 	) -> Result<Height, Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel: [client_update_height] client_id:{:?},height:{:?}",client_id,height);
 
-		if <ClientProcessedHeights<T>>::contains_key(
+		if <ClientUpdateHeight<T>>::contains_key(
 			client_id.as_bytes(),
 			height.encode_vec().map_err(|_| Ics04Error::invalid_encode())?,
 		) {
-			let host_height = <ClientProcessedHeights<T>>::get(
+			let host_height = <ClientUpdateHeight<T>>::get(
 				client_id.as_bytes(),
 				height.encode_vec().map_err(|_| Ics04Error::invalid_encode())?,
 			);

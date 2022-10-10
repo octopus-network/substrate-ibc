@@ -427,7 +427,7 @@ pub mod pallet {
 							}
 						}
 						Err(error) => {
-							trace!(
+							log::trace!(
 								target: LOG_TARGET,
 								"deliver error  : {:?} ",
 								error
@@ -447,7 +447,7 @@ fn store_write_ack<T: Config>(
 ) {
 	// store ack
 	let port_id = write_ack_event.packet.source_port.as_bytes().to_vec();
-	let channel_id = from_channel_id_to_vec(write_ack_event.packet.source_channel.clone());
+	let channel_id = write_ack_event.packet.source_channel.clone().to_string().as_bytes().to_vec();
 	let sequence = u64::from(write_ack_event.packet.sequence);
 	let write_ack = write_ack_event.encode_vec().unwrap();
 

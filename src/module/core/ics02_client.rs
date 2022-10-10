@@ -294,7 +294,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 	) -> Result<(), Ics02Error> {
 		trace!(target:"runtime::pallet-ibc","in client: [store_update_height]");
 
-		<ClientProcessedHeights<T>>::insert(
+		<ClientUpdateHeight<T>>::insert(
 			client_id.as_bytes(),
 			height.encode_vec().map_err(Ics02Error::invalid_encode)?,
 			host_height.encode_vec().map_err(Ics02Error::invalid_encode)?,
