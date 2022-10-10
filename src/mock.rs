@@ -11,20 +11,12 @@ pub use frame_support::{
 	StorageValue,
 };
 use frame_system as system;
-use frame_system::{
-	limits::{BlockLength, BlockWeights},
-	EnsureRoot,
-};
-use sp_core::{crypto::KeyTypeId, OpaqueMetadata, H256};
+use frame_system::EnsureRoot;
 use sp_runtime::{
-	create_runtime_str,
-	generic::{self, Era},
-	testing::Header,
-	traits::{AccountIdLookup, BlakeTwo256, IdentifyAccount, IdentityLookup, Verify},
+	generic,
+	traits::{AccountIdLookup, BlakeTwo256, IdentifyAccount, Verify},
 	MultiSignature,
 };
-use sp_version::RuntimeVersion;
-use std::time::{Duration, Instant};
 
 pub type Signature = MultiSignature;
 pub(crate) type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
@@ -186,14 +178,10 @@ parameter_types! {
 }
 
 pub const MILLISECS_PER_BLOCK: Moment = 6000;
-pub const SECS_PER_BLOCK: Moment = MILLISECS_PER_BLOCK / 1000;
 
 // NOTE: Currently it is not possible to change the slot duration after the chain has started.
 //       Attempting to do so will brick block production.
 pub const SLOT_DURATION: Moment = MILLISECS_PER_BLOCK;
-
-// 1 in 4 blocks (on average, not counting collisions) will be primary BABE blocks.
-pub const PRIMARY_PROBABILITY: (u64, u64) = (1, 4);
 
 pub type AssetBalance = u128;
 pub type AssetId = u32;
