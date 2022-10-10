@@ -1,10 +1,9 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-extern crate core;
 extern crate alloc;
+extern crate core;
 
 use frame_support::traits::Currency;
-use ibc::core::ics04_channel::context::{ChannelKeeper, ChannelReader};
 /// Edit this file to define custom logic or remove it if it is not needed.
 /// Learn more about FRAME and the core library of Substrate FRAME pallets:
 /// <https://docs.substrate.io/reference/frame-pallets/>
@@ -18,42 +17,41 @@ mod tests;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
+pub mod ics20_callback;
 pub mod ics20_context_channel;
 pub mod ics20_impl;
 pub mod utils;
-pub mod ics20_callback;
 
-use alloc::vec::Vec;
+use alloc::{string::ToString, vec::Vec};
 use ibc_support::AssetIdAndNameProvider;
-
 
 pub const LOG_TARGET: &str = "runtime::pallet-ics20-transfer";
 type BalanceOf<T> =
 	<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
-
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use alloc::string::ToString;
+	use crate::{ics20_callback::IbcTransferModule, LOG_TARGET};
 	use alloc::string::String;
 	use core::fmt::Debug;
-	use crate::{store_send_packet, LOG_TARGET};
-	use frame_support::pallet_prelude::*;
-	use frame_support::traits::Currency;
-	use frame_support::traits::fungibles::{Mutate, Transfer};
-	use frame_support::traits::tokens::{AssetId, Balance as AssetBalance};
+	use frame_support::{
+		pallet_prelude::*,
+		traits::{
+			fungibles::{Mutate, Transfer},
+			tokens::{AssetId, Balance as AssetBalance},
+			Currency,
+		},
+	};
 	use frame_system::pallet_prelude::*;
 	use ibc::{
 		applications::transfer::msgs::transfer::MsgTransfer,
 		events::IbcEvent,
 		handler::{HandlerOutput, HandlerOutputBuilder},
-		core::ics04_channel::context::{ChannelKeeper, ChannelReader},
+		signer::Signer,
 	};
-	use ibc::signer::Signer;
-	use sp_runtime::traits::IdentifyAccount;
 	use ibc_support::AssetIdAndNameProvider;
-	use crate::ics20_callback::IbcTransferModule;
+	use sp_runtime::traits::IdentifyAccount;
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
@@ -77,7 +75,7 @@ pub mod pallet {
 
 		/// Expose customizable associated type of asset transfer, lock and unlock
 		type Fungibles: Transfer<Self::AccountId, AssetId = Self::AssetId, Balance = Self::AssetBalance>
-		+ Mutate<Self::AccountId, AssetId = Self::AssetId, Balance = Self::AssetBalance>;
+			+ Mutate<Self::AccountId, AssetId = Self::AssetId, Balance = Self::AssetBalance>;
 
 		/// Map of cross-chain asset ID & name
 		type AssetIdByName: AssetIdAndNameProvider<Self::AssetId>;
@@ -93,7 +91,8 @@ pub mod pallet {
 		const NATIVE_TOKEN_NAME: &'static [u8];
 
 		/// IbcContext need to implements to ics20
-		type IbcContext: ibc_support::ibc_trait::IbcSupportChannelKeeper + ibc_support::ibc_trait::IbcSupportChannelReader;
+		type IbcContext: ibc_support::ibc_trait::IbcSupportChannelKeeper
+			+ ibc_support::ibc_trait::IbcSupportChannelReader;
 	}
 
 	#[pallet::storage]
@@ -108,7 +107,6 @@ pub mod pallet {
 		Vec<u8>,
 		ValueQuery,
 	>;
-
 
 	type AssetName = Vec<u8>;
 
@@ -234,7 +232,7 @@ pub mod pallet {
 				// deposit events about send packet event and ics20 transfer event
 				for event in events {
 					match event {
-						IbcEvent::SendPacket(ref send_packet) => {
+						IbcEvent::SendPacket(ref _send_packet) => {
 							// TODO
 							// store_send_packet::<T>(send_packet);
 							// Self::deposit_event(event.into());
@@ -253,8 +251,7 @@ pub mod pallet {
 	}
 }
 
-fn store_send_packet<T: Config>(send_packet_event: &ibc::core::ics04_channel::events::SendPacket) {
-	use alloc::string::ToString;
+fn _store_send_packet<T: Config>(send_packet_event: &ibc::core::ics04_channel::events::SendPacket) {
 	use tendermint_proto::Protobuf;
 	// store key port_id and channel_id
 	let port_id = send_packet_event.packet.source_port.as_bytes().to_vec();

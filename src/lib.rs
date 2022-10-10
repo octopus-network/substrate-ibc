@@ -1,14 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-// todo need in future to remove
-// #![allow(unreachable_code)]
-// #![allow(unreachable_patterns)]
-// #![allow(clippy::type_complexity)]
-// #![allow(non_camel_case_types)]
-// #![allow(dead_code)]
-// #![allow(unused_assignments)]
-// #![allow(unused_imports)]
-// #![allow(unused_variables)]
-// #![allow(clippy::too_many_arguments)]
+#![allow(unreachable_patterns)]
 
 //! # Overview
 //!
@@ -32,7 +23,7 @@ use codec::{Decode, Encode};
 use core::{marker::PhantomData, str::FromStr};
 use scale_info::{prelude::vec, TypeInfo};
 
-use frame_support::{sp_std::fmt::Debug, traits::Currency};
+use core::fmt::Debug;
 use frame_system::ensure_signed;
 use sp_runtime::RuntimeDebug;
 use sp_std::prelude::*;
@@ -50,7 +41,6 @@ pub mod module;
 pub mod utils;
 
 use crate::context::Context;
-use ibc_support::AssetIdAndNameProvider;
 
 use crate::module::core::ics24_host::{
 	ChannelId, ClientId, ClientType, ConnectionId, Height, Packet, PortId,
@@ -58,8 +48,6 @@ use crate::module::core::ics24_host::{
 
 pub const LOG_TARGET: &str = "runtime::pallet-ibc";
 pub const REVISION_NUMBER: u64 = 0;
-
-
 
 #[cfg(test)]
 mod mock;
@@ -108,21 +96,15 @@ pub mod pallet {
 	use crate::module::{
 		clients::ics10_grandpa::ClientState as EventClientState, core::ics24_host::Height,
 	};
-	use frame_support::{
-		pallet_prelude::*,
-		traits::{
-			fungibles::{Mutate, Transfer},
-			tokens::{AssetId, Balance as AssetBalance},
-			UnixTime,
-		},
-	};
+	use frame_support::{pallet_prelude::*, traits::UnixTime};
 	use frame_system::pallet_prelude::*;
-	use ibc::{events::IbcEvent, signer::Signer};
-	use sp_runtime::traits::IdentifyAccount;
+	use ibc::events::IbcEvent;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
-	pub trait Config: frame_system::Config + Sync + Send + Debug + pallet_ics20_transfer::Config {
+	pub trait Config:
+		frame_system::Config + Sync + Send + Debug + pallet_ics20_transfer::Config
+	{
 		/// The overarching event type.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
@@ -321,7 +303,10 @@ pub mod pallet {
 		///
 		/// The relevant events are emitted when successful.
 		#[pallet::weight(0)]
-		pub fn deliver(origin: OriginFor<T>, messages: Vec<ibc_support::Any>) -> DispatchResultWithPostInfo {
+		pub fn deliver(
+			origin: OriginFor<T>,
+			messages: Vec<ibc_support::Any>,
+		) -> DispatchResultWithPostInfo {
 			sp_tracing::within_span!(
 			sp_tracing::Level::TRACE, "deliver";
 			{
