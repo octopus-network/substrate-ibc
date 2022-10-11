@@ -206,7 +206,7 @@ impl<T: Config> Ics20Reader for IbcTransferModule<T> {
 }
 
 impl<T: Config> Ics20Context for IbcTransferModule<T> {
-	type AccountId = <T as Config>::AccountIdConversion; // Need Setting Account TODO(davirian)
+	type AccountId = <T as Config>::AccountIdConversion;
 }
 
 /// Alias to 512-bit hash when used in the context of a transaction signature on the chain.

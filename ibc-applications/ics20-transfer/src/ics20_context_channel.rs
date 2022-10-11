@@ -1,16 +1,17 @@
 use crate::*;
-use alloc::vec::Vec;
+use alloc::{boxed::Box, vec::Vec};
 use core::time::Duration;
 
 use crate::ics20_callback::IbcTransferModule;
 use ibc::{
 	core::{
-		ics02_client::{client_consensus::AnyConsensusState, client_state::AnyClientState},
+		ics02_client::{client_state::ClientState, consensus_state::ConsensusState},
 		ics03_connection::connection::ConnectionEnd,
 		ics04_channel::{
 			channel::ChannelEnd,
 			commitment::{
-				AcknowledgementCommitment as IbcAcknowledgementCommitment,
+				AcknowledgementCommitment,
+				AcknowledgementCommitment as IbcAcknowledgementCommitment, PacketCommitment,
 				PacketCommitment as IbcPacketCommitment,
 			},
 			context::{ChannelKeeper, ChannelReader},
@@ -25,8 +26,12 @@ use ibc::{
 use ibc_support::ibc_trait::{IbcSupportChannelKeeper, IbcSupportChannelReader};
 
 impl<T: Config> ChannelReader for IbcTransferModule<T> {
-	fn channel_end(&self, port_channel_id: &(PortId, ChannelId)) -> Result<ChannelEnd, Ics04Error> {
-		T::IbcContext::channel_end(port_channel_id)
+	fn channel_end(
+		&self,
+		port_id: &PortId,
+		channel_id: &ChannelId,
+	) -> Result<ChannelEnd, Ics04Error> {
+		T::IbcContext::channel_end(port_id, channel_id)
 	}
 
 	fn connection_end(&self, connection_id: &ConnectionId) -> Result<ConnectionEnd, Ics04Error> {
@@ -41,7 +46,7 @@ impl<T: Config> ChannelReader for IbcTransferModule<T> {
 		T::IbcContext::connection_channels(conn_id)
 	}
 
-	fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, Ics04Error> {
+	fn client_state(&self, client_id: &ClientId) -> Result<Box<dyn ClientState>, Ics04Error> {
 		T::IbcContext::client_state(client_id)
 	}
 
@@ -49,52 +54,61 @@ impl<T: Config> ChannelReader for IbcTransferModule<T> {
 		&self,
 		client_id: &ClientId,
 		height: Height,
-	) -> Result<AnyConsensusState, Ics04Error> {
+	) -> Result<Box<dyn ConsensusState>, Ics04Error> {
 		T::IbcContext::client_consensus_state(client_id, height)
 	}
 
 	fn get_next_sequence_send(
 		&self,
-		port_channel_id: &(PortId, ChannelId),
+		port_id: &PortId,
+		channel_id: &ChannelId,
 	) -> Result<Sequence, Ics04Error> {
-		T::IbcContext::get_next_sequence_send(port_channel_id)
+		T::IbcContext::get_next_sequence_send(port_id, channel_id)
 	}
 
 	fn get_next_sequence_recv(
 		&self,
-		port_channel_id: &(PortId, ChannelId),
+		port_id: &PortId,
+		channel_id: &ChannelId,
 	) -> Result<Sequence, Ics04Error> {
-		T::IbcContext::get_next_sequence_recv(port_channel_id)
+		T::IbcContext::get_next_sequence_recv(port_id, channel_id)
 	}
 
 	fn get_next_sequence_ack(
 		&self,
-		port_channel_id: &(PortId, ChannelId),
+		port_id: &PortId,
+		channel_id: &ChannelId,
 	) -> Result<Sequence, Ics04Error> {
-		T::IbcContext::get_next_sequence_ack(port_channel_id)
+		T::IbcContext::get_next_sequence_ack(port_id, channel_id)
 	}
 
 	/// Returns the `PacketCommitment` for the given identifier `(PortId, ChannelId, Sequence)`.
 	fn get_packet_commitment(
 		&self,
-		key: &(PortId, ChannelId, Sequence),
+		port_id: &PortId,
+		channel_id: &ChannelId,
+		sequence: Sequence,
 	) -> Result<IbcPacketCommitment, Ics04Error> {
-		T::IbcContext::get_packet_commitment(key)
+		T::IbcContext::get_packet_commitment(port_id, channel_id, sequence)
 	}
 
 	fn get_packet_receipt(
 		&self,
-		key: &(PortId, ChannelId, Sequence),
+		port_id: &PortId,
+		channel_id: &ChannelId,
+		sequence: Sequence,
 	) -> Result<Receipt, Ics04Error> {
-		T::IbcContext::get_packet_receipt(key)
+		T::IbcContext::get_packet_receipt(port_id, channel_id, sequence)
 	}
 
 	/// Returns the `Acknowledgements` for the given identifier `(PortId, ChannelId, Sequence)`.
 	fn get_packet_acknowledgement(
 		&self,
-		key: &(PortId, ChannelId, Sequence),
+		port_id: &PortId,
+		channel_id: &ChannelId,
+		sequence: Sequence,
 	) -> Result<IbcAcknowledgementCommitment, Ics04Error> {
-		T::IbcContext::get_packet_acknowledgement(key)
+		T::IbcContext::get_packet_acknowledgement(port_id, channel_id, sequence)
 	}
 
 	/// A hashing function for packet commitments
@@ -107,17 +121,12 @@ impl<T: Config> ChannelReader for IbcTransferModule<T> {
 		T::IbcContext::host_height()
 	}
 
-	/// Returns the current timestamp of the local chain.
-	fn host_timestamp(&self) -> Timestamp {
-		T::IbcContext::host_timestamp()
-	}
-
 	/// Returns the `AnyConsensusState` for the given identifier `height`.
-	fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Ics04Error> {
+	fn host_consensus_state(&self, height: Height) -> Result<Box<dyn ConsensusState>, Ics04Error> {
 		T::IbcContext::host_consensus_state(height)
 	}
 
-	fn pending_host_consensus_state(&self) -> Result<AnyConsensusState, Ics04Error> {
+	fn pending_host_consensus_state(&self) -> Result<Box<dyn ConsensusState>, Ics04Error> {
 		T::IbcContext::pending_host_consensus_state()
 	}
 
@@ -153,81 +162,96 @@ impl<T: Config> ChannelReader for IbcTransferModule<T> {
 impl<T: Config> ChannelKeeper for IbcTransferModule<T> {
 	fn store_packet_commitment(
 		&mut self,
-		key: (PortId, ChannelId, Sequence),
-		commitment: IbcPacketCommitment,
+		port_id: PortId,
+		channel_id: ChannelId,
+		sequence: Sequence,
+		commitment: PacketCommitment,
 	) -> Result<(), Ics04Error> {
-		T::IbcContext::store_packet_commitment(key, commitment)
+		T::IbcContext::store_packet_commitment(port_id, channel_id, sequence, commitment)
 	}
 
 	fn delete_packet_commitment(
 		&mut self,
-		key: (PortId, ChannelId, Sequence),
+		port_id: &PortId,
+		channel_id: &ChannelId,
+		seq: Sequence,
 	) -> Result<(), Ics04Error> {
-		T::IbcContext::delete_packet_commitment(key)
+		T::IbcContext::delete_packet_commitment(port_id, channel_id, seq)
 	}
 
 	fn store_packet_receipt(
 		&mut self,
-		key: (PortId, ChannelId, Sequence),
+		port_id: PortId,
+		channel_id: ChannelId,
+		sequence: Sequence,
 		receipt: Receipt,
 	) -> Result<(), Ics04Error> {
-		T::IbcContext::store_packet_receipt(key, receipt)
+		T::IbcContext::store_packet_receipt(port_id, channel_id, sequence, receipt)
 	}
 
 	fn store_packet_acknowledgement(
 		&mut self,
-		key: (PortId, ChannelId, Sequence),
-		ack_commitment: IbcAcknowledgementCommitment,
+		port_id: PortId,
+		channel_id: ChannelId,
+		sequence: Sequence,
+		ack_commitment: AcknowledgementCommitment,
 	) -> Result<(), Ics04Error> {
-		T::IbcContext::store_packet_acknowledgement(key, ack_commitment)
+		T::IbcContext::store_packet_acknowledgement(port_id, channel_id, sequence, ack_commitment)
 	}
 
 	fn delete_packet_acknowledgement(
 		&mut self,
-		key: (PortId, ChannelId, Sequence),
+		port_id: &PortId,
+		channel_id: &ChannelId,
+		sequence: Sequence,
 	) -> Result<(), Ics04Error> {
-		T::IbcContext::delete_packet_commitment(key)
+		T::IbcContext::delete_packet_commitment(port_id, channel_id, sequence)
 	}
 
 	fn store_connection_channels(
 		&mut self,
 		conn_id: ConnectionId,
-		port_channel_id: &(PortId, ChannelId),
+		port_id: PortId,
+		channel_id: ChannelId,
 	) -> Result<(), Ics04Error> {
-		T::IbcContext::store_connection_channels(conn_id, port_channel_id)
+		T::IbcContext::store_connection_channels(conn_id, port_id, channel_id)
 	}
 
 	/// Stores the given channel_end at a path associated with the port_id and channel_id.
 	fn store_channel(
 		&mut self,
-		port_channel_id: (PortId, ChannelId),
-		channel_end: &ChannelEnd,
+		port_id: PortId,
+		channel_id: ChannelId,
+		channel_end: ChannelEnd,
 	) -> Result<(), Ics04Error> {
-		T::IbcContext::store_channel(port_channel_id, channel_end)
+		T::IbcContext::store_channel(port_id, channel_id, channel_end)
 	}
 
 	fn store_next_sequence_send(
 		&mut self,
-		port_channel_id: (PortId, ChannelId),
+		port_id: PortId,
+		channel_id: ChannelId,
 		seq: Sequence,
 	) -> Result<(), Ics04Error> {
-		T::IbcContext::store_next_sequence_send(port_channel_id, seq)
+		T::IbcContext::store_next_sequence_send(port_id, channel_id, seq)
 	}
 
 	fn store_next_sequence_recv(
 		&mut self,
-		port_channel_id: (PortId, ChannelId),
+		port_id: PortId,
+		channel_id: ChannelId,
 		seq: Sequence,
 	) -> Result<(), Ics04Error> {
-		T::IbcContext::store_next_sequence_recv(port_channel_id, seq)
+		T::IbcContext::store_next_sequence_recv(port_id, channel_id, seq)
 	}
 
 	fn store_next_sequence_ack(
 		&mut self,
-		port_channel_id: (PortId, ChannelId),
+		port_id: PortId,
+		channel_id: ChannelId,
 		seq: Sequence,
 	) -> Result<(), Ics04Error> {
-		T::IbcContext::store_next_sequence_ack(port_channel_id, seq)
+		T::IbcContext::store_next_sequence_ack(port_id, channel_id, seq)
 	}
 
 	fn increase_channel_counter(&mut self) {

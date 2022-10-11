@@ -14,7 +14,7 @@ pub mod ics20_context_channel;
 pub mod ics20_impl;
 pub mod utils;
 
-use alloc::{string::ToString, vec::Vec};
+use alloc::vec::Vec;
 use ibc_support::AssetIdAndNameProvider;
 
 pub const LOG_TARGET: &str = "runtime::pallet-ics20-transfer";
@@ -86,19 +86,6 @@ pub mod pallet {
 		type IbcContext: ibc_support::ibc_trait::IbcSupportChannelKeeper
 			+ ibc_support::ibc_trait::IbcSupportChannelReader;
 	}
-
-	#[pallet::storage]
-	/// (height, port_id, channel_id, sequence) => send-packet event
-	pub type SendPacketEvent<T: Config> = StorageNMap<
-		_,
-		(
-			NMapKey<Blake2_128Concat, Vec<u8>>,
-			NMapKey<Blake2_128Concat, Vec<u8>>,
-			NMapKey<Blake2_128Concat, u64>,
-		),
-		Vec<u8>,
-		ValueQuery,
-	>;
 
 	type AssetName = Vec<u8>;
 
@@ -226,7 +213,6 @@ pub mod pallet {
 					match event {
 						IbcEvent::SendPacket(ref _send_packet) => {
 							// TODO
-							// store_send_packet::<T>(send_packet);
 							// Self::deposit_event(event.into());
 						},
 						_ => {
@@ -241,20 +227,6 @@ pub mod pallet {
 			Ok(().into())
 		}
 	}
-}
-
-fn _store_send_packet<T: Config>(send_packet_event: &ibc::core::ics04_channel::events::SendPacket) {
-	use tendermint_proto::Protobuf;
-	// store key port_id and channel_id
-	let port_id = send_packet_event.packet.source_port.as_bytes().to_vec();
-	let channel_id =
-		send_packet_event.packet.source_channel.clone().to_string().as_bytes().to_vec();
-	// store value packet
-	let packet = send_packet_event.packet.encode_vec().unwrap();
-	<SendPacketEvent<T>>::insert(
-		(port_id, channel_id, u64::from(send_packet_event.packet.sequence)),
-		packet,
-	);
 }
 
 impl<T: Config> AssetIdAndNameProvider<T::AssetId> for Pallet<T> {

@@ -29,7 +29,7 @@ frame-system = { version = "4.0.0-dev", default-features = false,git = "https://
 sp-runtime = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28" }
 sp-io = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28" }
 ## for ibc protocl
-ibc = { version = "0.19.0", default-features = false, branch = "main", git = "https://github.com/cosmos/ibc-rs.git" }
+ibc = { version = "0.19.0", default-features = false, branch = "dev", git = "https://github.com/octopus-network/cosmos-ibc-rs.git" }
 ibc-proto = { version = "0.20.1", default-features = false }
 tendermint-proto = { version = "=0.25.0", default-features = false }
 

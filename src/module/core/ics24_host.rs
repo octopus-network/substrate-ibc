@@ -51,7 +51,7 @@ pub struct PortId(pub Vec<u8>);
 
 impl From<IbcPortId> for PortId {
 	fn from(value: IbcPortId) -> Self {
-		let value = value.0.as_bytes().to_vec();
+		let value = value.as_str().as_bytes().to_vec();
 		Self(value)
 	}
 }
@@ -59,7 +59,7 @@ impl From<IbcPortId> for PortId {
 impl From<PortId> for IbcPortId {
 	fn from(value: PortId) -> Self {
 		let value = String::from_utf8(value.0).expect("convert from utf8 Error");
-		Self(value)
+		IbcPortId::from_str(&value).expect("Never convert failed!")
 	}
 }
 
@@ -120,14 +120,12 @@ impl Height {
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub enum ClientType {
 	Tendermint,
-	Grandpa,
 }
 
 impl From<IbcClientType> for ClientType {
 	fn from(value: IbcClientType) -> Self {
 		match value {
 			IbcClientType::Tendermint => ClientType::Tendermint,
-			IbcClientType::Grandpa => ClientType::Grandpa,
 			_ => todo!(),
 		}
 	}
@@ -137,7 +135,6 @@ impl ClientType {
 	pub fn to_ibc_client_type(self) -> IbcClientType {
 		match self {
 			ClientType::Tendermint => IbcClientType::Tendermint,
-			ClientType::Grandpa => IbcClientType::Grandpa,
 		}
 	}
 }
@@ -148,7 +145,7 @@ pub struct ClientId(pub Vec<u8>);
 
 impl From<IbcClientId> for ClientId {
 	fn from(value: IbcClientId) -> Self {
-		let value = value.0.as_bytes().to_vec();
+		let value = value.as_str().as_bytes().to_vec();
 		Self(value)
 	}
 }
@@ -156,7 +153,7 @@ impl From<IbcClientId> for ClientId {
 impl From<ClientId> for IbcClientId {
 	fn from(value: ClientId) -> Self {
 		let value = String::from_utf8(value.0).expect("convert from utf8 Error");
-		Self(value)
+		IbcClientId::from_str(&value).expect("Never Convert Failed!")
 	}
 }
 
@@ -166,7 +163,7 @@ pub struct ConnectionId(pub Vec<u8>);
 
 impl From<IbcConnectionId> for ConnectionId {
 	fn from(value: IbcConnectionId) -> Self {
-		let value = value.0.as_bytes().to_vec();
+		let value = value.as_str().as_bytes().to_vec();
 		Self(value)
 	}
 }
@@ -174,7 +171,7 @@ impl From<IbcConnectionId> for ConnectionId {
 impl From<ConnectionId> for IbcConnectionId {
 	fn from(value: ConnectionId) -> Self {
 		let value = String::from_utf8(value.0).expect("convert from utf8 Error");
-		Self(value)
+		IbcConnectionId::from_str(&value).expect("Never Convert Failed!")
 	}
 }
 

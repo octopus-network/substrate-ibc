@@ -1,9 +1,10 @@
 use crate::{
 	alloc::string::ToString, context::Context, utils::host_height, Config, REVISION_NUMBER,
 };
+use alloc::boxed::Box;
 use ibc::{
 	core::{
-		ics02_client::{client_state::AnyClientState, context::ClientReader, header::AnyHeader},
+		ics02_client::{client_state::ClientState, context::ClientReader, header::Header},
 		ics24_host::identifier::ClientId,
 		ics26_routing::handler::{deliver, MsgReceipt},
 	},
@@ -21,12 +22,12 @@ impl<T: Config> Ics18Context for Context<T> {
 		Height::new(REVISION_NUMBER, revision_height).expect(&REVISION_NUMBER.to_string())
 	}
 
-	fn query_client_full_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
+	fn query_client_full_state(&self, client_id: &ClientId) -> Option<Box<dyn ClientState>> {
 		// Forward call to Ics2.
 		ClientReader::client_state(self, client_id).ok()
 	}
 
-	fn query_latest_header(&self) -> Option<AnyHeader> {
+	fn query_latest_header(&self) -> Option<Box<dyn Header>> {
 		todo!()
 	}
 
