@@ -2,7 +2,7 @@
 name = "pallet-ics20-transfer"
 version = "0.1.0"
 description = "FRAME pallet ibc protocol ics20 token transfer"
-authors = ["davirain.yin@oct.network"]
+authors = ["Octopus Network <hi@oct.network>"]
 homepage = "https://github.com/octopus-network"
 edition = "2021"
 license = "Unlicense"
@@ -14,12 +14,9 @@ targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
 # local libraries
-#pallet-ibc = { version = "3.0.0-dev", default-features = false, path = "../../" }
 ibc-support = { version = "0.1.0", default-features = false, path = "../../ibc-support" }
-
 # third-party crates
 hex = {version = "0.4.0", default-features = false }
-
 # substrate crates
 codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = [
 	"derive",
@@ -31,12 +28,10 @@ frame-support = { version = "4.0.0-dev", default-features = false, git = "https:
 frame-system = { version = "4.0.0-dev", default-features = false,git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28" }
 sp-runtime = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28" }
 sp-io = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28" }
-
-
 ## for ibc protocl
-ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "dev", default-features = false }
-ibc-proto = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "dev", default-features = false }
-tendermint-proto = { version = "=0.23.7", default-features = false }
+ibc = { version = "0.19.0", default-features = false, branch = "main", git = "https://github.com/cosmos/ibc-rs.git" }
+ibc-proto = { version = "0.20.1", default-features = false }
+tendermint-proto = { version = "=0.25.0", default-features = false }
 
 [dev-dependencies]
 sp-core = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28" }
@@ -53,7 +48,6 @@ std = [
 	"frame-support/std",
 	"frame-system/std",
 	"scale-info/std",
-#	"pallet-ibc/std",
 	"ibc/std",
 	"ibc-proto/std",
 	"ibc-support/std",

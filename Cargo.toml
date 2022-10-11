@@ -48,9 +48,9 @@ flex-error = { version = "0.4.4", default-features = false }
 hex = {version = "0.4.0", default-features = false }
 time = { version = "0.3", default-features = false, features = ["macros", "parsing"] }
 ## for ibc protocl
-ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "dev", default-features = false }
-ibc-proto = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "dev", default-features = false }
-tendermint-proto = { version = "=0.23.7", default-features = false }
+ibc = { version = "0.19.0", default-features = false, branch = "main", git = "https://github.com/cosmos/ibc-rs.git" }
+ibc-proto = { version = "0.20.1", default-features = false }
+tendermint-proto = { version = "=0.25.0", default-features = false }
 beefy-light-client = { git = "https://github.com/octopus-network/beefy-light-client.git", branch = "main", default-features = false }
 
 [dev-dependencies]
@@ -62,7 +62,7 @@ sha2 = '0.10.2'
 serde = "1.0"
 chrono = "0.4.19"
 # ibc protocol crates
-ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "dev", features = ["mocks"]}
+ibc = { version = "0.19.0", default-features = false, branch = "main", git = "https://github.com/cosmos/ibc-rs.git" }
 # substrate crates
 sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28"}
 sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28" }
