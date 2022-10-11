@@ -1,10 +1,10 @@
 use crate::Config;
-use scale_info::prelude::format;
 use ibc::{
 	applications::transfer::{error::Error as Ics20Error, VERSION},
 	core::ics24_host::identifier::{ChannelId, PortId},
 	signer::Signer,
 };
+use scale_info::prelude::format;
 
 /// Get the latest block height of the host chain
 pub fn host_height<T: Config>() -> u64 {

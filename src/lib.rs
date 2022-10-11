@@ -132,7 +132,6 @@ pub mod pallet {
 		ValueQuery,
 	>;
 
-
 	#[pallet::storage]
 	/// (client_id, height) => host_height
 	pub type ClientUpdateHeight<T: Config> = StorageDoubleMap<
