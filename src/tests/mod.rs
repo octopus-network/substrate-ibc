@@ -3,7 +3,6 @@ use crate::{mock::*, Context};
 use core::str::FromStr;
 
 use ibc::{
-	applications::transfer::{context::Ics20Context, error::Error as ICS20Error},
 	clients::ics10_grandpa::{
 		client_state::ClientState as GPClientState,
 		consensus_state::ConsensusState as GPConsensusState, help::ValidatorSet,
@@ -17,7 +16,7 @@ use ibc::{
 			error::Error as ICS02Error,
 		},
 		ics03_connection::{
-			connection::{ConnectionEnd, State},
+			connection::ConnectionEnd,
 			context::{ConnectionKeeper, ConnectionReader},
 			error::Error as ICS03Error,
 		},
@@ -29,7 +28,6 @@ use ibc::{
 		},
 		ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
 	},
-	timestamp::Timestamp,
 	Height,
 };
 
@@ -551,7 +549,7 @@ fn test_get_identified_channel_end() {
 	let mut channel_id_vec = vec![];
 	let channel_end_vec = vec![ChannelEnd::default(); range.len()];
 
-	for index in 0..range.len() {
+	for _ in 0..range.len() {
 		let port_id = PortId::default();
 		port_id_vec.push(port_id);
 		let channel_id = ChannelId::default();

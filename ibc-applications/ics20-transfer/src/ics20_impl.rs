@@ -1,35 +1,33 @@
-pub mod channel;
-pub mod transfer_handle_callback;
-
-use crate::*;
+use crate::{ics20_callback::IbcTransferModule, utils::get_channel_escrow_address, *};
+use alloc::string::ToString;
+use codec::{Decode, Encode};
+use core::str::FromStr;
 use frame_support::traits::{
 	fungibles::{Mutate, Transfer},
 	ExistenceRequirement::AllowDeath,
 };
-use log::error;
-
-use crate::utils::get_channel_escrow_address;
 use ibc::{
 	applications::transfer::{
 		context::{BankKeeper, Ics20Context, Ics20Keeper, Ics20Reader},
 		error::Error as Ics20Error,
 		PrefixedCoin, PORT_ID_STR,
 	},
-	core::ics24_host::identifier::PortId,
+	core::ics24_host::identifier::{ChannelId, PortId},
 	signer::Signer,
 };
+use ibc_support::AssetIdAndNameProvider;
+use log::error;
+use scale_info::TypeInfo;
 use sp_runtime::{
 	traits::{CheckedConversion, IdentifyAccount, Verify},
 	MultiSignature,
 };
 
-use transfer_handle_callback::TransferModule;
-
-impl<T: Config> Ics20Keeper for TransferModule<T> {
+impl<T: Config> Ics20Keeper for IbcTransferModule<T> {
 	type AccountId = <Self as Ics20Context>::AccountId;
 }
 
-impl<T: Config> BankKeeper for TransferModule<T> {
+impl<T: Config> BankKeeper for IbcTransferModule<T> {
 	type AccountId = <Self as Ics20Context>::AccountId;
 
 	fn send_coins(
@@ -178,7 +176,7 @@ impl<T: Config> BankKeeper for TransferModule<T> {
 	}
 }
 
-impl<T: Config> Ics20Reader for TransferModule<T> {
+impl<T: Config> Ics20Reader for IbcTransferModule<T> {
 	type AccountId = <Self as Ics20Context>::AccountId;
 
 	fn get_port(&self) -> Result<PortId, Ics20Error> {
@@ -189,7 +187,7 @@ impl<T: Config> Ics20Reader for TransferModule<T> {
 	fn get_channel_escrow_address(
 		&self,
 		port_id: &PortId,
-		channel_id: &IbcChannelId,
+		channel_id: &ChannelId,
 	) -> Result<Self::AccountId, Ics20Error> {
 		get_channel_escrow_address(port_id, channel_id)?
 			.try_into()
@@ -207,7 +205,7 @@ impl<T: Config> Ics20Reader for TransferModule<T> {
 	}
 }
 
-impl<T: Config> Ics20Context for TransferModule<T> {
+impl<T: Config> Ics20Context for IbcTransferModule<T> {
 	type AccountId = <T as Config>::AccountIdConversion; // Need Setting Account TODO(davirian)
 }
 

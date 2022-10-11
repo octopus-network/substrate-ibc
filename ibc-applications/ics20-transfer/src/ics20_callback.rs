@@ -1,4 +1,5 @@
 use crate::*;
+use core::marker::PhantomData;
 use ibc::{
 	core::{
 		ics04_channel::{
@@ -14,11 +15,10 @@ use ibc::{
 	signer::Signer,
 };
 
-/// A structure handling ICS20 callback
 #[derive(Debug)]
-pub struct TransferModule<T: Config>(pub PhantomData<T>);
+pub struct IbcTransferModule<T>(pub PhantomData<T>);
 
-impl<T: Config> Module for TransferModule<T> {
+impl<T: Config> Module for IbcTransferModule<T> {
 	fn on_chan_open_init(
 		&mut self,
 		output: &mut ModuleOutputBuilder,

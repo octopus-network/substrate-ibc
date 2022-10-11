@@ -128,6 +128,7 @@ impl From<IbcClientType> for ClientType {
 		match value {
 			IbcClientType::Tendermint => ClientType::Tendermint,
 			IbcClientType::Grandpa => ClientType::Grandpa,
+			_ => todo!(),
 		}
 	}
 }
