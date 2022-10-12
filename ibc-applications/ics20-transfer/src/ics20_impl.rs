@@ -40,7 +40,7 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 		match is_native_asset {
 			// transfer native token
 			true => {
-				let amount = amt.amount.as_u256().low_u128().checked_into().unwrap(); // TODO: FIX IN THE FUTURE
+				let amount = amt.amount.0.low_u128().checked_into().unwrap(); // TODO: FIX IN THE FUTURE
 				let native_token_name = T::NATIVE_TOKEN_NAME;
 				let ibc_token_name = amt.denom.base_denom().as_str().as_bytes();
 
@@ -70,7 +70,7 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 			},
 			// transfer non-native token
 			false => {
-				let amount = amt.amount.as_u256().low_u128().into();
+				let amount = amt.amount.0.low_u128().into();
 				let denom = amt.denom.base_denom().as_str();
 				// look cross chain asset have register in host chain
 				match T::AssetIdByName::try_get_asset_id(denom) {
@@ -110,7 +110,7 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 		account: &Self::AccountId,
 		amt: &PrefixedCoin,
 	) -> Result<(), Ics20Error> {
-		let amount = amt.amount.as_u256().low_u128().into();
+		let amount = amt.amount.0.low_u128().into();
 		let denom = amt.denom.base_denom().as_str();
 		// look cross chain asset have register in host chain
 		match T::AssetIdByName::try_get_asset_id(denom) {
@@ -145,7 +145,7 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 		account: &Self::AccountId,
 		amt: &PrefixedCoin,
 	) -> Result<(), Ics20Error> {
-		let amount = amt.amount.as_u256().low_u128().into();
+		let amount = amt.amount.0.low_u128().into();
 		let denom = amt.denom.base_denom().as_str();
 		// look cross chain asset have register in host chain
 		match T::AssetIdByName::try_get_asset_id(denom) {

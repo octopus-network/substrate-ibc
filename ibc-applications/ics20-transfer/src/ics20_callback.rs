@@ -1,5 +1,6 @@
 use crate::*;
 use core::marker::PhantomData;
+use alloc::string::ToString;
 use ibc::{
 	core::{
 		ics04_channel::{
@@ -39,7 +40,7 @@ impl<T: Config> Module for IbcTransferModule<T> {
 			counterparty,
 			version,
 		)
-		.map_err(Ics04Error::ics20_transfer)
+		.map_err(|e|Ics04Error::app_module(e.to_string()))
 	}
 
 	fn on_chan_open_try(
@@ -64,7 +65,7 @@ impl<T: Config> Module for IbcTransferModule<T> {
 			version,
 			counterparty_version,
 		)
-		.map_err(Ics04Error::ics20_transfer)
+		.map_err(|e|Ics04Error::app_module(e.to_string()))
 	}
 
 	fn on_chan_open_ack(
@@ -81,7 +82,7 @@ impl<T: Config> Module for IbcTransferModule<T> {
 			channel_id,
 			counterparty_version,
 		)
-		.map_err(Ics04Error::ics20_transfer)
+		.map_err(|e|Ics04Error::app_module(e.to_string()))
 	}
 
 	fn on_chan_open_confirm(
@@ -93,7 +94,7 @@ impl<T: Config> Module for IbcTransferModule<T> {
 		ibc::applications::transfer::context::on_chan_open_confirm(
 			self, output, port_id, channel_id,
 		)
-		.map_err(Ics04Error::ics20_transfer)
+		.map_err(|e|Ics04Error::app_module(e.to_string()))
 	}
 
 	fn on_chan_close_init(
@@ -103,7 +104,7 @@ impl<T: Config> Module for IbcTransferModule<T> {
 		channel_id: &IbcChannelId,
 	) -> Result<(), Ics04Error> {
 		ibc::applications::transfer::context::on_chan_close_init(self, output, port_id, channel_id)
-			.map_err(Ics04Error::ics20_transfer)
+			.map_err(|e|Ics04Error::app_module(e.to_string()))
 	}
 
 	fn on_chan_close_confirm(
@@ -115,7 +116,7 @@ impl<T: Config> Module for IbcTransferModule<T> {
 		ibc::applications::transfer::context::on_chan_close_confirm(
 			self, output, port_id, channel_id,
 		)
-		.map_err(Ics04Error::ics20_transfer)
+		.map_err(|e|Ics04Error::app_module(e.to_string()))
 	}
 
 	fn on_recv_packet(
@@ -141,7 +142,7 @@ impl<T: Config> Module for IbcTransferModule<T> {
 			acknowledgement,
 			relayer,
 		)
-		.map_err(Ics04Error::ics20_transfer)
+		.map_err(|e|Ics04Error::app_module(e.to_string()))
 	}
 
 	fn on_timeout_packet(
@@ -151,6 +152,6 @@ impl<T: Config> Module for IbcTransferModule<T> {
 		relayer: &Signer,
 	) -> Result<(), Ics04Error> {
 		ibc::applications::transfer::context::on_timeout_packet(self, output, packet, relayer)
-			.map_err(Ics04Error::ics20_transfer)
+			.map_err(|e|Ics04Error::app_module(e.to_string()))
 	}
 }
