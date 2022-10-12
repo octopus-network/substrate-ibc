@@ -2,27 +2,24 @@ use super::*;
 use crate::{mock::*, Context};
 use core::str::FromStr;
 
-use ibc::{
-	core::{
-		ics02_client::{
-			client_type::ClientType,
-			context::{ClientKeeper, ClientReader},
-			error::Error as ICS02Error,
-		},
-		ics03_connection::{
-			connection::ConnectionEnd,
-			context::{ConnectionKeeper, ConnectionReader},
-			error::Error as ICS03Error,
-		},
-		ics04_channel::{
-			channel::ChannelEnd,
-			context::{ChannelKeeper, ChannelReader},
-			error::Error as ICS04Error,
-			packet::Sequence,
-		},
-		ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
+use ibc::core::{
+	ics02_client::{
+		client_type::ClientType,
+		context::{ClientKeeper, ClientReader},
+		error::Error as ICS02Error,
 	},
-	Height,
+	ics03_connection::{
+		connection::ConnectionEnd,
+		context::{ConnectionKeeper, ConnectionReader},
+		error::Error as ICS03Error,
+	},
+	ics04_channel::{
+		channel::ChannelEnd,
+		context::{ChannelKeeper, ChannelReader},
+		error::Error as ICS04Error,
+		packet::Sequence,
+	},
+	ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
 };
 
 // test store and read client-type
@@ -84,10 +81,9 @@ fn test_get_packet_commitment_state_ok() {
 		for index in 0..range.len() {
 			assert!(context
 				.store_packet_commitment(
-						port_id_vec[index].clone(),
-						channel_id_vec[index].clone(),
-						sequence_vec[index]
-					,
+					port_id_vec[index].clone(),
+					channel_id_vec[index].clone(),
+					sequence_vec[index],
 					com.clone(),
 				)
 				.is_ok());
@@ -159,7 +155,7 @@ fn test_connection_fail() {
 		let ret = ConnectionReader::connection_end(&context, &connection_id0.clone())
 			.unwrap_err()
 			.to_string();
-		assert_eq!(ret, ICS03Error::connection_mismatch(connection_id0).to_string());
+		assert_eq!(ret, ICS03Error::connection_not_found(connection_id0).to_string());
 	})
 }
 
@@ -188,7 +184,9 @@ fn test_delete_packet_acknowledgement_ok() {
 	new_test_ext().execute_with(|| {
 		assert!(context
 			.store_packet_acknowledgement(
-				port_id.clone(), channel_id.clone(), sequence,
+				port_id.clone(),
+				channel_id.clone(),
+				sequence,
 				ack.clone()
 			)
 			.is_ok());
@@ -236,11 +234,9 @@ fn test_get_acknowledge_state() {
 		for index in 0..range.len() {
 			assert!(context
 				.store_packet_acknowledgement(
-					
-						port_id_vec[index].clone(),
-						channel_id_vec[index].clone(),
-						sequence_vec[index]
-					,
+					port_id_vec[index].clone(),
+					channel_id_vec[index].clone(),
+					sequence_vec[index],
 					ack_vec[index].clone()
 				)
 				.is_ok());
@@ -257,10 +253,7 @@ fn test_store_connection_channles_ok() {
 	let mut context: Context<Test> = Context::new();
 	new_test_ext().execute_with(|| {
 		assert!(context
-			.store_connection_channels(
-				connection_id.clone(),
-				port_id.clone(), channel_id.clone()
-			)
+			.store_connection_channels(connection_id.clone(), port_id.clone(), channel_id.clone())
 			.is_ok());
 
 		let result = context.connection_channels(&connection_id).unwrap();
@@ -278,8 +271,11 @@ fn test_next_sequence_send_ok() {
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		assert!(context.store_next_sequence_send(PortId::default(), ChannelId::new(0), sequence_id).is_ok());
-		let result = context.get_next_sequence_send(&PortId::default(), &ChannelId::new(0)).unwrap();
+		assert!(context
+			.store_next_sequence_send(PortId::default(), ChannelId::new(0), sequence_id)
+			.is_ok());
+		let result =
+			context.get_next_sequence_send(&PortId::default(), &ChannelId::new(0)).unwrap();
 		assert_eq!(result, sequence_id);
 	})
 }
@@ -294,10 +290,7 @@ fn test_read_conection_channels_failed_by_suppley_error_conneciton_id() {
 	let mut context: Context<Test> = Context::new();
 	new_test_ext().execute_with(|| {
 		assert!(context
-			.store_connection_channels(
-				connection_id.clone(),
-				port_id.clone(), channel_id.clone()
-			)
+			.store_connection_channels(connection_id.clone(), port_id.clone(), channel_id.clone())
 			.is_ok());
 
 		let result = context.connection_channels(&connection_id_failed).unwrap_err().to_string();
@@ -318,9 +311,7 @@ fn test_store_channel_ok() {
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		assert!(context
-			.store_channel(port_id.clone(), channel_id.clone(), channel_end)
-			.is_ok());
+		assert!(context.store_channel(port_id.clone(), channel_id.clone(), channel_end).is_ok());
 
 		let result = context.channel_end(&port_id.clone(), &channel_id.clone()).unwrap();
 
@@ -334,11 +325,14 @@ fn test_next_sequence_send_fail() {
 	let context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		let result = context.get_next_sequence_send(&PortId::default(),&ChannelId::new(0)).unwrap_err().to_string();
-		assert_eq!(result, ICS04Error::missing_next_send_seq(
-			PortId::default(),
-			ChannelId::new(0),
-		).to_string());
+		let result = context
+			.get_next_sequence_send(&PortId::default(), &ChannelId::new(0))
+			.unwrap_err()
+			.to_string();
+		assert_eq!(
+			result,
+			ICS04Error::missing_next_send_seq(PortId::default(), ChannelId::new(0),).to_string()
+		);
 	})
 }
 
@@ -348,8 +342,11 @@ fn test_next_sequence_recv_ok() {
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		assert!(context.store_next_sequence_recv(PortId::default(), ChannelId::new(0), sequence_id).is_ok());
-		let result = context.get_next_sequence_recv(&PortId::default(), &ChannelId::new(0)).unwrap();
+		assert!(context
+			.store_next_sequence_recv(PortId::default(), ChannelId::new(0), sequence_id)
+			.is_ok());
+		let result =
+			context.get_next_sequence_recv(&PortId::default(), &ChannelId::new(0)).unwrap();
 		assert_eq!(result, sequence_id);
 	})
 }
@@ -367,9 +364,7 @@ fn test_read_channel_end_failed_by_supply_error_channel_id_port_id() {
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		assert!(context
-			.store_channel(port_id.clone(), channel_id.clone(), channel_end)
-			.is_ok());
+		assert!(context.store_channel(port_id.clone(), channel_id.clone(), channel_end).is_ok());
 
 		let result = context
 			.channel_end(&port_id_1.clone(), &channel_id.clone())
@@ -423,7 +418,8 @@ fn test_get_identified_channel_end() {
 		for index in 0..range.len() {
 			assert!(context
 				.store_channel(
-					port_id_vec[index].clone(), channel_id_vec[index].clone(),
+					port_id_vec[index].clone(),
+					channel_id_vec[index].clone(),
 					channel_end_vec[index].clone()
 				)
 				.is_ok());
@@ -436,22 +432,26 @@ fn test_next_sequence_recv_fail() {
 	let context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		let result = context.get_next_sequence_recv(&PortId::default(), &ChannelId::new(0)).unwrap_err().to_string();
-		assert_eq!(result, ICS04Error::missing_next_recv_seq(
-			PortId::default(),
-			ChannelId::new(0),
-		).to_string());
+		let result = context
+			.get_next_sequence_recv(&PortId::default(), &ChannelId::new(0))
+			.unwrap_err()
+			.to_string();
+		assert_eq!(
+			result,
+			ICS04Error::missing_next_recv_seq(PortId::default(), ChannelId::new(0),).to_string()
+		);
 	})
 }
 
 #[test]
 fn test_next_sequence_ack_ok() {
 	let sequence_id = Sequence::from(0);
-	let port_channel = (PortId::default(), ChannelId::new(0));
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		assert!(context.store_next_sequence_ack(PortId::default(), ChannelId::new(0), sequence_id).is_ok());
+		assert!(context
+			.store_next_sequence_ack(PortId::default(), ChannelId::new(0), sequence_id)
+			.is_ok());
 		let result = context.get_next_sequence_ack(&PortId::default(), &ChannelId::new(0)).unwrap();
 		assert_eq!(result, sequence_id);
 	})
@@ -462,10 +462,13 @@ fn test_next_sequence_ack_fail() {
 	let context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		let result = context.get_next_sequence_ack(&PortId::default(), &ChannelId::new(0)).unwrap_err().to_string();
-		assert_eq!(result, ICS04Error::missing_next_ack_seq(
-			PortId::default(),
-			ChannelId::new(0),
-		).to_string());
+		let result = context
+			.get_next_sequence_ack(&PortId::default(), &ChannelId::new(0))
+			.unwrap_err()
+			.to_string();
+		assert_eq!(
+			result,
+			ICS04Error::missing_next_ack_seq(PortId::default(), ChannelId::new(0),).to_string()
+		);
 	})
 }

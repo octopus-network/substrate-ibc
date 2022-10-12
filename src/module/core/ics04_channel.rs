@@ -1,12 +1,13 @@
-use crate::*;
+use crate::{context::Context, *};
 use core::{str::FromStr, time::Duration};
-use crate::context::Context;
 use ibc::{
 	core::{
 		ics02_client::{
 			client_state::ClientState, consensus_state::ConsensusState, context::ClientReader,
 		},
-		ics03_connection::{connection::ConnectionEnd, error::Error as Ics03Error},
+		ics03_connection::{
+			connection::ConnectionEnd, context::ConnectionReader, error::Error as Ics03Error,
+		},
 		ics04_channel::{
 			channel::ChannelEnd,
 			commitment::{
@@ -20,9 +21,8 @@ use ibc::{
 		ics24_host::{
 			identifier::{ChannelId, ClientId, ConnectionId, PortId},
 			path::{
-				AcksPath, ChannelEndsPath,
-				CommitmentsPath, ConnectionsPath, ReceiptsPath, SeqAcksPath, SeqRecvsPath,
-				SeqSendsPath,
+				AcksPath, ChannelEndsPath, CommitmentsPath, ConnectionsPath, ReceiptsPath,
+				SeqAcksPath, SeqRecvsPath, SeqSendsPath,
 			},
 			Path,
 		},
@@ -32,7 +32,6 @@ use ibc::{
 };
 use ibc_proto::protobuf::Protobuf;
 use ibc_support::ibc_trait::{IbcSupportChannelKeeper, IbcSupportChannelReader};
-use ibc::core::ics03_connection::context::ConnectionReader;
 
 impl<T: Config> ChannelReader for Context<T> {
 	fn channel_end(
@@ -295,7 +294,8 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 
 	fn connection_end(connection_id: &ConnectionId) -> Result<ConnectionEnd, Ics04Error> {
 		let context = Context::<T>::new();
-		ConnectionReader::connection_end(&context, connection_id).map_err(Ics04Error::ics03_connection)
+		ConnectionReader::connection_end(&context, connection_id)
+			.map_err(Ics04Error::ics03_connection)
 	}
 
 	/// Returns the `ChannelsConnection` for the given identifier `conn_id`.
@@ -330,7 +330,7 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 	fn client_state(client_id: &ClientId) -> Result<Box<dyn ClientState>, Ics04Error> {
 		let context = Context::<T>::new();
 		ClientReader::client_state(&context, client_id)
-            .map_err(|e| Ics04Error::ics03_connection(Ics03Error::ics02_client(e)))
+			.map_err(|e| Ics04Error::ics03_connection(Ics03Error::ics02_client(e)))
 	}
 
 	fn client_consensus_state(
@@ -355,10 +355,7 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 			let sequence = <NextSequenceSend<T>>::get(&seq_sends_path);
 			Ok(Sequence::from(sequence))
 		} else {
-			Err(Ics04Error::missing_next_send_seq(
-                port_id.clone(),
-                channel_id.clone(),
-            ))
+			Err(Ics04Error::missing_next_send_seq(port_id.clone(), channel_id.clone()))
 		}
 	}
 
@@ -375,10 +372,7 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 			let sequence = <NextSequenceRecv<T>>::get(&seq_recvs_path);
 			Ok(Sequence::from(sequence))
 		} else {
-			Err(Ics04Error::missing_next_recv_seq(
-                port_id.clone(),
-                channel_id.clone(),
-            ))
+			Err(Ics04Error::missing_next_recv_seq(port_id.clone(), channel_id.clone()))
 		}
 	}
 
@@ -393,10 +387,7 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 			let sequence = <NextSequenceAck<T>>::get(&seq_acks_path);
 			Ok(Sequence::from(sequence))
 		} else {
-			Err(Ics04Error::missing_next_ack_seq(
-                port_id.clone(),
-                channel_id.clone(),
-            ))
+			Err(Ics04Error::missing_next_ack_seq(port_id.clone(), channel_id.clone()))
 		}
 	}
 
@@ -482,7 +473,8 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 	/// Returns the `AnyConsensusState` for the given identifier `height`.
 	fn host_consensus_state(height: Height) -> Result<Box<dyn ConsensusState>, Ics04Error> {
 		let context = Context::<T>::new();
-		ConnectionReader::host_consensus_state(&context, height).map_err(Ics04Error::ics03_connection)
+		ConnectionReader::host_consensus_state(&context, height)
+			.map_err(Ics04Error::ics03_connection)
 	}
 
 	fn pending_host_consensus_state() -> Result<Box<dyn ConsensusState>, Ics04Error> {

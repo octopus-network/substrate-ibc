@@ -19,10 +19,9 @@ use alloc::{
 	string::{String, ToString},
 };
 use codec::{Decode, Encode};
-use core::{marker::PhantomData, str::FromStr};
-use scale_info::{prelude::vec, TypeInfo};
-use core::fmt::Debug;
+use core::{fmt::Debug, marker::PhantomData, str::FromStr};
 use frame_system::ensure_signed;
+use scale_info::{prelude::vec, TypeInfo};
 use sp_runtime::RuntimeDebug;
 use sp_std::prelude::*;
 
@@ -32,9 +31,11 @@ pub mod events;
 pub mod module;
 pub mod utils;
 
-use crate::context::Context;
-use crate::module::core::ics24_host::{
-	ChannelId, ClientId, ClientType, ConnectionId, Height, Packet, PortId,
+use crate::{
+	context::Context,
+	module::core::ics24_host::{
+		ChannelId, ClientId, ClientType, ConnectionId, Height, Packet, PortId,
+	},
 };
 
 pub const LOG_TARGET: &str = "runtime::pallet-ibc";

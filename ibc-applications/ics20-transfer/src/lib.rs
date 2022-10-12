@@ -14,8 +14,7 @@ pub mod ics20_context_channel;
 pub mod ics20_impl;
 pub mod utils;
 
-use alloc::vec::Vec;
-use alloc::string::ToString;
+use alloc::{string::ToString, vec::Vec};
 use ibc_support::AssetIdAndNameProvider;
 
 pub const LOG_TARGET: &str = "runtime::pallet-ics20-transfer";
@@ -220,15 +219,39 @@ pub mod pallet {
 					log::trace!(target: LOG_TARGET, "raw_transfer event : {:?} ", event);
 					match event {
 						IbcEvent::SendPacket(ref send_packet) => {
-							let sequence = send_packet.packet.sequence.to_string().as_bytes().to_vec();
-							let source_port = send_packet.packet.source_port.to_string().as_bytes().to_vec();
-							let source_channel = send_packet.packet.source_channel.to_string().as_bytes().to_vec();
-							let destination_port = send_packet.packet.destination_port.to_string().as_bytes().to_vec();
-							let destination_channel = send_packet.packet.destination_channel.to_string().as_bytes().to_vec();
+							let sequence =
+								send_packet.packet.sequence.to_string().as_bytes().to_vec();
+							let source_port =
+								send_packet.packet.source_port.to_string().as_bytes().to_vec();
+							let source_channel =
+								send_packet.packet.source_channel.to_string().as_bytes().to_vec();
+							let destination_port =
+								send_packet.packet.destination_port.to_string().as_bytes().to_vec();
+							let destination_channel = send_packet
+								.packet
+								.destination_channel
+								.to_string()
+								.as_bytes()
+								.to_vec();
 							let data = send_packet.packet.data.clone();
-							let timeout_height = send_packet.packet.timeout_height.to_string().as_bytes().to_vec();
-							let timeout_timestamp = send_packet.packet.timeout_timestamp.to_string().as_bytes().to_vec();
-							Self::deposit_event(Event::SendPacket { sequence, source_port, source_channel, destination_port, destination_channel, data, timeout_height, timeout_timestamp});
+							let timeout_height =
+								send_packet.packet.timeout_height.to_string().as_bytes().to_vec();
+							let timeout_timestamp = send_packet
+								.packet
+								.timeout_timestamp
+								.to_string()
+								.as_bytes()
+								.to_vec();
+							Self::deposit_event(Event::SendPacket {
+								sequence,
+								source_port,
+								source_channel,
+								destination_port,
+								destination_channel,
+								data,
+								timeout_height,
+								timeout_timestamp,
+							});
 						},
 						_ => {
 							Self::deposit_event(Event::UnsupportedEvent);

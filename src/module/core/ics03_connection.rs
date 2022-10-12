@@ -1,5 +1,4 @@
-use crate::*;
-use crate::context::Context;
+use crate::{context::Context, *};
 use ibc::{
 	core::{
 		ics02_client::{
@@ -64,8 +63,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 		height: Height,
 	) -> Result<Box<dyn ConsensusState>, Ics03Error> {
 		// Forward method call to the Ics2Client-specific method.
-        self.consensus_state(client_id, height)
-            .map_err(Ics03Error::ics02_client)
+		self.consensus_state(client_id, height).map_err(Ics03Error::ics02_client)
 	}
 
 	fn host_consensus_state(&self, height: Height) -> Result<Box<dyn ConsensusState>, Ics03Error> {
