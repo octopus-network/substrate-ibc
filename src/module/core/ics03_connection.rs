@@ -1,8 +1,5 @@
 use crate::*;
-
 use crate::context::Context;
-use log::trace;
-
 use ibc::{
 	core::{
 		ics02_client::{
@@ -13,13 +10,12 @@ use ibc::{
 			context::{ConnectionKeeper, ConnectionReader},
 			error::Error as Ics03Error,
 		},
-		ics23_commitment::commitment::{CommitmentPrefix, CommitmentRoot},
+		ics23_commitment::commitment::CommitmentPrefix,
 		ics24_host::{
 			identifier::{ClientId, ConnectionId},
 			path::{ClientConnectionsPath, ConnectionsPath},
 		},
 	},
-	timestamp::Timestamp,
 	Height,
 };
 use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
@@ -34,7 +30,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 				.map_err(|_| Ics03Error::implementation_specific())?;
 			Ok(ret)
 		} else {
-			Err(Ics03Error::connection_mismatch(conn_id.clone()))
+			Err(Ics03Error::connection_not_found(conn_id.clone()))
 		}
 	}
 
@@ -43,7 +39,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 	}
 
 	fn decode_client_state(&self, client_state: Any) -> Result<Box<dyn ClientState>, Ics03Error> {
-		todo!()
+		ClientReader::decode_client_state(self, client_state).map_err(Ics03Error::ics02_client)
 	}
 
 	fn host_current_height(&self) -> Height {
@@ -59,7 +55,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 	}
 
 	fn commitment_prefix(&self) -> CommitmentPrefix {
-		"ibc".as_bytes().to_vec().try_into().unwrap_or_default()
+		CommitmentPrefix::try_from(b"Ibc".to_vec()).unwrap_or_default()
 	}
 
 	fn client_consensus_state(
@@ -67,37 +63,13 @@ impl<T: Config> ConnectionReader for Context<T> {
 		client_id: &ClientId,
 		height: Height,
 	) -> Result<Box<dyn ConsensusState>, Ics03Error> {
-		let ret = ClientReader::consensus_state(self, client_id, height)
-			.map_err(Ics03Error::ics02_client);
-
-		if let Ok(value) = ret {
-			Ok(value)
-		} else {
-			// TODO(davirain) ics20-transfer deatil with
-			todo!()
-		}
+		// Forward method call to the Ics2Client-specific method.
+        self.consensus_state(client_id, height)
+            .map_err(Ics03Error::ics02_client)
 	}
 
-	fn host_consensus_state(&self, _height: Height) -> Result<Box<dyn ConsensusState>, Ics03Error> {
-		use frame_support::traits::UnixTime;
-		let time = T::TimeProvider::now();
-		let ts = Timestamp::from_nanoseconds(time.as_nanos() as u64)
-			.map_err(|e| panic!("{:?}, caused by {:?} from pallet timestamp_pallet", e, time));
-
-		let ts = ts.unwrap().into_tm_time().unwrap();
-		let block_number = format!("{:?}", <frame_system::Pallet<T>>::block_number());
-		let current_height: u32 = block_number.parse().unwrap_or_default();
-
-		//TODO: need to build a real consensus state from substrate chain
-
-		// let cs = ibc::clients::ics10_grandpa::consensus_state::ConsensusState {
-		// 	commitment: Commitment::default(),
-		// 	state_root: CommitmentRoot::from(vec![1, 2, 3]),
-		// 	timestamp: ts,
-		// };
-		// trace!(target:"runtime::pallet-ibc","in connection : [host_consensus_state]
-		// consensus_state = {:?}", cs); Ok(AnyConsensusState::Grandpa(cs))
-		todo!()
+	fn host_consensus_state(&self, height: Height) -> Result<Box<dyn ConsensusState>, Ics03Error> {
+		ClientReader::host_consensus_state(self, height).map_err(Ics03Error::ics02_client)
 	}
 
 	fn connection_counter(&self) -> Result<u64, Ics03Error> {

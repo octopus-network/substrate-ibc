@@ -1,12 +1,10 @@
 use crate::*;
 use core::{str::FromStr, time::Duration};
-use log::{error, trace};
-
 use crate::context::Context;
 use ibc::{
 	core::{
 		ics02_client::{
-			client_state::ClientState, consensus_state::ConsensusState, error::Error as Ics02Error,
+			client_state::ClientState, consensus_state::ConsensusState, context::ClientReader,
 		},
 		ics03_connection::{connection::ConnectionEnd, error::Error as Ics03Error},
 		ics04_channel::{
@@ -19,11 +17,10 @@ use ibc::{
 			error::Error as Ics04Error,
 			packet::{Receipt, Sequence},
 		},
-		ics23_commitment::commitment::CommitmentRoot,
 		ics24_host::{
 			identifier::{ChannelId, ClientId, ConnectionId, PortId},
 			path::{
-				AcksPath, ChannelEndsPath, ClientConsensusStatePath, ClientStatePath,
+				AcksPath, ChannelEndsPath,
 				CommitmentsPath, ConnectionsPath, ReceiptsPath, SeqAcksPath, SeqRecvsPath,
 				SeqSendsPath,
 			},
@@ -35,6 +32,7 @@ use ibc::{
 };
 use ibc_proto::protobuf::Protobuf;
 use ibc_support::ibc_trait::{IbcSupportChannelKeeper, IbcSupportChannelReader};
+use ibc::core::ics03_connection::context::ConnectionReader;
 
 impl<T: Config> ChannelReader for Context<T> {
 	fn channel_end(
@@ -296,19 +294,8 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 	}
 
 	fn connection_end(connection_id: &ConnectionId) -> Result<ConnectionEnd, Ics04Error> {
-		let connections_path =
-			ConnectionsPath(connection_id.clone()).to_string().as_bytes().to_vec();
-
-		if <Connections<T>>::contains_key(&connections_path) {
-			let data = <Connections<T>>::get(&connections_path);
-			let ret = ConnectionEnd::decode_vec(&data)
-				.map_err(|_| Ics04Error::implementation_specific())?;
-			Ok(ret)
-		} else {
-			Err(Ics04Error::ics03_connection(Ics03Error::connection_mismatch(
-				connection_id.clone(),
-			)))
-		}
+		let context = Context::<T>::new();
+		ConnectionReader::connection_end(&context, connection_id).map_err(Ics04Error::ics03_connection)
 	}
 
 	/// Returns the `ChannelsConnection` for the given identifier `conn_id`.
@@ -341,47 +328,18 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 	}
 
 	fn client_state(client_id: &ClientId) -> Result<Box<dyn ClientState>, Ics04Error> {
-		let client_state_path = ClientStatePath(client_id.clone()).to_string().as_bytes().to_vec();
-
-		// if <ClientStates<T>>::contains_key(&client_state_path) {
-		// 	let data = <ClientStates<T>>::get(&client_state_path);
-		// 	let result = AnyClientState::decode_vec(&data)
-		// 		.map_err(|e| Ics04Error::ics02_client(Ics02Error::invalid_decode(e)))?;
-		// 	Ok(result)
-		// } else {
-		// 	trace!(target:"runtime::pallet-ibc","in client : [client_state] >> read any client state
-		// is None"); 	Err(Ics04Error::ics02_client(Ics02Error::client_not_found(client_id.clone())))
-		// }
-		todo!()
+		let context = Context::<T>::new();
+		ClientReader::client_state(&context, client_id)
+            .map_err(|e| Ics04Error::ics03_connection(Ics03Error::ics02_client(e)))
 	}
 
 	fn client_consensus_state(
 		client_id: &ClientId,
 		height: Height,
 	) -> Result<Box<dyn ConsensusState>, Ics04Error> {
-	
-		// search key
-		let client_consensus_state_path = ClientConsensusStatePath {
-			client_id: client_id.clone(),
-			epoch: height.revision_number(),
-			height: height.revision_height(),
-		}
-		.to_string()
-		.as_bytes()
-		.to_vec();
-
-		// if <ConsensusStates<T>>::contains_key(client_consensus_state_path.clone()) {
-		// 	let values = <ConsensusStates<T>>::get(client_consensus_state_path);
-		// 	let any_consensus_state = AnyConsensusState::decode_vec(&values)
-		// 		.map_err(|e| Ics04Error::ics02_client(Ics02Error::invalid_decode(e)))?;
-		// 	Ok(any_consensus_state)
-		// } else {
-		// 	// TODO(davirain) ics20-transfer deatil with
-		// 	Ok(AnyConsensusState::Grandpa(
-		// 		ibc::clients::ics10_grandpa::consensus_state::ConsensusState::default(),
-		// 	))
-		// }
-		todo!()
+		let context = Context::<T>::new();
+		ClientReader::consensus_state(&context, client_id, height)
+			.map_err(|e| Ics04Error::ics03_connection(Ics03Error::ics02_client(e)))
 	}
 
 	fn get_next_sequence_send(
@@ -397,7 +355,10 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 			let sequence = <NextSequenceSend<T>>::get(&seq_sends_path);
 			Ok(Sequence::from(sequence))
 		} else {
-			Err(Ics04Error::implementation_specific())
+			Err(Ics04Error::missing_next_send_seq(
+                port_id.clone(),
+                channel_id.clone(),
+            ))
 		}
 	}
 
@@ -414,7 +375,10 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 			let sequence = <NextSequenceRecv<T>>::get(&seq_recvs_path);
 			Ok(Sequence::from(sequence))
 		} else {
-			Err(Ics04Error::implementation_specific())
+			Err(Ics04Error::missing_next_recv_seq(
+                port_id.clone(),
+                channel_id.clone(),
+            ))
 		}
 	}
 
@@ -429,7 +393,10 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 			let sequence = <NextSequenceAck<T>>::get(&seq_acks_path);
 			Ok(Sequence::from(sequence))
 		} else {
-			Err(Ics04Error::implementation_specific())
+			Err(Ics04Error::missing_next_ack_seq(
+                port_id.clone(),
+                channel_id.clone(),
+            ))
 		}
 	}
 
@@ -514,66 +481,14 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 
 	/// Returns the `AnyConsensusState` for the given identifier `height`.
 	fn host_consensus_state(height: Height) -> Result<Box<dyn ConsensusState>, Ics04Error> {
-		// ConnectionReader::host_consensus_state(self,
-		// height).map_err(Ics04Error::ics03_connection)
-		// use frame_support::traits::UnixTime;
-		// let time = T::TimeProvider::now();
-		// let ts = Timestamp::from_nanoseconds(time.as_nanos() as u64)
-		// 	.map_err(|e| panic!("{:?}, caused by {:?} from pallet timestamp_pallet", e, time));
-		//
-		// let ts = ts.unwrap().into_tm_time().unwrap();
-		// log::trace!(target:"runtime::pallet-ibc","in connection : [host_timestamp] >>
-		// host_timestamp = {:?}", ts);
-		//
-		// let block_number = format!("{:?}", <frame_system::Pallet<T>>::block_number());
-		// let current_height: u32 = block_number.parse().unwrap_or_default();
-		//
-		// trace!(target:"runtime::pallet-ibc",
-		// 	"in connection: [host_height] >> host_height = {:?}",current_height
-		//
-		// );
-
-		//TODO: need to build a real consensus state from substrate chain
-		// let cs = ibc::clients::ics10_grandpa::consensus_state::ConsensusState {
-		// 	commitment: Commitment::default(),
-		// 	state_root: CommitmentRoot::from(vec![1, 2, 3]),
-		// 	timestamp: ts,
-		// };
-		// trace!(target:"runtime::pallet-ibc","in connection : [host_consensus_state]
-		// consensus_state = {:?}", cs); Ok(AnyConsensusState::Grandpa(cs))
-		todo!()
+		let context = Context::<T>::new();
+		ConnectionReader::host_consensus_state(&context, height).map_err(Ics04Error::ics03_connection)
 	}
 
 	fn pending_host_consensus_state() -> Result<Box<dyn ConsensusState>, Ics04Error> {
-		// ClientReader::pending_host_consensus_state(self)
-		// 	.map_err(|e| Ics04Error::ics03_connection(ICS03Error::ics02_client(e)))
-		// use frame_support::traits::UnixTime;
-		// let time = T::TimeProvider::now();
-		// let ts = Timestamp::from_nanoseconds(time.as_nanos() as u64)
-		// 	.map_err(|e| panic!("{:?}, caused by {:?} from pallet timestamp_pallet", e, time));
-		//
-		// let ts = ts.unwrap().into_tm_time().unwrap();
-		// log::trace!(target:"runtime::pallet-ibc","in connection : [host_timestamp] >>
-		// host_timestamp = {:?}", ts);
-		//
-		// let block_number = format!("{:?}", <frame_system::Pallet<T>>::block_number());
-		// let current_height: u32 = block_number.parse().unwrap_or_default();
-		//
-		// trace!(target:"runtime::pallet-ibc",
-		// 	"in connection: [host_height] >> host_height = {:?}",current_height
-		//
-		// );
-		//
-		// //TODO: need to build a real consensus state from substrate chain
-		//
-		// let cs = ibc::clients::ics10_grandpa::consensus_state::ConsensusState {
-		// 	commitment: Commitment::default(),
-		// 	state_root: CommitmentRoot::from(vec![1, 2, 3]),
-		// 	timestamp: ts,
-		// };
-		// trace!(target:"runtime::pallet-ibc","in connection : [host_consensus_state]
-		// consensus_state = {:?}", cs); Ok(AnyConsensusState::Grandpa(cs))
-		todo!()
+		let context = Context::<T>::new();
+		ClientReader::pending_host_consensus_state(&context)
+			.map_err(|e| Ics04Error::ics03_connection(Ics03Error::ics02_client(e)))
 	}
 
 	/// Returns the `ClientProcessedTimes` for the given identifier `client_id` & `height`.
@@ -621,8 +536,6 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 	}
 
 	fn max_expected_time_per_block() -> Duration {
-		trace!(target:"runtime::pallet-ibc","in channel: [max_expected_time_per_block]");
-
 		Duration::from_secs(6)
 	}
 }

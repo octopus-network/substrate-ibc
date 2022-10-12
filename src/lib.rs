@@ -21,22 +21,18 @@ use alloc::{
 use codec::{Decode, Encode};
 use core::{marker::PhantomData, str::FromStr};
 use scale_info::{prelude::vec, TypeInfo};
-
 use core::fmt::Debug;
 use frame_system::ensure_signed;
 use sp_runtime::RuntimeDebug;
 use sp_std::prelude::*;
 
 use ibc::core::ics24_host::identifier::ChannelId as IbcChannelId;
-use tendermint_proto::Protobuf;
-
 pub mod context;
 pub mod events;
 pub mod module;
 pub mod utils;
 
 use crate::context::Context;
-
 use crate::module::core::ics24_host::{
 	ChannelId, ClientId, ClientType, ConnectionId, Height, Packet, PortId,
 };
@@ -88,7 +84,6 @@ mod type_define {
 #[frame_support::pallet]
 pub mod pallet {
 	use super::{type_define::*, *};
-	use crate::module::core::ics24_host::Height;
 	use frame_support::{pallet_prelude::*, traits::UnixTime};
 	use frame_system::pallet_prelude::*;
 	use ibc::events::IbcEvent;

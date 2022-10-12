@@ -1,8 +1,6 @@
 use crate::*;
 use alloc::string::ToString;
 use core::str::FromStr;
-use log::{info, trace};
-
 use crate::context::Context;
 use ibc::{
 	core::{
