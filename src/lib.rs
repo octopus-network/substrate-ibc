@@ -300,7 +300,6 @@ pub mod pallet {
 
 					match ibc::core::ics26_routing::handler::deliver(&mut ctx, message.clone()) {
 						Ok(ibc::core::ics26_routing::handler::MsgReceipt { events, log: _log}) => {
-							log::trace!(target: LOG_TARGET, "deliver events  : {:?} ", events);
 							// deposit events about send packet event and ics20 transfer event
 							for event in events {
 								match event {
@@ -308,7 +307,6 @@ pub mod pallet {
 										Self::deposit_event(event.clone().into());
 									}
 									_ => {
-										log::trace!(target: LOG_TARGET, "raw_transfer event : {:?} ", event);
 										Self::deposit_event(event.clone().into());
 									}
 								}

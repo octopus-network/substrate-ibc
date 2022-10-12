@@ -22,7 +22,6 @@ impl<T: Config> Context<T> {
 	}
 }
 
-/// default config ics20 transfer module
 impl<T: Config> Default for Context<T> {
 	fn default() -> Self {
 		Self::new()

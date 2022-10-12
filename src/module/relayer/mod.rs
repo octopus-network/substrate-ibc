@@ -23,7 +23,6 @@ impl<T: Config> Ics18Context for Context<T> {
 	}
 
 	fn query_client_full_state(&self, client_id: &ClientId) -> Option<Box<dyn ClientState>> {
-		// Forward call to Ics2.
 		ClientReader::client_state(self, client_id).ok()
 	}
 
@@ -32,7 +31,6 @@ impl<T: Config> Ics18Context for Context<T> {
 	}
 
 	fn send(&mut self, msgs: Vec<Any>) -> Result<Vec<IbcEvent>, ICS18Error> {
-		// Forward call to Ics26 delivery method.
 		let mut all_events = vec![];
 		for msg in msgs {
 			let MsgReceipt { mut events, .. } =

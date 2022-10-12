@@ -25,8 +25,6 @@ use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
 
 impl<T: Config> ClientReader for Context<T> {
 	fn client_type(&self, client_id: &ClientId) -> Result<ClientType, Ics02Error> {
-		trace!(target:"runtime::pallet-ibc","in client : [client_type]");
-
 		let client_type_path = ClientTypePath(client_id.clone()).to_string().as_bytes().to_vec();
 		if <Clients<T>>::contains_key(client_type_path.clone()) {
 			let data = <Clients<T>>::get(client_type_path);
@@ -36,14 +34,11 @@ impl<T: Config> ClientReader for Context<T> {
 				.map_err(|e| Ics02Error::unknown_client_type(e.to_string()))?;
 			Ok(client_type)
 		} else {
-			trace!(target:"runtime::pallet-ibc","in client : [client_type] >> read client_type is None");
 			Err(Ics02Error::client_not_found(client_id.clone()))
 		}
 	}
 
 	fn client_state(&self, client_id: &ClientId) -> Result<Box<dyn ClientState>, Ics02Error> {
-		trace!(target:"runtime::pallet-ibc","in client : [client_state]");
-
 		let client_state_path = ClientStatePath(client_id.clone()).to_string().as_bytes().to_vec();
 
 		if <ClientStates<T>>::contains_key(&client_state_path) {
@@ -56,7 +51,6 @@ impl<T: Config> ClientReader for Context<T> {
 			// Ok(result)
 			todo!()
 		} else {
-			trace!(target:"runtime::pallet-ibc","in client : [client_state] >> read any client state is None");
 			Err(Ics02Error::client_not_found(client_id.clone()))
 		}
 	}
@@ -70,11 +64,6 @@ impl<T: Config> ClientReader for Context<T> {
 		client_id: &ClientId,
 		height: Height,
 	) -> Result<Box<dyn ConsensusState>, Ics02Error> {
-		trace!(target:"runtime::pallet-ibc",
-			"in client : [consensus_state]"
-		);
-
-		// search key
 		let client_consensus_state_path = ClientConsensusStatePath {
 			client_id: client_id.clone(),
 			epoch: height.revision_number(),
@@ -104,9 +93,6 @@ impl<T: Config> ClientReader for Context<T> {
 		client_id: &ClientId,
 		height: Height,
 	) -> Result<Option<Box<dyn ConsensusState>>, Ics02Error> {
-		trace!(target:"runtime::pallet-ibc","in client : [next_consensus_state]");
-
-		// search key
 		let client_consensus_state_path = ClientConsensusStatePath {
 			client_id: client_id.clone(),
 			epoch: height.revision_number(),
@@ -127,9 +113,6 @@ impl<T: Config> ClientReader for Context<T> {
 			// Ok(Some(any_consensus_state))
 			todo!()
 		} else {
-			trace!(target:"runtime::pallet-ibc",
-				"in client : [next_consensus_state] >> any consensus state is not contains at ConsensusStates : client_id = {:?}, height = {:?}", client_id, height
-			);
 			// Err(Ics02Error::consensus_state_not_found(client_id.clone(), height))
 			todo!()
 		}
@@ -140,9 +123,6 @@ impl<T: Config> ClientReader for Context<T> {
 		client_id: &ClientId,
 		height: Height,
 	) -> Result<Option<Box<dyn ConsensusState>>, Ics02Error> {
-		trace!(target:"runtime::pallet-ibc","in client : [next_consensus_state]");
-
-		// search key
 		let client_consensus_state_path = ClientConsensusStatePath {
 			client_id: client_id.clone(),
 			epoch: height.revision_number(),
@@ -163,41 +143,26 @@ impl<T: Config> ClientReader for Context<T> {
 			// Ok(Some(any_consensus_state))
 			todo!()
 		} else {
-			trace!(target:"runtime::pallet-ibc",
-				"in client : [prev_consensus_state] >> any consensus state is not contains at ConsensusStates : client_id = {:?}, height = {:?}", client_id, height
-			);
 			// Err(Ics02Error::consensus_state_not_found(client_id.clone(), height))
 			todo!()
 		}
 	}
 
 	fn host_height(&self) -> Height {
-		trace!(target:"runtime::pallet-ibc","in client : [host_height]");
 		let block_number = format!("{:?}", <frame_system::Pallet<T>>::block_number());
 		let current_height: u64 = block_number.parse().unwrap_or_default();
-
-		trace!(target:"runtime::pallet-ibc",
-			"in channel: [host_height] >> host_height = {:?}",
-			Height::new(REVISION_NUMBER, current_height)
-		);
 		Height::new(REVISION_NUMBER, current_height).unwrap()
 	}
 
 	fn host_consensus_state(&self, _height: Height) -> Result<Box<dyn ConsensusState>, Ics02Error> {
-		trace!(target:"runtime::pallet-ibc","in client : [consensus_state]");
-
 		todo!()
 	}
 
 	fn pending_host_consensus_state(&self) -> Result<Box<dyn ConsensusState>, Ics02Error> {
-		trace!(target:"runtime::pallet-ibc","in client: [pending_host_consensus_state]");
-
 		todo!()
 	}
 
 	fn client_counter(&self) -> Result<u64, Ics02Error> {
-		trace!(target:"runtime::pallet-ibc","in client : [client_counter]");
-
 		Ok(<ClientCounter<T>>::get())
 	}
 }
@@ -208,8 +173,6 @@ impl<T: Config> ClientKeeper for Context<T> {
 		client_id: ClientId,
 		client_type: ClientType,
 	) -> Result<(), Ics02Error> {
-		info!("in client : [store_client_type]");
-
 		let client_type_path = ClientTypePath(client_id).to_string().as_bytes().to_vec();
 		let client_type = client_type.as_str().as_bytes().to_vec();
 		<Clients<T>>::insert(client_type_path, client_type);
@@ -221,12 +184,8 @@ impl<T: Config> ClientKeeper for Context<T> {
 		client_id: ClientId,
 		client_state: Box<dyn ClientState>,
 	) -> Result<(), Ics02Error> {
-		trace!(target:"runtime::pallet-ibc","in client : [store_client_state]");
-
 		let client_state_path = ClientStatePath(client_id).to_string().as_bytes().to_vec();
-
 		let data = client_state.encode_vec().map_err(|_| Ics02Error::implementation_specific())?;
-		// store client states key-value
 		<ClientStates<T>>::insert(client_state_path, data);
 
 		Ok(())
@@ -238,9 +197,6 @@ impl<T: Config> ClientKeeper for Context<T> {
 		height: Height,
 		consensus_state: Box<dyn ConsensusState>,
 	) -> Result<(), Ics02Error> {
-		trace!(target:"runtime::pallet-ibc","in client : [store_consensus_state]");
-
-		// store key
 		let client_consensus_state_path = ClientConsensusStatePath {
 			client_id,
 			epoch: height.revision_number(),
@@ -250,19 +206,15 @@ impl<T: Config> ClientKeeper for Context<T> {
 		.as_bytes()
 		.to_vec();
 
-		// store value
 		let consensus_state = consensus_state
 			.encode_vec()
 			.map_err(|_| Ics02Error::implementation_specific())?;
-		// store client_consensus_state path as key, consensus_state as value
 		<ConsensusStates<T>>::insert(client_consensus_state_path, consensus_state);
 
 		Ok(())
 	}
 
 	fn increase_client_counter(&mut self) {
-		info!("in client : [increase_client_counter]");
-
 		let _ = <ClientCounter<T>>::try_mutate(|val| -> Result<(), ()> {
 			let new = val.checked_add(1).expect("Add Overflow");
 			*val = new;
@@ -276,8 +228,6 @@ impl<T: Config> ClientKeeper for Context<T> {
 		height: Height,
 		timestamp: Timestamp,
 	) -> Result<(), Ics02Error> {
-		trace!(target:"runtime::pallet-ibc","in client: [store_update_time]");
-
 		let encode_timestamp = serde_json::to_string(&timestamp)
 			.map_err(|_| Ics02Error::implementation_specific())?
 			.as_bytes()
@@ -298,8 +248,6 @@ impl<T: Config> ClientKeeper for Context<T> {
 		height: Height,
 		host_height: Height,
 	) -> Result<(), Ics02Error> {
-		trace!(target:"runtime::pallet-ibc","in client: [store_update_height]");
-
 		<ClientUpdateHeight<T>>::insert(
 			client_id.as_bytes(),
 			height.encode_vec().map_err(|_| Ics02Error::implementation_specific())?,

@@ -407,7 +407,6 @@ impl From<RawIbcEvent> for IbcEvent {
 
 impl<T: Config> From<RawIbcEvent> for Event<T> {
 	fn from(event: RawIbcEvent) -> Self {
-		// let event: Vec<Event::<T>> = events.into_iter().map(|ev| ev.into()).collect();
 		Self::IbcEvent { event: event.into() }
 	}
 }
