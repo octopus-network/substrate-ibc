@@ -18,6 +18,8 @@ use ibc::{
 	},
 	timestamp::Timestamp,
 	Height,
+	clients::ics07_tendermint::client_state::ClientState as Ics07ClientState,
+	clients::ics07_tendermint::consensus_state::ConsensusState as Ics07ConsensusState,
 };
 use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
 
@@ -38,23 +40,27 @@ impl<T: Config> ClientReader for Context<T> {
 
 	fn client_state(&self, client_id: &ClientId) -> Result<Box<dyn ClientState>, Ics02Error> {
 		let client_state_path = ClientStatePath(client_id.clone()).to_string().as_bytes().to_vec();
-
 		if <ClientStates<T>>::contains_key(&client_state_path) {
 			let data = <ClientStates<T>>::get(&client_state_path);
-			// let result =
-			// AnyClientState::decode_vec(&data).map_err(|_|Ics02Error::implementation_specific())?;
-			// trace!(target:"runtime::pallet-ibc","in client : [client_state] >> any client_state:
-			// {:?}", result);
-
-			// Ok(result)
-			todo!()
+			match self.client_type(client_id)? {
+    			ClientType::Tendermint => {
+					// TODO(davirain): need to make sure whether this is written correctly.
+					let result: Ics07ClientState =
+						ibc_proto::protobuf::Protobuf::<ibc_proto::google::protobuf::Any>::decode_vec(&data).map_err(|_|Ics02Error::implementation_specific())?;
+					return Ok(Box::new(result));
+				},
+			}
 		} else {
 			Err(Ics02Error::client_not_found(client_id.clone()))
 		}
 	}
 
 	fn decode_client_state(&self, client_state: Any) -> Result<Box<dyn ClientState>, Ics02Error> {
-		todo!()
+		if let Ok(client_state) = Ics07ClientState::try_from(client_state.clone()) {
+            Ok(client_state.into_box())
+        } else {
+            Err(Ics02Error::unknown_client_state_type(client_state.type_url))
+        }
 	}
 
 	fn consensus_state(
@@ -72,15 +78,15 @@ impl<T: Config> ClientReader for Context<T> {
 		.to_vec();
 
 		if <ConsensusStates<T>>::contains_key(client_consensus_state_path.clone()) {
-			let values = <ConsensusStates<T>>::get(client_consensus_state_path);
-			// let any_consensus_state =
-			// 	AnyConsensusState::decode_vec(&values).
-			// map_err(|_|Ics02Error::implementation_specific())?; trace!(target:"
-			// runtime::pallet-ibc", 	"in client : [consensus_state] >> any consensus state = {:?}",
-			// 	any_consensus_state
-			// );
-			// Ok(any_consensus_state)
-			todo!()
+			let data = <ConsensusStates<T>>::get(client_consensus_state_path);
+			match self.client_type(client_id)? {
+    			ClientType::Tendermint => {
+					// TODO(davirain): need to make sure whether this is written correctly.
+					let result: Ics07ConsensusState =
+						ibc_proto::protobuf::Protobuf::<ibc_proto::google::protobuf::Any>::decode_vec(&data).map_err(|_|Ics02Error::implementation_specific())?;
+					return Ok(Box::new(result));
+				},
+			}
 		} else {
 			Err(Ics02Error::consensus_state_not_found(client_id.clone(), height))
 		}
@@ -100,20 +106,33 @@ impl<T: Config> ClientReader for Context<T> {
 		.as_bytes()
 		.to_vec();
 
-		if <ConsensusStates<T>>::contains_key(client_consensus_state_path.clone()) {
-			let values = <ConsensusStates<T>>::get(client_consensus_state_path);
-			// let any_consensus_state =
-			// 	AnyConsensusState::decode_vec(&values).
-			// map_err(|_|Ics02Error::implementation_specific())?; trace!(target:"
-			// runtime::pallet-ibc", 	"in client : [next_consensus_state] >> any consensus state =
-			// {:?}", 	any_consensus_state
-			// );
-			// Ok(Some(any_consensus_state))
-			todo!()
-		} else {
-			// Err(Ics02Error::consensus_state_not_found(client_id.clone(), height))
-			todo!()
-		}
+		let client_consensus_state_key = <ConsensusStates<T>>::iter_keys().collect::<Vec<Vec<u8>>>();
+		let mut heights = client_consensus_state_key.into_iter().map(|value | {
+			let value = String::from_utf8(value).expect("Never failed");
+			let client_consensus_state_path = value.rsplit_once('/').expect("Never failed");
+			let (epoch, height) = client_consensus_state_path.1.split_once('-').expect("never Failed");
+			let epoch = epoch.parse::<u64>().expect("Never failed");
+			let height = height.parse::<u64>().expect("Never failed");
+			Height::new(epoch, height).expect("Never failed")
+		}).collect::<Vec<Height>>();
+
+		heights.sort_by(|a, b| b.cmp(a));
+
+        // Search for previous state.
+        for h in heights {
+            if h > height {
+				let data = <ConsensusStates<T>>::get(client_consensus_state_path);
+				match self.client_type(client_id)? {
+					ClientType::Tendermint => {
+						// TODO(davirain): need to make sure whether this is written correctly.
+						let result: Ics07ConsensusState =
+							ibc_proto::protobuf::Protobuf::<ibc_proto::google::protobuf::Any>::decode_vec(&data).map_err(|_|Ics02Error::implementation_specific())?;
+						return Ok(Some(Box::new(result)));
+					},
+				}
+            }
+        }
+		Ok(None)
 	}
 
 	fn prev_consensus_state(
@@ -130,20 +149,33 @@ impl<T: Config> ClientReader for Context<T> {
 		.as_bytes()
 		.to_vec();
 
-		if <ConsensusStates<T>>::contains_key(client_consensus_state_path.clone()) {
-			let values = <ConsensusStates<T>>::get(client_consensus_state_path);
-			// let any_consensus_state =
-			// 	AnyConsensusState::decode_vec(&values).
-			// map_err(|_|Ics02Error::implementation_specific())?; trace!(target:"
-			// runtime::pallet-ibc", 	"in client : [prev_consensus_state] >> any consensus state =
-			// {:?}", 	any_consensus_state
-			// );
-			// Ok(Some(any_consensus_state))
-			todo!()
-		} else {
-			// Err(Ics02Error::consensus_state_not_found(client_id.clone(), height))
-			todo!()
-		}
+		let client_consensus_state_key = <ConsensusStates<T>>::iter_keys().collect::<Vec<Vec<u8>>>();
+		let mut heights = client_consensus_state_key.into_iter().map(|value | {
+			let value = String::from_utf8(value).expect("Never failed");
+			let client_consensus_state_path = value.rsplit_once('/').expect("Never failed");
+			let (epoch, height) = client_consensus_state_path.1.split_once('-').expect("never Failed");
+			let epoch = epoch.parse::<u64>().expect("Never failed");
+			let height = height.parse::<u64>().expect("Never failed");
+			Height::new(epoch, height).expect("Never failed")
+		}).collect::<Vec<Height>>();
+
+		heights.sort_by(|a, b| b.cmp(a));
+
+        // Search for previous state.
+        for h in heights {
+            if h < height {
+				let data = <ConsensusStates<T>>::get(client_consensus_state_path);
+				match self.client_type(client_id)? {
+					ClientType::Tendermint => {
+						// TODO(davirain): need to make sure whether this is written correctly.
+						let result: Ics07ConsensusState =
+							ibc_proto::protobuf::Protobuf::<ibc_proto::google::protobuf::Any>::decode_vec(&data).map_err(|_|Ics02Error::implementation_specific())?;
+						return Ok(Some(Box::new(result)));
+					},
+				}
+            }
+        }
+		Ok(None)
 	}
 
 	fn host_height(&self) -> Height {
@@ -153,11 +185,11 @@ impl<T: Config> ClientReader for Context<T> {
 	}
 
 	fn host_consensus_state(&self, _height: Height) -> Result<Box<dyn ConsensusState>, Ics02Error> {
-		todo!()
+		Err(Ics02Error::implementation_specific())
 	}
 
 	fn pending_host_consensus_state(&self) -> Result<Box<dyn ConsensusState>, Ics02Error> {
-		todo!()
+		Err(Ics02Error::implementation_specific())
 	}
 
 	fn client_counter(&self) -> Result<u64, Ics02Error> {
@@ -185,7 +217,6 @@ impl<T: Config> ClientKeeper for Context<T> {
 		let client_state_path = ClientStatePath(client_id).to_string().as_bytes().to_vec();
 		let data = client_state.encode_vec().map_err(|_| Ics02Error::implementation_specific())?;
 		<ClientStates<T>>::insert(client_state_path, data);
-
 		Ok(())
 	}
 

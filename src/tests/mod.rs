@@ -3,14 +3,8 @@ use crate::{mock::*, Context};
 use core::str::FromStr;
 
 use ibc::{
-	clients::ics10_grandpa::{
-		client_state::ClientState as GPClientState,
-		consensus_state::ConsensusState as GPConsensusState, help::ValidatorSet,
-	},
 	core::{
 		ics02_client::{
-			client_consensus::AnyConsensusState,
-			client_state::AnyClientState,
 			client_type::ClientType,
 			context::{ClientKeeper, ClientReader},
 			error::Error as ICS02Error,
@@ -34,7 +28,7 @@ use ibc::{
 // test store and read client-type
 #[test]
 fn test_store_client_type_ok() {
-	let gp_client_type = ClientType::Grandpa;
+	let gp_client_type = ClientType::Tendermint;
 	let gp_client_id = ClientId::new(gp_client_type, 0).unwrap();
 
 	let mut context: Context<Test> = Context::new();
@@ -50,148 +44,17 @@ fn test_store_client_type_ok() {
 
 #[test]
 fn test_read_client_type_failed_by_supply_error_client_id() {
-	let gp_client_type = ClientType::Grandpa;
-	let gp_client_id = ClientId::new(gp_client_type, 0).unwrap();
-	let gp_client_id_failed = ClientId::new(gp_client_type, 1).unwrap();
+	let client_type = ClientType::Tendermint;
+	let client_id = ClientId::new(client_type, 0).unwrap();
+	let client_id_failed = ClientId::new(client_type, 1).unwrap();
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		assert!(context.store_client_type(gp_client_id.clone(), gp_client_type).is_ok());
+		assert!(context.store_client_type(client_id.clone(), client_type).is_ok());
 
-		let ret = context.client_type(&gp_client_id_failed).unwrap_err().to_string();
+		let ret = context.client_type(&client_id_failed).unwrap_err().to_string();
 
-		assert_eq!(ret, ICS02Error::client_not_found(gp_client_id_failed).to_string());
-	})
-}
-
-// test store client_state
-#[test]
-fn test_store_client_state_ok() {
-	let gp_client_id = ClientId::new(ClientType::Grandpa, 0).unwrap();
-
-	let gp_client_state = GPClientState::new(
-		ChainId::new("ibc".to_string(), 0),
-		0,
-		Commitment::default(),
-		ValidatorSet::default(),
-	)
-	.unwrap();
-	let gp_client_state = AnyClientState::Grandpa(gp_client_state);
-
-	let mut context: Context<Test> = Context::new();
-
-	new_test_ext().execute_with(|| {
-		assert!(context
-			.store_client_state(gp_client_id.clone(), gp_client_state.clone())
-			.is_ok());
-	})
-}
-
-#[test]
-fn test_read_client_state_failed_by_supply_error_client_id() {
-	let gp_client_id = ClientId::new(ClientType::Grandpa, 0).unwrap();
-	let gp_client_id_failed = ClientId::new(ClientType::Grandpa, 1).unwrap();
-	let gp_client_state = GPClientState::new(
-		ChainId::new("ibc".to_string(), 0),
-		0,
-		Commitment::default(),
-		ValidatorSet::default(),
-	)
-	.unwrap();
-	let gp_client_state = AnyClientState::Grandpa(gp_client_state);
-
-	let mut context: Context<Test> = Context::new();
-
-	new_test_ext().execute_with(|| {
-		assert!(context
-			.store_client_state(gp_client_id.clone(), gp_client_state.clone())
-			.is_ok());
-
-		let ret = ClientReader::client_state(&context, &gp_client_id_failed)
-			.unwrap_err()
-			.to_string();
-
-		assert_eq!(ret, ICS02Error::client_not_found(gp_client_id_failed).to_string());
-	})
-}
-
-#[test]
-fn test_store_consensus_state_ok() {
-	let gp_client_id = ClientId::new(ClientType::Grandpa, 0).unwrap();
-	let height = Height::new(0, 1).unwrap();
-	let gp_consensus_state = GPConsensusState::default();
-	let consensus_state = AnyConsensusState::Grandpa(gp_consensus_state);
-
-	let mut context: Context<Test> = Context::new();
-
-	new_test_ext().execute_with(|| {
-		assert!(context
-			.store_consensus_state(gp_client_id.clone(), height, consensus_state.clone())
-			.is_ok());
-	})
-}
-
-#[test]
-fn test_read_consensus_state_failed_by_supply_error_client_id() {
-	let gp_client_id = ClientId::new(ClientType::Grandpa, 0).unwrap();
-	let gp_client_id_failed = ClientId::new(ClientType::Grandpa, 1).unwrap();
-
-	let height = Height::new(0, 1).unwrap();
-	let gp_consensus_state = GPConsensusState::default();
-	let consensus_state = AnyConsensusState::Grandpa(gp_consensus_state);
-
-	let mut context: Context<Test> = Context::new();
-
-	new_test_ext().execute_with(|| {
-		assert_eq!(
-			context
-				.store_consensus_state(gp_client_id.clone(), height, consensus_state.clone())
-				.is_ok(),
-			true
-		);
-
-		let ret = context.consensus_state(&gp_client_id_failed, height).unwrap_err().to_string();
-		assert_eq!(
-			ret,
-			ICS02Error::consensus_state_not_found(gp_client_id_failed.clone(), height.clone())
-				.to_string()
-		);
-	})
-}
-
-#[test]
-fn test_get_identified_any_client_state_ok() {
-	let range = (0..10).into_iter().collect::<Vec<u8>>();
-
-	let mut client_state_vec = vec![];
-	let mut gp_client_id_vec = vec![];
-
-	for index in range.clone() {
-		let gp_client_id = ClientId::new(ClientType::Grandpa, index as u64).unwrap();
-		let gp_client_state = GPClientState::new(
-			ChainId::new("ibc".to_string(), 0),
-			0,
-			Commitment::default(),
-			ValidatorSet::default(),
-		)
-		.unwrap();
-		let client_state = AnyClientState::Grandpa(gp_client_state);
-
-		gp_client_id_vec.push(gp_client_id);
-		client_state_vec.push(client_state);
-	}
-
-	let mut context: Context<Test> = Context::new();
-
-	new_test_ext().execute_with(|| {
-		for index in 0..range.len() {
-			assert!(context
-				.store_client_state(
-					gp_client_id_vec[index].clone(),
-					client_state_vec[index].clone()
-				)
-				.is_ok());
-		}
+		assert_eq!(ret, ICS02Error::client_not_found(client_id_failed).to_string());
 	})
 }
 
@@ -221,11 +84,10 @@ fn test_get_packet_commitment_state_ok() {
 		for index in 0..range.len() {
 			assert!(context
 				.store_packet_commitment(
-					(
 						port_id_vec[index].clone(),
 						channel_id_vec[index].clone(),
 						sequence_vec[index]
-					),
+					,
 					com.clone(),
 				)
 				.is_ok());
@@ -303,7 +165,7 @@ fn test_connection_fail() {
 
 #[test]
 fn test_connection_client_ok() {
-	let gp_client_id = ClientId::new(ClientType::Grandpa, 0).unwrap();
+	let gp_client_id = ClientId::new(ClientType::Tendermint, 0).unwrap();
 	let connection_id = ConnectionId::new(0);
 	let mut context: Context<Test> = Context::new();
 
@@ -326,17 +188,17 @@ fn test_delete_packet_acknowledgement_ok() {
 	new_test_ext().execute_with(|| {
 		assert!(context
 			.store_packet_acknowledgement(
-				(port_id.clone(), channel_id.clone(), sequence),
+				port_id.clone(), channel_id.clone(), sequence,
 				ack.clone()
 			)
 			.is_ok());
 
 		assert!(context
-			.delete_packet_acknowledgement((port_id.clone(), channel_id.clone(), sequence))
+			.delete_packet_acknowledgement(&port_id.clone(), &channel_id.clone(), sequence)
 			.is_ok());
 
 		let result = context
-			.get_packet_acknowledgement(&(port_id, channel_id, sequence))
+			.get_packet_acknowledgement(&port_id, &channel_id, sequence)
 			.unwrap_err()
 			.to_string();
 
@@ -374,11 +236,11 @@ fn test_get_acknowledge_state() {
 		for index in 0..range.len() {
 			assert!(context
 				.store_packet_acknowledgement(
-					(
+					
 						port_id_vec[index].clone(),
 						channel_id_vec[index].clone(),
 						sequence_vec[index]
-					),
+					,
 					ack_vec[index].clone()
 				)
 				.is_ok());
@@ -397,7 +259,7 @@ fn test_store_connection_channles_ok() {
 		assert!(context
 			.store_connection_channels(
 				connection_id.clone(),
-				&(port_id.clone(), channel_id.clone())
+				port_id.clone(), channel_id.clone()
 			)
 			.is_ok());
 
@@ -413,12 +275,11 @@ fn test_store_connection_channles_ok() {
 #[test]
 fn test_next_sequence_send_ok() {
 	let sequence_id = Sequence::from(0);
-	let port_channel = (PortId::default(), ChannelId::new(0));
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		assert!(context.store_next_sequence_send(port_channel.clone(), sequence_id).is_ok());
-		let result = context.get_next_sequence_send(&port_channel).unwrap();
+		assert!(context.store_next_sequence_send(PortId::default(), ChannelId::new(0), sequence_id).is_ok());
+		let result = context.get_next_sequence_send(&PortId::default(), &ChannelId::new(0)).unwrap();
 		assert_eq!(result, sequence_id);
 	})
 }
@@ -435,7 +296,7 @@ fn test_read_conection_channels_failed_by_suppley_error_conneciton_id() {
 		assert!(context
 			.store_connection_channels(
 				connection_id.clone(),
-				&(port_id.clone(), channel_id.clone())
+				port_id.clone(), channel_id.clone()
 			)
 			.is_ok());
 
@@ -458,36 +319,37 @@ fn test_store_channel_ok() {
 
 	new_test_ext().execute_with(|| {
 		assert!(context
-			.store_channel((port_id.clone(), channel_id.clone()), &channel_end)
+			.store_channel(port_id.clone(), channel_id.clone(), channel_end)
 			.is_ok());
 
-		let result = context.channel_end(&(port_id.clone(), channel_id.clone())).unwrap();
+		let result = context.channel_end(&port_id.clone(), &channel_id.clone()).unwrap();
 
-		assert_eq!(result, channel_end);
+		assert_eq!(result, ChannelEnd::default());
 	})
 }
 
 #[test]
 
 fn test_next_sequence_send_fail() {
-	let port_channel = (PortId::default(), ChannelId::new(0));
 	let context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		let result = context.get_next_sequence_send(&port_channel.clone()).unwrap_err().to_string();
-		assert_eq!(result, ICS04Error::missing_next_send_seq(port_channel).to_string());
+		let result = context.get_next_sequence_send(&PortId::default(),&ChannelId::new(0)).unwrap_err().to_string();
+		assert_eq!(result, ICS04Error::missing_next_send_seq(
+			PortId::default(),
+			ChannelId::new(0),
+		).to_string());
 	})
 }
 
 #[test]
 fn test_next_sequence_recv_ok() {
 	let sequence_id = Sequence::from(0);
-	let port_channel = (PortId::default(), ChannelId::new(0));
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		assert!(context.store_next_sequence_recv(port_channel.clone(), sequence_id).is_ok());
-		let result = context.get_next_sequence_recv(&port_channel).unwrap();
+		assert!(context.store_next_sequence_recv(PortId::default(), ChannelId::new(0), sequence_id).is_ok());
+		let result = context.get_next_sequence_recv(&PortId::default(), &ChannelId::new(0)).unwrap();
 		assert_eq!(result, sequence_id);
 	})
 }
@@ -506,11 +368,11 @@ fn test_read_channel_end_failed_by_supply_error_channel_id_port_id() {
 
 	new_test_ext().execute_with(|| {
 		assert!(context
-			.store_channel((port_id.clone(), channel_id.clone()), &channel_end)
+			.store_channel(port_id.clone(), channel_id.clone(), channel_end)
 			.is_ok());
 
 		let result = context
-			.channel_end(&(port_id_1.clone(), channel_id.clone()))
+			.channel_end(&port_id_1.clone(), &channel_id.clone())
 			.unwrap_err()
 			.to_string();
 
@@ -520,7 +382,7 @@ fn test_read_channel_end_failed_by_supply_error_channel_id_port_id() {
 		);
 
 		let result = context
-			.channel_end(&(port_id.clone(), channel_id_1.clone()))
+			.channel_end(&port_id.clone(), &channel_id_1.clone())
 			.unwrap_err()
 			.to_string();
 
@@ -530,7 +392,7 @@ fn test_read_channel_end_failed_by_supply_error_channel_id_port_id() {
 		);
 
 		let result = context
-			.channel_end(&(port_id_1.clone(), channel_id_1.clone()))
+			.channel_end(&port_id_1.clone(), &channel_id_1.clone())
 			.unwrap_err()
 			.to_string();
 
@@ -561,8 +423,8 @@ fn test_get_identified_channel_end() {
 		for index in 0..range.len() {
 			assert!(context
 				.store_channel(
-					(port_id_vec[index].clone(), channel_id_vec[index].clone()),
-					&channel_end_vec[index].clone()
+					port_id_vec[index].clone(), channel_id_vec[index].clone(),
+					channel_end_vec[index].clone()
 				)
 				.is_ok());
 		}
@@ -571,12 +433,14 @@ fn test_get_identified_channel_end() {
 
 #[test]
 fn test_next_sequence_recv_fail() {
-	let port_channel = (PortId::default(), ChannelId::new(0));
 	let context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		let result = context.get_next_sequence_recv(&port_channel.clone()).unwrap_err().to_string();
-		assert_eq!(result, ICS04Error::missing_next_recv_seq(port_channel).to_string());
+		let result = context.get_next_sequence_recv(&PortId::default(), &ChannelId::new(0)).unwrap_err().to_string();
+		assert_eq!(result, ICS04Error::missing_next_recv_seq(
+			PortId::default(),
+			ChannelId::new(0),
+		).to_string());
 	})
 }
 
@@ -587,19 +451,21 @@ fn test_next_sequence_ack_ok() {
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		assert!(context.store_next_sequence_ack(port_channel.clone(), sequence_id).is_ok());
-		let result = context.get_next_sequence_ack(&port_channel).unwrap();
+		assert!(context.store_next_sequence_ack(PortId::default(), ChannelId::new(0), sequence_id).is_ok());
+		let result = context.get_next_sequence_ack(&PortId::default(), &ChannelId::new(0)).unwrap();
 		assert_eq!(result, sequence_id);
 	})
 }
 
 #[test]
 fn test_next_sequence_ack_fail() {
-	let port_channel = (PortId::default(), ChannelId::new(0));
 	let context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		let result = context.get_next_sequence_ack(&port_channel.clone()).unwrap_err().to_string();
-		assert_eq!(result, ICS04Error::missing_next_ack_seq(port_channel).to_string());
+		let result = context.get_next_sequence_ack(&PortId::default(), &ChannelId::new(0)).unwrap_err().to_string();
+		assert_eq!(result, ICS04Error::missing_next_ack_seq(
+			PortId::default(),
+			ChannelId::new(0),
+		).to_string());
 	})
 }

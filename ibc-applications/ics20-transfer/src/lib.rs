@@ -15,6 +15,7 @@ pub mod ics20_impl;
 pub mod utils;
 
 use alloc::vec::Vec;
+use alloc::string::ToString;
 use ibc_support::AssetIdAndNameProvider;
 
 pub const LOG_TARGET: &str = "runtime::pallet-ics20-transfer";
@@ -122,8 +123,14 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		/// Send packet event
 		SendPacket {
-			// height: Height,
-			// packet: Packet,
+			sequence: Vec<u8>,
+			source_port: Vec<u8>,
+			source_channel: Vec<u8>,
+			destination_port: Vec<u8>,
+			destination_channel: Vec<u8>,
+			data: Vec<u8>,
+			timeout_height: Vec<u8>,
+			timeout_timestamp: Vec<u8>,
 		},
 		// unsupported event
 		UnsupportedEvent,
@@ -210,15 +217,21 @@ pub mod pallet {
 
 				// deposit events about send packet event and ics20 transfer event
 				for event in events {
+					log::trace!(target: LOG_TARGET, "raw_transfer event : {:?} ", event);
 					match event {
-						IbcEvent::SendPacket(ref _send_packet) => {
-							// TODO
-							// Self::deposit_event(event.into());
+						IbcEvent::SendPacket(ref send_packet) => {
+							let sequence = send_packet.packet.sequence.to_string().as_bytes().to_vec();
+							let source_port = send_packet.packet.source_port.to_string().as_bytes().to_vec();
+							let source_channel = send_packet.packet.source_channel.to_string().as_bytes().to_vec();
+							let destination_port = send_packet.packet.destination_port.to_string().as_bytes().to_vec();
+							let destination_channel = send_packet.packet.destination_channel.to_string().as_bytes().to_vec();
+							let data = send_packet.packet.data.clone();
+							let timeout_height = send_packet.packet.timeout_height.to_string().as_bytes().to_vec();
+							let timeout_timestamp = send_packet.packet.timeout_timestamp.to_string().as_bytes().to_vec();
+							Self::deposit_event(Event::SendPacket { sequence, source_port, source_channel, destination_port, destination_channel, data, timeout_height, timeout_timestamp});
 						},
 						_ => {
-							log::trace!(target: LOG_TARGET, "raw_transfer event : {:?} ", event);
-							// TODO
-							// Self::deposit_event(event.clone().into());
+							Self::deposit_event(Event::UnsupportedEvent);
 						},
 					}
 				}
