@@ -1,5 +1,6 @@
 use crate::*;
 use ibc::{core::ics26_routing, events::IbcEvent as RawIbcEvent};
+use ibc_support::Any;
 
 /// ibc-rs' `ModuleEvent` representation in substrate
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
@@ -78,11 +79,11 @@ pub enum IbcEvent {
 	/// Client created event
 	CreateClient { client_id: ClientId, client_type: ClientType, consensus_height: Height },
 	/// Client updated event
-	UpdateClient { client_id: ClientId, client_type: ClientType, consensus_height: Height },
+	UpdateClient { client_id: ClientId, client_type: ClientType, consensus_height: Height, consensus_heights: Vec<Height>, header: Any },
 	/// Client upgraded event
 	UpgradeClient { client_id: ClientId, client_type: ClientType, consensus_height: Height },
 	/// Client misbehaviour event
-	ClientMisbehaviour { client_id: ClientId, client_type: ClientType, consensus_height: Height },
+	ClientMisbehaviour { client_id: ClientId, client_type: ClientType },
 	/// Connection open init event
 	OpenInitConnection {
 		connection_id: Option<ConnectionId>,
@@ -182,46 +183,47 @@ pub enum IbcEvent {
 impl From<RawIbcEvent> for IbcEvent {
 	fn from(value: RawIbcEvent) -> Self {
 		match value {
-			RawIbcEvent::NewBlock(value) => IbcEvent::NewBlock { height: value.height.into() },
 			RawIbcEvent::CreateClient(value) => {
-				let client_id = value.0.client_id;
-				let client_type = value.0.client_type;
-				let consensus_height = value.0.consensus_height;
+				let client_id = value.client_id();
+				let client_type = value.client_type();
+				let consensus_height = value.consensus_height();
 				IbcEvent::CreateClient {
-					client_id: client_id.into(),
-					client_type: client_type.into(),
-					consensus_height: consensus_height.into(),
+					client_id: ClientId::from(client_id.clone()),
+					client_type: ClientType::from(client_type.clone()),
+					consensus_height: Height::from(consensus_height.clone()),
 				}
 			},
 			RawIbcEvent::UpdateClient(value) => {
-				let client_id = value.common.client_id;
-				let client_type = value.common.client_type;
-				let consensus_height = value.common.consensus_height;
+				let client_id = value.client_id();
+				let client_type = value.client_type();
+				let consensus_height = value.consensus_height();
+				let consensus_heights = value.consensus_heights();
+				let header = value.header();
 				IbcEvent::UpdateClient {
-					client_id: client_id.into(),
-					client_type: client_type.into(),
-					consensus_height: consensus_height.into(),
+					client_id: ClientId::from(client_id.clone()),
+					client_type: ClientType::from(client_type.clone()),
+					consensus_height: Height::from(consensus_height.clone()),
+					consensus_heights: consensus_heights.into_iter().map(|value| Height::from(*value),).collect(),
+					header: header.clone().into(),
 				}
 			},
 			// Upgrade client events are not currently being used
 			RawIbcEvent::UpgradeClient(value) => {
-				let client_id = value.0.client_id;
-				let client_type = value.0.client_type;
-				let consensus_height = value.0.consensus_height;
+				let client_id = value.client_id();
+				let client_type = value.client_type();
+				let consensus_height = value.consensus_height();
 				IbcEvent::UpgradeClient {
-					client_id: client_id.into(),
-					client_type: client_type.into(),
-					consensus_height: consensus_height.into(),
+					client_id: ClientId::from(client_id.clone()),
+					client_type: ClientType::from(client_type.clone()),
+					consensus_height: Height::from(consensus_height.clone()),
 				}
 			},
 			RawIbcEvent::ClientMisbehaviour(value) => {
-				let client_id = value.0.client_id;
-				let client_type = value.0.client_type;
-				let consensus_height = value.0.consensus_height;
+				let client_id = value.client_id();
+				let client_type = value.client_type();
 				IbcEvent::ClientMisbehaviour {
-					client_id: client_id.into(),
-					client_type: client_type.into(),
-					consensus_height: consensus_height.into(),
+					client_id: ClientId::from(client_id.clone()),
+					client_type: ClientType::from(client_type.clone()),
 				}
 			},
 			RawIbcEvent::OpenInitConnection(value) => {
@@ -400,7 +402,6 @@ impl From<RawIbcEvent> for IbcEvent {
 				IbcEvent::TimeoutOnClosePacket { packet: packet.into() }
 			},
 			RawIbcEvent::AppModule(value) => IbcEvent::AppModule(value.into()),
-			RawIbcEvent::ChainError(value) => IbcEvent::ChainError(value.as_bytes().to_vec()),
 		}
 	}
 }

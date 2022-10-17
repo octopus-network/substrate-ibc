@@ -31,7 +31,7 @@ pub mod events;
 pub mod module;
 pub mod utils;
 
-use crate::{
+pub use crate::{
 	context::Context,
 	module::core::ics24_host::{
 		ChannelId, ClientId, ClientType, ConnectionId, Height, Packet, PortId,
@@ -293,7 +293,7 @@ pub mod pallet {
 						Ok(ibc::core::ics26_routing::handler::MsgReceipt { events, log: _log}) => {
 							// deposit events about send packet event and ics20 transfer event
 							for event in events {
-								Self::deposit_event(event.clone().into());
+								Self::deposit_event(event.into());
 							}
 						}
 						Err(error) => {
