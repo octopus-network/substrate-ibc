@@ -90,7 +90,7 @@ pub mod pallet {
 		frame_system::Config + Sync + Send + Debug + pallet_ics20_transfer::Config
 	{
 		/// The overarching event type.
-		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
 		/// The provider providing timestamp of host chain
 		type TimeProvider: UnixTime;

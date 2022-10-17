@@ -63,7 +63,7 @@ impl frame_system::Config for Test {
 	/// The identifier used to distinguish between accounts.
 	type AccountId = AccountId;
 	/// The aggregated dispatch type that is available for extrinsics.
-	type Call = Call;
+	type RuntimeCall = RuntimeCall;
 	/// The lookup mechanism to get account ID from whatever is passed in dispatchers.
 	type Lookup = AccountIdLookup<AccountId, ()>;
 	/// The index type for storing how many extrinsics an account has signed.
@@ -77,9 +77,9 @@ impl frame_system::Config for Test {
 	/// The header type.
 	type Header = generic::Header<BlockNumber, BlakeTwo256>;
 	/// The ubiquitous event type.
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	/// The ubiquitous origin type.
-	type Origin = Origin;
+	type RuntimeOrigin = RuntimeOrigin;
 	/// Maximum number of block number to block hash mappings to keep (oldest pruned first).
 	type BlockHashCount = ();
 	/// The weight of database operations that the runtime can invoke.
@@ -122,7 +122,7 @@ parameter_types! {
 }
 
 impl pallet_assets::Config<pallet_assets::Instance1> for Test {
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type Balance = AssetBalance;
 	type AssetId = AssetId;
 	type Currency = Balances;
@@ -153,7 +153,7 @@ impl pallet_balances::Config for Test {
 	/// The type for recording an account's balance.
 	type Balance = Balance;
 	/// The ubiquitous event type.
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type DustRemoval = ();
 	type ExistentialDeposit = ExistentialDeposit;
 	type AccountStore = frame_system::Pallet<Test>;
@@ -186,7 +186,7 @@ pub const MILLISECS_PER_BLOCK: Moment = 6000;
 pub const SLOT_DURATION: Moment = MILLISECS_PER_BLOCK;
 
 impl pallet_ics20_transfer::Config for Test {
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type Currency = Balances;
 	type AssetId = AssetId;
 	type AssetBalance = AssetBalance;
@@ -201,7 +201,7 @@ pub type AssetBalance = u128;
 pub type AssetId = u32;
 
 impl pallet::Config for Test {
-	type Event = Event;
+	type RuntimeEvent = RuntimeEvent;
 	type TimeProvider = pallet_timestamp::Pallet<Test>;
 }
 
