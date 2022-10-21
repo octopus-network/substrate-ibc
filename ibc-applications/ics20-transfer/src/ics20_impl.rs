@@ -15,6 +15,7 @@ use ibc::{
 	core::ics24_host::identifier::{ChannelId, PortId},
 	signer::Signer,
 };
+use ibc::bigint::U256;
 use ibc_support::AssetIdAndNameProvider;
 use log::error;
 use scale_info::TypeInfo;
@@ -36,13 +37,13 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 		to: &Self::AccountId,
 		amt: &PrefixedCoin,
 	) -> Result<(), Ics20Error> {
-		let is_native_asset = amt.denom.trace_path().is_empty();
+		let is_native_asset = amt.denom.trace_path.is_empty();
 		match is_native_asset {
 			// transfer native token
 			true => {
-				let amount = amt.amount.as_u256().low_u128().checked_into().unwrap(); // TODO: FIX IN THE FUTURE
+				let amount = U256::from(amt.amount).low_u128().checked_into().unwrap(); // TODO: FIX IN THE FUTURE
 				let native_token_name = T::NATIVE_TOKEN_NAME;
-				let ibc_token_name = amt.denom.base_denom().as_str().as_bytes();
+				let ibc_token_name = amt.denom.base_denom.as_str().as_bytes();
 
 				// assert native token name equal want to send ibc token name
 				assert_eq!(
@@ -70,8 +71,8 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 			},
 			// transfer non-native token
 			false => {
-				let amount = amt.amount.as_u256().low_u128().into();
-				let denom = amt.denom.base_denom().as_str();
+                let amount = U256::from(amt.amount).low_u128().into();
+				let denom = amt.denom.base_denom.as_str();
 				// look cross chain asset have register in host chain
 				match T::AssetIdByName::try_get_asset_id(denom) {
 					Ok(token_id) => {
@@ -110,8 +111,8 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 		account: &Self::AccountId,
 		amt: &PrefixedCoin,
 	) -> Result<(), Ics20Error> {
-		let amount = amt.amount.as_u256().low_u128().into();
-		let denom = amt.denom.base_denom().as_str();
+		let amount = U256::from(amt.amount).low_u128().into();
+		let denom = amt.denom.base_denom.as_str();
 		// look cross chain asset have register in host chain
 		match T::AssetIdByName::try_get_asset_id(denom) {
 			Ok(token_id) => {
@@ -145,8 +146,8 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 		account: &Self::AccountId,
 		amt: &PrefixedCoin,
 	) -> Result<(), Ics20Error> {
-		let amount = amt.amount.as_u256().low_u128().into();
-		let denom = amt.denom.base_denom().as_str();
+		let amount = U256::from(amt.amount).low_u128().into();
+		let denom = amt.denom.base_denom.as_str();
 		// look cross chain asset have register in host chain
 		match T::AssetIdByName::try_get_asset_id(denom) {
 			Ok(token_id) => {

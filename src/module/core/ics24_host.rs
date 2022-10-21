@@ -51,15 +51,14 @@ pub struct PortId(pub Vec<u8>);
 
 impl From<IbcPortId> for PortId {
 	fn from(value: IbcPortId) -> Self {
-		let value = value.0.as_bytes().to_vec();
+		let value = value.as_str().as_bytes().to_vec();
 		Self(value)
 	}
 }
 
 impl From<PortId> for IbcPortId {
 	fn from(value: PortId) -> Self {
-		let value = String::from_utf8(value.0).expect("convert from utf8 Error");
-		Self(value)
+        IbcPortId::from_str(&String::from_utf8(value.0).expect("convert from utf8 Error")).expect("Never failed")
 	}
 }
 
@@ -148,7 +147,7 @@ pub struct ClientId(pub Vec<u8>);
 
 impl From<IbcClientId> for ClientId {
 	fn from(value: IbcClientId) -> Self {
-		let value = value.0.as_bytes().to_vec();
+		let value = value.as_str().as_bytes().to_vec();
 		Self(value)
 	}
 }
@@ -156,7 +155,7 @@ impl From<IbcClientId> for ClientId {
 impl From<ClientId> for IbcClientId {
 	fn from(value: ClientId) -> Self {
 		let value = String::from_utf8(value.0).expect("convert from utf8 Error");
-		Self(value)
+        IbcClientId::from_str(&value).expect("Never failed")
 	}
 }
 
@@ -166,7 +165,7 @@ pub struct ConnectionId(pub Vec<u8>);
 
 impl From<IbcConnectionId> for ConnectionId {
 	fn from(value: IbcConnectionId) -> Self {
-		let value = value.0.as_bytes().to_vec();
+		let value = value.as_str().as_bytes().to_vec();
 		Self(value)
 	}
 }
@@ -174,7 +173,7 @@ impl From<IbcConnectionId> for ConnectionId {
 impl From<ConnectionId> for IbcConnectionId {
 	fn from(value: ConnectionId) -> Self {
 		let value = String::from_utf8(value.0).expect("convert from utf8 Error");
-		Self(value)
+        IbcConnectionId::from_str(&value).expect("Never failed")
 	}
 }
 

@@ -20,7 +20,7 @@ members = [
 targets = ["x86_64-unknown-linux-gnu"]
 
 [build-dependencies.substrate-wasm-builder]
-branch = 'polkadot-v0.9.28'
+branch = 'polkadot-v0.9.30'
 git = 'https://github.com/paritytech/substrate.git'
 
 [dependencies]
@@ -32,14 +32,14 @@ pallet-ics20-transfer = { version = "0.1.0", default-features = false, path = ".
 # substate crates
 codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive"] }
 scale-info = { version = "2.1.2", default-features = false, features = ["derive"] }
-sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28", default-features = false }
-sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28", default-features = false }
-frame-benchmarking = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28", default-features = false, optional = true }
-frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28", default-features = false }
-frame-system = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28", default-features = false }
-sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28", default-features = false }
-sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28", default-features = false }
-sp-tracing = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28", default-features = false }
+sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30", default-features = false }
+sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30", default-features = false }
+frame-benchmarking = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30", default-features = false, optional = true }
+frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30", default-features = false }
+frame-system = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30", default-features = false }
+sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30", default-features = false }
+sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30", default-features = false }
+sp-tracing = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30", default-features = false }
 
 # third-party libraries
 
@@ -54,13 +54,11 @@ time = { version = "0.3", default-features = false, features = ["macros", "parsi
 
 
 ## for ibc protocl
+# todo replace cosmos/ibc-rs
 ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "dev", default-features = false }
-ibc-proto = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "dev", default-features = false }
-# ibc = { path = "../ibc-rs/modules", default-features = false }
-# ibc-proto = { path = "../ibc-rs/proto", default-features = false }
+ibc-proto = { git = "https://github.com/octopus-network/ibc-proto-rs.git", branch = "dev", default-features = false }
 tendermint-proto = { version = "=0.23.7", default-features = false }
 beefy-light-client = { git = "https://github.com/octopus-network/beefy-light-client.git", branch="main", default-features = false }
-# beefy-light-client = { path = "../beefy-light-client", default-features = false}
 
 [dev-dependencies]
 #local crates
@@ -74,20 +72,19 @@ chrono = "0.4.19"
 
 # ibc protocol crates
 ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "dev", features = ["mocks"]}
-#ibc = { path = "../ibc-rs/modules", features = ["mocks"]}
 
 # substrate crates
-sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28"}
-sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28" }
-sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28" }
-sp-keyring = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28" }
-frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28" }
-pallet-assets = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28" }
-pallet-balances = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28" }
-pallet-timestamp = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28" }
-pallet-babe = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28"}
-sp-version = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28"}
-sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.28"}
+sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30"}
+sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
+sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
+sp-keyring = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
+frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
+pallet-assets = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
+pallet-balances = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
+pallet-timestamp = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
+pallet-babe = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30"}
+sp-version = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30"}
+sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30"}
 
 
 [features]
@@ -119,3 +116,6 @@ std = [
 ]
 runtime-benchmarks = ["frame-benchmarking"]
 try-runtime = ["frame-support/try-runtime"]
+
+[patch.crates-io]
+ibc-proto = { git = "https://github.com/octopus-network/ibc-proto-rs.git", branch = "dev" }

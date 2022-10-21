@@ -3,7 +3,7 @@ use crate::{
 };
 use ibc::{
 	core::{
-		ics02_client::{client_state::AnyClientState, context::ClientReader, header::AnyHeader},
+		ics02_client::{client_state::ClientState, context::ClientReader, header::Header},
 		ics24_host::identifier::ClientId,
 		ics26_routing::handler::{deliver, MsgReceipt},
 	},
@@ -14,6 +14,7 @@ use ibc::{
 };
 use ibc_proto::google::protobuf::Any;
 use scale_info::prelude::{vec, vec::Vec};
+use alloc::boxed::Box;
 
 impl<T: Config> Ics18Context for Context<T> {
 	fn query_latest_height(&self) -> Height {
@@ -21,12 +22,12 @@ impl<T: Config> Ics18Context for Context<T> {
 		Height::new(REVISION_NUMBER, revision_height).expect(&REVISION_NUMBER.to_string())
 	}
 
-	fn query_client_full_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
+    fn query_client_full_state(&self, client_id: &ClientId) -> Option<Box<dyn ClientState>> {
 		// Forward call to Ics2.
 		ClientReader::client_state(self, client_id).ok()
 	}
 
-	fn query_latest_header(&self) -> Option<AnyHeader> {
+    fn query_latest_header(&self) -> Option<Box<dyn Header>> {
 		todo!()
 	}
 

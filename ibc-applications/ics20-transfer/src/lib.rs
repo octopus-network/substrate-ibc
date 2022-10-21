@@ -53,8 +53,12 @@ pub mod pallet {
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
 	pub trait Config: frame_system::Config + Sync + Send + Debug {
-		/// Because this pallet emits events, it depends on the runtime's definition of an event.
-		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		/// The aggregated event type of the runtime.
+		type RuntimeEvent: Parameter
+			+ Member
+			+ From<Event<Self>>
+			+ Debug
+            + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
 		/// The currency type of the runtime
 		type Currency: Currency<Self::AccountId>;
@@ -86,19 +90,6 @@ pub mod pallet {
 		type IbcContext: ibc_support::ibc_trait::IbcSupportChannelKeeper
 			+ ibc_support::ibc_trait::IbcSupportChannelReader;
 	}
-
-	#[pallet::storage]
-	/// (height, port_id, channel_id, sequence) => send-packet event
-	pub type SendPacketEvent<T: Config> = StorageNMap<
-		_,
-		(
-			NMapKey<Blake2_128Concat, Vec<u8>>,
-			NMapKey<Blake2_128Concat, Vec<u8>>,
-			NMapKey<Blake2_128Concat, u64>,
-		),
-		Vec<u8>,
-		ValueQuery,
-	>;
 
 	type AssetName = Vec<u8>;
 
@@ -241,20 +232,6 @@ pub mod pallet {
 			Ok(().into())
 		}
 	}
-}
-
-fn _store_send_packet<T: Config>(send_packet_event: &ibc::core::ics04_channel::events::SendPacket) {
-	use tendermint_proto::Protobuf;
-	// store key port_id and channel_id
-	let port_id = send_packet_event.packet.source_port.as_bytes().to_vec();
-	let channel_id =
-		send_packet_event.packet.source_channel.clone().to_string().as_bytes().to_vec();
-	// store value packet
-	let packet = send_packet_event.packet.encode_vec().unwrap();
-	<SendPacketEvent<T>>::insert(
-		(port_id, channel_id, u64::from(send_packet_event.packet.sequence)),
-		packet,
-	);
 }
 
 impl<T: Config> AssetIdAndNameProvider<T::AssetId> for Pallet<T> {

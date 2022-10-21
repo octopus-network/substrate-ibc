@@ -28,10 +28,7 @@ use frame_system::ensure_signed;
 use sp_runtime::RuntimeDebug;
 use sp_std::prelude::*;
 
-use ibc::{
-	clients::ics10_grandpa::help::Commitment,
-	core::ics24_host::identifier::ChannelId as IbcChannelId,
-};
+use ibc::core::ics24_host::identifier::ChannelId as IbcChannelId;
 
 use tendermint_proto::Protobuf;
 
@@ -105,8 +102,12 @@ pub mod pallet {
 	pub trait Config:
 		frame_system::Config + Sync + Send + Debug + pallet_ics20_transfer::Config
 	{
-		/// The overarching event type.
-		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+		/// The aggregated event type of the runtime.
+		type RuntimeEvent: Parameter
+			+ Member
+			+ From<Event<Self>>
+			+ Debug
+            + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
 		/// The provider providing timestamp of host chain
 		type TimeProvider: UnixTime;
@@ -235,19 +236,6 @@ pub mod pallet {
 	pub type PacketCommitment<T: Config> =
 		StorageMap<_, Blake2_128Concat, OctopusCommitmentsPath, OctopusCommitmentHash, ValueQuery>;
 
-	// TODO
-	#[pallet::storage]
-	/// (port_id, channel_id, sequence) => writ ack event
-	pub type WriteAckPacketEvent<T: Config> = StorageNMap<
-		_,
-		(
-			NMapKey<Blake2_128Concat, OctopusPortId>,
-			NMapKey<Blake2_128Concat, OctopusChannelId>,
-			NMapKey<Blake2_128Concat, OctopusSequence>,
-		),
-		OctopusWriteAckEvent,
-		ValueQuery,
-	>;
 
 	#[pallet::storage]
 	/// Previous host block height
@@ -330,12 +318,13 @@ pub mod pallet {
 							for event in events {
 								match event {
 									IbcEvent::WriteAcknowledgement(ref write_ack) => {
-										store_write_ack::<T>(write_ack);
-										Self::deposit_event(event.clone().into());
+                                        // todo
+//										store_write_ack::<T>(write_ack);
+										Self::deposit_event(event.into());
 									}
 									_ => {
 										log::trace!(target: LOG_TARGET, "raw_transfer event : {:?} ", event);
-										Self::deposit_event(event.clone().into());
+										Self::deposit_event(event.into());
 									}
 								}
 							}
@@ -350,17 +339,4 @@ pub mod pallet {
 			})
 		}
 	}
-}
-
-fn store_write_ack<T: Config>(
-	write_ack_event: &ibc::core::ics04_channel::events::WriteAcknowledgement,
-) {
-	// store ack
-	let port_id = write_ack_event.packet.source_port.as_bytes().to_vec();
-	let channel_id = write_ack_event.packet.source_channel.clone().to_string().as_bytes().to_vec();
-	let sequence = u64::from(write_ack_event.packet.sequence);
-	let write_ack = write_ack_event.encode_vec().unwrap();
-
-	// store.Set((portID, channelID, sequence), WriteAckEvent)
-	<WriteAckPacketEvent<T>>::insert((port_id, channel_id, sequence), write_ack);
 }
