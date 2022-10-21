@@ -5,17 +5,15 @@ use log::{info, trace};
 
 use crate::context::Context;
 use ibc::{
-    clients::ics07_tendermint::{
-        client_state::ClientState as Ics07ClientState,
-        consensus_state::ConsensusState as Ics07ConsensusState,
-    },
+	clients::ics07_tendermint::{
+		client_state::ClientState as Ics07ClientState,
+		consensus_state::ConsensusState as Ics07ConsensusState,
+	},
 	core::{
-
-
 		ics02_client::{
-			consensus_state::ConsensusState,
 			client_state::ClientState,
 			client_type::ClientType,
+			consensus_state::ConsensusState,
 			context::{ClientKeeper, ClientReader},
 			error::Error as Ics02Error,
 		},
@@ -27,8 +25,7 @@ use ibc::{
 	timestamp::Timestamp,
 	Height,
 };
-use ibc_proto::protobuf::Protobuf;
-use ibc_proto::google::protobuf::Any;
+use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
 
 impl<T: Config> ClientReader for Context<T> {
 	fn client_type(&self, client_id: &ClientId) -> Result<ClientType, Ics02Error> {
@@ -42,10 +39,10 @@ impl<T: Config> ClientReader for Context<T> {
 			Ok(client_type)
 		} else {
 			Err(Ics02Error::client_not_found(client_id.clone()))
-        }
+		}
 	}
 
-    fn client_state(&self, client_id: &ClientId) -> Result<Box<dyn ClientState>, Ics02Error> {
+	fn client_state(&self, client_id: &ClientId) -> Result<Box<dyn ClientState>, Ics02Error> {
 		let client_state_path = ClientStatePath(client_id.clone()).to_string().as_bytes().to_vec();
 		if <ClientStates<T>>::contains_key(&client_state_path) {
 			let data = <ClientStates<T>>::get(&client_state_path);
@@ -58,26 +55,26 @@ impl<T: Config> ClientReader for Context<T> {
 					.map_err(|_| Ics02Error::implementation_specific())?;
 					return Ok(Box::new(result))
 				},
-                ibc::core::ics02_client::client_type::ClientType::Grandpa => todo!()
+				ibc::core::ics02_client::client_type::ClientType::Grandpa => todo!(),
 			}
 		} else {
 			Err(Ics02Error::client_not_found(client_id.clone()))
-        }
+		}
 	}
 
-    fn decode_client_state(&self, client_state: Any) -> Result<Box<dyn ClientState>, Ics02Error> {
-        if let Ok(client_state) = Ics07ClientState::try_from(client_state.clone()) {
-            Ok(client_state.into_box())
-        } else {
-            Err(Ics02Error::unknown_client_state_type(client_state.type_url))
-        }
-    }
+	fn decode_client_state(&self, client_state: Any) -> Result<Box<dyn ClientState>, Ics02Error> {
+		if let Ok(client_state) = Ics07ClientState::try_from(client_state.clone()) {
+			Ok(client_state.into_box())
+		} else {
+			Err(Ics02Error::unknown_client_state_type(client_state.type_url))
+		}
+	}
 
 	fn consensus_state(
 		&self,
 		client_id: &ClientId,
 		height: Height,
-        ) -> Result<Box<dyn ConsensusState>, Ics02Error> {
+	) -> Result<Box<dyn ConsensusState>, Ics02Error> {
 		let client_consensus_state_path = ClientConsensusStatePath {
 			client_id: client_id.clone(),
 			epoch: height.revision_number(),
@@ -98,18 +95,18 @@ impl<T: Config> ClientReader for Context<T> {
 					.map_err(|_| Ics02Error::implementation_specific())?;
 					return Ok(Box::new(result))
 				},
-                ibc::core::ics02_client::client_type::ClientType::Grandpa => todo!(),
+				ibc::core::ics02_client::client_type::ClientType::Grandpa => todo!(),
 			}
 		} else {
 			Err(Ics02Error::consensus_state_not_found(client_id.clone(), height))
-        }
+		}
 	}
 
 	fn next_consensus_state(
 		&self,
 		client_id: &ClientId,
 		height: Height,
-        ) -> Result<Option<Box<dyn ConsensusState>>, Ics02Error> {
+	) -> Result<Option<Box<dyn ConsensusState>>, Ics02Error> {
 		let client_consensus_state_path = ClientConsensusStatePath {
 			client_id: client_id.clone(),
 			epoch: height.revision_number(),
@@ -149,11 +146,11 @@ impl<T: Config> ClientReader for Context<T> {
 						.map_err(|_| Ics02Error::implementation_specific())?;
 						return Ok(Some(Box::new(result)))
 					},
-                    ibc::core::ics02_client::client_type::ClientType::Grandpa => todo!(),
+					ibc::core::ics02_client::client_type::ClientType::Grandpa => todo!(),
 				}
 			}
 		}
-        Ok(None)
+		Ok(None)
 	}
 
 	fn prev_consensus_state(
@@ -200,11 +197,11 @@ impl<T: Config> ClientReader for Context<T> {
 						.map_err(|_| Ics02Error::implementation_specific())?;
 						return Ok(Some(Box::new(result)))
 					},
-                    ibc::core::ics02_client::client_type::ClientType::Grandpa => todo!(),
+					ibc::core::ics02_client::client_type::ClientType::Grandpa => todo!(),
 				}
 			}
 		}
-        Ok(None)
+		Ok(None)
 	}
 
 	fn host_height(&self) -> Height {
@@ -222,12 +219,12 @@ impl<T: Config> ClientReader for Context<T> {
 	fn host_consensus_state(&self, _height: Height) -> Result<Box<dyn ConsensusState>, Ics02Error> {
 		trace!(target:"runtime::pallet-ibc","in client : [consensus_state]");
 
-        Err(Ics02Error::implementation_specific())
+		Err(Ics02Error::implementation_specific())
 	}
 
 	fn pending_host_consensus_state(&self) -> Result<Box<dyn ConsensusState>, Ics02Error> {
 		trace!(target:"runtime::pallet-ibc","in client: [pending_host_consensus_state]");
-        Err(Ics02Error::implementation_specific())
+		Err(Ics02Error::implementation_specific())
 	}
 
 	fn client_counter(&self) -> Result<u64, Ics02Error> {
@@ -254,13 +251,13 @@ impl<T: Config> ClientKeeper for Context<T> {
 	fn store_client_state(
 		&mut self,
 		client_id: ClientId,
-        client_state: Box<dyn ClientState>,
+		client_state: Box<dyn ClientState>,
 	) -> Result<(), Ics02Error> {
 		trace!(target:"runtime::pallet-ibc","in client : [store_client_state]");
 
 		let client_state_path = ClientStatePath(client_id).to_string().as_bytes().to_vec();
 
-        let data = client_state.encode_vec().map_err(|_|Ics02Error::implementation_specific())?;
+		let data = client_state.encode_vec().map_err(|_| Ics02Error::implementation_specific())?;
 		// store client states key-value
 		<ClientStates<T>>::insert(client_state_path, data);
 
@@ -271,7 +268,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 		&mut self,
 		client_id: ClientId,
 		height: Height,
-        consensus_state: Box<dyn ConsensusState>,
+		consensus_state: Box<dyn ConsensusState>,
 	) -> Result<(), Ics02Error> {
 		trace!(target:"runtime::pallet-ibc","in client : [store_consensus_state]");
 
@@ -286,7 +283,9 @@ impl<T: Config> ClientKeeper for Context<T> {
 		.to_vec();
 
 		// store value
-        let consensus_state = consensus_state.encode_vec().map_err(|_|Ics02Error::implementation_specific())?;
+		let consensus_state = consensus_state
+			.encode_vec()
+			.map_err(|_| Ics02Error::implementation_specific())?;
 		// store client_consensus_state path as key, consensus_state as value
 		<ConsensusStates<T>>::insert(client_consensus_state_path, consensus_state);
 
@@ -297,7 +296,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 		info!("in client : [increase_client_counter]");
 
 		let _ = <ClientCounter<T>>::try_mutate(|val| -> Result<(), Ics02Error> {
-            let new = val.checked_add(1).expect("increase client coubter overflow");
+			let new = val.checked_add(1).expect("increase client coubter overflow");
 			*val = new;
 			Ok(())
 		});
@@ -312,13 +311,13 @@ impl<T: Config> ClientKeeper for Context<T> {
 		trace!(target:"runtime::pallet-ibc","in client: [store_update_time]");
 
 		let encode_timestamp = serde_json::to_string(&timestamp)
-        .map_err(|_|Ics02Error::implementation_specific())?
+			.map_err(|_| Ics02Error::implementation_specific())?
 			.as_bytes()
 			.to_vec();
 
 		<ClientProcessedTimes<T>>::insert(
 			client_id.as_bytes(),
-        height.encode_vec().map_err(|_|Ics02Error::implementation_specific())?,
+			height.encode_vec().map_err(|_| Ics02Error::implementation_specific())?,
 			encode_timestamp,
 		);
 
@@ -335,8 +334,8 @@ impl<T: Config> ClientKeeper for Context<T> {
 
 		<ClientProcessedHeights<T>>::insert(
 			client_id.as_bytes(),
-        height.encode_vec().map_err(|_|Ics02Error::implementation_specific())?,
-        host_height.encode_vec().map_err(|_|Ics02Error::implementation_specific())?,
+			height.encode_vec().map_err(|_| Ics02Error::implementation_specific())?,
+			host_height.encode_vec().map_err(|_| Ics02Error::implementation_specific())?,
 		);
 
 		Ok(())

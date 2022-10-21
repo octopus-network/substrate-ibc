@@ -58,7 +58,7 @@ pub mod pallet {
 			+ Member
 			+ From<Event<Self>>
 			+ Debug
-            + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+			+ IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
 		/// The currency type of the runtime
 		type Currency: Currency<Self::AccountId>;

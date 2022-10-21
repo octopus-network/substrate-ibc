@@ -104,16 +104,16 @@ pub struct ClientState {
 //}
 
 impl ClientState {
-//	pub fn to_ibc_client_state(self) -> Result<IbcClientState, Error> {
-//		let chain_id_str = String::from_utf8(self.chain_id).map_err(Error::invalid_from_utf8)?;
-//		Ok(IbcClientState {
-//			chain_id: IbcChainId::from_str(&chain_id_str).map_err(Error::invalid_chain_id)?,
-//			latest_height: self.latest_height,
-//			frozen_height: self.frozen_height.map(|value| value.into()),
-//			latest_commitment: Commitment::decode(&mut &self.latest_commitment[..])
-//				.map_err(Error::invalid_decode)?,
-//			validator_set: ValidatorSet::decode(&mut &self.validator_set[..])
-//				.map_err(Error::invalid_decode)?,
-//		})
-//	}
+	//	pub fn to_ibc_client_state(self) -> Result<IbcClientState, Error> {
+	//		let chain_id_str = String::from_utf8(self.chain_id).map_err(Error::invalid_from_utf8)?;
+	//		Ok(IbcClientState {
+	//			chain_id: IbcChainId::from_str(&chain_id_str).map_err(Error::invalid_chain_id)?,
+	//			latest_height: self.latest_height,
+	//			frozen_height: self.frozen_height.map(|value| value.into()),
+	//			latest_commitment: Commitment::decode(&mut &self.latest_commitment[..])
+	//				.map_err(Error::invalid_decode)?,
+	//			validator_set: ValidatorSet::decode(&mut &self.validator_set[..])
+	//				.map_err(Error::invalid_decode)?,
+	//		})
+	//	}
 }

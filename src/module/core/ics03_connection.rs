@@ -6,8 +6,7 @@ use log::trace;
 use ibc::{
 	core::{
 		ics02_client::{
-			consensus_state::ConsensusState, client_state::ClientState,
-			context::ClientReader,
+			client_state::ClientState, consensus_state::ConsensusState, context::ClientReader,
 		},
 		ics03_connection::{
 			connection::ConnectionEnd,
@@ -23,8 +22,7 @@ use ibc::{
 	timestamp::Timestamp,
 	Height,
 };
-use ibc_proto::protobuf::Protobuf;
-use ibc_proto::google::protobuf::Any;
+use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
 
 impl<T: Config> ConnectionReader for Context<T> {
 	fn connection_end(&self, conn_id: &ConnectionId) -> Result<ConnectionEnd, Ics03Error> {
@@ -34,7 +32,8 @@ impl<T: Config> ConnectionReader for Context<T> {
 
 		if <Connections<T>>::contains_key(&connections_path) {
 			let data = <Connections<T>>::get(&connections_path);
-            let ret = ConnectionEnd::decode_vec(&data).map_err(|_|Ics03Error::implementation_specific())?;
+			let ret = ConnectionEnd::decode_vec(&data)
+				.map_err(|_| Ics03Error::implementation_specific())?;
 
 			trace!(target:"runtime::pallet-ibc","in connection : [connection_end] >>  connection_end = {:?}", ret);
 			Ok(ret)
@@ -44,15 +43,15 @@ impl<T: Config> ConnectionReader for Context<T> {
 		}
 	}
 
-    fn client_state(&self, client_id: &ClientId) -> Result<Box<dyn ClientState>, Ics03Error> {
+	fn client_state(&self, client_id: &ClientId) -> Result<Box<dyn ClientState>, Ics03Error> {
 		trace!(target:"runtime::pallet-ibc","in connection : [client_state] client_id:{:?}",client_id);
 
 		ClientReader::client_state(self, client_id).map_err(Ics03Error::ics02_client)
 	}
 
-    fn decode_client_state(&self, client_state: Any) -> Result<Box<dyn ClientState>, Ics03Error> {
-        ClientReader::decode_client_state(self, client_state).map_err(Ics03Error::ics02_client)
-    }
+	fn decode_client_state(&self, client_state: Any) -> Result<Box<dyn ClientState>, Ics03Error> {
+		ClientReader::decode_client_state(self, client_state).map_err(Ics03Error::ics02_client)
+	}
 
 	fn host_current_height(&self) -> Height {
 		trace!(target:"runtime::pallet-ibc","in connection : [host_current_height]");
@@ -84,7 +83,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 	fn commitment_prefix(&self) -> CommitmentPrefix {
 		trace!(target:"runtime::pallet-ibc","in connection : [commitment_prefix]");
 
-        CommitmentPrefix::try_from(b"Ibc".to_vec()).unwrap_or_default()
+		CommitmentPrefix::try_from(b"Ibc".to_vec()).unwrap_or_default()
 	}
 
 	fn client_consensus_state(
@@ -93,11 +92,11 @@ impl<T: Config> ConnectionReader for Context<T> {
 		height: Height,
 	) -> Result<Box<dyn ConsensusState>, Ics03Error> {
 		// Forward method call to the Ics2Client-specific method.
-        self.consensus_state(client_id, height).map_err(Ics03Error::ics02_client)
+		self.consensus_state(client_id, height).map_err(Ics03Error::ics02_client)
 	}
 
-    fn host_consensus_state(&self, height: Height) -> Result<Box<dyn ConsensusState>, Ics03Error> {
-        ClientReader::host_consensus_state(self, height).map_err(Ics03Error::ics02_client)
+	fn host_consensus_state(&self, height: Height) -> Result<Box<dyn ConsensusState>, Ics03Error> {
+		ClientReader::host_consensus_state(self, height).map_err(Ics03Error::ics02_client)
 	}
 
 	fn connection_counter(&self) -> Result<u64, Ics03Error> {
@@ -118,7 +117,8 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		trace!(target:"runtime::pallet-ibc","in connection : [store_connection] connection_id:{:?}, connection_end:{:?}",connection_id,connection_end);
 
 		let connections_path = ConnectionsPath(connection_id).to_string().as_bytes().to_vec();
-        let data = connection_end.encode_vec().map_err(|_|Ics03Error::implementation_specific())?;
+		let data =
+			connection_end.encode_vec().map_err(|_| Ics03Error::implementation_specific())?;
 
 		// store connection end
 		<Connections<T>>::insert(connections_path, data);
@@ -144,8 +144,7 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		trace!(target:"runtime::pallet-ibc","in connection : [increase_connection_counter]");
 
 		let _ = <ConnectionCounter<T>>::try_mutate(|val| -> Result<(), Ics03Error> {
-			let new = val
-				.checked_add(1).expect("increase connection counter overflow!");
+			let new = val.checked_add(1).expect("increase connection counter overflow!");
 			*val = new;
 			Ok(())
 		});

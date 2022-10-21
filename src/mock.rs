@@ -1,5 +1,5 @@
-use crate as pallet_ibc;
 use super::*;
+use crate as pallet_ibc;
 pub use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{
@@ -184,7 +184,6 @@ pub const MILLISECS_PER_BLOCK: Moment = 6000;
 // NOTE: Currently it is not possible to change the slot duration after the chain has started.
 //       Attempting to do so will brick block production.
 pub const SLOT_DURATION: Moment = MILLISECS_PER_BLOCK;
-
 
 impl pallet_ics20_transfer::Config for Test {
 	type Event = Event;

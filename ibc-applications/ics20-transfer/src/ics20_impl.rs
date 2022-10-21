@@ -12,10 +12,10 @@ use ibc::{
 		error::Error as Ics20Error,
 		PrefixedCoin, PORT_ID_STR,
 	},
+	bigint::U256,
 	core::ics24_host::identifier::{ChannelId, PortId},
 	signer::Signer,
 };
-use ibc::bigint::U256;
 use ibc_support::AssetIdAndNameProvider;
 use log::error;
 use scale_info::TypeInfo;
@@ -71,7 +71,7 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 			},
 			// transfer non-native token
 			false => {
-                let amount = U256::from(amt.amount).low_u128().into();
+				let amount = U256::from(amt.amount).low_u128().into();
 				let denom = amt.denom.base_denom.as_str();
 				// look cross chain asset have register in host chain
 				match T::AssetIdByName::try_get_asset_id(denom) {

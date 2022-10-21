@@ -58,7 +58,8 @@ impl From<IbcPortId> for PortId {
 
 impl From<PortId> for IbcPortId {
 	fn from(value: PortId) -> Self {
-        IbcPortId::from_str(&String::from_utf8(value.0).expect("convert from utf8 Error")).expect("Never failed")
+		IbcPortId::from_str(&String::from_utf8(value.0).expect("convert from utf8 Error"))
+			.expect("Never failed")
 	}
 }
 
@@ -155,7 +156,7 @@ impl From<IbcClientId> for ClientId {
 impl From<ClientId> for IbcClientId {
 	fn from(value: ClientId) -> Self {
 		let value = String::from_utf8(value.0).expect("convert from utf8 Error");
-        IbcClientId::from_str(&value).expect("Never failed")
+		IbcClientId::from_str(&value).expect("Never failed")
 	}
 }
 
@@ -173,7 +174,7 @@ impl From<IbcConnectionId> for ConnectionId {
 impl From<ConnectionId> for IbcConnectionId {
 	fn from(value: ConnectionId) -> Self {
 		let value = String::from_utf8(value.0).expect("convert from utf8 Error");
-        IbcConnectionId::from_str(&value).expect("Never failed")
+		IbcConnectionId::from_str(&value).expect("Never failed")
 	}
 }
 

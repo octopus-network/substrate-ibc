@@ -6,10 +6,12 @@ use crate::context::Context;
 use ibc::{
 	core::{
 		ics02_client::{
-			consensus_state::ConsensusState, client_state::ClientState,
+			client_state::ClientState, consensus_state::ConsensusState, context::ClientReader,
 			error::Error as Ics02Error,
 		},
-		ics03_connection::{connection::ConnectionEnd, error::Error as Ics03Error},
+		ics03_connection::{
+			connection::ConnectionEnd, context::ConnectionReader, error::Error as Ics03Error,
+		},
 		ics04_channel::{
 			channel::ChannelEnd,
 			commitment::{
@@ -34,16 +36,14 @@ use ibc::{
 	timestamp::Timestamp,
 	Height,
 };
-use ibc_support::ibc_trait::{IbcSupportChannelKeeper, IbcSupportChannelReader};
 use ibc_proto::protobuf::Protobuf;
-use ibc::core::ics03_connection::context::ConnectionReader;
-use ibc::core::ics02_client::context::ClientReader;
+use ibc_support::ibc_trait::{IbcSupportChannelKeeper, IbcSupportChannelReader};
 
 impl<T: Config> ChannelReader for Context<T> {
 	fn channel_end(
 		&self,
 		port_id: &PortId,
-        channel_id: &ChannelId,
+		channel_id: &ChannelId,
 	) -> Result<ChannelEnd, Ics04Error> {
 		<Context<T> as IbcSupportChannelReader>::channel_end(port_id, channel_id)
 	}
@@ -59,7 +59,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		<Context<T> as IbcSupportChannelReader>::connection_channels(cid)
 	}
 
-    fn client_state(&self, client_id: &ClientId) -> Result<Box<dyn ClientState>, Ics04Error> {
+	fn client_state(&self, client_id: &ClientId) -> Result<Box<dyn ClientState>, Ics04Error> {
 		<Context<T> as IbcSupportChannelReader>::client_state(client_id)
 	}
 
@@ -67,14 +67,14 @@ impl<T: Config> ChannelReader for Context<T> {
 		&self,
 		client_id: &ClientId,
 		height: Height,
-        ) -> Result<Box<dyn ConsensusState>, Ics04Error> {
+	) -> Result<Box<dyn ConsensusState>, Ics04Error> {
 		<Context<T> as IbcSupportChannelReader>::client_consensus_state(client_id, height)
 	}
 
 	fn get_next_sequence_send(
 		&self,
 		port_id: &PortId,
-        channel_id: &ChannelId
+		channel_id: &ChannelId,
 	) -> Result<Sequence, Ics04Error> {
 		<Context<T> as IbcSupportChannelReader>::get_next_sequence_send(port_id, channel_id)
 	}
@@ -82,7 +82,7 @@ impl<T: Config> ChannelReader for Context<T> {
 	fn get_next_sequence_recv(
 		&self,
 		port_id: &PortId,
-        channel_id: &ChannelId
+		channel_id: &ChannelId,
 	) -> Result<Sequence, Ics04Error> {
 		<Context<T> as IbcSupportChannelReader>::get_next_sequence_recv(port_id, channel_id)
 	}
@@ -90,7 +90,7 @@ impl<T: Config> ChannelReader for Context<T> {
 	fn get_next_sequence_ack(
 		&self,
 		port_id: &PortId,
-        channel_id: &ChannelId
+		channel_id: &ChannelId,
 	) -> Result<Sequence, Ics04Error> {
 		<Context<T> as IbcSupportChannelReader>::get_next_sequence_ack(port_id, channel_id)
 	}
@@ -98,8 +98,8 @@ impl<T: Config> ChannelReader for Context<T> {
 	fn get_packet_commitment(
 		&self,
 		port_id: &PortId,
-        channel_id: &ChannelId,
-        seq: Sequence,
+		channel_id: &ChannelId,
+		seq: Sequence,
 	) -> Result<IbcPacketCommitment, Ics04Error> {
 		<Context<T> as IbcSupportChannelReader>::get_packet_commitment(port_id, channel_id, seq)
 	}
@@ -108,8 +108,8 @@ impl<T: Config> ChannelReader for Context<T> {
 		&self,
 
 		port_id: &PortId,
-        channel_id: &ChannelId,
-        seq: Sequence,
+		channel_id: &ChannelId,
+		seq: Sequence,
 	) -> Result<Receipt, Ics04Error> {
 		<Context<T> as IbcSupportChannelReader>::get_packet_receipt(port_id, channel_id, seq)
 	}
@@ -117,10 +117,12 @@ impl<T: Config> ChannelReader for Context<T> {
 	fn get_packet_acknowledgement(
 		&self,
 		port_id: &PortId,
-        channel_id: &ChannelId,
-        seq: Sequence,
+		channel_id: &ChannelId,
+		seq: Sequence,
 	) -> Result<IbcAcknowledgementCommitment, Ics04Error> {
-		<Context<T> as IbcSupportChannelReader>::get_packet_acknowledgement(port_id, channel_id, seq)
+		<Context<T> as IbcSupportChannelReader>::get_packet_acknowledgement(
+			port_id, channel_id, seq,
+		)
 	}
 
 	fn hash(&self, value: Vec<u8>) -> Vec<u8> {
@@ -131,11 +133,11 @@ impl<T: Config> ChannelReader for Context<T> {
 		<Context<T> as IbcSupportChannelReader>::host_height()
 	}
 
-    fn host_consensus_state(&self, height: Height) -> Result<Box<dyn ConsensusState>, Ics04Error> {
+	fn host_consensus_state(&self, height: Height) -> Result<Box<dyn ConsensusState>, Ics04Error> {
 		<Context<T> as IbcSupportChannelReader>::host_consensus_state(height)
 	}
 
-    fn pending_host_consensus_state(&self) -> Result<Box<dyn ConsensusState>, Ics04Error> {
+	fn pending_host_consensus_state(&self) -> Result<Box<dyn ConsensusState>, Ics04Error> {
 		<Context<T> as IbcSupportChannelReader>::pending_host_consensus_state()
 	}
 
@@ -168,64 +170,79 @@ impl<T: Config> ChannelKeeper for Context<T> {
 	fn store_packet_commitment(
 		&mut self,
 		port_id: PortId,
-        channel_id: IbcChannelId,
-        seq: Sequence,
+		channel_id: IbcChannelId,
+		seq: Sequence,
 		commitment: IbcPacketCommitment,
 	) -> Result<(), Ics04Error> {
-		<Context<T> as IbcSupportChannelKeeper>::store_packet_commitment(port_id, channel_id, seq, commitment)
+		<Context<T> as IbcSupportChannelKeeper>::store_packet_commitment(
+			port_id, channel_id, seq, commitment,
+		)
 	}
 
 	fn delete_packet_commitment(
 		&mut self,
 		port_id: &PortId,
-        channel_id: &IbcChannelId,
-        seq: Sequence,
+		channel_id: &IbcChannelId,
+		seq: Sequence,
 	) -> Result<(), Ics04Error> {
-		<Context<T> as IbcSupportChannelKeeper>::delete_packet_acknowledgement(port_id, channel_id, seq)
+		<Context<T> as IbcSupportChannelKeeper>::delete_packet_acknowledgement(
+			port_id, channel_id, seq,
+		)
 	}
 
 	fn store_packet_receipt(
 		&mut self,
 		port_id: PortId,
-        channel_id: IbcChannelId,
-        seq: Sequence,
+		channel_id: IbcChannelId,
+		seq: Sequence,
 		receipt: Receipt,
 	) -> Result<(), Ics04Error> {
-		<Context<T> as IbcSupportChannelKeeper>::store_packet_receipt(port_id, channel_id, seq, receipt)
+		<Context<T> as IbcSupportChannelKeeper>::store_packet_receipt(
+			port_id, channel_id, seq, receipt,
+		)
 	}
 
 	fn store_packet_acknowledgement(
 		&mut self,
 		port_id: PortId,
-        channel_id: IbcChannelId,
-        seq: Sequence,
+		channel_id: IbcChannelId,
+		seq: Sequence,
 		ack_commitment: IbcAcknowledgementCommitment,
 	) -> Result<(), Ics04Error> {
-		<Context<T> as IbcSupportChannelKeeper>::store_packet_acknowledgement(port_id, channel_id, seq, ack_commitment)
+		<Context<T> as IbcSupportChannelKeeper>::store_packet_acknowledgement(
+			port_id,
+			channel_id,
+			seq,
+			ack_commitment,
+		)
 	}
 
 	fn delete_packet_acknowledgement(
 		&mut self,
 		port_id: &PortId,
-        channel_id: &IbcChannelId,
-        seq: Sequence,
+		channel_id: &IbcChannelId,
+		seq: Sequence,
 	) -> Result<(), Ics04Error> {
-		<Context<T> as IbcSupportChannelKeeper>::delete_packet_acknowledgement(port_id, channel_id, seq)
+		<Context<T> as IbcSupportChannelKeeper>::delete_packet_acknowledgement(
+			port_id, channel_id, seq,
+		)
 	}
 
 	fn store_connection_channels(
 		&mut self,
 		conn_id: ConnectionId,
 		port_id: PortId,
-        channel_id: IbcChannelId,
+		channel_id: IbcChannelId,
 	) -> Result<(), Ics04Error> {
-		<Context<T> as IbcSupportChannelKeeper>::store_connection_channels(conn_id, port_id, channel_id)
+		<Context<T> as IbcSupportChannelKeeper>::store_connection_channels(
+			conn_id, port_id, channel_id,
+		)
 	}
 
 	fn store_channel(
 		&mut self,
 		port_id: PortId,
-        channel_id: IbcChannelId,
+		channel_id: IbcChannelId,
 		channel_end: ChannelEnd,
 	) -> Result<(), Ics04Error> {
 		<Context<T> as IbcSupportChannelKeeper>::store_channel(port_id, channel_id, channel_end)
@@ -234,8 +251,8 @@ impl<T: Config> ChannelKeeper for Context<T> {
 	fn store_next_sequence_send(
 		&mut self,
 		port_id: PortId,
-        channel_id: IbcChannelId,
-        seq: Sequence,
+		channel_id: IbcChannelId,
+		seq: Sequence,
 	) -> Result<(), Ics04Error> {
 		<Context<T> as IbcSupportChannelKeeper>::store_next_sequence_send(port_id, channel_id, seq)
 	}
@@ -243,8 +260,8 @@ impl<T: Config> ChannelKeeper for Context<T> {
 	fn store_next_sequence_recv(
 		&mut self,
 		port_id: PortId,
-        channel_id: IbcChannelId,
-        seq: Sequence,
+		channel_id: IbcChannelId,
+		seq: Sequence,
 	) -> Result<(), Ics04Error> {
 		<Context<T> as IbcSupportChannelKeeper>::store_next_sequence_recv(port_id, channel_id, seq)
 	}
@@ -252,10 +269,10 @@ impl<T: Config> ChannelKeeper for Context<T> {
 	fn store_next_sequence_ack(
 		&mut self,
 		port_id: PortId,
-        channel_id: IbcChannelId,
+		channel_id: IbcChannelId,
 		seq: Sequence,
 	) -> Result<(), Ics04Error> {
-		<Context<T> as IbcSupportChannelKeeper>::store_next_sequence_ack(port_id, channel_id,  seq)
+		<Context<T> as IbcSupportChannelKeeper>::store_next_sequence_ack(port_id, channel_id, seq)
 	}
 
 	fn increase_channel_counter(&mut self) {
@@ -264,22 +281,17 @@ impl<T: Config> ChannelKeeper for Context<T> {
 }
 
 impl<T: Config> IbcSupportChannelReader for Context<T> {
-	fn channel_end( port_id: &PortId,
-            channel_id: &ChannelId,
-                   ) -> Result<ChannelEnd, Ics04Error> {
-
-		let channel_end_path =
-			ChannelEndsPath(port_id.clone(), channel_id.clone())
-				.to_string()
-				.as_bytes()
-				.to_vec();
+	fn channel_end(port_id: &PortId, channel_id: &ChannelId) -> Result<ChannelEnd, Ics04Error> {
+		let channel_end_path = ChannelEndsPath(port_id.clone(), channel_id.clone())
+			.to_string()
+			.as_bytes()
+			.to_vec();
 
 		if <Channels<T>>::contains_key(&channel_end_path) {
 			let data = <Channels<T>>::get(&channel_end_path);
 
-			let channel_end = ChannelEnd::decode_vec(&data).map_err(|_| {
-				Ics04Error::channel_not_found(port_id.clone(), channel_id.clone())
-			})?;
+			let channel_end = ChannelEnd::decode_vec(&data)
+				.map_err(|_| Ics04Error::channel_not_found(port_id.clone(), channel_id.clone()))?;
 
 			Ok(channel_end)
 		} else {
@@ -290,7 +302,7 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 	fn connection_end(connection_id: &ConnectionId) -> Result<ConnectionEnd, Ics04Error> {
 		let context = Context::<T>::new();
 		ConnectionReader::connection_end(&context, connection_id)
-        .map_err(Ics04Error::ics03_connection)
+			.map_err(Ics04Error::ics03_connection)
 	}
 
 	/// Returns the `ChannelsConnection` for the given identifier `conn_id`.
@@ -305,9 +317,11 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 			let mut result = vec![];
 
 			for item in channel_ends_paths.into_iter() {
-                let raw_path = String::from_utf8(item).map_err(|_|Ics04Error::implementation_specific())?;
+				let raw_path =
+					String::from_utf8(item).map_err(|_| Ics04Error::implementation_specific())?;
 				// decode key
-                let path = Path::from_str(&raw_path).map_err(|_|Ics04Error::implementation_specific())?;
+				let path =
+					Path::from_str(&raw_path).map_err(|_| Ics04Error::implementation_specific())?;
 				trace!(target:"runtime::pallet-ibc", "[get_channels] >> Path: {:?}", path);
 				match path {
 					Path::ChannelEnds(channel_ends_path) => {
@@ -328,26 +342,25 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 		}
 	}
 
-    fn client_state(client_id: &ClientId) -> Result<Box<dyn ClientState>, Ics04Error> {
+	fn client_state(client_id: &ClientId) -> Result<Box<dyn ClientState>, Ics04Error> {
 		let context = Context::<T>::new();
 		ClientReader::client_state(&context, client_id)
-        .map_err(|e| Ics04Error::ics03_connection(Ics03Error::ics02_client(e)))
+			.map_err(|e| Ics04Error::ics03_connection(Ics03Error::ics02_client(e)))
 	}
 
 	fn client_consensus_state(
 		client_id: &ClientId,
 		height: Height,
-        ) -> Result<Box<dyn ConsensusState>, Ics04Error> {
+	) -> Result<Box<dyn ConsensusState>, Ics04Error> {
 		let context = Context::<T>::new();
 		ClientReader::consensus_state(&context, client_id, height)
-        .map_err(|e| Ics04Error::ics03_connection(Ics03Error::ics02_client(e)))
+			.map_err(|e| Ics04Error::ics03_connection(Ics03Error::ics02_client(e)))
 	}
 
 	fn get_next_sequence_send(
 		port_id: &PortId,
-        channel_id: &ChannelId,
+		channel_id: &ChannelId,
 	) -> Result<Sequence, Ics04Error> {
-
 		let seq_sends_path = SeqSendsPath(port_id.clone(), channel_id.clone())
 			.to_string()
 			.as_bytes()
@@ -364,7 +377,7 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 
 	fn get_next_sequence_recv(
 		port_id: &PortId,
-        channel_id: &ChannelId,
+		channel_id: &ChannelId,
 	) -> Result<Sequence, Ics04Error> {
 		let seq_recvs_path = SeqRecvsPath(port_id.clone(), channel_id.clone())
 			.to_string()
@@ -382,13 +395,10 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 
 	fn get_next_sequence_ack(
 		port_id: &PortId,
-        channel_id: &ChannelId,
+		channel_id: &ChannelId,
 	) -> Result<Sequence, Ics04Error> {
-
-		let seq_acks_path = SeqAcksPath(port_id.clone(), channel_id.clone())
-			.to_string()
-			.as_bytes()
-			.to_vec();
+		let seq_acks_path =
+			SeqAcksPath(port_id.clone(), channel_id.clone()).to_string().as_bytes().to_vec();
 
 		if <NextSequenceAck<T>>::contains_key(&seq_acks_path) {
 			let sequence = <NextSequenceAck<T>>::get(&seq_acks_path);
@@ -401,16 +411,18 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 
 	/// Returns the `PacketCommitment` for the given identifier `(PortId, ChannelId, Sequence)`.
 	fn get_packet_commitment(
-		 port_id: &PortId,
-            channel_id: &ChannelId,
-         seq: Sequence,
+		port_id: &PortId,
+		channel_id: &ChannelId,
+		seq: Sequence,
 	) -> Result<IbcPacketCommitment, Ics04Error> {
-
-		let packet_commitments_path =
-			CommitmentsPath { port_id: port_id.clone(), channel_id: channel_id.clone(), sequence: seq}
-				.to_string()
-				.as_bytes()
-				.to_vec();
+		let packet_commitments_path = CommitmentsPath {
+			port_id: port_id.clone(),
+			channel_id: channel_id.clone(),
+			sequence: seq,
+		}
+		.to_string()
+		.as_bytes()
+		.to_vec();
 
 		if <PacketCommitment<T>>::contains_key(&packet_commitments_path) {
 			let data = <PacketCommitment<T>>::get(&packet_commitments_path);
@@ -430,19 +442,24 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 		}
 	}
 
-	fn get_packet_receipt( port_id: &PortId,
-            channel_id: &ChannelId,
-                           seq: Sequence,) -> Result<Receipt, Ics04Error> {
-
-		let packet_receipt_path =
-			ReceiptsPath { port_id: port_id.clone(), channel_id: channel_id.clone(), sequence: seq }
-				.to_string()
-				.as_bytes()
-				.to_vec();
+	fn get_packet_receipt(
+		port_id: &PortId,
+		channel_id: &ChannelId,
+		seq: Sequence,
+	) -> Result<Receipt, Ics04Error> {
+		let packet_receipt_path = ReceiptsPath {
+			port_id: port_id.clone(),
+			channel_id: channel_id.clone(),
+			sequence: seq,
+		}
+		.to_string()
+		.as_bytes()
+		.to_vec();
 
 		if <PacketReceipt<T>>::contains_key(&packet_receipt_path) {
 			let data = <PacketReceipt<T>>::get(&packet_receipt_path);
-            let data = String::from_utf8(data).map_err(|_|Ics04Error::implementation_specific() )?;
+			let data =
+				String::from_utf8(data).map_err(|_| Ics04Error::implementation_specific())?;
 			let data = match data.as_ref() {
 				"Ok" => Receipt::Ok,
 				_ => unreachable!(),
@@ -454,12 +471,11 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 	}
 
 	/// Returns the `Acknowledgements` for the given identifier `(PortId, ChannelId, Sequence)`.
-    fn get_packet_acknowledgement(
-            port_id: &PortId,
-            channel_id: &ChannelId,
-            seq: Sequence,
+	fn get_packet_acknowledgement(
+		port_id: &PortId,
+		channel_id: &ChannelId,
+		seq: Sequence,
 	) -> Result<IbcAcknowledgementCommitment, Ics04Error> {
-
 		let acks_path =
 			AcksPath { port_id: port_id.clone(), channel_id: channel_id.clone(), sequence: seq }
 				.to_string()
@@ -473,7 +489,6 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 
 			Ok(acknowledgement)
 		} else {
-
 			Err(Ics04Error::packet_acknowledgement_not_found(seq))
 		}
 	}
@@ -500,18 +515,17 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 		Height::new(REVISION_NUMBER, current_height).unwrap()
 	}
 
-
 	/// Returns the `AnyConsensusState` for the given identifier `height`.
-    fn host_consensus_state(height: Height) -> Result<Box<dyn ConsensusState>, Ics04Error> {
+	fn host_consensus_state(height: Height) -> Result<Box<dyn ConsensusState>, Ics04Error> {
 		let context = Context::<T>::new();
 		ConnectionReader::host_consensus_state(&context, height)
-        .map_err(Ics04Error::ics03_connection)
+			.map_err(Ics04Error::ics03_connection)
 	}
 
-    fn pending_host_consensus_state() -> Result<Box<dyn ConsensusState>, Ics04Error> {
+	fn pending_host_consensus_state() -> Result<Box<dyn ConsensusState>, Ics04Error> {
 		let context = Context::<T>::new();
 		ClientReader::pending_host_consensus_state(&context)
-        .map_err(|e| Ics04Error::ics03_connection(Ics03Error::ics02_client(e)))
+			.map_err(|e| Ics04Error::ics03_connection(Ics03Error::ics02_client(e)))
 	}
 
 	/// Returns the `ClientProcessedTimes` for the given identifier `client_id` & `height`.
@@ -520,15 +534,16 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 
 		if <ClientProcessedTimes<T>>::contains_key(
 			client_id.as_bytes(),
-        height.encode_vec().map_err(|_|Ics04Error::implementation_specific())?,
+			height.encode_vec().map_err(|_| Ics04Error::implementation_specific())?,
 		) {
 			let time = <ClientProcessedTimes<T>>::get(
 				client_id.as_bytes(),
-            height.encode_vec().map_err(|_|Ics04Error::implementation_specific())?,
+				height.encode_vec().map_err(|_| Ics04Error::implementation_specific())?,
 			);
-            let timestamp = String::from_utf8(time).map_err(|_|Ics04Error::implementation_specific())?;
-			let time: Timestamp =
-            serde_json::from_str(&timestamp).map_err(|_|Ics04Error::implementation_specific())?;
+			let timestamp =
+				String::from_utf8(time).map_err(|_| Ics04Error::implementation_specific())?;
+			let time: Timestamp = serde_json::from_str(&timestamp)
+				.map_err(|_| Ics04Error::implementation_specific())?;
 			Ok(time)
 		} else {
 			error!(target:"runtime::pallet-ibc","in channel: [client_update_time] processed time not found");
@@ -541,14 +556,14 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 
 		if <ClientProcessedHeights<T>>::contains_key(
 			client_id.as_bytes(),
-        height.encode_vec().map_err(|_| Ics04Error::implementation_specific())?,
+			height.encode_vec().map_err(|_| Ics04Error::implementation_specific())?,
 		) {
 			let host_height = <ClientProcessedHeights<T>>::get(
 				client_id.as_bytes(),
-            height.encode_vec().map_err(|_| Ics04Error::implementation_specific())?,
+				height.encode_vec().map_err(|_| Ics04Error::implementation_specific())?,
 			);
-			let host_height =
-            Height::decode(&mut &host_height[..]).map_err(|_|Ics04Error::implementation_specific())?;
+			let host_height = Height::decode(&mut &host_height[..])
+				.map_err(|_| Ics04Error::implementation_specific())?;
 			Ok(host_height)
 		} else {
 			error!(target:"runtime::pallet-ibc","in channel: [client_update_height] processed height not found");
@@ -576,16 +591,18 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 impl<T: Config> IbcSupportChannelKeeper for Context<T> {
 	fn store_packet_commitment(
 		port_id: PortId,
-        channel_id: ChannelId,
-        seq: Sequence,
+		channel_id: ChannelId,
+		seq: Sequence,
 		commitment: IbcPacketCommitment,
 	) -> Result<(), Ics04Error> {
-
-		let packet_commitments_path =
-			CommitmentsPath { port_id: port_id.clone(), channel_id: channel_id.clone(), sequence: seq }
-				.to_string()
-				.as_bytes()
-				.to_vec();
+		let packet_commitments_path = CommitmentsPath {
+			port_id: port_id.clone(),
+			channel_id: channel_id.clone(),
+			sequence: seq,
+		}
+		.to_string()
+		.as_bytes()
+		.to_vec();
 
 		// insert packet commitment key-value
 		<PacketCommitment<T>>::insert(packet_commitments_path, commitment.into_vec());
@@ -593,15 +610,19 @@ impl<T: Config> IbcSupportChannelKeeper for Context<T> {
 		Ok(())
 	}
 
-	fn delete_packet_commitment(port_id: &PortId,
-        channel_id: &ChannelId,
-                                seq: Sequence,) -> Result<(), Ics04Error> {
-
-		let packet_commitments_path =
-			CommitmentsPath { port_id: port_id.clone(), channel_id: channel_id.clone(), sequence: seq }
-				.to_string()
-				.as_bytes()
-				.to_vec();
+	fn delete_packet_commitment(
+		port_id: &PortId,
+		channel_id: &ChannelId,
+		seq: Sequence,
+	) -> Result<(), Ics04Error> {
+		let packet_commitments_path = CommitmentsPath {
+			port_id: port_id.clone(),
+			channel_id: channel_id.clone(),
+			sequence: seq,
+		}
+		.to_string()
+		.as_bytes()
+		.to_vec();
 
 		// delete packet commitment
 		<PacketCommitment<T>>::remove(&packet_commitments_path);
@@ -611,17 +632,20 @@ impl<T: Config> IbcSupportChannelKeeper for Context<T> {
 
 	fn store_packet_receipt(
 		port_id: PortId,
-        channel_id: ChannelId,
-        seq: Sequence,
+		channel_id: ChannelId,
+		seq: Sequence,
 		receipt: Receipt,
 	) -> Result<(), Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel: [store_packet_receipt]");
 
-		let packet_receipt_path =
-			ReceiptsPath { port_id: port_id.clone(), channel_id: channel_id.clone(), sequence: seq}
-				.to_string()
-				.as_bytes()
-				.to_vec();
+		let packet_receipt_path = ReceiptsPath {
+			port_id: port_id.clone(),
+			channel_id: channel_id.clone(),
+			sequence: seq,
+		}
+		.to_string()
+		.as_bytes()
+		.to_vec();
 
 		let receipt = match receipt {
 			Receipt::Ok => "Ok".as_bytes().to_vec(),
@@ -634,8 +658,8 @@ impl<T: Config> IbcSupportChannelKeeper for Context<T> {
 
 	fn store_packet_acknowledgement(
 		port_id: PortId,
-        channel_id: ChannelId,
-        seq: Sequence,
+		channel_id: ChannelId,
+		seq: Sequence,
 		ack_commitment: IbcAcknowledgementCommitment,
 	) -> Result<(), Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel: [store_packet_acknowledgement]");
@@ -652,9 +676,11 @@ impl<T: Config> IbcSupportChannelKeeper for Context<T> {
 		Ok(())
 	}
 
-	fn delete_packet_acknowledgement(port_id: &PortId,
-        channel_id: &ChannelId,
-                                     seq: Sequence,) -> Result<(), Ics04Error> {
+	fn delete_packet_acknowledgement(
+		port_id: &PortId,
+		channel_id: &ChannelId,
+		seq: Sequence,
+	) -> Result<(), Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel: [delete_packet_acknowledgement]");
 
 		let acks_path =
@@ -672,18 +698,16 @@ impl<T: Config> IbcSupportChannelKeeper for Context<T> {
 	fn store_connection_channels(
 		conn_id: ConnectionId,
 		port_id: PortId,
-        channel_id: ChannelId,
+		channel_id: ChannelId,
 	) -> Result<(), Ics04Error> {
-
 		// store key
 		let connections_path = ConnectionsPath(conn_id).to_string().as_bytes().to_vec();
 
 		// store value
-		let channel_ends_path =
-			ChannelEndsPath(port_id.clone(), channel_id.clone())
-				.to_string()
-				.as_bytes()
-				.to_vec();
+		let channel_ends_path = ChannelEndsPath(port_id.clone(), channel_id.clone())
+			.to_string()
+			.as_bytes()
+			.to_vec();
 
 		if <ChannelsConnection<T>>::contains_key(&connections_path) {
 			trace!(target:"runtime::pallet-ibc","in channel: [store_connection_channels] >> insert port_channel_id");
@@ -695,7 +719,7 @@ impl<T: Config> IbcSupportChannelKeeper for Context<T> {
 					Ok(())
 				},
 			)
-            .map_err(|_| Ics04Error::implementation_specific());
+			.map_err(|_| Ics04Error::implementation_specific());
 		} else {
 			// if connection_id no exist
 			trace!(target:"runtime::pallet-ibc","in channel: [store_connection_channels] >> init ChannelsConnection");
@@ -708,15 +732,15 @@ impl<T: Config> IbcSupportChannelKeeper for Context<T> {
 	/// Stores the given channel_end at a path associated with the port_id and channel_id.
 	fn store_channel(
 		port_id: PortId,
-        channel_id: ChannelId,
+		channel_id: ChannelId,
 		channel_end: ChannelEnd,
 	) -> Result<(), Ics04Error> {
-
 		let channel_end_path = ChannelEndsPath(port_id.clone(), channel_id.clone())
 			.to_string()
 			.as_bytes()
 			.to_vec();
-        let channel_end = channel_end.encode_vec().map_err(|_| Ics04Error::implementation_specific())?;
+		let channel_end =
+			channel_end.encode_vec().map_err(|_| Ics04Error::implementation_specific())?;
 
 		// store channels key-value
 		<Channels<T>>::insert(channel_end_path, channel_end);
@@ -726,10 +750,9 @@ impl<T: Config> IbcSupportChannelKeeper for Context<T> {
 
 	fn store_next_sequence_send(
 		port_id: PortId,
-        channel_id: ChannelId,
-        seq: Sequence,
+		channel_id: ChannelId,
+		seq: Sequence,
 	) -> Result<(), Ics04Error> {
-
 		let seq_sends_path = SeqSendsPath(port_id.clone(), channel_id.clone())
 			.to_string()
 			.as_bytes()
@@ -744,10 +767,9 @@ impl<T: Config> IbcSupportChannelKeeper for Context<T> {
 
 	fn store_next_sequence_recv(
 		port_id: PortId,
-        channel_id: ChannelId,
-        seq: Sequence,
+		channel_id: ChannelId,
+		seq: Sequence,
 	) -> Result<(), Ics04Error> {
-
 		let seq_recvs_path = SeqRecvsPath(port_id.clone(), channel_id.clone())
 			.to_string()
 			.as_bytes()
@@ -761,14 +783,11 @@ impl<T: Config> IbcSupportChannelKeeper for Context<T> {
 
 	fn store_next_sequence_ack(
 		port_id: PortId,
-        channel_id: ChannelId,
+		channel_id: ChannelId,
 		seq: Sequence,
 	) -> Result<(), Ics04Error> {
-
-		let seq_acks_path = SeqAcksPath(port_id.clone(), channel_id.clone())
-			.to_string()
-			.as_bytes()
-			.to_vec();
+		let seq_acks_path =
+			SeqAcksPath(port_id.clone(), channel_id.clone()).to_string().as_bytes().to_vec();
 		let sequence = u64::from(seq);
 
 		<NextSequenceAck<T>>::insert(seq_acks_path, sequence);

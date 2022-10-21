@@ -107,7 +107,7 @@ pub mod pallet {
 			+ Member
 			+ From<Event<Self>>
 			+ Debug
-            + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+			+ IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
 		/// The provider providing timestamp of host chain
 		type TimeProvider: UnixTime;
@@ -236,7 +236,6 @@ pub mod pallet {
 	pub type PacketCommitment<T: Config> =
 		StorageMap<_, Blake2_128Concat, OctopusCommitmentsPath, OctopusCommitmentHash, ValueQuery>;
 
-
 	#[pallet::storage]
 	/// Previous host block height
 	pub type OldHeight<T: Config> = StorageValue<_, PreviousHostHeight, ValueQuery>;
@@ -296,47 +295,47 @@ pub mod pallet {
 			messages: Vec<ibc_support::Any>,
 		) -> DispatchResultWithPostInfo {
 			sp_tracing::within_span!(
-			sp_tracing::Level::TRACE, "deliver";
-			{
-				let _sender = ensure_signed(origin)?;
-				let mut ctx = Context::<T>::new();
+						sp_tracing::Level::TRACE, "deliver";
+						{
+							let _sender = ensure_signed(origin)?;
+							let mut ctx = Context::<T>::new();
 
-				let messages: Vec<ibc_proto::google::protobuf::Any> = messages
-					.into_iter()
-					.map(|message| ibc_proto::google::protobuf::Any {
-						type_url: String::from_utf8(message.type_url.clone()).unwrap(),
-						value: message.value,
-					})
-					.collect();
+							let messages: Vec<ibc_proto::google::protobuf::Any> = messages
+								.into_iter()
+								.map(|message| ibc_proto::google::protobuf::Any {
+									type_url: String::from_utf8(message.type_url.clone()).unwrap(),
+									value: message.value,
+								})
+								.collect();
 
-				for (_, message) in messages.into_iter().enumerate() {
+							for (_, message) in messages.into_iter().enumerate() {
 
-					match ibc::core::ics26_routing::handler::deliver(&mut ctx, message.clone()) {
-						Ok(ibc::core::ics26_routing::handler::MsgReceipt { events, log: _log}) => {
-							log::trace!(target: LOG_TARGET, "deliver events  : {:?} ", events);
-							// deposit events about send packet event and ics20 transfer event
-							for event in events {
-								match event {
-									IbcEvent::WriteAcknowledgement(ref write_ack) => {
-                                        // todo
-//										store_write_ack::<T>(write_ack);
-										Self::deposit_event(event.into());
+								match ibc::core::ics26_routing::handler::deliver(&mut ctx, message.clone()) {
+									Ok(ibc::core::ics26_routing::handler::MsgReceipt { events, log: _log}) => {
+										log::trace!(target: LOG_TARGET, "deliver events  : {:?} ", events);
+										// deposit events about send packet event and ics20 transfer event
+										for event in events {
+											match event {
+												IbcEvent::WriteAcknowledgement(ref write_ack) => {
+													// todo
+			//										store_write_ack::<T>(write_ack);
+													Self::deposit_event(event.into());
+												}
+												_ => {
+													log::trace!(target: LOG_TARGET, "raw_transfer event : {:?} ", event);
+													Self::deposit_event(event.into());
+												}
+											}
+										}
 									}
-									_ => {
-										log::trace!(target: LOG_TARGET, "raw_transfer event : {:?} ", event);
-										Self::deposit_event(event.into());
+									Err(error) => {
+										log::trace!(target: LOG_TARGET, "deliver error  : {:?} ", error);
 									}
-								}
+								};
 							}
-						}
-						Err(error) => {
-							log::trace!(target: LOG_TARGET, "deliver error  : {:?} ", error);
-						}
-					};
-				}
 
-				Ok(().into())
-			})
+							Ok(().into())
+						})
 		}
 	}
 }
