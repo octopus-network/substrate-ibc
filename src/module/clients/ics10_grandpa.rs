@@ -6,13 +6,12 @@
 //};
 
 use crate::module::core::ics24_host::Height;
-use alloc::string::String;
 use codec::{Decode, Encode};
 use flex_error::{define_error, DisplayOnly};
-use ibc::core::ics24_host::{error::ValidationError, identifier::ChainId as IbcChainId};
+use ibc::core::ics24_host::error::ValidationError;
 use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
-use sp_std::{str::FromStr, vec::Vec};
+use sp_std::vec::Vec;
 
 define_error! {
 	#[derive(Debug, PartialEq, Eq)]

@@ -27,10 +27,7 @@ use core::fmt::Debug;
 use frame_system::ensure_signed;
 use sp_runtime::RuntimeDebug;
 use sp_std::prelude::*;
-
 use ibc::core::ics24_host::identifier::ChannelId as IbcChannelId;
-
-use tendermint_proto::Protobuf;
 
 pub mod context;
 pub mod events;
@@ -80,10 +77,7 @@ mod type_define {
 	pub type OctopusRecipient = Vec<u8>;
 	pub type OctopusCommitmentsPath = Vec<u8>;
 	pub type OctopusCommitmentHash = Vec<u8>;
-	pub type OctopusPortId = Vec<u8>;
-	pub type OctopusChannelId = Vec<u8>;
 	pub type OctopusSequence = u64;
-	pub type OctopusWriteAckEvent = Vec<u8>;
 	pub type PreviousHostHeight = u64;
 }
 
@@ -95,7 +89,6 @@ pub mod pallet {
 	};
 	use frame_support::{pallet_prelude::*, traits::UnixTime};
 	use frame_system::pallet_prelude::*;
-	use ibc::events::IbcEvent;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -315,17 +308,7 @@ pub mod pallet {
 										log::trace!(target: LOG_TARGET, "deliver events  : {:?} ", events);
 										// deposit events about send packet event and ics20 transfer event
 										for event in events {
-											match event {
-												IbcEvent::WriteAcknowledgement(ref write_ack) => {
-													// todo
-			//										store_write_ack::<T>(write_ack);
-													Self::deposit_event(event.into());
-												}
-												_ => {
-													log::trace!(target: LOG_TARGET, "raw_transfer event : {:?} ", event);
-													Self::deposit_event(event.into());
-												}
-											}
+											Self::deposit_event(event.into());
 										}
 									}
 									Err(error) => {

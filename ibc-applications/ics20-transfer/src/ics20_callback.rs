@@ -1,5 +1,6 @@
 use crate::*;
 use core::marker::PhantomData;
+use codec::{Decode, Encode};
 use ibc::{
 	core::{
 		ics04_channel::{
@@ -14,9 +15,12 @@ use ibc::{
 	},
 	signer::Signer,
 };
+use ibc_support::ibc_trait::TransferModule;
 
-#[derive(Debug)]
+#[derive(Debug, Encode, Decode)]
 pub struct IbcTransferModule<T>(pub PhantomData<T>);
+
+impl<T: Config> TransferModule for IbcTransferModule<T> {}
 
 impl<T: Config> Module for IbcTransferModule<T> {
 	fn on_chan_open_init(

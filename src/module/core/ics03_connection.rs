@@ -13,13 +13,12 @@ use ibc::{
 			context::{ConnectionKeeper, ConnectionReader},
 			error::Error as Ics03Error,
 		},
-		ics23_commitment::commitment::{CommitmentPrefix, CommitmentRoot},
+		ics23_commitment::commitment::CommitmentPrefix,
 		ics24_host::{
 			identifier::{ClientId, ConnectionId},
 			path::{ClientConnectionsPath, ConnectionsPath},
 		},
 	},
-	timestamp::Timestamp,
 	Height,
 };
 use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};

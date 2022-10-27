@@ -7,7 +7,6 @@ use ibc::{
 	core::{
 		ics02_client::{
 			client_state::ClientState, consensus_state::ConsensusState, context::ClientReader,
-			error::Error as Ics02Error,
 		},
 		ics03_connection::{
 			connection::ConnectionEnd, context::ConnectionReader, error::Error as Ics03Error,
@@ -22,11 +21,10 @@ use ibc::{
 			error::Error as Ics04Error,
 			packet::{Receipt, Sequence},
 		},
-		ics23_commitment::commitment::CommitmentRoot,
 		ics24_host::{
 			identifier::{ChannelId, ClientId, ConnectionId, PortId},
 			path::{
-				AcksPath, ChannelEndsPath, ClientConsensusStatePath, ClientStatePath,
+				AcksPath, ChannelEndsPath,
 				CommitmentsPath, ConnectionsPath, ReceiptsPath, SeqAcksPath, SeqRecvsPath,
 				SeqSendsPath,
 			},

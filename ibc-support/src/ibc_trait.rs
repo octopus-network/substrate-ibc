@@ -1,5 +1,6 @@
 use alloc::{boxed::Box, vec::Vec};
 use core::time::Duration;
+use codec::{Decode, Encode};
 use ibc::{
 	core::{
 		ics02_client::{client_state::ClientState, consensus_state::ConsensusState},
@@ -18,6 +19,11 @@ use ibc::{
 	timestamp::Timestamp,
 	Height,
 };
+
+use ibc::core::ics26_routing::context::Module;
+
+pub trait TransferModule: Module + Encode + Decode {}
+
 
 pub trait IbcSupportChannelReader {
 	/// Returns the ChannelEnd for the given `port_id` and `chan_id`.
