@@ -305,8 +305,7 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 
 	/// Returns the `ChannelsConnection` for the given identifier `conn_id`.
 	fn connection_channels(conn_id: &ConnectionId) -> Result<Vec<(PortId, ChannelId)>, Ics04Error> {
-		trace!(target:"runtime::pallet-ibc","in channel : [connection_channels]");
-		// store key
+
 		let connections_path = ConnectionsPath(conn_id.clone()).to_string().as_bytes().to_vec();
 
 		if <ChannelsConnection<T>>::contains_key(&connections_path) {
@@ -317,10 +316,9 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 			for item in channel_ends_paths.into_iter() {
 				let raw_path =
 					String::from_utf8(item).map_err(|_| Ics04Error::implementation_specific())?;
-				// decode key
+
 				let path =
 					Path::from_str(&raw_path).map_err(|_| Ics04Error::implementation_specific())?;
-				trace!(target:"runtime::pallet-ibc", "[get_channels] >> Path: {:?}", path);
 				match path {
 					Path::ChannelEnds(channel_ends_path) => {
 						let ChannelEndsPath(port_id, channel_id) = channel_ends_path;
@@ -330,10 +328,6 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 				}
 			}
 
-			trace!(target:"runtime::pallet-ibc",
-				"in channel : [connection_channels] >> Vector<(PortId, ChannelId)> =  {:?}",
-				result
-			);
 			Ok(result)
 		} else {
 			Err(Ics04Error::connection_not_open(conn_id.clone()))
@@ -426,16 +420,8 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 			let data = <PacketCommitment<T>>::get(&packet_commitments_path);
 
 			let packet_commitment = IbcPacketCommitment::from(data);
-
-			trace!(target:"runtime::pallet-ibc",
-				"in channel : [get_packet_commitment] >> packet_commitment = {:?}",
-				packet_commitment
-			);
 			Ok(packet_commitment)
 		} else {
-			trace!(target:"runtime::pallet-ibc",
-				"in channel : [get_packet_commitment] >> read get packet commitment return None"
-			);
 			Err(Ics04Error::packet_commitment_not_found(seq))
 		}
 	}
@@ -493,23 +479,14 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 
 	/// A hashing function for packet commitments
 	fn hash(value: Vec<u8>) -> Vec<u8> {
-		trace!(target:"runtime::pallet-ibc","in channel: [hash]");
-
 		sp_io::hashing::sha2_256(&value).to_vec()
 	}
 
 	/// Returns the current height of the local chain.
 	fn host_height() -> Height {
-		trace!(target:"runtime::pallet-ibc","in channel: [host_height]");
-
 		//todo this can improve
 		let block_number = format!("{:?}", <frame_system::Pallet<T>>::block_number());
 		let current_height: u64 = block_number.parse().unwrap_or_default();
-
-		trace!(target:"runtime::pallet-ibc",
-			"in channel: [host_height] >> host_height = {:?}",
-			Height::new(REVISION_NUMBER, current_height)
-		);
 		Height::new(REVISION_NUMBER, current_height).unwrap()
 	}
 
@@ -528,8 +505,6 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 
 	/// Returns the `ClientProcessedTimes` for the given identifier `client_id` & `height`.
 	fn client_update_time(client_id: &ClientId, height: Height) -> Result<Timestamp, Ics04Error> {
-		trace!(target:"runtime::pallet-ibc","in channel: [client_update_time] client_id:{:?},height:{:?}",client_id,height);
-
 		if <ClientProcessedTimes<T>>::contains_key(
 			client_id.as_bytes(),
 			height.encode_vec().map_err(|_| Ics04Error::implementation_specific())?,
@@ -544,14 +519,11 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 				.map_err(|_| Ics04Error::implementation_specific())?;
 			Ok(time)
 		} else {
-			error!(target:"runtime::pallet-ibc","in channel: [client_update_time] processed time not found");
 			Err(Ics04Error::processed_time_not_found(client_id.clone(), height))
 		}
 	}
 
 	fn client_update_height(client_id: &ClientId, height: Height) -> Result<Height, Ics04Error> {
-		trace!(target:"runtime::pallet-ibc","in channel: [client_update_height] client_id:{:?},height:{:?}",client_id,height);
-
 		if <ClientProcessedHeights<T>>::contains_key(
 			client_id.as_bytes(),
 			height.encode_vec().map_err(|_| Ics04Error::implementation_specific())?,
@@ -564,7 +536,6 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 				.map_err(|_| Ics04Error::implementation_specific())?;
 			Ok(host_height)
 		} else {
-			error!(target:"runtime::pallet-ibc","in channel: [client_update_height] processed height not found");
 			Err(Ics04Error::processed_height_not_found(client_id.clone(), height))
 		}
 	}
@@ -573,15 +544,10 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 	/// The value of this counter should increase only via method
 	/// `ChannelKeeper::increase_channel_counter`.
 	fn channel_counter() -> Result<u64, Ics04Error> {
-		trace!(target:"runtime::pallet-ibc",
-			"in channel: [channel_counter]"
-		);
 		Ok(<Pallet<T> as Store>::ChannelCounter::get())
 	}
 
 	fn max_expected_time_per_block() -> Duration {
-		trace!(target:"runtime::pallet-ibc","in channel: [max_expected_time_per_block]");
-
 		Duration::from_secs(6)
 	}
 }
@@ -602,7 +568,6 @@ impl<T: Config> IbcSupportChannelKeeper for Context<T> {
 		.as_bytes()
 		.to_vec();
 
-		// insert packet commitment key-value
 		<PacketCommitment<T>>::insert(packet_commitments_path, commitment.into_vec());
 
 		Ok(())
@@ -622,7 +587,6 @@ impl<T: Config> IbcSupportChannelKeeper for Context<T> {
 		.as_bytes()
 		.to_vec();
 
-		// delete packet commitment
 		<PacketCommitment<T>>::remove(&packet_commitments_path);
 
 		Ok(())
@@ -634,7 +598,6 @@ impl<T: Config> IbcSupportChannelKeeper for Context<T> {
 		seq: Sequence,
 		receipt: Receipt,
 	) -> Result<(), Ics04Error> {
-		trace!(target:"runtime::pallet-ibc","in channel: [store_packet_receipt]");
 
 		let packet_receipt_path = ReceiptsPath {
 			port_id: port_id.clone(),
@@ -660,7 +623,6 @@ impl<T: Config> IbcSupportChannelKeeper for Context<T> {
 		seq: Sequence,
 		ack_commitment: IbcAcknowledgementCommitment,
 	) -> Result<(), Ics04Error> {
-		trace!(target:"runtime::pallet-ibc","in channel: [store_packet_acknowledgement]");
 
 		let acks_path =
 			AcksPath { port_id: port_id.clone(), channel_id: channel_id.clone(), sequence: seq }
@@ -668,7 +630,6 @@ impl<T: Config> IbcSupportChannelKeeper for Context<T> {
 				.as_bytes()
 				.to_vec();
 
-		// store packet acknowledgement key-value
 		<Acknowledgements<T>>::insert(&acks_path, ack_commitment.into_vec());
 
 		Ok(())
@@ -679,7 +640,6 @@ impl<T: Config> IbcSupportChannelKeeper for Context<T> {
 		channel_id: &ChannelId,
 		seq: Sequence,
 	) -> Result<(), Ics04Error> {
-		trace!(target:"runtime::pallet-ibc","in channel: [delete_packet_acknowledgement]");
 
 		let acks_path =
 			AcksPath { port_id: port_id.clone(), channel_id: channel_id.clone(), sequence: seq }
@@ -687,7 +647,6 @@ impl<T: Config> IbcSupportChannelKeeper for Context<T> {
 				.as_bytes()
 				.to_vec();
 
-		// remove acknowledgements
 		<Acknowledgements<T>>::remove(&acks_path);
 
 		Ok(())
@@ -698,18 +657,17 @@ impl<T: Config> IbcSupportChannelKeeper for Context<T> {
 		port_id: PortId,
 		channel_id: ChannelId,
 	) -> Result<(), Ics04Error> {
-		// store key
+
 		let connections_path = ConnectionsPath(conn_id).to_string().as_bytes().to_vec();
 
-		// store value
+
 		let channel_ends_path = ChannelEndsPath(port_id.clone(), channel_id.clone())
 			.to_string()
 			.as_bytes()
 			.to_vec();
 
 		if <ChannelsConnection<T>>::contains_key(&connections_path) {
-			trace!(target:"runtime::pallet-ibc","in channel: [store_connection_channels] >> insert port_channel_id");
-			// if connection_id exist
+
 			let _ = <ChannelsConnection<T>>::try_mutate(
 				&connections_path,
 				|val| -> Result<(), Ics04Error> {
@@ -719,8 +677,6 @@ impl<T: Config> IbcSupportChannelKeeper for Context<T> {
 			)
 			.map_err(|_| Ics04Error::implementation_specific());
 		} else {
-			// if connection_id no exist
-			trace!(target:"runtime::pallet-ibc","in channel: [store_connection_channels] >> init ChannelsConnection");
 			<ChannelsConnection<T>>::insert(connections_path, vec![channel_ends_path]);
 		}
 
@@ -740,7 +696,6 @@ impl<T: Config> IbcSupportChannelKeeper for Context<T> {
 		let channel_end =
 			channel_end.encode_vec().map_err(|_| Ics04Error::implementation_specific())?;
 
-		// store channels key-value
 		<Channels<T>>::insert(channel_end_path, channel_end);
 
 		Ok(())
@@ -797,8 +752,6 @@ impl<T: Config> IbcSupportChannelKeeper for Context<T> {
 	/// Increases the counter which keeps track of how many channels have been created.
 	/// Should never fail.
 	fn increase_channel_counter() {
-		trace!(target:"runtime::pallet-ibc","in channel: [increase_channel_counter]");
-
 		let _ = <ChannelCounter<T>>::try_mutate(|val| -> Result<(), Ics04Error> {
 			let new = val.checked_add(1).expect("add channel counter overflow");
 			*val = new;

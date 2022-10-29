@@ -9,6 +9,10 @@ use ibc::{
 		client_state::ClientState as Ics07ClientState,
 		consensus_state::ConsensusState as Ics07ConsensusState,
 	},
+	clients::ics10_grandpa::{
+		client_state::ClientState as Ics10ClientSate,
+		consensus_state::ConsensusState as Ics10ConsensuState,
+	},
 	core::{
 		ics02_client::{
 			client_state::ClientState,
@@ -49,13 +53,19 @@ impl<T: Config> ClientReader for Context<T> {
 			match self.client_type(client_id)? {
 				ClientType::Tendermint => {
 					// TODO(davirain): need to make sure whether this is written correctly.
-					let result: Ics07ClientState = ibc_proto::protobuf::Protobuf::<
-						ibc_proto::google::protobuf::Any,
+					let result: Ics07ClientState = Protobuf::<
+						Any,
 					>::decode_vec(&data)
 					.map_err(|_| Ics02Error::implementation_specific())?;
 					return Ok(Box::new(result))
 				},
-				ibc::core::ics02_client::client_type::ClientType::Grandpa => todo!(),
+				ClientType::Grandpa => {
+					let result: Ics10ClientSate = Protobuf::<
+						Any,
+					>::decode_vec(&data)
+						.map_err(|_| Ics02Error::implementation_specific())?;
+					return Ok(Box::new(result))
+				},
 			}
 		} else {
 			Err(Ics02Error::client_not_found(client_id.clone()))
@@ -64,6 +74,8 @@ impl<T: Config> ClientReader for Context<T> {
 
 	fn decode_client_state(&self, client_state: Any) -> Result<Box<dyn ClientState>, Ics02Error> {
 		if let Ok(client_state) = Ics07ClientState::try_from(client_state.clone()) {
+			Ok(client_state.into_box())
+		} else if let Ok(client_state) = Ics10ClientSate::try_from(client_state.clone()) {
 			Ok(client_state.into_box())
 		} else {
 			Err(Ics02Error::unknown_client_state_type(client_state.type_url))
@@ -89,13 +101,19 @@ impl<T: Config> ClientReader for Context<T> {
 			match self.client_type(client_id)? {
 				ClientType::Tendermint => {
 					// TODO(davirain): need to make sure whether this is written correctly.
-					let result: Ics07ConsensusState = ibc_proto::protobuf::Protobuf::<
-						ibc_proto::google::protobuf::Any,
+					let result: Ics07ConsensusState = Protobuf::<
+						Any,
 					>::decode_vec(&data)
 					.map_err(|_| Ics02Error::implementation_specific())?;
 					return Ok(Box::new(result))
 				},
-				ibc::core::ics02_client::client_type::ClientType::Grandpa => todo!(),
+				ClientType::Grandpa => {
+					let result: Ics10ConsensuState = Protobuf::<
+						Any,
+					>::decode_vec(&data)
+						.map_err(|_| Ics02Error::implementation_specific())?;
+					return Ok(Box::new(result))
+				},
 			}
 		} else {
 			Err(Ics02Error::consensus_state_not_found(client_id.clone(), height))
@@ -140,13 +158,19 @@ impl<T: Config> ClientReader for Context<T> {
 				match self.client_type(client_id)? {
 					ClientType::Tendermint => {
 						// TODO(davirain): need to make sure whether this is written correctly.
-						let result: Ics07ConsensusState = ibc_proto::protobuf::Protobuf::<
-							ibc_proto::google::protobuf::Any,
+						let result: Ics07ConsensusState = Protobuf::<
+							Any,
 						>::decode_vec(&data)
 						.map_err(|_| Ics02Error::implementation_specific())?;
 						return Ok(Some(Box::new(result)))
 					},
-					ibc::core::ics02_client::client_type::ClientType::Grandpa => todo!(),
+					ClientType::Grandpa => {
+						let result: Ics10ConsensuState = Protobuf::<
+							Any,
+						>::decode_vec(&data)
+							.map_err(|_| Ics02Error::implementation_specific())?;
+						return Ok(Some(Box::new(result)))
+					},
 				}
 			}
 		}
@@ -197,7 +221,13 @@ impl<T: Config> ClientReader for Context<T> {
 						.map_err(|_| Ics02Error::implementation_specific())?;
 						return Ok(Some(Box::new(result)))
 					},
-					ibc::core::ics02_client::client_type::ClientType::Grandpa => todo!(),
+					ClientType::Grandpa => {
+						let result: Ics10ConsensuState = Protobuf::<
+							Any,
+						>::decode_vec(&data)
+							.map_err(|_| Ics02Error::implementation_specific())?;
+						return Ok(Some(Box::new(result)))
+					},
 				}
 			}
 		}
@@ -205,30 +235,21 @@ impl<T: Config> ClientReader for Context<T> {
 	}
 
 	fn host_height(&self) -> Height {
-		trace!(target:"runtime::pallet-ibc","in client : [host_height]");
 		let block_number = format!("{:?}", <frame_system::Pallet<T>>::block_number());
 		let current_height: u64 = block_number.parse().unwrap_or_default();
 
-		trace!(target:"runtime::pallet-ibc",
-			"in channel: [host_height] >> host_height = {:?}",
-			Height::new(REVISION_NUMBER, current_height)
-		);
 		Height::new(REVISION_NUMBER, current_height).unwrap()
 	}
 
 	fn host_consensus_state(&self, _height: Height) -> Result<Box<dyn ConsensusState>, Ics02Error> {
-		trace!(target:"runtime::pallet-ibc","in client : [consensus_state]");
-
 		Err(Ics02Error::implementation_specific())
 	}
 
 	fn pending_host_consensus_state(&self) -> Result<Box<dyn ConsensusState>, Ics02Error> {
-		trace!(target:"runtime::pallet-ibc","in client: [pending_host_consensus_state]");
 		Err(Ics02Error::implementation_specific())
 	}
 
 	fn client_counter(&self) -> Result<u64, Ics02Error> {
-		trace!(target:"runtime::pallet-ibc","in client : [client_counter]");
 
 		Ok(<ClientCounter<T>>::get())
 	}
@@ -240,8 +261,6 @@ impl<T: Config> ClientKeeper for Context<T> {
 		client_id: ClientId,
 		client_type: ClientType,
 	) -> Result<(), Ics02Error> {
-		info!("in client : [store_client_type]");
-
 		let client_type_path = ClientTypePath(client_id).to_string().as_bytes().to_vec();
 		let client_type = client_type.as_str().as_bytes().to_vec();
 		<Clients<T>>::insert(client_type_path, client_type);
@@ -253,12 +272,10 @@ impl<T: Config> ClientKeeper for Context<T> {
 		client_id: ClientId,
 		client_state: Box<dyn ClientState>,
 	) -> Result<(), Ics02Error> {
-		trace!(target:"runtime::pallet-ibc","in client : [store_client_state]");
-
 		let client_state_path = ClientStatePath(client_id).to_string().as_bytes().to_vec();
 
 		let data = client_state.encode_vec().map_err(|_| Ics02Error::implementation_specific())?;
-		// store client states key-value
+
 		<ClientStates<T>>::insert(client_state_path, data);
 
 		Ok(())
@@ -270,9 +287,6 @@ impl<T: Config> ClientKeeper for Context<T> {
 		height: Height,
 		consensus_state: Box<dyn ConsensusState>,
 	) -> Result<(), Ics02Error> {
-		trace!(target:"runtime::pallet-ibc","in client : [store_consensus_state]");
-
-		// store key
 		let client_consensus_state_path = ClientConsensusStatePath {
 			client_id,
 			epoch: height.revision_number(),
@@ -282,19 +296,16 @@ impl<T: Config> ClientKeeper for Context<T> {
 		.as_bytes()
 		.to_vec();
 
-		// store value
 		let consensus_state = consensus_state
 			.encode_vec()
 			.map_err(|_| Ics02Error::implementation_specific())?;
-		// store client_consensus_state path as key, consensus_state as value
+
 		<ConsensusStates<T>>::insert(client_consensus_state_path, consensus_state);
 
 		Ok(())
 	}
 
 	fn increase_client_counter(&mut self) {
-		info!("in client : [increase_client_counter]");
-
 		let _ = <ClientCounter<T>>::try_mutate(|val| -> Result<(), Ics02Error> {
 			let new = val.checked_add(1).expect("increase client coubter overflow");
 			*val = new;
@@ -308,8 +319,6 @@ impl<T: Config> ClientKeeper for Context<T> {
 		height: Height,
 		timestamp: Timestamp,
 	) -> Result<(), Ics02Error> {
-		trace!(target:"runtime::pallet-ibc","in client: [store_update_time]");
-
 		let encode_timestamp = serde_json::to_string(&timestamp)
 			.map_err(|_| Ics02Error::implementation_specific())?
 			.as_bytes()
@@ -330,8 +339,6 @@ impl<T: Config> ClientKeeper for Context<T> {
 		height: Height,
 		host_height: Height,
 	) -> Result<(), Ics02Error> {
-		trace!(target:"runtime::pallet-ibc","in client: [store_update_height]");
-
 		<ClientProcessedHeights<T>>::insert(
 			client_id.as_bytes(),
 			height.encode_vec().map_err(|_| Ics02Error::implementation_specific())?,

@@ -58,7 +58,7 @@ time = { version = "0.3", default-features = false, features = ["macros", "parsi
 ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "dev", default-features = false }
 ibc-proto = { git = "https://github.com/octopus-network/ibc-proto-rs.git", branch = "dev", default-features = false }
 tendermint-proto = { version = "=0.23.7", default-features = false }
-beefy-light-client = { git = "https://github.com/octopus-network/beefy-light-client.git", branch="main", default-features = false }
+beefy-light-client = { git = "https://github.com/octopus-network/beefy-light-client.git", branch="davirain/dev", default-features = false }
 
 [dev-dependencies]
 #local crates
