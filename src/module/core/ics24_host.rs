@@ -2,7 +2,10 @@ use crate::{alloc::string::ToString, REVISION_NUMBER};
 use alloc::string::String;
 use ibc::{
 	core::{
-		ics02_client::{client_type::ClientType as IbcClientType, height::Height as IbcHeight, error::Error as Ics02Error},
+		ics02_client::{
+			client_type::ClientType as IbcClientType, error::Error as Ics02Error,
+			height::Height as IbcHeight,
+		},
 		ics04_channel::packet::{Packet as IbcPacket, Sequence as IbcSequence},
 		ics24_host::{
 			error::ValidationError,
@@ -123,33 +126,33 @@ pub const GRANDPA_TYPE: &'static str = "10-grandpa";
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub struct ClientType(Vec<u8>);
 
-impl ClientType  {
-    pub fn new(s: &str) -> Self {
-        let value = s.as_bytes().to_vec();
-        Self(value)
-    }
+impl ClientType {
+	pub fn new(s: &str) -> Self {
+		let value = s.as_bytes().to_vec();
+		Self(value)
+	}
 
-    pub fn to_string(&self) -> String {
-        String::from_utf8(self.0.clone()).expect("Never failed")
-    }
+	pub fn to_string(&self) -> String {
+		String::from_utf8(self.0.clone()).expect("Never failed")
+	}
 }
 
 impl From<IbcClientType> for ClientType {
 	fn from(value: IbcClientType) -> Self {
-        Self::new(value.as_str())
+		Self::new(value.as_str())
 	}
 }
 
 impl TryFrom<ClientType> for IbcClientType {
-    type Error = Ics02Error;
+	type Error = Ics02Error;
 
-    fn try_from(value: ClientType) -> Result<IbcClientType, Self::Error> {
-        match value.to_string().as_str() {
-            "07-tendermint" => Ok(IbcClientType::new(TENDERMINT_TYPE)),
-            "10-grandpa" => Ok(IbcClientType::new(GRANDPA_TYPE)),
-            unimplemented => Err(Ics02Error::unknown_client_type(unimplemented.to_string())),
-        }
-    }
+	fn try_from(value: ClientType) -> Result<IbcClientType, Self::Error> {
+		match value.to_string().as_str() {
+			"07-tendermint" => Ok(IbcClientType::new(TENDERMINT_TYPE)),
+			"10-grandpa" => Ok(IbcClientType::new(GRANDPA_TYPE)),
+			unimplemented => Err(Ics02Error::unknown_client_type(unimplemented.to_string())),
+		}
+	}
 }
 
 /// ibc-rs' `ClientId` representation in substrate

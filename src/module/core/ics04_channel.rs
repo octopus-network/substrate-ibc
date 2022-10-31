@@ -1,6 +1,5 @@
 use crate::*;
 use core::{str::FromStr, time::Duration};
-use log::{error, trace};
 
 use crate::context::Context;
 use ibc::{
@@ -24,9 +23,8 @@ use ibc::{
 		ics24_host::{
 			identifier::{ChannelId, ClientId, ConnectionId, PortId},
 			path::{
-				AcksPath, ChannelEndsPath,
-				CommitmentsPath, ConnectionsPath, ReceiptsPath, SeqAcksPath, SeqRecvsPath,
-				SeqSendsPath,
+				AcksPath, ChannelEndsPath, CommitmentsPath, ConnectionsPath, ReceiptsPath,
+				SeqAcksPath, SeqRecvsPath, SeqSendsPath,
 			},
 			Path,
 		},
@@ -305,7 +303,6 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 
 	/// Returns the `ChannelsConnection` for the given identifier `conn_id`.
 	fn connection_channels(conn_id: &ConnectionId) -> Result<Vec<(PortId, ChannelId)>, Ics04Error> {
-
 		let connections_path = ConnectionsPath(conn_id.clone()).to_string().as_bytes().to_vec();
 
 		if <ChannelsConnection<T>>::contains_key(&connections_path) {
@@ -598,7 +595,6 @@ impl<T: Config> IbcSupportChannelKeeper for Context<T> {
 		seq: Sequence,
 		receipt: Receipt,
 	) -> Result<(), Ics04Error> {
-
 		let packet_receipt_path = ReceiptsPath {
 			port_id: port_id.clone(),
 			channel_id: channel_id.clone(),
@@ -623,7 +619,6 @@ impl<T: Config> IbcSupportChannelKeeper for Context<T> {
 		seq: Sequence,
 		ack_commitment: IbcAcknowledgementCommitment,
 	) -> Result<(), Ics04Error> {
-
 		let acks_path =
 			AcksPath { port_id: port_id.clone(), channel_id: channel_id.clone(), sequence: seq }
 				.to_string()
@@ -640,7 +635,6 @@ impl<T: Config> IbcSupportChannelKeeper for Context<T> {
 		channel_id: &ChannelId,
 		seq: Sequence,
 	) -> Result<(), Ics04Error> {
-
 		let acks_path =
 			AcksPath { port_id: port_id.clone(), channel_id: channel_id.clone(), sequence: seq }
 				.to_string()
@@ -657,9 +651,7 @@ impl<T: Config> IbcSupportChannelKeeper for Context<T> {
 		port_id: PortId,
 		channel_id: ChannelId,
 	) -> Result<(), Ics04Error> {
-
 		let connections_path = ConnectionsPath(conn_id).to_string().as_bytes().to_vec();
-
 
 		let channel_ends_path = ChannelEndsPath(port_id.clone(), channel_id.clone())
 			.to_string()
@@ -667,7 +659,6 @@ impl<T: Config> IbcSupportChannelKeeper for Context<T> {
 			.to_vec();
 
 		if <ChannelsConnection<T>>::contains_key(&connections_path) {
-
 			let _ = <ChannelsConnection<T>>::try_mutate(
 				&connections_path,
 				|val| -> Result<(), Ics04Error> {

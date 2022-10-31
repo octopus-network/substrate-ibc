@@ -235,8 +235,10 @@ impl From<RawIbcEvent> for IbcEvent {
 			RawIbcEvent::OpenInitConnection(value) => {
 				let connection_id = ConnectionId::from(value.connection_id().clone());
 				let client_id = value.client_id().clone();
-				let counterparty_connection_id: Option<ConnectionId> =
-                value.counterparty_connection_id().clone().map(|val| ConnectionId::from(val.clone()));
+				let counterparty_connection_id: Option<ConnectionId> = value
+					.counterparty_connection_id()
+					.clone()
+					.map(|val| ConnectionId::from(val.clone()));
 
 				let counterparty_client_id = value.counterparty_client_id().clone();
 				IbcEvent::OpenInitConnection {
@@ -247,10 +249,12 @@ impl From<RawIbcEvent> for IbcEvent {
 				}
 			},
 			RawIbcEvent::OpenTryConnection(value) => {
-                let connection_id = ConnectionId::from(value.connection_id().clone());
+				let connection_id = ConnectionId::from(value.connection_id().clone());
 				let client_id = value.client_id().clone();
-				let counterparty_connection_id: Option<ConnectionId> =
-                value.counterparty_connection_id().clone().map(|val| ConnectionId::from(val.clone()));
+				let counterparty_connection_id: Option<ConnectionId> = value
+					.counterparty_connection_id()
+					.clone()
+					.map(|val| ConnectionId::from(val.clone()));
 
 				let counterparty_client_id = value.counterparty_client_id().clone();
 				IbcEvent::OpenTryConnection {
@@ -261,10 +265,12 @@ impl From<RawIbcEvent> for IbcEvent {
 				}
 			},
 			RawIbcEvent::OpenAckConnection(value) => {
-                let connection_id = ConnectionId::from(value.connection_id().clone());
+				let connection_id = ConnectionId::from(value.connection_id().clone());
 				let client_id = value.client_id().clone();
-				let counterparty_connection_id: Option<ConnectionId> =
-                value.counterparty_connection_id().clone().map(|val| ConnectionId::from(val.clone()));
+				let counterparty_connection_id: Option<ConnectionId> = value
+					.counterparty_connection_id()
+					.clone()
+					.map(|val| ConnectionId::from(val.clone()));
 
 				let counterparty_client_id = value.counterparty_client_id().clone();
 				IbcEvent::OpenAckConnection {
@@ -275,10 +281,12 @@ impl From<RawIbcEvent> for IbcEvent {
 				}
 			},
 			RawIbcEvent::OpenConfirmConnection(value) => {
-                let connection_id = ConnectionId::from(value.connection_id().clone());
+				let connection_id = ConnectionId::from(value.connection_id().clone());
 				let client_id = value.client_id().clone();
-				let counterparty_connection_id: Option<ConnectionId> =
-                value.counterparty_connection_id().clone().map(|val| ConnectionId::from(val.clone()));
+				let counterparty_connection_id: Option<ConnectionId> = value
+					.counterparty_connection_id()
+					.clone()
+					.map(|val| ConnectionId::from(val.clone()));
 
 				let counterparty_client_id = value.counterparty_client_id().clone();
 				IbcEvent::OpenConfirmConnection {

@@ -1,17 +1,20 @@
 use crate::*;
 use alloc::string::ToString;
-use core::str::FromStr;
-use log::{info, trace};
 
-use crate::context::Context;
+use crate::{
+	context::Context,
+	module::core::ics24_host::{GRANDPA_TYPE, TENDERMINT_TYPE},
+};
 use ibc::{
-	clients::ics07_tendermint::{
-		client_state::ClientState as Ics07ClientState,
-		consensus_state::ConsensusState as Ics07ConsensusState,
-	},
-	clients::ics10_grandpa::{
-		client_state::ClientState as Ics10ClientSate,
-		consensus_state::ConsensusState as Ics10ConsensuState,
+	clients::{
+		ics07_tendermint::{
+			client_state::ClientState as Ics07ClientState,
+			consensus_state::ConsensusState as Ics07ConsensusState,
+		},
+		ics10_grandpa::{
+			client_state::ClientState as Ics10ClientSate,
+			consensus_state::ConsensusState as Ics10ConsensuState,
+		},
 	},
 	core::{
 		ics02_client::{
@@ -30,7 +33,6 @@ use ibc::{
 	Height,
 };
 use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
-use crate::module::core::ics24_host::{TENDERMINT_TYPE, GRANDPA_TYPE};
 
 impl<T: Config> ClientReader for Context<T> {
 	fn client_type(&self, client_id: &ClientId) -> Result<ClientType, Ics02Error> {
@@ -39,11 +41,12 @@ impl<T: Config> ClientReader for Context<T> {
 			let data = <Clients<T>>::get(client_type_path);
 			let data =
 				String::from_utf8(data).map_err(|_| Ics02Error::implementation_specific())?;
-            match data.as_str() {
-                "07-tendermint" => Ok(ClientType::new(TENDERMINT_TYPE)),
-                "10-grandpa" => Ok(ClientType::new(GRANDPA_TYPE)),
-                unimplemented => return Err(Ics02Error::unknown_client_type(unimplemented.to_string())),
-            }
+			match data.as_str() {
+				"07-tendermint" => Ok(ClientType::new(TENDERMINT_TYPE)),
+				"10-grandpa" => Ok(ClientType::new(GRANDPA_TYPE)),
+				unimplemented =>
+					return Err(Ics02Error::unknown_client_type(unimplemented.to_string())),
+			}
 		} else {
 			Err(Ics02Error::client_not_found(client_id.clone()))
 		}
@@ -56,20 +59,17 @@ impl<T: Config> ClientReader for Context<T> {
 			match self.client_type(client_id)?.as_str() {
 				"07-tendermint" => {
 					// TODO(davirain): need to make sure whether this is written correctly.
-					let result: Ics07ClientState = Protobuf::<
-						Any,
-					>::decode_vec(&data)
-					.map_err(|_| Ics02Error::implementation_specific())?;
-					return Ok(Box::new(result))
-				},
-				"10-grandpa" => {
-					let result: Ics10ClientSate = Protobuf::<
-						Any,
-					>::decode_vec(&data)
+					let result: Ics07ClientState = Protobuf::<Any>::decode_vec(&data)
 						.map_err(|_| Ics02Error::implementation_specific())?;
 					return Ok(Box::new(result))
 				},
-                unimplemented => return Err(Ics02Error::unknown_client_type(unimplemented.to_string())),
+				"10-grandpa" => {
+					let result: Ics10ClientSate = Protobuf::<Any>::decode_vec(&data)
+						.map_err(|_| Ics02Error::implementation_specific())?;
+					return Ok(Box::new(result))
+				},
+				unimplemented =>
+					return Err(Ics02Error::unknown_client_type(unimplemented.to_string())),
 			}
 		} else {
 			Err(Ics02Error::client_not_found(client_id.clone()))
@@ -105,20 +105,17 @@ impl<T: Config> ClientReader for Context<T> {
 			match self.client_type(client_id)?.as_str() {
 				"07-terdermint" => {
 					// TODO(davirain): need to make sure whether this is written correctly.
-					let result: Ics07ConsensusState = Protobuf::<
-						Any,
-					>::decode_vec(&data)
-					.map_err(|_| Ics02Error::implementation_specific())?;
-					return Ok(Box::new(result))
-				},
-				"10-grandpa" => {
-					let result: Ics10ConsensuState = Protobuf::<
-						Any,
-					>::decode_vec(&data)
+					let result: Ics07ConsensusState = Protobuf::<Any>::decode_vec(&data)
 						.map_err(|_| Ics02Error::implementation_specific())?;
 					return Ok(Box::new(result))
 				},
-                unimplemented => return Err(Ics02Error::unknown_client_type(unimplemented.to_string())),
+				"10-grandpa" => {
+					let result: Ics10ConsensuState = Protobuf::<Any>::decode_vec(&data)
+						.map_err(|_| Ics02Error::implementation_specific())?;
+					return Ok(Box::new(result))
+				},
+				unimplemented =>
+					return Err(Ics02Error::unknown_client_type(unimplemented.to_string())),
 			}
 		} else {
 			Err(Ics02Error::consensus_state_not_found(client_id.clone(), height))
@@ -163,20 +160,16 @@ impl<T: Config> ClientReader for Context<T> {
 				match self.client_type(client_id)?.as_str() {
 					"07-terdermint" => {
 						// TODO(davirain): need to make sure whether this is written correctly.
-						let result: Ics07ConsensusState = Protobuf::<
-							Any,
-						>::decode_vec(&data)
-						.map_err(|_| Ics02Error::implementation_specific())?;
-						return Ok(Some(Box::new(result)))
-					},
-					"10-grandpa" => {
-						let result: Ics10ConsensuState = Protobuf::<
-							Any,
-						>::decode_vec(&data)
+						let result: Ics07ConsensusState = Protobuf::<Any>::decode_vec(&data)
 							.map_err(|_| Ics02Error::implementation_specific())?;
 						return Ok(Some(Box::new(result)))
 					},
-                    _ => {}
+					"10-grandpa" => {
+						let result: Ics10ConsensuState = Protobuf::<Any>::decode_vec(&data)
+							.map_err(|_| Ics02Error::implementation_specific())?;
+						return Ok(Some(Box::new(result)))
+					},
+					_ => {},
 				}
 			}
 		}
@@ -228,13 +221,11 @@ impl<T: Config> ClientReader for Context<T> {
 						return Ok(Some(Box::new(result)))
 					},
 					"10-grandpa" => {
-						let result: Ics10ConsensuState = Protobuf::<
-							Any,
-						>::decode_vec(&data)
+						let result: Ics10ConsensuState = Protobuf::<Any>::decode_vec(&data)
 							.map_err(|_| Ics02Error::implementation_specific())?;
 						return Ok(Some(Box::new(result)))
 					},
-                    _ => {}
+					_ => {},
 				}
 			}
 		}
@@ -257,7 +248,6 @@ impl<T: Config> ClientReader for Context<T> {
 	}
 
 	fn client_counter(&self) -> Result<u64, Ics02Error> {
-
 		Ok(<ClientCounter<T>>::get())
 	}
 }

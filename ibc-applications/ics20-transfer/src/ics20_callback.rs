@@ -1,11 +1,12 @@
 use crate::*;
-use core::marker::PhantomData;
 use codec::{Decode, Encode};
+use core::marker::PhantomData;
 use ibc::{
 	core::{
 		ics04_channel::{
 			channel::{Counterparty, Order},
 			error::Error as Ics04Error,
+			handler::ModuleExtras,
 			msgs::acknowledgement::Acknowledgement as GenericAcknowledgement,
 			packet::Packet as IbcPacket,
 			Version,
@@ -15,7 +16,6 @@ use ibc::{
 	},
 	signer::Signer,
 };
-use ibc::core::ics04_channel::handler::ModuleExtras;
 use ibc_support::ibc_trait::TransferModule;
 
 #[derive(Debug, Encode, Decode)]
@@ -25,18 +25,18 @@ impl<T: Config> TransferModule for IbcTransferModule<T> {}
 
 impl<T: Config> Module for IbcTransferModule<T> {
 	fn on_chan_open_init(
-		  &mut self,
-          order: Order,
-          connection_hops: &[ConnectionId],
-          port_id: &PortId,
-          channel_id: &IbcChannelId,
-          counterparty: &Counterparty,
-          version: &Version,
-          ) -> Result<(ModuleExtras, Version), Ics04Error>{
+		&mut self,
+		order: Order,
+		connection_hops: &[ConnectionId],
+		port_id: &PortId,
+		channel_id: &IbcChannelId,
+		counterparty: &Counterparty,
+		version: &Version,
+	) -> Result<(ModuleExtras, Version), Ics04Error> {
 		ibc::applications::transfer::context::on_chan_open_init(
-                self,
+			self,
 			order,
-		    connection_hops,
+			connection_hops,
 			port_id,
 			channel_id,
 			counterparty,
@@ -46,17 +46,17 @@ impl<T: Config> Module for IbcTransferModule<T> {
 	}
 
 	fn on_chan_open_try(
-        &mut self,
-        order: Order,
-        connection_hops: &[ConnectionId],
-        port_id: &PortId,
-        channel_id: &IbcChannelId,
-        counterparty: &Counterparty,
-        counterparty_version: &Version,
-        ) -> Result<(ModuleExtras, Version), Ics04Error> {
+		&mut self,
+		order: Order,
+		connection_hops: &[ConnectionId],
+		port_id: &PortId,
+		channel_id: &IbcChannelId,
+		counterparty: &Counterparty,
+		counterparty_version: &Version,
+	) -> Result<(ModuleExtras, Version), Ics04Error> {
 		ibc::applications::transfer::context::on_chan_open_try(
 			self,
-            order,
+			order,
 			connection_hops,
 			port_id,
 			channel_id,
@@ -67,11 +67,11 @@ impl<T: Config> Module for IbcTransferModule<T> {
 	}
 
 	fn on_chan_open_ack(
-        &mut self,
-        port_id: &PortId,
-        channel_id: &IbcChannelId,
-        counterparty_version: &Version,
-        ) -> Result<ModuleExtras, Ics04Error> {
+		&mut self,
+		port_id: &PortId,
+		channel_id: &IbcChannelId,
+		counterparty_version: &Version,
+	) -> Result<ModuleExtras, Ics04Error> {
 		ibc::applications::transfer::context::on_chan_open_ack(
 			self,
 			port_id,
@@ -82,34 +82,30 @@ impl<T: Config> Module for IbcTransferModule<T> {
 	}
 
 	fn on_chan_open_confirm(
-        &mut self,
-        port_id: &PortId,
-        channel_id: &IbcChannelId,
-        ) -> Result<ModuleExtras, Ics04Error> {
-		ibc::applications::transfer::context::on_chan_open_confirm(
-			self, port_id, channel_id,
-		)
-		.map_err(|e| Ics04Error::app_module(e.to_string()))
+		&mut self,
+		port_id: &PortId,
+		channel_id: &IbcChannelId,
+	) -> Result<ModuleExtras, Ics04Error> {
+		ibc::applications::transfer::context::on_chan_open_confirm(self, port_id, channel_id)
+			.map_err(|e| Ics04Error::app_module(e.to_string()))
 	}
 
-	 fn on_chan_close_init(
-        &mut self,
-        port_id: &PortId,
-        channel_id: &IbcChannelId,
-        ) -> Result<ModuleExtras, Ics04Error> {
+	fn on_chan_close_init(
+		&mut self,
+		port_id: &PortId,
+		channel_id: &IbcChannelId,
+	) -> Result<ModuleExtras, Ics04Error> {
 		ibc::applications::transfer::context::on_chan_close_init(self, port_id, channel_id)
 			.map_err(|e| Ics04Error::app_module(e.to_string()))
 	}
 
 	fn on_chan_close_confirm(
-        &mut self,
-        port_id: &PortId,
-        channel_id: &IbcChannelId,
-        ) -> Result<ModuleExtras, Ics04Error> {
-		ibc::applications::transfer::context::on_chan_close_confirm(
-			self, port_id, channel_id,
-		)
-		.map_err(|e| Ics04Error::app_module(e.to_string()))
+		&mut self,
+		port_id: &PortId,
+		channel_id: &IbcChannelId,
+	) -> Result<ModuleExtras, Ics04Error> {
+		ibc::applications::transfer::context::on_chan_close_confirm(self, port_id, channel_id)
+			.map_err(|e| Ics04Error::app_module(e.to_string()))
 	}
 
 	fn on_recv_packet(

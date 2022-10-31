@@ -1,7 +1,6 @@
 use crate::*;
 
 use crate::context::Context;
-use log::trace;
 
 use ibc::{
 	core::{
@@ -56,13 +55,11 @@ impl<T: Config> ConnectionReader for Context<T> {
 	}
 
 	fn host_oldest_height(&self) -> Height {
-
 		let height = <OldHeight<T>>::get();
 		Height::new(REVISION_NUMBER, height).unwrap()
 	}
 
 	fn commitment_prefix(&self) -> CommitmentPrefix {
-
 		CommitmentPrefix::try_from(b"Ibc".to_vec()).unwrap_or_default()
 	}
 
@@ -103,7 +100,6 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		connection_id: ConnectionId,
 		client_id: &ClientId,
 	) -> Result<(), Ics03Error> {
-
 		let client_connection_paths =
 			ClientConnectionsPath(client_id.clone()).to_string().as_bytes().to_vec();
 
@@ -112,7 +108,6 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 	}
 
 	fn increase_connection_counter(&mut self) {
-
 		let _ = <ConnectionCounter<T>>::try_mutate(|val| -> Result<(), Ics03Error> {
 			let new = val.checked_add(1).expect("increase connection counter overflow!");
 			*val = new;
