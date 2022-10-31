@@ -246,24 +246,7 @@ pub mod pallet {
 
 	/// Errors in MMR verification informing users that something went wrong.
 	#[pallet::error]
-	pub enum Error<T> {
-		/// Update the beefy light client failure!
-		UpdateBeefyLightClientFailure,
-		/// Receive mmr root block number less than client_state.latest_commitment.block_number
-		ReceiveMmrRootBlockNumberLessThanClientStateLatestCommitmentBlockNumber,
-		/// Client id not found
-		ClientIdNotFound,
-		/// Encode error
-		InvalidEncode,
-		/// Decode Error
-		InvalidDecode,
-		/// FromUtf8Error
-		InvalidFromUtf8,
-		/// Invalid signed_commitment
-		InvalidSignedCommitment,
-		/// Empty latest_commitment
-		EmptyLatestCommitment,
-	}
+	pub enum Error<T> {}
 
 	/// Dispatchable functions allows users to interact with the pallet and invoke state changes.
 	/// These functions materialize as "extrinsic", which are often compared to transactions.
