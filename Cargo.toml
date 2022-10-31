@@ -55,8 +55,8 @@ time = { version = "0.3", default-features = false, features = ["macros", "parsi
 
 ## for ibc protocl
 # todo replace cosmos/ibc-rs
-ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "dev", default-features = false }
-ibc-proto = { git = "https://github.com/octopus-network/ibc-proto-rs.git", branch = "dev", default-features = false }
+ibc = { version = "0.21.0", default-features = false, git = "https://github.com/octopus-network/ibc-rs.git", branch = "dev"}
+ibc-proto = { version = "0.21.0", default-features = false, git = "https://github.com/octopus-network/ibc-proto-rs.git", branch = "dev"}
 tendermint-proto = { version = "=0.23.7", default-features = false }
 beefy-light-client = { git = "https://github.com/octopus-network/beefy-light-client.git", branch="davirain/dev", default-features = false }
 
@@ -71,7 +71,7 @@ serde = "1.0"
 chrono = "0.4.19"
 
 # ibc protocol crates
-ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "dev", features = ["mocks"]}
+ibc = { version = "0.21.0", git = "https://github.com/octopus-network/ibc-rs.git", branch = "dev", features = ["mocks"]}
 
 # substrate crates
 sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30"}

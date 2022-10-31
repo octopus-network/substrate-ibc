@@ -35,9 +35,9 @@ sp-io = { version = "6.0.0", default-features = false, git = "https://github.com
 
 ## for ibc protocl
 # octopus ibc-rs
-ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "dev", default-features = false }
+ibc = { version = "0.21.0", default-features = false, git = "https://github.com/octopus-network/ibc-rs.git", branch = "dev" }
 # octopus ibc-proto-rs
-ibc-proto = { git = "https://github.com/octopus-network/ibc-proto-rs.git", branch = "dev", default-features = false }
+ibc-proto = { version = "0.21.0", default-features = false, git = "https://github.com/octopus-network/ibc-proto-rs.git", branch = "dev" }
 tendermint-proto = { version = "=0.23.7", default-features = false }
 
 [dev-dependencies]
