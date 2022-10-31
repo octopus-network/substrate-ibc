@@ -15,6 +15,7 @@ use ibc::{
 	},
 	signer::Signer,
 };
+use ibc::core::ics04_channel::handler::ModuleExtras;
 use ibc_support::ibc_trait::TransferModule;
 
 #[derive(Debug, Encode, Decode)]
@@ -24,20 +25,18 @@ impl<T: Config> TransferModule for IbcTransferModule<T> {}
 
 impl<T: Config> Module for IbcTransferModule<T> {
 	fn on_chan_open_init(
-		&mut self,
-		output: &mut ModuleOutputBuilder,
-		order: Order,
-		connection_hops: &[ConnectionId],
-		port_id: &PortId,
-		channel_id: &IbcChannelId,
-		counterparty: &Counterparty,
-		version: &Version,
-	) -> Result<(), Ics04Error> {
+		  &mut self,
+          order: Order,
+          connection_hops: &[ConnectionId],
+          port_id: &PortId,
+          channel_id: &IbcChannelId,
+          counterparty: &Counterparty,
+          version: &Version,
+          ) -> Result<(ModuleExtras, Version), Ics04Error>{
 		ibc::applications::transfer::context::on_chan_open_init(
-			self,
-			output,
+                self,
 			order,
-			connection_hops,
+		    connection_hops,
 			port_id,
 			channel_id,
 			counterparty,
@@ -47,40 +46,34 @@ impl<T: Config> Module for IbcTransferModule<T> {
 	}
 
 	fn on_chan_open_try(
-		&mut self,
-		output: &mut ModuleOutputBuilder,
-		order: Order,
-		connection_hops: &[ConnectionId],
-		port_id: &PortId,
-		channel_id: &IbcChannelId,
-		counterparty: &Counterparty,
-		version: &Version,
-		counterparty_version: &Version,
-	) -> Result<Version, Ics04Error> {
+        &mut self,
+        order: Order,
+        connection_hops: &[ConnectionId],
+        port_id: &PortId,
+        channel_id: &IbcChannelId,
+        counterparty: &Counterparty,
+        counterparty_version: &Version,
+        ) -> Result<(ModuleExtras, Version), Ics04Error> {
 		ibc::applications::transfer::context::on_chan_open_try(
 			self,
-			output,
-			order,
+            order,
 			connection_hops,
 			port_id,
 			channel_id,
 			counterparty,
-			version,
 			counterparty_version,
 		)
 		.map_err(|e| Ics04Error::app_module(e.to_string()))
 	}
 
 	fn on_chan_open_ack(
-		&mut self,
-		output: &mut ModuleOutputBuilder,
-		port_id: &PortId,
-		channel_id: &IbcChannelId,
-		counterparty_version: &Version,
-	) -> Result<(), Ics04Error> {
+        &mut self,
+        port_id: &PortId,
+        channel_id: &IbcChannelId,
+        counterparty_version: &Version,
+        ) -> Result<ModuleExtras, Ics04Error> {
 		ibc::applications::transfer::context::on_chan_open_ack(
 			self,
-			output,
 			port_id,
 			channel_id,
 			counterparty_version,
@@ -89,35 +82,32 @@ impl<T: Config> Module for IbcTransferModule<T> {
 	}
 
 	fn on_chan_open_confirm(
-		&mut self,
-		output: &mut ModuleOutputBuilder,
-		port_id: &PortId,
-		channel_id: &IbcChannelId,
-	) -> Result<(), Ics04Error> {
+        &mut self,
+        port_id: &PortId,
+        channel_id: &IbcChannelId,
+        ) -> Result<ModuleExtras, Ics04Error> {
 		ibc::applications::transfer::context::on_chan_open_confirm(
-			self, output, port_id, channel_id,
+			self, port_id, channel_id,
 		)
 		.map_err(|e| Ics04Error::app_module(e.to_string()))
 	}
 
-	fn on_chan_close_init(
-		&mut self,
-		output: &mut ModuleOutputBuilder,
-		port_id: &PortId,
-		channel_id: &IbcChannelId,
-	) -> Result<(), Ics04Error> {
-		ibc::applications::transfer::context::on_chan_close_init(self, output, port_id, channel_id)
+	 fn on_chan_close_init(
+        &mut self,
+        port_id: &PortId,
+        channel_id: &IbcChannelId,
+        ) -> Result<ModuleExtras, Ics04Error> {
+		ibc::applications::transfer::context::on_chan_close_init(self, port_id, channel_id)
 			.map_err(|e| Ics04Error::app_module(e.to_string()))
 	}
 
 	fn on_chan_close_confirm(
-		&mut self,
-		output: &mut ModuleOutputBuilder,
-		port_id: &PortId,
-		channel_id: &IbcChannelId,
-	) -> Result<(), Ics04Error> {
+        &mut self,
+        port_id: &PortId,
+        channel_id: &IbcChannelId,
+        ) -> Result<ModuleExtras, Ics04Error> {
 		ibc::applications::transfer::context::on_chan_close_confirm(
-			self, output, port_id, channel_id,
+			self, port_id, channel_id,
 		)
 		.map_err(|e| Ics04Error::app_module(e.to_string()))
 	}

@@ -2,7 +2,7 @@ use crate::{alloc::string::ToString, REVISION_NUMBER};
 use alloc::string::String;
 use ibc::{
 	core::{
-		ics02_client::{client_type::ClientType as IbcClientType, height::Height as IbcHeight},
+		ics02_client::{client_type::ClientType as IbcClientType, height::Height as IbcHeight, error::Error as Ics02Error},
 		ics04_channel::packet::{Packet as IbcPacket, Sequence as IbcSequence},
 		ics24_host::{
 			error::ValidationError,
@@ -116,30 +116,40 @@ impl Height {
 	}
 }
 
+pub const TENDERMINT_TYPE: &'static str = "07-tendermint";
+pub const GRANDPA_TYPE: &'static str = "10-grandpa";
+
 /// ibc-rs' `ClientType` representation in substrate
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
-pub enum ClientType {
-	Tendermint,
-	Grandpa,
+pub struct ClientType(Vec<u8>);
+
+impl ClientType  {
+    pub fn new(s: &str) -> Self {
+        let value = s.as_bytes().to_vec();
+        Self(value)
+    }
+
+    pub fn to_string(&self) -> String {
+        String::from_utf8(self.0.clone()).expect("Never failed")
+    }
 }
 
 impl From<IbcClientType> for ClientType {
 	fn from(value: IbcClientType) -> Self {
-		match value {
-			IbcClientType::Tendermint => ClientType::Tendermint,
-			IbcClientType::Grandpa => ClientType::Grandpa,
-			_ => todo!(),
-		}
+        Self::new(value.as_str())
 	}
 }
 
-impl ClientType {
-	pub fn to_ibc_client_type(self) -> IbcClientType {
-		match self {
-			ClientType::Tendermint => IbcClientType::Tendermint,
-			ClientType::Grandpa => IbcClientType::Grandpa,
-		}
-	}
+impl TryFrom<ClientType> for IbcClientType {
+    type Error = Ics02Error;
+
+    fn try_from(value: ClientType) -> Result<IbcClientType, Self::Error> {
+        match value.to_string().as_str() {
+            "07-tendermint" => Ok(IbcClientType::new(TENDERMINT_TYPE)),
+            "10-grandpa" => Ok(IbcClientType::new(GRANDPA_TYPE)),
+            unimplemented => Err(Ics02Error::unknown_client_type(unimplemented.to_string())),
+        }
+    }
 }
 
 /// ibc-rs' `ClientId` representation in substrate

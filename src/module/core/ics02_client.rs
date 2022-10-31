@@ -30,6 +30,7 @@ use ibc::{
 	Height,
 };
 use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
+use crate::module::core::ics24_host::{TENDERMINT_TYPE, GRANDPA_TYPE};
 
 impl<T: Config> ClientReader for Context<T> {
 	fn client_type(&self, client_id: &ClientId) -> Result<ClientType, Ics02Error> {
@@ -38,9 +39,11 @@ impl<T: Config> ClientReader for Context<T> {
 			let data = <Clients<T>>::get(client_type_path);
 			let data =
 				String::from_utf8(data).map_err(|_| Ics02Error::implementation_specific())?;
-			let client_type = ClientType::from_str(&data)
-				.map_err(|e| Ics02Error::unknown_client_type(e.to_string()))?;
-			Ok(client_type)
+            match data.as_str() {
+                "07-tendermint" => Ok(ClientType::new(TENDERMINT_TYPE)),
+                "10-grandpa" => Ok(ClientType::new(GRANDPA_TYPE)),
+                unimplemented => return Err(Ics02Error::unknown_client_type(unimplemented.to_string())),
+            }
 		} else {
 			Err(Ics02Error::client_not_found(client_id.clone()))
 		}
@@ -50,8 +53,8 @@ impl<T: Config> ClientReader for Context<T> {
 		let client_state_path = ClientStatePath(client_id.clone()).to_string().as_bytes().to_vec();
 		if <ClientStates<T>>::contains_key(&client_state_path) {
 			let data = <ClientStates<T>>::get(&client_state_path);
-			match self.client_type(client_id)? {
-				ClientType::Tendermint => {
+			match self.client_type(client_id)?.as_str() {
+				"07-tendermint" => {
 					// TODO(davirain): need to make sure whether this is written correctly.
 					let result: Ics07ClientState = Protobuf::<
 						Any,
@@ -59,13 +62,14 @@ impl<T: Config> ClientReader for Context<T> {
 					.map_err(|_| Ics02Error::implementation_specific())?;
 					return Ok(Box::new(result))
 				},
-				ClientType::Grandpa => {
+				"10-grandpa" => {
 					let result: Ics10ClientSate = Protobuf::<
 						Any,
 					>::decode_vec(&data)
 						.map_err(|_| Ics02Error::implementation_specific())?;
 					return Ok(Box::new(result))
 				},
+                unimplemented => return Err(Ics02Error::unknown_client_type(unimplemented.to_string())),
 			}
 		} else {
 			Err(Ics02Error::client_not_found(client_id.clone()))
@@ -98,8 +102,8 @@ impl<T: Config> ClientReader for Context<T> {
 
 		if <ConsensusStates<T>>::contains_key(client_consensus_state_path.clone()) {
 			let data = <ConsensusStates<T>>::get(client_consensus_state_path);
-			match self.client_type(client_id)? {
-				ClientType::Tendermint => {
+			match self.client_type(client_id)?.as_str() {
+				"07-terdermint" => {
 					// TODO(davirain): need to make sure whether this is written correctly.
 					let result: Ics07ConsensusState = Protobuf::<
 						Any,
@@ -107,13 +111,14 @@ impl<T: Config> ClientReader for Context<T> {
 					.map_err(|_| Ics02Error::implementation_specific())?;
 					return Ok(Box::new(result))
 				},
-				ClientType::Grandpa => {
+				"10-grandpa" => {
 					let result: Ics10ConsensuState = Protobuf::<
 						Any,
 					>::decode_vec(&data)
 						.map_err(|_| Ics02Error::implementation_specific())?;
 					return Ok(Box::new(result))
 				},
+                unimplemented => return Err(Ics02Error::unknown_client_type(unimplemented.to_string())),
 			}
 		} else {
 			Err(Ics02Error::consensus_state_not_found(client_id.clone(), height))
@@ -154,9 +159,9 @@ impl<T: Config> ClientReader for Context<T> {
 		// Search for previous state.
 		for h in heights {
 			if h > height {
-				let data = <ConsensusStates<T>>::get(client_consensus_state_path);
-				match self.client_type(client_id)? {
-					ClientType::Tendermint => {
+				let data = <ConsensusStates<T>>::get(&client_consensus_state_path);
+				match self.client_type(client_id)?.as_str() {
+					"07-terdermint" => {
 						// TODO(davirain): need to make sure whether this is written correctly.
 						let result: Ics07ConsensusState = Protobuf::<
 							Any,
@@ -164,13 +169,14 @@ impl<T: Config> ClientReader for Context<T> {
 						.map_err(|_| Ics02Error::implementation_specific())?;
 						return Ok(Some(Box::new(result)))
 					},
-					ClientType::Grandpa => {
+					"10-grandpa" => {
 						let result: Ics10ConsensuState = Protobuf::<
 							Any,
 						>::decode_vec(&data)
 							.map_err(|_| Ics02Error::implementation_specific())?;
 						return Ok(Some(Box::new(result)))
 					},
+                    _ => {}
 				}
 			}
 		}
@@ -211,9 +217,9 @@ impl<T: Config> ClientReader for Context<T> {
 		// Search for previous state.
 		for h in heights {
 			if h < height {
-				let data = <ConsensusStates<T>>::get(client_consensus_state_path);
-				match self.client_type(client_id)? {
-					ClientType::Tendermint => {
+				let data = <ConsensusStates<T>>::get(&client_consensus_state_path);
+				match self.client_type(client_id)?.as_str() {
+					"07-tendermint" => {
 						// TODO(davirain): need to make sure whether this is written correctly.
 						let result: Ics07ConsensusState = ibc_proto::protobuf::Protobuf::<
 							ibc_proto::google::protobuf::Any,
@@ -221,13 +227,14 @@ impl<T: Config> ClientReader for Context<T> {
 						.map_err(|_| Ics02Error::implementation_specific())?;
 						return Ok(Some(Box::new(result)))
 					},
-					ClientType::Grandpa => {
+					"10-grandpa" => {
 						let result: Ics10ConsensuState = Protobuf::<
 							Any,
 						>::decode_vec(&data)
 							.map_err(|_| Ics02Error::implementation_specific())?;
 						return Ok(Some(Box::new(result)))
 					},
+                    _ => {}
 				}
 			}
 		}
