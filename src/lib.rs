@@ -270,37 +270,32 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			messages: Vec<ibc_support::Any>,
 		) -> DispatchResultWithPostInfo {
-			sp_tracing::within_span!(
-			sp_tracing::Level::TRACE, "deliver";
-			{
-				let _sender = ensure_signed(origin)?;
-				let mut ctx = Context::<T>::new();
+			let _sender = ensure_signed(origin)?;
+			let mut ctx = Context::<T>::new();
 
-				let messages: Vec<ibc_proto::google::protobuf::Any> = messages
-					.into_iter()
-					.map(|message| ibc_proto::google::protobuf::Any {
-						type_url: String::from_utf8(message.type_url.clone()).unwrap(),
-						value: message.value,
-					})
-					.collect();
+			let messages: Vec<ibc_proto::google::protobuf::Any> = messages
+				.into_iter()
+				.map(|message| ibc_proto::google::protobuf::Any {
+					type_url: String::from_utf8(message.type_url.clone()).unwrap(),
+					value: message.value,
+				})
+				.collect();
 
-				for (_, message) in messages.into_iter().enumerate() {
-
-					match ibc::core::ics26_routing::handler::deliver(&mut ctx, message.clone()) {
-						Ok(ibc::core::ics26_routing::handler::MsgReceipt { events, log: _log}) => {
-							log::trace!(target: LOG_TARGET, "deliver events  : {:?} ", events);
-							for event in events {
-								Self::deposit_event(event.into());
-							}
+			for (_, message) in messages.into_iter().enumerate() {
+				match ibc::core::ics26_routing::handler::deliver(&mut ctx, message.clone()) {
+					Ok(ibc::core::ics26_routing::handler::MsgReceipt { events, log: _log }) => {
+						log::trace!(target: LOG_TARGET, "deliver events  : {:?} ", events);
+						for event in events {
+							Self::deposit_event(event.into());
 						}
-						Err(error) => {
-							log::trace!(target: LOG_TARGET, "deliver error  : {:?} ", error);
-						}
-					};
-				}
+					},
+					Err(error) => {
+						log::trace!(target: LOG_TARGET, "deliver error  : {:?} ", error);
+					},
+				};
+			}
 
-				Ok(().into())
-			})
+			Ok(().into())
 		}
 	}
 }
