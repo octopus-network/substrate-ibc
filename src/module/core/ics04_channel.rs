@@ -443,7 +443,7 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 				String::from_utf8(data).map_err(|_| Ics04Error::implementation_specific())?;
 			let data = match data.as_ref() {
 				"Ok" => Receipt::Ok,
-				_ => unreachable!(),
+                _ => return Err(Ics04Error::implementation_specific()),
 			};
 			Ok(data)
 		} else {
