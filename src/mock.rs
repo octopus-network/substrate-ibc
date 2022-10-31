@@ -7,7 +7,7 @@ pub use frame_support::{
 	},
 	weights::{
 		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
-		DispatchClass, IdentityFee, Weight,
+		IdentityFee, Weight,
 	},
 	StorageValue,
 };
@@ -203,7 +203,6 @@ pub type AssetId = u32;
 impl pallet::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type TimeProvider = pallet_timestamp::Pallet<Test>;
-	type TransferModule = pallet_ics20_transfer::ics20_callback::IbcTransferModule<Test>;
 }
 
 // Build genesis storage according to the mock runtime.
