@@ -62,7 +62,7 @@ impl From<IbcPortId> for PortId {
 
 impl From<PortId> for IbcPortId {
 	fn from(port_id: PortId) -> Self {
-        IbcPortId::from_str(&String::from_utf8(port_id.0).expect("convert from utf8 Error"))
+        IbcPortId::from_str(&String::from_utf8(port_id.0).expect("hex-encoded string should always be valid UTF-8"))
 			.expect("Never failed")
 	}
 }
@@ -80,7 +80,7 @@ impl From<IbcChannelId> for ChannelId {
 
 impl From<ChannelId> for IbcChannelId {
 	fn from(channel_id: ChannelId) -> Self {
-        let value = String::from_utf8(channel_id.0).expect("convert from utf8 Error");
+        let value = String::from_utf8(channel_id.0).expect("hex-encoded string should always be valid UTF-8");
 		Self::from_str(&value).expect("convert channel id from str Error")
 	}
 }
@@ -134,7 +134,7 @@ impl ClientType {
 	}
 
 	pub fn to_string(&self) -> String {
-		String::from_utf8(self.0.clone()).expect("Never failed")
+        String::from_utf8(self.0.clone()).expect("hex-encoded string should always be valid UTF-8")
 	}
 }
 
@@ -169,7 +169,7 @@ impl From<IbcClientId> for ClientId {
 
 impl From<ClientId> for IbcClientId {
 	fn from(client_id: ClientId) -> Self {
-        let value = String::from_utf8(client_id.0).expect("convert from utf8 Error");
+        let value = String::from_utf8(client_id.0).expect("hex-encoded string should always be valid UTF-8");
 		IbcClientId::from_str(&value).expect("Never failed")
 	}
 }
@@ -187,7 +187,7 @@ impl From<IbcConnectionId> for ConnectionId {
 
 impl From<ConnectionId> for IbcConnectionId {
     fn from(connection_id: ConnectionId) -> Self {
-        let value = String::from_utf8(connection_id.0).expect("convert from utf8 Error");
+        let value = String::from_utf8(connection_id.0).expect("hex-encoded string should always be valid UTF-8");
 		IbcConnectionId::from_str(&value).expect("Never failed")
 	}
 }
@@ -206,7 +206,7 @@ impl From<IbcTimestamp> for Timestamp {
 
 impl From<Timestamp> for IbcTimestamp {
 	fn from(timestamp: Timestamp) -> Self {
-        let value = String::from_utf8(timestamp.time).expect("convert from utf8 Error");
+        let value = String::from_utf8(timestamp.time).expect("hex-encoded string should always be valid UTF-8");
 		Self::from_str(&value).expect("convert from str Error")
 	}
 }

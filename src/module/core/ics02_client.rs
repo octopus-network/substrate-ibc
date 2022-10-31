@@ -141,7 +141,7 @@ impl<T: Config> ClientReader for Context<T> {
 		let mut heights = client_consensus_state_key
 			.into_iter()
 			.map(|value| {
-				let value = String::from_utf8(value).expect("Never failed");
+                let value = String::from_utf8(value).expect("hex-encoded string should always be valid UTF-8");
 				let client_consensus_state_path = value.rsplit_once('/').expect("Never failed");
 				let (epoch, height) =
 					client_consensus_state_path.1.split_once('-').expect("never Failed");
@@ -195,7 +195,7 @@ impl<T: Config> ClientReader for Context<T> {
 		let mut heights = client_consensus_state_key
 			.into_iter()
 			.map(|value| {
-				let value = String::from_utf8(value).expect("Never failed");
+                let value = String::from_utf8(value).expect("hex-encoded string should always be valid UTF-8");
 				let client_consensus_state_path = value.rsplit_once('/').expect("Never failed");
 				let (epoch, height) =
 					client_consensus_state_path.1.split_once('-').expect("never Failed");
