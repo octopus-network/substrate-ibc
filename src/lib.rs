@@ -84,11 +84,10 @@ mod type_define {
 #[frame_support::pallet]
 pub mod pallet {
 	use super::{type_define::*, *};
-	use crate::module::{
-		clients::ics10_grandpa::ClientState as EventClientState, core::ics24_host::Height,
-	};
+	use crate::{events::ModuleEvent, module::core::ics24_host::Height};
 	use frame_support::{pallet_prelude::*, traits::UnixTime};
 	use frame_system::pallet_prelude::*;
+	use ibc_support::Any;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -237,11 +236,112 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		IbcEvent {
-			event: events::IbcEvent,
+		/// Client created event
+		CreateClient { client_id: ClientId, client_type: ClientType, consensus_height: Height },
+		/// Client updated event
+		UpdateClient {
+			client_id: ClientId,
+			client_type: ClientType,
+			consensus_height: Height,
+			consensus_heights: Vec<Height>,
+			header: Any,
 		},
-		/// Emit update client state event
-		UpdateClientState(Height, EventClientState),
+		/// Client upgraded event
+		UpgradeClient { client_id: ClientId, client_type: ClientType, consensus_height: Height },
+		/// Client misbehaviour event
+		ClientMisbehaviour { client_id: ClientId, client_type: ClientType },
+		/// Connection open init event
+		OpenInitConnection {
+			connection_id: ConnectionId,
+			client_id: ClientId,
+			counterparty_connection_id: Option<ConnectionId>,
+			counterparty_client_id: ClientId,
+		},
+		/// Connection open try event
+		OpenTryConnection {
+			connection_id: ConnectionId,
+			client_id: ClientId,
+			counterparty_connection_id: Option<ConnectionId>,
+			counterparty_client_id: ClientId,
+		},
+		/// Connection open acknowledgement event
+		OpenAckConnection {
+			connection_id: ConnectionId,
+			client_id: ClientId,
+			counterparty_connection_id: Option<ConnectionId>,
+			counterparty_client_id: ClientId,
+		},
+		/// Connection open confirm event
+		OpenConfirmConnection {
+			connection_id: ConnectionId,
+			client_id: ClientId,
+			counterparty_connection_id: Option<ConnectionId>,
+			counterparty_client_id: ClientId,
+		},
+		/// Channel open init event
+		OpenInitChannel {
+			port_id: PortId,
+			channel_id: Option<ChannelId>,
+			connection_id: ConnectionId,
+			counterparty_port_id: PortId,
+			counterparty_channel_id: Option<ChannelId>,
+		},
+		/// Channel open try event
+		OpenTryChannel {
+			port_id: PortId,
+			channel_id: Option<ChannelId>,
+			connection_id: ConnectionId,
+			counterparty_port_id: PortId,
+			counterparty_channel_id: Option<ChannelId>,
+		},
+		/// Channel open acknowledgement event
+		OpenAckChannel {
+			port_id: PortId,
+			channel_id: Option<ChannelId>,
+			connection_id: ConnectionId,
+			counterparty_port_id: PortId,
+			counterparty_channel_id: Option<ChannelId>,
+		},
+		/// Channel open confirm event
+		OpenConfirmChannel {
+			port_id: PortId,
+			channel_id: Option<ChannelId>,
+			connection_id: ConnectionId,
+			counterparty_port_id: PortId,
+			counterparty_channel_id: Option<ChannelId>,
+		},
+		/// Channel close init event
+		CloseInitChannel {
+			port_id: PortId,
+			channel_id: Option<ChannelId>,
+			connection_id: ConnectionId,
+			counterparty_port_id: PortId,
+			counterparty_channel_id: Option<ChannelId>,
+		},
+		/// Channel close confirm event
+		CloseConfirmChannel {
+			port_id: PortId,
+			channel_id: Option<ChannelId>,
+			connection_id: ConnectionId,
+			counterparty_port_id: PortId,
+			counterparty_channel_id: Option<ChannelId>,
+		},
+		/// Send packet event
+		SendPacket { packet: Packet },
+		/// Receive packet event
+		ReceivePacket { packet: Packet },
+		/// WriteAcknowledgement packet event
+		WriteAcknowledgement { packet: Packet, ack: Vec<u8> },
+		/// Acknowledgements packet event
+		AcknowledgePacket { packet: Packet },
+		/// Timeout packet event
+		TimeoutPacket { packet: Packet },
+		/// TimoutOnClose packet event
+		TimeoutOnClosePacket { packet: Packet },
+		/// Empty event
+		Empty(Vec<u8>),
+		/// App Module event
+		AppModule(ModuleEvent),
 	}
 
 	/// Errors in MMR verification informing users that something went wrong.
