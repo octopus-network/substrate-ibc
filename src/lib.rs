@@ -30,6 +30,7 @@ use sp_runtime::RuntimeDebug;
 use sp_std::prelude::*;
 
 pub mod context;
+pub mod errors;
 pub mod events;
 pub mod module;
 pub mod utils;
@@ -83,10 +84,11 @@ mod type_define {
 
 #[frame_support::pallet]
 pub mod pallet {
-	use super::{type_define::*, *};
+	use super::{errors, type_define::*, *};
 	use crate::{events::ModuleEvent, module::core::ics24_host::Height};
 	use frame_support::{pallet_prelude::*, traits::UnixTime};
 	use frame_system::pallet_prelude::*;
+	use ibc::core::ics26_routing::handler::MsgReceipt;
 	use ibc_support::Any;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
@@ -342,11 +344,16 @@ pub mod pallet {
 		Empty(Vec<u8>),
 		/// App Module event
 		AppModule(ModuleEvent),
+		/// Ibc errors
+		IbcErrors { errors: Vec<errors::IbcError> },
 	}
 
 	/// Errors in MMR verification informing users that something went wrong.
 	#[pallet::error]
-	pub enum Error<T> {}
+	pub enum Error<T> {
+		/// decode String failed
+		DecodeStringFailed,
+	}
 
 	/// Dispatchable functions allows users to interact with the pallet and invoke state changes.
 	/// These functions materialize as "extrinsic", which are often compared to transactions.
@@ -370,30 +377,39 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			messages: Vec<ibc_support::Any>,
 		) -> DispatchResultWithPostInfo {
-			let _sender = ensure_signed(origin)?;
+			ensure_signed(origin)?;
 			let mut ctx = Context::<T>::new();
 
-			let messages: Vec<ibc_proto::google::protobuf::Any> = messages
+			let messages = messages
 				.into_iter()
-				.map(|message| ibc_proto::google::protobuf::Any {
-					type_url: String::from_utf8(message.type_url.clone()).unwrap(),
-					value: message.value,
+				.map(|message| {
+					let type_url = String::from_utf8(message.type_url.clone())
+						.map_err(|_| Error::<T>::DecodeStringFailed)?;
+					Ok(ibc_proto::google::protobuf::Any { type_url, value: message.value })
 				})
-				.collect();
+				.collect::<Result<Vec<ibc_proto::google::protobuf::Any>, Error<T>>>()?;
 
-			for (_, message) in messages.into_iter().enumerate() {
-				match ibc::core::ics26_routing::handler::deliver(&mut ctx, message.clone()) {
-					Ok(ibc::core::ics26_routing::handler::MsgReceipt { events, log: _log }) => {
-						log::trace!(target: LOG_TARGET, "deliver events  : {:?} ", events);
-						for event in events {
-							Self::deposit_event(event.into());
-						}
-					},
-					Err(error) => {
-						log::trace!(target: LOG_TARGET, "deliver error  : {:?} ", error);
-					},
-				};
-			}
+			let (events, logs, errors) = messages.into_iter().fold(
+				(vec![], vec![], vec![]),
+				|(mut events, mut logs, mut errors), msg| {
+					match ibc::core::ics26_routing::handler::deliver(&mut ctx, msg) {
+						Ok(MsgReceipt { events: temp_events, log: temp_logs }) => {
+							events.extend(temp_events);
+							logs.extend(temp_logs);
+						},
+						Err(e) => errors.push(e),
+					}
+					(events, logs, errors)
+				},
+			);
+
+			log::trace!(target: "pallet_ibc", "[pallet_ibc_deliver]: logs: {:?}", logs);
+			log::trace!(target: "pallet_ibc", "[pallet_ibc_deliver]: errors: {:?}", errors);
+
+			events.into_iter().for_each(|event| {
+				Self::deposit_event(event.into());
+			});
+			Self::deposit_event(errors.into());
 
 			Ok(().into())
 		}
