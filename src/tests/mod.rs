@@ -2,7 +2,7 @@ use super::*;
 use crate::{mock::*, Context};
 use core::str::FromStr;
 
-use crate::module::core::ics24_host::TENDERMINT_TYPE;
+use crate::module::core::ics24_host::TENDERMINT_CLIENT_TYPE;
 use ibc::core::{
 	ics02_client::{
 		client_type::ClientType,
@@ -26,7 +26,7 @@ use ibc::core::{
 // test store and read client-type
 #[test]
 fn test_store_client_type_ok() {
-	let client_type = ClientType::new(TENDERMINT_TYPE);
+	let client_type = ClientType::new(TENDERMINT_CLIENT_TYPE);
 	let client_id = ClientId::new(client_type, 0).unwrap();
 
 	let mut context: Context<Test> = Context::new();
@@ -40,7 +40,7 @@ fn test_store_client_type_ok() {
 
 #[test]
 fn test_read_client_type_failed_by_supply_error_client_id() {
-	let client_type = ClientType::new(TENDERMINT_TYPE);
+	let client_type = ClientType::new(TENDERMINT_CLIENT_TYPE);
 	let client_id = ClientId::new(client_type, 0).unwrap();
 	let client_id_failed = ClientId::new(client_type, 1).unwrap();
 	let mut context: Context<Test> = Context::new();
@@ -155,7 +155,7 @@ fn test_connection_fail() {
 
 #[test]
 fn test_connection_client_ok() {
-	let client_id = ClientId::new(ClientType::new(TENDERMINT_TYPE), 0).unwrap();
+	let client_id = ClientId::new(ClientType::new(TENDERMINT_CLIENT_TYPE), 0).unwrap();
 	let connection_id = ConnectionId::new(0);
 	let mut context: Context<Test> = Context::new();
 

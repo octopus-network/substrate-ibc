@@ -23,7 +23,7 @@ use ibc::core::ics04_channel::timeout::TimeoutHeight as IbcTimeoutHeight;
 use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
 
-pub const TENDERMINT_TYPE: &'static str = "07-tendermint";
+pub const TENDERMINT_CLIENT_TYPE: &'static str = "07-tendermint";
 
 /// ibc-rs' `PortId` representation in substrate
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
@@ -125,7 +125,7 @@ impl TryFrom<ClientType> for IbcClientType {
 
 	fn try_from(client_type: ClientType) -> Result<IbcClientType, Self::Error> {
 		match client_type.to_string().as_str() {
-			"07-tendermint" => Ok(IbcClientType::new(TENDERMINT_TYPE)),
+			"07-tendermint" => Ok(IbcClientType::new(TENDERMINT_CLIENT_TYPE)),
 			unimplemented => Err(Ics02Error::unknown_client_type(unimplemented.to_string())),
 		}
 	}

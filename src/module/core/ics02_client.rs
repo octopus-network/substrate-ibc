@@ -1,6 +1,6 @@
 use crate::{
 	context::Context,
-	module::core::ics24_host::TENDERMINT_TYPE,
+	module::core::ics24_host::TENDERMINT_CLIENT_TYPE,
 	prelude::{format, String, ToString},
 	ClientCounter, ClientProcessedHeights, ClientProcessedTimes, ClientStates, Clients, Config,
 	ConsensusStates, REVISION_NUMBER,
@@ -38,7 +38,7 @@ impl<T: Config> ClientReader for Context<T> {
 			let data =
 				String::from_utf8(data).map_err(|_| Ics02Error::implementation_specific())?;
 			match data.as_str() {
-				"07-tendermint" => Ok(ClientType::new(TENDERMINT_TYPE)),
+				"07-tendermint" => Ok(ClientType::new(TENDERMINT_CLIENT_TYPE)),
 				unimplemented =>
 					return Err(Ics02Error::unknown_client_type(unimplemented.to_string())),
 			}
@@ -200,7 +200,6 @@ impl<T: Config> ClientReader for Context<T> {
 						.map_err(|_| Ics02Error::implementation_specific())?;
 						return Ok(Some(Box::new(result)))
 					},
-
 					_ => {},
 				}
 			}
