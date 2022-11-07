@@ -9,12 +9,9 @@ use ibc::{
 			height::Height as IbcHeight,
 		},
 		ics04_channel::packet::{Packet as IbcPacket, Sequence as IbcSequence},
-		ics24_host::{
-			error::ValidationError,
-			identifier::{
-				ChannelId as IbcChannelId, ClientId as IbcClientId,
-				ConnectionId as IbcConnectionId, PortId as IbcPortId,
-			},
+		ics24_host::identifier::{
+			ChannelId as IbcChannelId, ClientId as IbcClientId, ConnectionId as IbcConnectionId,
+			PortId as IbcPortId,
 		},
 	},
 	timestamp::Timestamp as IbcTimestamp,
@@ -22,33 +19,11 @@ use ibc::{
 use sp_std::{str::FromStr, vec::Vec};
 
 use codec::{Decode, Encode};
-use flex_error::{define_error, DisplayOnly};
 use ibc::core::ics04_channel::timeout::TimeoutHeight as IbcTimeoutHeight;
 use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
 
 pub const TENDERMINT_TYPE: &'static str = "07-tendermint";
-
-define_error! {
-	#[derive(Debug, PartialEq, Eq)]
-	Error {
-		InvalidFromUtf8
-			[DisplayOnly<alloc::string::FromUtf8Error>]
-			| _ | { "invalid from utf8 error" },
-		InvalidDecode
-			[DisplayOnly<codec::Error>]
-			| _ | { "invalid decode error" },
-		ParseTimestampFailed
-			[DisplayOnly<ibc::timestamp::ParseTimestampError>]
-			| _ | { "invalid parse timestamp error" },
-		ValidationFailed
-			[DisplayOnly<ValidationError>]
-			| _ | { "invalid validation error"},
-		InvalidChainId
-			[DisplayOnly<core::convert::Infallible>]
-			|_| { "invalid chain id error" },
-	}
-}
 
 /// ibc-rs' `PortId` representation in substrate
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]

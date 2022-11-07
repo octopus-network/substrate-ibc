@@ -1,7 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate alloc;
-extern crate core;
 
 use frame_support::traits::Currency;
 /// Edit this file to define custom logic or remove it if it is not needed.
@@ -14,7 +13,6 @@ pub mod ics20_context_channel;
 pub mod ics20_impl;
 pub mod utils;
 
-use alloc::{string::ToString, vec::Vec};
 use ibc_support::AssetIdAndNameProvider;
 
 pub const LOG_TARGET: &str = "runtime::pallet-ics20-transfer";
@@ -25,8 +23,7 @@ type BalanceOf<T> =
 pub mod pallet {
 	use super::*;
 	use crate::{ics20_callback::IbcTransferModule, LOG_TARGET};
-	use alloc::string::String;
-	use core::fmt::Debug;
+	use alloc::string::{String, ToString};
 	use frame_support::{
 		pallet_prelude::*,
 		traits::{
@@ -44,6 +41,7 @@ pub mod pallet {
 	};
 	use ibc_support::AssetIdAndNameProvider;
 	use sp_runtime::traits::IdentifyAccount;
+	use sp_std::{fmt::Debug, vec::Vec};
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]

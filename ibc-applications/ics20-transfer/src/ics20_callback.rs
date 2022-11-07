@@ -1,7 +1,6 @@
 use crate::Config;
 use alloc::string::ToString;
 use codec::{Decode, Encode};
-use core::marker::PhantomData;
 use ibc::{
 	core::{
 		ics04_channel::{
@@ -17,6 +16,7 @@ use ibc::{
 	signer::Signer,
 };
 use ibc_support::ibc_trait::TransferModule;
+use sp_std::marker::PhantomData;
 
 #[derive(Debug, Encode, Decode)]
 pub struct IbcTransferModule<T>(pub PhantomData<T>);

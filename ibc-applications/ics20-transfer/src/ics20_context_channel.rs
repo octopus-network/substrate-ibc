@@ -1,5 +1,4 @@
 use crate::{ics20_callback::IbcTransferModule, *};
-use core::time::Duration;
 use ibc::{
 	core::{
 		ics02_client::{client_state::ClientState, consensus_state::ConsensusState},
@@ -19,7 +18,7 @@ use ibc::{
 	Height,
 };
 use ibc_support::ibc_trait::{IbcSupportChannelKeeper, IbcSupportChannelReader};
-use sp_std::{boxed::Box, vec::Vec};
+use sp_std::{boxed::Box, time::Duration, vec::Vec};
 
 impl<T: Config> ChannelReader for IbcTransferModule<T> {
 	fn channel_end(
