@@ -1,7 +1,7 @@
 use alloc::string::ToString;
 use crate::{
 	context::Context,
-	module::core::ics24_host::{GRANDPA_TYPE, TENDERMINT_TYPE},
+	module::core::ics24_host::TENDERMINT_TYPE,
 };
 use crate::ClientProcessedTimes;
 use crate::ClientStates;
@@ -21,10 +21,6 @@ use ibc::{
 		ics07_tendermint::{
 			client_state::ClientState as Ics07ClientState,
 			consensus_state::ConsensusState as Ics07ConsensusState,
-		},
-		ics10_grandpa::{
-			client_state::ClientState as Ics10ClientSate,
-			consensus_state::ConsensusState as Ics10ConsensuState,
 		},
 	},
 	core::{
@@ -54,7 +50,6 @@ impl<T: Config> ClientReader for Context<T> {
 				String::from_utf8(data).map_err(|_| Ics02Error::implementation_specific())?;
 			match data.as_str() {
 				"07-tendermint" => Ok(ClientType::new(TENDERMINT_TYPE)),
-				"10-grandpa" => Ok(ClientType::new(GRANDPA_TYPE)),
 				unimplemented =>
 					return Err(Ics02Error::unknown_client_type(unimplemented.to_string())),
 			}
@@ -74,11 +69,6 @@ impl<T: Config> ClientReader for Context<T> {
 						.map_err(|_| Ics02Error::implementation_specific())?;
 					return Ok(Box::new(result))
 				},
-				"10-grandpa" => {
-					let result: Ics10ClientSate = Protobuf::<Any>::decode_vec(&data)
-						.map_err(|_| Ics02Error::implementation_specific())?;
-					return Ok(Box::new(result))
-				},
 				unimplemented =>
 					return Err(Ics02Error::unknown_client_type(unimplemented.to_string())),
 			}
@@ -89,8 +79,6 @@ impl<T: Config> ClientReader for Context<T> {
 
 	fn decode_client_state(&self, client_state: Any) -> Result<Box<dyn ClientState>, Ics02Error> {
 		if let Ok(client_state) = Ics07ClientState::try_from(client_state.clone()) {
-			Ok(client_state.into_box())
-		} else if let Ok(client_state) = Ics10ClientSate::try_from(client_state.clone()) {
 			Ok(client_state.into_box())
 		} else {
 			Err(Ics02Error::unknown_client_state_type(client_state.type_url))
@@ -117,11 +105,6 @@ impl<T: Config> ClientReader for Context<T> {
 				"07-terdermint" => {
 					// TODO(davirain): need to make sure whether this is written correctly.
 					let result: Ics07ConsensusState = Protobuf::<Any>::decode_vec(&data)
-						.map_err(|_| Ics02Error::implementation_specific())?;
-					return Ok(Box::new(result))
-				},
-				"10-grandpa" => {
-					let result: Ics10ConsensuState = Protobuf::<Any>::decode_vec(&data)
 						.map_err(|_| Ics02Error::implementation_specific())?;
 					return Ok(Box::new(result))
 				},
@@ -173,11 +156,6 @@ impl<T: Config> ClientReader for Context<T> {
 					"07-terdermint" => {
 						// TODO(davirain): need to make sure whether this is written correctly.
 						let result: Ics07ConsensusState = Protobuf::<Any>::decode_vec(&data)
-							.map_err(|_| Ics02Error::implementation_specific())?;
-						return Ok(Some(Box::new(result)))
-					},
-					"10-grandpa" => {
-						let result: Ics10ConsensuState = Protobuf::<Any>::decode_vec(&data)
 							.map_err(|_| Ics02Error::implementation_specific())?;
 						return Ok(Some(Box::new(result)))
 					},
@@ -233,11 +211,7 @@ impl<T: Config> ClientReader for Context<T> {
 						.map_err(|_| Ics02Error::implementation_specific())?;
 						return Ok(Some(Box::new(result)))
 					},
-					"10-grandpa" => {
-						let result: Ics10ConsensuState = Protobuf::<Any>::decode_vec(&data)
-							.map_err(|_| Ics02Error::implementation_specific())?;
-						return Ok(Some(Box::new(result)))
-					},
+					
 					_ => {},
 				}
 			}

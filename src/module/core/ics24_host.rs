@@ -27,6 +27,8 @@ use sp_runtime::RuntimeDebug;
 use flex_error::{define_error, DisplayOnly};
 use ibc::core::ics04_channel::timeout::TimeoutHeight as IbcTimeoutHeight;
 
+pub const TENDERMINT_TYPE: &'static str = "07-tendermint";
+
 define_error! {
 	#[derive(Debug, PartialEq, Eq)]
 	Error {
@@ -122,8 +124,6 @@ impl Height {
 	}
 }
 
-pub const TENDERMINT_TYPE: &'static str = "07-tendermint";
-pub const GRANDPA_TYPE: &'static str = "10-grandpa";
 
 /// ibc-rs' `ClientType` representation in substrate
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
@@ -152,7 +152,6 @@ impl TryFrom<ClientType> for IbcClientType {
 	fn try_from(client_type: ClientType) -> Result<IbcClientType, Self::Error> {
 		match client_type.to_string().as_str() {
 			"07-tendermint" => Ok(IbcClientType::new(TENDERMINT_TYPE)),
-			"10-grandpa" => Ok(IbcClientType::new(GRANDPA_TYPE)),
 			unimplemented => Err(Ics02Error::unknown_client_type(unimplemented.to_string())),
 		}
 	}
