@@ -14,6 +14,7 @@ pub mod ics20_impl;
 pub mod utils;
 
 use ibc_support::AssetIdAndNameProvider;
+use sp_std::vec::Vec;
 
 pub const LOG_TARGET: &str = "runtime::pallet-ics20-transfer";
 type BalanceOf<T> =

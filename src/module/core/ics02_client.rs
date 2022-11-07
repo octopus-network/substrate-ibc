@@ -7,6 +7,10 @@ use crate::{
 };
 use sp_std::{boxed::Box, vec::Vec};
 
+#[cfg(test)]
+use crate::module::core::ics24_host::MOCK_CLIENT_TYPE;
+#[cfg(test)]
+use ibc::mock::{client_state::MockClientState, consensus_state::MockConsensusState};
 use ibc::{
 	clients::ics07_tendermint::{
 		client_state::ClientState as Ics07ClientState,
@@ -28,6 +32,7 @@ use ibc::{
 	timestamp::Timestamp,
 	Height,
 };
+use frame_support::traits::UnixTime;
 use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
 
 impl<T: Config> ClientReader for Context<T> {
@@ -38,7 +43,9 @@ impl<T: Config> ClientReader for Context<T> {
 			let data =
 				String::from_utf8(data).map_err(|_| Ics02Error::implementation_specific())?;
 			match data.as_str() {
-				"07-tendermint" => Ok(ClientType::new(TENDERMINT_CLIENT_TYPE)),
+				TENDERMINT_CLIENT_TYPE => Ok(ClientType::new(TENDERMINT_CLIENT_TYPE)),
+				#[cfg(test)]
+				MOCK_CLIENT_TYPE => Ok(ClientType::new(MOCK_CLIENT_TYPE)),
 				unimplemented =>
 					return Err(Ics02Error::unknown_client_type(unimplemented.to_string())),
 			}
@@ -52,14 +59,19 @@ impl<T: Config> ClientReader for Context<T> {
 		if <ClientStates<T>>::contains_key(&client_state_path) {
 			let data = <ClientStates<T>>::get(&client_state_path);
 			match self.client_type(client_id)?.as_str() {
-				"07-tendermint" => {
-					// TODO(davirain): need to make sure whether this is written correctly.
+				TENDERMINT_CLIENT_TYPE => {
 					let result: Ics07ClientState = Protobuf::<Any>::decode_vec(&data)
 						.map_err(|_| Ics02Error::implementation_specific())?;
-					return Ok(Box::new(result))
+
+					Ok(Box::new(result))
 				},
-				unimplemented =>
-					return Err(Ics02Error::unknown_client_type(unimplemented.to_string())),
+				#[cfg(test)]
+				MOCK_CLIENT_TYPE => {
+					let result: MockClientState = Protobuf::<Any>::decode_vec(&data)
+						.map_err(|_| Ics02Error::implementation_specific())?;
+					Ok(Box::new(result))
+				},
+				unimplemented => Err(Ics02Error::unknown_client_type(unimplemented.to_string())),
 			}
 		} else {
 			Err(Ics02Error::client_not_found(client_id.clone()))
@@ -68,10 +80,13 @@ impl<T: Config> ClientReader for Context<T> {
 
 	fn decode_client_state(&self, client_state: Any) -> Result<Box<dyn ClientState>, Ics02Error> {
 		if let Ok(client_state) = Ics07ClientState::try_from(client_state.clone()) {
-			Ok(client_state.into_box())
-		} else {
-			Err(Ics02Error::unknown_client_state_type(client_state.type_url))
+			return Ok(client_state.into_box());
+		} 
+		#[cfg(test)]
+		if let Ok(client_state)  = MockClientState::try_from(client_state.clone()) {
+			return Ok(client_state.into_box());
 		}
+		Err(Ics02Error::unknown_client_state_type(client_state.type_url))
 	}
 
 	fn consensus_state(
@@ -91,14 +106,18 @@ impl<T: Config> ClientReader for Context<T> {
 		if <ConsensusStates<T>>::contains_key(client_consensus_state_path.clone()) {
 			let data = <ConsensusStates<T>>::get(client_consensus_state_path);
 			match self.client_type(client_id)?.as_str() {
-				"07-terdermint" => {
-					// TODO(davirain): need to make sure whether this is written correctly.
+				TENDERMINT_CLIENT_TYPE => {
 					let result: Ics07ConsensusState = Protobuf::<Any>::decode_vec(&data)
 						.map_err(|_| Ics02Error::implementation_specific())?;
-					return Ok(Box::new(result))
+					Ok(Box::new(result))
 				},
-				unimplemented =>
-					return Err(Ics02Error::unknown_client_type(unimplemented.to_string())),
+				#[cfg(test)]
+				MOCK_CLIENT_TYPE => {
+					let result: MockConsensusState = Protobuf::<Any>::decode_vec(&data)
+						.map_err(|_| Ics02Error::implementation_specific())?;
+					Ok(Box::new(result))
+				},
+				unimplemented => Err(Ics02Error::unknown_client_type(unimplemented.to_string())),
 			}
 		} else {
 			Err(Ics02Error::consensus_state_not_found(client_id.clone(), height))
@@ -142,9 +161,14 @@ impl<T: Config> ClientReader for Context<T> {
 			if h > height {
 				let data = <ConsensusStates<T>>::get(&client_consensus_state_path);
 				match self.client_type(client_id)?.as_str() {
-					"07-terdermint" => {
-						// TODO(davirain): need to make sure whether this is written correctly.
+					TENDERMINT_CLIENT_TYPE => {
 						let result: Ics07ConsensusState = Protobuf::<Any>::decode_vec(&data)
+							.map_err(|_| Ics02Error::implementation_specific())?;
+						return Ok(Some(Box::new(result)))
+					},
+					#[cfg(test)]
+					MOCK_CLIENT_TYPE => {
+						let result: MockConsensusState = Protobuf::<Any>::decode_vec(&data)
 							.map_err(|_| Ics02Error::implementation_specific())?;
 						return Ok(Some(Box::new(result)))
 					},
@@ -192,12 +216,17 @@ impl<T: Config> ClientReader for Context<T> {
 			if h < height {
 				let data = <ConsensusStates<T>>::get(&client_consensus_state_path);
 				match self.client_type(client_id)?.as_str() {
-					"07-tendermint" => {
-						// TODO(davirain): need to make sure whether this is written correctly.
+					TENDERMINT_CLIENT_TYPE => {
 						let result: Ics07ConsensusState = ibc_proto::protobuf::Protobuf::<
 							ibc_proto::google::protobuf::Any,
 						>::decode_vec(&data)
 						.map_err(|_| Ics02Error::implementation_specific())?;
+						return Ok(Some(Box::new(result)))
+					},
+					#[cfg(test)]
+					MOCK_CLIENT_TYPE => {
+						let result: MockConsensusState = Protobuf::<Any>::decode_vec(&data)
+							.map_err(|_| Ics02Error::implementation_specific())?;
 						return Ok(Some(Box::new(result)))
 					},
 					_ => {},
@@ -212,6 +241,11 @@ impl<T: Config> ClientReader for Context<T> {
 		let current_height: u64 = block_number.parse().unwrap_or_default();
 		Height::new(REVISION_NUMBER, current_height).unwrap()
 	}
+
+	fn host_timestamp(&self) -> Timestamp {
+		let nanoseconds = <T as Config>::TimeProvider::now().as_nanos();
+		Timestamp::from_nanoseconds(nanoseconds as u64).unwrap()
+    }
 
 	fn host_consensus_state(&self, _height: Height) -> Result<Box<dyn ConsensusState>, Ics02Error> {
 		Err(Ics02Error::implementation_specific())

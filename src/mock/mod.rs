@@ -35,6 +35,7 @@ construct_runtime!(
 		System: frame_system,
 		Assets: pallet_assets::<Instance1>,
 		Balances: pallet_balances,
+		Timestamp: pallet_timestamp,
 		Ibc: pallet_ibc,
 		Ics20Transfer: pallet_ics20_transfer,
 	}

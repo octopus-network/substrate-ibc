@@ -1,3 +1,5 @@
+mod client;
+
 use super::*;
 use crate::{mock::*, Context};
 use core::str::FromStr;

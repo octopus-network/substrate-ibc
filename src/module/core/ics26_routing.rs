@@ -35,10 +35,10 @@ pub struct Router(BTreeMap<ModuleId, Arc<dyn Module>>);
 
 impl Debug for Router {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		let mut keys = vec![];
-		for (key, _) in self.0.iter() {
-			keys.push(format!("{}", key));
-		}
+		let keys = self
+			.0
+			.iter()
+			.fold(vec![], |acc, (key, _)| [acc, vec![format!("{}", key)]].concat());
 
 		write!(f, "Router(BTreeMap(key({:?})", keys.join(","))
 	}
