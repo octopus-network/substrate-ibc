@@ -2,13 +2,8 @@ use super::*;
 use crate::{mock::*, Context};
 use core::str::FromStr;
 
-use crate::module::core::ics24_host::GRANDPA_TYPE;
+use crate::module::core::ics24_host::TENDERMINT_TYPE;
 use ibc::{
-	clients::ics10_grandpa::{
-		client_state::ClientState as GPClientState,
-		consensus_state::ConsensusState as GPConsensusState,
-		help::{Commitment, ValidatorSet},
-	},
 	core::{
 		ics02_client::{
 			client_type::ClientType,
@@ -26,170 +21,40 @@ use ibc::{
 			error::Error as ICS04Error,
 			packet::Sequence,
 		},
-		ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
+		ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
 	},
-	ics04_channel::{
-		channel::ChannelEnd,
-		context::{ChannelKeeper, ChannelReader},
-		error::Error as ICS04Error,
-		packet::Sequence,
-	},
-	ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
 };
 
 // test store and read client-type
 #[test]
 fn test_store_client_type_ok() {
-	let gp_client_type = ClientType::new(GRANDPA_TYPE);
-	let gp_client_id = ClientId::new(gp_client_type, 0).unwrap();
+	let client_type = ClientType::new(TENDERMINT_TYPE);
+	let client_id = ClientId::new(client_type, 0).unwrap();
 
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		assert!(context.store_client_type(gp_client_id.clone(), gp_client_type).is_ok());
-		let ret = context.client_type(&gp_client_id).unwrap();
-		assert_eq!(ret, gp_client_type);
+		assert!(context.store_client_type(client_id.clone(), client_type).is_ok());
+		let ret = context.client_type(&client_id).unwrap();
+		assert_eq!(ret, client_type);
 	})
 }
 
 #[test]
 fn test_read_client_type_failed_by_supply_error_client_id() {
-	let gp_client_type = ClientType::new(GRANDPA_TYPE);
-	let gp_client_id = ClientId::new(gp_client_type, 0).unwrap();
-	let gp_client_id_failed = ClientId::new(gp_client_type, 1).unwrap();
+	let client_type = ClientType::new(TENDERMINT_TYPE);
+	let client_id = ClientId::new(client_type, 0).unwrap();
+	let client_id_failed = ClientId::new(client_type, 1).unwrap();
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		assert!(context.store_client_type(gp_client_id.clone(), gp_client_type).is_ok());
-		let ret = context.client_type(&gp_client_id_failed).unwrap_err().to_string();
-		assert_eq!(ret, ICS02Error::client_not_found(gp_client_id_failed).to_string());
+		assert!(context.store_client_type(client_id.clone(), client_type).is_ok());
+		let ret = context.client_type(&client_id_failed).unwrap_err().to_string();
+		assert_eq!(ret, ICS02Error::client_not_found(client_id_failed).to_string());
 	})
 }
 
-// test store client_state
-#[test]
-fn test_store_client_state_ok() {
-	let gp_client_id = ClientId::new(ClientType::new(GRANDPA_TYPE), 0).unwrap();
 
-	let gp_client_state = GPClientState::new(
-		ChainId::new("ibc".to_string(), 0),
-		0,
-		Commitment::default(),
-		ValidatorSet::default(),
-	)
-	.unwrap();
-
-	let mut context: Context<Test> = Context::new();
-
-	new_test_ext().execute_with(|| {
-		assert!(context
-			.store_client_state(gp_client_id.clone(), Box::new(gp_client_state))
-			.is_ok());
-	})
-}
-
-#[test]
-fn test_read_client_state_failed_by_supply_error_client_id() {
-	let gp_client_id = ClientId::new(ClientType::new(GRANDPA_TYPE), 0).unwrap();
-	let gp_client_id_failed = ClientId::new(ClientType::new(GRANDPA_TYPE), 1).unwrap();
-	let gp_client_state = GPClientState::new(
-		ChainId::new("ibc".to_string(), 0),
-		0,
-		Commitment::default(),
-		ValidatorSet::default(),
-	)
-	.unwrap();
-
-	let mut context: Context<Test> = Context::new();
-
-	new_test_ext().execute_with(|| {
-		assert!(context
-			.store_client_state(gp_client_id.clone(), Box::new(gp_client_state))
-			.is_ok());
-		let ret = ClientReader::client_state(&context, &gp_client_id_failed)
-			.unwrap_err()
-			.to_string();
-		assert_eq!(ret, ICS02Error::client_not_found(gp_client_id_failed).to_string());
-	})
-}
-
-#[test]
-fn test_store_consensus_state_ok() {
-	let gp_client_id = ClientId::new(ClientType::new(GRANDPA_TYPE), 0).unwrap();
-	let height = Height::new(0, 1).unwrap();
-	let gp_consensus_state = GPConsensusState::default();
-
-	let mut context: Context<Test> = Context::new();
-
-	new_test_ext().execute_with(|| {
-		assert!(context
-			.store_consensus_state(gp_client_id.clone(), height, Box::new(gp_consensus_state))
-			.is_ok());
-	})
-}
-
-#[test]
-fn test_read_consensus_state_failed_by_supply_error_client_id() {
-	let gp_client_id = ClientId::new(ClientType::new(GRANDPA_TYPE), 0).unwrap();
-	let gp_client_id_failed = ClientId::new(ClientType::new(GRANDPA_TYPE), 1).unwrap();
-
-	let height = Height::new(0, 1).unwrap();
-	let gp_consensus_state = GPConsensusState::default();
-	let consensus_state = Box::new(gp_consensus_state);
-
-	let mut context: Context<Test> = Context::new();
-
-	new_test_ext().execute_with(|| {
-		assert_eq!(
-			context
-				.store_consensus_state(gp_client_id.clone(), height, consensus_state.clone())
-				.is_ok(),
-			true
-		);
-		let ret = context.consensus_state(&gp_client_id_failed, height).unwrap_err().to_string();
-		assert_eq!(
-			ret,
-			ICS02Error::consensus_state_not_found(gp_client_id_failed.clone(), height.clone())
-				.to_string()
-		);
-	})
-}
-
-#[test]
-fn test_get_identified_any_client_state_ok() {
-	let range = (0..10).into_iter().collect::<Vec<u8>>();
-
-	let mut client_state_vec = vec![];
-	let mut gp_client_id_vec = vec![];
-
-	for index in range.clone() {
-		let gp_client_id = ClientId::new(ClientType::new(GRANDPA_TYPE), index as u64).unwrap();
-		let gp_client_state = GPClientState::new(
-			ChainId::new("ibc".to_string(), 0),
-			0,
-			Commitment::default(),
-			ValidatorSet::default(),
-		)
-		.unwrap();
-		let client_state = Box::new(gp_client_state);
-
-		gp_client_id_vec.push(gp_client_id);
-		client_state_vec.push(client_state);
-	}
-
-	let mut context: Context<Test> = Context::new();
-
-	new_test_ext().execute_with(|| {
-		for index in 0..range.len() {
-			assert!(context
-				.store_client_state(
-					gp_client_id_vec[index].clone(),
-					client_state_vec[index].clone()
-				)
-				.is_ok());
-		}
-	})
-}
 
 #[test]
 fn test_get_packet_commitment_state_ok() {
@@ -294,12 +159,12 @@ fn test_connection_fail() {
 
 #[test]
 fn test_connection_client_ok() {
-	let gp_client_id = ClientId::new(ClientType::new(GRANDPA_TYPE), 0).unwrap();
+	let client_id = ClientId::new(ClientType::new(TENDERMINT_TYPE), 0).unwrap();
 	let connection_id = ConnectionId::new(0);
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		assert!(context.store_connection_to_client(connection_id, &gp_client_id).is_ok());
+		assert!(context.store_connection_to_client(connection_id, &client_id).is_ok());
 	})
 }
 
@@ -356,7 +221,7 @@ fn test_get_acknowledge_state() {
 		sequence_vec.push(sequence);
 		ack_vec.push(AcknowledgementCommitment::from(vec![index as u8]));
 
-		value_vec.push(ChannelReader::hash(&context, vec![index as u8]).encode());
+		value_vec.push(ChannelReader::hash(&context, vec![index as u8]));
 	}
 
 	new_test_ext().execute_with(|| {
