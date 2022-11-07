@@ -8,7 +8,6 @@ homepage = "https://oct.network"
 repository 	= "https://github.com/octopus-network/substrate-ibc/"
 description = "An IBC implementation on Substrate."
 readme = "README.md"
-build = 'build.rs'
 
 [workspace]
 members = [
@@ -18,10 +17,6 @@ members = [
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
-
-[build-dependencies.substrate-wasm-builder]
-branch = 'polkadot-v0.9.30'
-git = 'https://github.com/paritytech/substrate.git'
 
 [dependencies]
 #local crates
@@ -52,7 +47,6 @@ time = { version = ">=0.3.0, <0.3.12", default-features = false, features = ["ma
 ibc = { version = "0.21.1", default-features = false }
 ibc-proto = { version = "0.21.0", default-features = false}
 tendermint-proto = { version = "=0.25.0", default-features = false }
-beefy-light-client = { git = "https://github.com/octopus-network/beefy-light-client.git", branch="davirain/dev", default-features = false }
 
 [dev-dependencies]
 #local crates
@@ -96,7 +90,6 @@ std = [
 	"prost/std",
 	"ibc/std",
 	"ibc-proto/std",
-	"beefy-light-client/std",
 	"serde_json/std",
 	"serde/std",
 	"flex-error/std",
