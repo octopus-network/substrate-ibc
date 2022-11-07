@@ -1,13 +1,8 @@
-use crate::ConnectionCounter;
-use crate::context::Context;
-use crate::ConnectionClient;
-use crate::Connections;
-use crate::Config;
-use crate::alloc::string::ToString;
+use crate::{
+	alloc::string::ToString, context::Context, prelude::format, Config, ConnectionClient,
+	ConnectionCounter, Connections, OldHeight, REVISION_NUMBER,
+};
 use sp_std::boxed::Box;
-use crate::REVISION_NUMBER;
-use crate::OldHeight;
-use crate::prelude::format;
 
 use ibc::{
 	core::{

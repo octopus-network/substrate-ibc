@@ -1,9 +1,7 @@
-use crate::prelude::ToString;
-use crate::Config;
-use sp_std::vec::Vec;
-use crate::Event;
+use crate::{prelude::ToString, Config, Event};
 use codec::{Decode, Encode};
 use ibc::core::ics26_routing::error::{Error as RoutingError, ErrorDetail};
+use sp_std::vec::Vec;
 
 #[derive(
 	PartialEq, Eq, Clone, frame_support::RuntimeDebug, scale_info::TypeInfo, Encode, Decode,

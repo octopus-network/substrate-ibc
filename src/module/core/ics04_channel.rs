@@ -1,24 +1,11 @@
-use crate::context::Context;
-use crate::ChannelCounter;
-use crate::NextSequenceAck;
-use crate::NextSequenceRecv;
-use crate::NextSequenceSend;
-use crate::Channels;
-use crate::ChannelsConnection;
-use crate::Acknowledgements;
-use crate::PacketReceipt;
-use crate::PacketCommitment;
-use crate::Config;
-use crate::ClientProcessedHeights;
-use crate::Pallet;
-use crate::ClientProcessedTimes;
-use sp_std::{boxed::Box, vec::Vec};
-use sp_std::vec;
-use crate::REVISION_NUMBER;
-use crate::IbcChannelId;
-use crate::Store;
-use crate::prelude::{ToString, String, format};
-
+use crate::{
+	context::Context,
+	prelude::{format, String, ToString},
+	Acknowledgements, ChannelCounter, Channels, ChannelsConnection, ClientProcessedHeights,
+	ClientProcessedTimes, Config, IbcChannelId, NextSequenceAck, NextSequenceRecv,
+	NextSequenceSend, PacketCommitment, PacketReceipt, Pallet, Store, REVISION_NUMBER,
+};
+use sp_std::{boxed::Box, vec, vec::Vec};
 
 use core::{str::FromStr, time::Duration};
 use ibc::{
@@ -723,7 +710,6 @@ impl<T: Config> IbcSupportChannelKeeper for Context<T> {
 		channel_id: ChannelId,
 		seq: Sequence,
 	) -> Result<(), Ics04Error> {
-
 		let seq_recvs_path = SeqRecvsPath(port_id.clone(), channel_id.clone())
 			.to_string()
 			.as_bytes()

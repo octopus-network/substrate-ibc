@@ -3,26 +3,24 @@ use crate::{mock::*, Context};
 use core::str::FromStr;
 
 use crate::module::core::ics24_host::TENDERMINT_TYPE;
-use ibc::{
-	core::{
-		ics02_client::{
-			client_type::ClientType,
-			context::{ClientKeeper, ClientReader},
-			error::Error as ICS02Error,
-		},
-		ics03_connection::{
-			connection::ConnectionEnd,
-			context::{ConnectionKeeper, ConnectionReader},
-			error::Error as ICS03Error,
-		},
-		ics04_channel::{
-			channel::ChannelEnd,
-			context::{ChannelKeeper, ChannelReader},
-			error::Error as ICS04Error,
-			packet::Sequence,
-		},
-		ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
+use ibc::core::{
+	ics02_client::{
+		client_type::ClientType,
+		context::{ClientKeeper, ClientReader},
+		error::Error as ICS02Error,
 	},
+	ics03_connection::{
+		connection::ConnectionEnd,
+		context::{ConnectionKeeper, ConnectionReader},
+		error::Error as ICS03Error,
+	},
+	ics04_channel::{
+		channel::ChannelEnd,
+		context::{ChannelKeeper, ChannelReader},
+		error::Error as ICS04Error,
+		packet::Sequence,
+	},
+	ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
 };
 
 // test store and read client-type
@@ -53,8 +51,6 @@ fn test_read_client_type_failed_by_supply_error_client_id() {
 		assert_eq!(ret, ICS02Error::client_not_found(client_id_failed).to_string());
 	})
 }
-
-
 
 #[test]
 fn test_get_packet_commitment_state_ok() {
@@ -401,7 +397,6 @@ fn test_get_identified_channel_end() {
 
 #[test]
 fn test_next_sequence_recv_fail() {
-
 	let port_id = PortId::default();
 	let channel_id = ChannelId::new(0);
 	let context: Context<Test> = Context::new();

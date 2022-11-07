@@ -1,8 +1,4 @@
-use crate::{
-	context::Context, utils::host_height, Config, REVISION_NUMBER,
-};
-use crate::prelude::ToString;
-use sp_std::boxed::Box;
+use crate::{context::Context, prelude::ToString, utils::host_height, Config, REVISION_NUMBER};
 use ibc::{
 	core::{
 		ics02_client::{client_state::ClientState, context::ClientReader, header::Header},
@@ -16,6 +12,7 @@ use ibc::{
 };
 use ibc_proto::google::protobuf::Any;
 use scale_info::prelude::{vec, vec::Vec};
+use sp_std::boxed::Box;
 
 impl<T: Config> Ics18Context for Context<T> {
 	fn query_latest_height(&self) -> Height {

@@ -1,7 +1,6 @@
 use crate::{ics20_callback::IbcTransferModule, utils::get_channel_escrow_address, *};
 use alloc::string::ToString;
 use codec::{Decode, Encode};
-use sp_std::str::FromStr;
 use frame_support::traits::{
 	fungibles::{Mutate, Transfer},
 	ExistenceRequirement::AllowDeath,
@@ -23,6 +22,7 @@ use sp_runtime::{
 	traits::{CheckedConversion, IdentifyAccount, Verify},
 	MultiSignature,
 };
+use sp_std::str::FromStr;
 
 impl<T: Config> Ics20Keeper for IbcTransferModule<T> {
 	type AccountId = <Self as Ics20Context>::AccountId;

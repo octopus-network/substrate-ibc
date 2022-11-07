@@ -1,14 +1,13 @@
-use crate::Event;
-use crate::prelude::format;
+use crate::{
+	module::core::ics24_host::{ChannelId, ClientId, ClientType, ConnectionId, Height},
+	prelude::{format, String},
+	Config, Event,
+};
 use codec::{Decode, Encode};
+use ibc::{core::ics26_routing, events::IbcEvent as RawIbcEvent};
 use scale_info::TypeInfo;
 use sp_core::RuntimeDebug;
-use sp_std::vec::Vec;
-use crate::prelude::String;
-use ibc::{core::ics26_routing, events::IbcEvent as RawIbcEvent};
-use crate::module::core::ics24_host::{ClientType, ClientId, ChannelId, ConnectionId, Height};
-use crate::Config;
-use sp_std::str::FromStr;
+use sp_std::{str::FromStr, vec::Vec};
 
 /// ibc-rs' `ModuleEvent` representation in substrate
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
@@ -135,7 +134,7 @@ impl<T: Config> From<RawIbcEvent> for Event<T> {
 					open_init_connection.0.connection_id.clone().map(|val| val.into());
 				let client_id = open_init_connection.0.client_id.clone();
 				let counterparty_connection_id: Option<ConnectionId> = open_init_connection
-				.0
+					.0
 					.counterparty_connection_id
 					.clone()
 					.map(|val| ConnectionId::from(val.clone()));
@@ -153,7 +152,8 @@ impl<T: Config> From<RawIbcEvent> for Event<T> {
 					open_try_connection.0.connection_id.clone().map(|val| val.into());
 				let client_id = open_try_connection.0.client_id.clone();
 				let counterparty_connection_id: Option<ConnectionId> = open_try_connection
-					.0.counterparty_connection_id
+					.0
+					.counterparty_connection_id
 					.clone()
 					.map(|val| ConnectionId::from(val.clone()));
 				let counterparty_client_id = open_try_connection.0.counterparty_client_id.clone();
@@ -167,10 +167,11 @@ impl<T: Config> From<RawIbcEvent> for Event<T> {
 			},
 			RawIbcEvent::OpenAckConnection(open_ack_connection) => {
 				let connection_id =
-				open_ack_connection.0.connection_id.clone().map(|val| val.into());
+					open_ack_connection.0.connection_id.clone().map(|val| val.into());
 				let client_id = open_ack_connection.0.client_id.clone();
 				let counterparty_connection_id: Option<ConnectionId> = open_ack_connection
-					.0.counterparty_connection_id
+					.0
+					.counterparty_connection_id
 					.clone()
 					.map(|val| ConnectionId::from(val.clone()));
 				let counterparty_client_id = open_ack_connection.0.counterparty_client_id.clone();
@@ -184,10 +185,11 @@ impl<T: Config> From<RawIbcEvent> for Event<T> {
 			},
 			RawIbcEvent::OpenConfirmConnection(open_confirm_connection) => {
 				let connection_id =
-				open_confirm_connection.0.connection_id.clone().map(|val| val.into());
+					open_confirm_connection.0.connection_id.clone().map(|val| val.into());
 				let client_id = open_confirm_connection.0.client_id.clone();
 				let counterparty_connection_id: Option<ConnectionId> = open_confirm_connection
-					.0.counterparty_connection_id
+					.0
+					.counterparty_connection_id
 					.clone()
 					.map(|val| ConnectionId::from(val.clone()));
 				let counterparty_client_id =

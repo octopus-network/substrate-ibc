@@ -1,13 +1,16 @@
-use crate::{context::Context};
-use crate::Config;
-use sp_std::borrow::Borrow;
-use sp_std::collections::btree_map::BTreeMap;
-use sp_std::fmt::{self, Debug};
-use sp_std::sync::Arc;
-use crate::prelude::{String, format};
-use sp_std::borrow::ToOwned;
-use sp_std::vec;
+use crate::{
+	context::Context,
+	prelude::{format, String},
+	Config,
+};
 use ibc::core::ics26_routing::context::{Ics26Context, Module, ModuleId, RouterBuilder};
+use sp_std::{
+	borrow::{Borrow, ToOwned},
+	collections::btree_map::BTreeMap,
+	fmt::{self, Debug},
+	sync::Arc,
+	vec,
+};
 
 #[derive(Default)]
 pub struct SubstrateRouterBuilder(Router);

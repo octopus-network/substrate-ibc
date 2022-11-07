@@ -1,6 +1,4 @@
-use crate::context::Context;
-use crate::Config;
-use sp_std::str::FromStr;
+use crate::{context::Context, Config};
 use ibc::{
 	applications::transfer::{
 		MODULE_ID_STR as TRANSFER_MODULE_ID, PORT_ID_STR as TRANSFER_PORT_ID,
@@ -11,6 +9,7 @@ use ibc::{
 		ics26_routing::context::ModuleId,
 	},
 };
+use sp_std::str::FromStr;
 
 impl<T: Config> PortReader for Context<T> {
 	fn lookup_module_by_port(&self, port_id: &PortId) -> Result<ModuleId, ICS05Error> {

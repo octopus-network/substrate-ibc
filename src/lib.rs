@@ -14,21 +14,17 @@ extern crate core;
 
 pub use pallet::*;
 
-use crate::prelude::{
-	String
-};
-use sp_std::fmt::Debug;
+use crate::prelude::String;
 use frame_system::ensure_signed;
 use ibc::core::ics24_host::identifier::ChannelId as IbcChannelId;
-use sp_std::vec::Vec;
-use sp_std::vec;
+use sp_std::{fmt::Debug, vec, vec::Vec};
 
 pub mod context;
 pub mod errors;
 pub mod events;
 pub mod module;
-pub mod utils;
 pub mod prelude;
+pub mod utils;
 
 pub use crate::{
 	context::Context,

@@ -1,5 +1,7 @@
-use crate::REVISION_NUMBER;
-use crate::prelude::{String, ToString};
+use crate::{
+	prelude::{String, ToString},
+	REVISION_NUMBER,
+};
 use ibc::{
 	core::{
 		ics02_client::{
@@ -20,10 +22,10 @@ use ibc::{
 use sp_std::{str::FromStr, vec::Vec};
 
 use codec::{Decode, Encode};
-use scale_info::TypeInfo;
-use sp_runtime::RuntimeDebug;
 use flex_error::{define_error, DisplayOnly};
 use ibc::core::ics04_channel::timeout::TimeoutHeight as IbcTimeoutHeight;
+use scale_info::TypeInfo;
+use sp_runtime::RuntimeDebug;
 
 pub const TENDERMINT_TYPE: &'static str = "07-tendermint";
 
@@ -121,7 +123,6 @@ impl Height {
 		Self { revision_number, revision_height }
 	}
 }
-
 
 /// ibc-rs' `ClientType` representation in substrate
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]

@@ -5,10 +5,10 @@ pub mod ibc_trait;
 
 extern crate alloc;
 
-use sp_std::vec::Vec;
 use codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
+use sp_std::vec::Vec;
 
 /// A trait handling asset ID and name
 pub trait AssetIdAndNameProvider<AssetId> {

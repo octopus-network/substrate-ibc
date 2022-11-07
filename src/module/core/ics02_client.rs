@@ -1,24 +1,16 @@
-use crate::prelude::{ToString, String, format};
 use crate::{
 	context::Context,
 	module::core::ics24_host::TENDERMINT_TYPE,
+	prelude::{format, String, ToString},
+	ClientCounter, ClientProcessedHeights, ClientProcessedTimes, ClientStates, Clients, Config,
+	ConsensusStates, REVISION_NUMBER,
 };
-use crate::ClientProcessedTimes;
-use crate::ClientStates;
 use sp_std::{boxed::Box, vec::Vec};
-use crate::REVISION_NUMBER;
-use crate::ConsensusStates;
-use crate::ClientProcessedHeights;
-use crate::ClientCounter;
-use crate::Config;
-use crate::Clients;
 
 use ibc::{
-	clients::{
-		ics07_tendermint::{
-			client_state::ClientState as Ics07ClientState,
-			consensus_state::ConsensusState as Ics07ConsensusState,
-		},
+	clients::ics07_tendermint::{
+		client_state::ClientState as Ics07ClientState,
+		consensus_state::ConsensusState as Ics07ConsensusState,
 	},
 	core::{
 		ics02_client::{
@@ -208,7 +200,7 @@ impl<T: Config> ClientReader for Context<T> {
 						.map_err(|_| Ics02Error::implementation_specific())?;
 						return Ok(Some(Box::new(result)))
 					},
-					
+
 					_ => {},
 				}
 			}
