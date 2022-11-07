@@ -515,7 +515,7 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 			client_id.as_bytes(),
 			height.encode_vec().map_err(|_| Ics04Error::implementation_specific())?,
 		) {
-			let host_height = <ClientUpdateHeight<T>>::get(
+			let host_height = <ClientProcessedHeights<T>>::get(
 				client_id.as_bytes(),
 				height.encode_vec().map_err(|_| Ics04Error::implementation_specific())?,
 			);

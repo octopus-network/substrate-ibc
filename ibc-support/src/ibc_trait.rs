@@ -58,7 +58,7 @@ pub trait IbcSupportChannelReader {
 		port_id: &PortId,
 		channel_id: &ChannelId,
 		sequence: Sequence,
-	) -> Result<IbcPacketCommitment, Ics04Error>;
+	) -> Result<PacketCommitment, Ics04Error>;
 
 	fn get_packet_receipt(
 		port_id: &PortId,
@@ -70,7 +70,7 @@ pub trait IbcSupportChannelReader {
 		port_id: &PortId,
 		channel_id: &ChannelId,
 		sequence: Sequence,
-	) -> Result<IbcAcknowledgementCommitment, Ics04Error>;
+	) -> Result<AcknowledgementCommitment, Ics04Error>;
 
 	/// A hashing function for packet commitments
 	fn hash(value: Vec<u8>) -> Vec<u8>;
@@ -108,7 +108,7 @@ pub trait IbcSupportChannelKeeper {
 		port_id: PortId,
 		channel_id: ChannelId,
 		sequence: Sequence,
-		commitment: IbcPacketCommitment,
+		commitment: PacketCommitment,
 	) -> Result<(), Ics04Error>;
 
 	fn delete_packet_commitment(
@@ -128,7 +128,7 @@ pub trait IbcSupportChannelKeeper {
 		port_id: PortId,
 		channel_id: ChannelId,
 		sequence: Sequence,
-		ack_commitment: IbcAcknowledgementCommitment,
+		ack_commitment: AcknowledgementCommitment,
 	) -> Result<(), Ics04Error>;
 
 	fn delete_packet_acknowledgement(

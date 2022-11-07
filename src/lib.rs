@@ -127,7 +127,7 @@ pub mod pallet {
 
 	#[pallet::storage]
 	/// (client_id, height) => host_height
-	pub type ClientUpdateHeight<T: Config> = StorageDoubleMap<
+	pub type ClientProcessedHeights<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
 		OctopusClientId,
@@ -250,28 +250,28 @@ pub mod pallet {
 		ClientMisbehaviour { client_id: ClientId, client_type: ClientType },
 		/// Connection open init event
 		OpenInitConnection {
-			connection_id: ConnectionId,
+			connection_id: Option<ConnectionId>,
 			client_id: ClientId,
 			counterparty_connection_id: Option<ConnectionId>,
 			counterparty_client_id: ClientId,
 		},
 		/// Connection open try event
 		OpenTryConnection {
-			connection_id: ConnectionId,
+			connection_id: Option<ConnectionId>,
 			client_id: ClientId,
 			counterparty_connection_id: Option<ConnectionId>,
 			counterparty_client_id: ClientId,
 		},
 		/// Connection open acknowledgement event
 		OpenAckConnection {
-			connection_id: ConnectionId,
+			connection_id: Option<ConnectionId>,
 			client_id: ClientId,
 			counterparty_connection_id: Option<ConnectionId>,
 			counterparty_client_id: ClientId,
 		},
 		/// Connection open confirm event
 		OpenConfirmConnection {
-			connection_id: ConnectionId,
+			connection_id: Option<ConnectionId>,
 			client_id: ClientId,
 			counterparty_connection_id: Option<ConnectionId>,
 			counterparty_client_id: ClientId,
