@@ -1,4 +1,6 @@
-use crate::*;
+use crate::Config;
+use sp_std::marker::PhantomData;
+
 use ibc::{applications::transfer::MODULE_ID_STR, core::ics26_routing::context::RouterBuilder};
 use pallet_ics20_transfer::ics20_callback::IbcTransferModule;
 

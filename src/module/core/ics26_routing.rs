@@ -1,10 +1,12 @@
-use crate::{context::Context, *};
-use alloc::{
-	borrow::{Borrow, ToOwned},
-	collections::BTreeMap,
-	sync::Arc,
-};
-use core::fmt::Formatter;
+use crate::{context::Context};
+use crate::Config;
+use sp_std::borrow::Borrow;
+use sp_std::collections::btree_map::BTreeMap;
+use sp_std::fmt::{self, Debug};
+use sp_std::sync::Arc;
+use crate::prelude::{String, format};
+use sp_std::borrow::ToOwned;
+use sp_std::vec;
 use ibc::core::ics26_routing::context::{Ics26Context, Module, ModuleId, RouterBuilder};
 
 #[derive(Default)]
@@ -29,7 +31,7 @@ impl RouterBuilder for SubstrateRouterBuilder {
 pub struct Router(BTreeMap<ModuleId, Arc<dyn Module>>);
 
 impl Debug for Router {
-	fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		let mut keys = vec![];
 		for (key, _) in self.0.iter() {
 			keys.push(format!("{}", key));

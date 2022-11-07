@@ -1,7 +1,7 @@
 use crate::{ics20_callback::IbcTransferModule, utils::get_channel_escrow_address, *};
 use alloc::string::ToString;
 use codec::{Decode, Encode};
-use core::str::FromStr;
+use sp_std::str::FromStr;
 use frame_support::traits::{
 	fungibles::{Mutate, Transfer},
 	ExistenceRequirement::AllowDeath,

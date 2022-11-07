@@ -5,7 +5,7 @@ pub mod ibc_trait;
 
 extern crate alloc;
 
-use alloc::vec::Vec;
+use sp_std::vec::Vec;
 use codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;

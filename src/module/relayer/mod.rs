@@ -1,7 +1,8 @@
 use crate::{
-	alloc::string::ToString, context::Context, utils::host_height, Config, REVISION_NUMBER,
+	context::Context, utils::host_height, Config, REVISION_NUMBER,
 };
-use alloc::boxed::Box;
+use crate::prelude::ToString;
+use sp_std::boxed::Box;
 use ibc::{
 	core::{
 		ics02_client::{client_state::ClientState, context::ClientReader, header::Header},

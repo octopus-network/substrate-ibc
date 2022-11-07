@@ -1,5 +1,6 @@
 use crate::{ics20_callback::IbcTransferModule, *};
-use alloc::{boxed::Box, vec::Vec};
+use sp_std::boxed::Box;
+use sp_std::vec::Vec;
 use core::time::Duration;
 use ibc::{
 	core::{

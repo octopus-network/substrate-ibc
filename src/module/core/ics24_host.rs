@@ -1,5 +1,5 @@
 use crate::REVISION_NUMBER;
-use alloc::string::{String, ToString};
+use crate::prelude::{String, ToString};
 use ibc::{
 	core::{
 		ics02_client::{
@@ -21,9 +21,7 @@ use sp_std::{str::FromStr, vec::Vec};
 
 use codec::{Decode, Encode};
 use scale_info::TypeInfo;
-
 use sp_runtime::RuntimeDebug;
-
 use flex_error::{define_error, DisplayOnly};
 use ibc::core::ics04_channel::timeout::TimeoutHeight as IbcTimeoutHeight;
 

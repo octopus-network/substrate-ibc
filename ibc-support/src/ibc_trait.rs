@@ -1,6 +1,5 @@
-use alloc::{boxed::Box, vec::Vec};
+use sp_std::{boxed::Box, vec::Vec, time::Duration};
 use codec::{Decode, Encode};
-use core::time::Duration;
 use ibc::{
 	core::{
 		ics02_client::{client_state::ClientState, consensus_state::ConsensusState},
