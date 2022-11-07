@@ -5,6 +5,7 @@ use pallet_ics20_transfer::ics20_callback::IbcTransferModule;
 /// A struct capturing all the functional dependencies (i.e., context)
 /// which the ICS26 module requires to be able to dispatch and process IBC messages.
 use crate::module::core::ics26_routing::{Router, SubstrateRouterBuilder};
+
 #[derive(Clone, Debug)]
 pub struct Context<T: Config> {
 	pub _pd: PhantomData<T>,

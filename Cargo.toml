@@ -1,6 +1,6 @@
 [package]
 name = 'pallet-ibc'
-version = "3.0.0-pre.0"
+version = "3.0.0"
 authors = ['Octopus Network <hi@oct.network>']
 edition = '2021'
 license = "Apache-2.0"
@@ -20,7 +20,7 @@ members = [
 targets = ["x86_64-unknown-linux-gnu"]
 
 [build-dependencies.substrate-wasm-builder]
-branch = 'polkadot-v0.9.28'
+branch = 'polkadot-v0.9.30'
 git = 'https://github.com/paritytech/substrate.git'
 
 [dependencies]
@@ -38,6 +38,7 @@ frame-system = { git = "https://github.com/paritytech/substrate.git", branch = "
 sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30", default-features = false }
 sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30", default-features = false }
 sp-tracing = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30", default-features = false }
+
 # third-party libraries
 log = { version = "0.4.0", default-features = false }
 prost-types = { version = "0.11", default-features = false }
@@ -48,10 +49,10 @@ flex-error = { version = "0.4.4", default-features = false }
 hex = {version = "0.4.0", default-features = false }
 time = { version = ">=0.3.0, <0.3.12", default-features = false, features = ["macros", "parsing"] }
 ## for ibc protocl
-ibc = { version = "0.19.0", default-features = false, branch = "dev", git = "https://github.com/octopus-network/cosmos-ibc-rs.git" }
-ibc-proto = { version = "0.20", default-features = false }
-tendermint-proto = { version = "=0.25.0", default-features = false }
-beefy-light-client = { git = "https://github.com/octopus-network/beefy-light-client.git", branch = "main", default-features = false }
+ibc = { version = "0.21.0", default-features = false, git = "https://github.com/octopus-network/ibc-rs.git", branch = "dev"}
+ibc-proto = { version = "0.21.0", default-features = false, git = "https://github.com/octopus-network/ibc-proto-rs.git", branch = "dev"}
+tendermint-proto = { version = "=0.23.7", default-features = false }
+beefy-light-client = { git = "https://github.com/octopus-network/beefy-light-client.git", branch="davirain/dev", default-features = false }
 
 [dev-dependencies]
 #local crates
@@ -62,7 +63,7 @@ sha2 = '0.10.2'
 serde = "1.0"
 chrono = "0.4.19"
 # ibc protocol crates
-ibc = { version = "0.19.0", branch = "dev", git = "https://github.com/octopus-network/cosmos-ibc-rs.git" }
+ibc = { version = "0.21.0", git = "https://github.com/octopus-network/ibc-rs.git", branch = "dev", features = ["mocks"]}
 # substrate crates
 sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30"}
 sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
@@ -105,6 +106,3 @@ std = [
 ]
 runtime-benchmarks = ["frame-benchmarking"]
 try-runtime = ["frame-support/try-runtime"]
-
-[patch.crates-io]
-ibc-proto = { git = "https://github.com/cosmos/ibc-proto-rs" }

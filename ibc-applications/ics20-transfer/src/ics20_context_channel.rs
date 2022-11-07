@@ -1,8 +1,6 @@
-use crate::*;
+use crate::{ics20_callback::IbcTransferModule, *};
 use alloc::{boxed::Box, vec::Vec};
 use core::time::Duration;
-
-use crate::ics20_callback::IbcTransferModule;
 use ibc::{
 	core::{
 		ics02_client::{client_state::ClientState, consensus_state::ConsensusState},
@@ -10,9 +8,7 @@ use ibc::{
 		ics04_channel::{
 			channel::ChannelEnd,
 			commitment::{
-				AcknowledgementCommitment,
 				AcknowledgementCommitment as IbcAcknowledgementCommitment, PacketCommitment,
-				PacketCommitment as IbcPacketCommitment,
 			},
 			context::{ChannelKeeper, ChannelReader},
 			error::Error as Ics04Error,
@@ -87,18 +83,18 @@ impl<T: Config> ChannelReader for IbcTransferModule<T> {
 		&self,
 		port_id: &PortId,
 		channel_id: &ChannelId,
-		sequence: Sequence,
-	) -> Result<IbcPacketCommitment, Ics04Error> {
-		T::IbcContext::get_packet_commitment(port_id, channel_id, sequence)
+		seq: Sequence,
+	) -> Result<PacketCommitment, Ics04Error> {
+		T::IbcContext::get_packet_commitment(port_id, channel_id, seq)
 	}
 
 	fn get_packet_receipt(
 		&self,
 		port_id: &PortId,
 		channel_id: &ChannelId,
-		sequence: Sequence,
+		seq: Sequence,
 	) -> Result<Receipt, Ics04Error> {
-		T::IbcContext::get_packet_receipt(port_id, channel_id, sequence)
+		T::IbcContext::get_packet_receipt(port_id, channel_id, seq)
 	}
 
 	/// Returns the `Acknowledgements` for the given identifier `(PortId, ChannelId, Sequence)`.
@@ -106,9 +102,9 @@ impl<T: Config> ChannelReader for IbcTransferModule<T> {
 		&self,
 		port_id: &PortId,
 		channel_id: &ChannelId,
-		sequence: Sequence,
+		seq: Sequence,
 	) -> Result<IbcAcknowledgementCommitment, Ics04Error> {
-		T::IbcContext::get_packet_acknowledgement(port_id, channel_id, sequence)
+		T::IbcContext::get_packet_acknowledgement(port_id, channel_id, seq)
 	}
 
 	/// A hashing function for packet commitments
@@ -183,29 +179,29 @@ impl<T: Config> ChannelKeeper for IbcTransferModule<T> {
 		&mut self,
 		port_id: PortId,
 		channel_id: ChannelId,
-		sequence: Sequence,
+		seq: Sequence,
 		receipt: Receipt,
 	) -> Result<(), Ics04Error> {
-		T::IbcContext::store_packet_receipt(port_id, channel_id, sequence, receipt)
+		T::IbcContext::store_packet_receipt(port_id, channel_id, seq, receipt)
 	}
 
 	fn store_packet_acknowledgement(
 		&mut self,
 		port_id: PortId,
 		channel_id: ChannelId,
-		sequence: Sequence,
-		ack_commitment: AcknowledgementCommitment,
+		seq: Sequence,
+		ack_commitment: IbcAcknowledgementCommitment,
 	) -> Result<(), Ics04Error> {
-		T::IbcContext::store_packet_acknowledgement(port_id, channel_id, sequence, ack_commitment)
+		T::IbcContext::store_packet_acknowledgement(port_id, channel_id, seq, ack_commitment)
 	}
 
 	fn delete_packet_acknowledgement(
 		&mut self,
 		port_id: &PortId,
 		channel_id: &ChannelId,
-		sequence: Sequence,
+		seq: Sequence,
 	) -> Result<(), Ics04Error> {
-		T::IbcContext::delete_packet_commitment(port_id, channel_id, sequence)
+		T::IbcContext::delete_packet_commitment(port_id, channel_id, seq)
 	}
 
 	fn store_connection_channels(

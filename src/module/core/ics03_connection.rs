@@ -1,4 +1,7 @@
-use crate::{context::Context, *};
+use crate::*;
+
+use crate::context::Context;
+
 use ibc::{
 	core::{
 		ics02_client::{
@@ -27,9 +30,10 @@ impl<T: Config> ConnectionReader for Context<T> {
 			let data = <Connections<T>>::get(&connections_path);
 			let ret = ConnectionEnd::decode_vec(&data)
 				.map_err(|_| Ics03Error::implementation_specific())?;
+
 			Ok(ret)
 		} else {
-			Err(Ics03Error::connection_not_found(conn_id.clone()))
+			Err(Ics03Error::connection_mismatch(conn_id.clone()))
 		}
 	}
 
@@ -102,8 +106,8 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 	}
 
 	fn increase_connection_counter(&mut self) {
-		let _ = <ConnectionCounter<T>>::try_mutate(|val| -> Result<(), ()> {
-			let new = val.checked_add(1).expect("Add Overflow");
+		let _ = <ConnectionCounter<T>>::try_mutate(|val| -> Result<(), Ics03Error> {
+			let new = val.checked_add(1).expect("increase connection counter overflow!");
 			*val = new;
 			Ok(())
 		});

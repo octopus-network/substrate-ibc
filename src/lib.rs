@@ -21,12 +21,12 @@ use alloc::{
 use codec::{Decode, Encode};
 use core::{fmt::Debug, marker::PhantomData, str::FromStr};
 use frame_system::ensure_signed;
-use scale_info::{prelude::vec, TypeInfo};
+use ibc::core::ics24_host::identifier::ChannelId as IbcChannelId;
 use sp_runtime::RuntimeDebug;
 use sp_std::prelude::*;
 
-use ibc::core::ics24_host::identifier::ChannelId as IbcChannelId;
 pub mod context;
+pub mod errors;
 pub mod events;
 pub mod module;
 pub mod utils;
@@ -81,16 +81,23 @@ mod type_define {
 
 #[frame_support::pallet]
 pub mod pallet {
-	use super::{type_define::*, *};
+	use super::{errors, type_define::*, *};
+	use crate::{events::ModuleEvent, module::core::ics24_host::Height};
 	use frame_support::{pallet_prelude::*, traits::UnixTime};
 	use frame_system::pallet_prelude::*;
+	use ibc::core::ics26_routing::handler::MsgReceipt;
+	use ibc_support::Any;
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
 	pub trait Config:
 		frame_system::Config + Sync + Send + Debug + pallet_ics20_transfer::Config
 	{
-		/// The overarching event type.
-		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+		/// The aggregated event type of the runtime.
+		type RuntimeEvent: Parameter
+			+ Member
+			+ From<Event<Self>>
+			+ Debug
+			+ IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
 		/// The provider providing timestamp of host chain
 		type TimeProvider: UnixTime;
@@ -227,28 +234,121 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		IbcEvent { event: events::IbcEvent },
+		/// Client created event
+		CreateClient { client_id: ClientId, client_type: ClientType, consensus_height: Height },
+		/// Client updated event
+		UpdateClient {
+			client_id: ClientId,
+			client_type: ClientType,
+			consensus_height: Height,
+			consensus_heights: Vec<Height>,
+			header: Any,
+		},
+		/// Client upgraded event
+		UpgradeClient { client_id: ClientId, client_type: ClientType, consensus_height: Height },
+		/// Client misbehaviour event
+		ClientMisbehaviour { client_id: ClientId, client_type: ClientType },
+		/// Connection open init event
+		OpenInitConnection {
+			connection_id: ConnectionId,
+			client_id: ClientId,
+			counterparty_connection_id: Option<ConnectionId>,
+			counterparty_client_id: ClientId,
+		},
+		/// Connection open try event
+		OpenTryConnection {
+			connection_id: ConnectionId,
+			client_id: ClientId,
+			counterparty_connection_id: Option<ConnectionId>,
+			counterparty_client_id: ClientId,
+		},
+		/// Connection open acknowledgement event
+		OpenAckConnection {
+			connection_id: ConnectionId,
+			client_id: ClientId,
+			counterparty_connection_id: Option<ConnectionId>,
+			counterparty_client_id: ClientId,
+		},
+		/// Connection open confirm event
+		OpenConfirmConnection {
+			connection_id: ConnectionId,
+			client_id: ClientId,
+			counterparty_connection_id: Option<ConnectionId>,
+			counterparty_client_id: ClientId,
+		},
+		/// Channel open init event
+		OpenInitChannel {
+			port_id: PortId,
+			channel_id: Option<ChannelId>,
+			connection_id: ConnectionId,
+			counterparty_port_id: PortId,
+			counterparty_channel_id: Option<ChannelId>,
+		},
+		/// Channel open try event
+		OpenTryChannel {
+			port_id: PortId,
+			channel_id: Option<ChannelId>,
+			connection_id: ConnectionId,
+			counterparty_port_id: PortId,
+			counterparty_channel_id: Option<ChannelId>,
+		},
+		/// Channel open acknowledgement event
+		OpenAckChannel {
+			port_id: PortId,
+			channel_id: Option<ChannelId>,
+			connection_id: ConnectionId,
+			counterparty_port_id: PortId,
+			counterparty_channel_id: Option<ChannelId>,
+		},
+		/// Channel open confirm event
+		OpenConfirmChannel {
+			port_id: PortId,
+			channel_id: Option<ChannelId>,
+			connection_id: ConnectionId,
+			counterparty_port_id: PortId,
+			counterparty_channel_id: Option<ChannelId>,
+		},
+		/// Channel close init event
+		CloseInitChannel {
+			port_id: PortId,
+			channel_id: Option<ChannelId>,
+			connection_id: ConnectionId,
+			counterparty_port_id: PortId,
+			counterparty_channel_id: Option<ChannelId>,
+		},
+		/// Channel close confirm event
+		CloseConfirmChannel {
+			port_id: PortId,
+			channel_id: Option<ChannelId>,
+			connection_id: ConnectionId,
+			counterparty_port_id: PortId,
+			counterparty_channel_id: Option<ChannelId>,
+		},
+		/// Send packet event
+		SendPacket { packet: Packet },
+		/// Receive packet event
+		ReceivePacket { packet: Packet },
+		/// WriteAcknowledgement packet event
+		WriteAcknowledgement { packet: Packet, ack: Vec<u8> },
+		/// Acknowledgements packet event
+		AcknowledgePacket { packet: Packet },
+		/// Timeout packet event
+		TimeoutPacket { packet: Packet },
+		/// TimoutOnClose packet event
+		TimeoutOnClosePacket { packet: Packet },
+		/// Empty event
+		Empty(Vec<u8>),
+		/// App Module event
+		AppModule(ModuleEvent),
+		/// Ibc errors
+		IbcErrors { errors: Vec<errors::IbcError> },
 	}
 
 	/// Errors in MMR verification informing users that something went wrong.
 	#[pallet::error]
 	pub enum Error<T> {
-		/// Update the beefy light client failure!
-		UpdateBeefyLightClientFailure,
-		/// Receive mmr root block number less than client_state.latest_commitment.block_number
-		ReceiveMmrRootBlockNumberLessThanClientStateLatestCommitmentBlockNumber,
-		/// Client id not found
-		ClientIdNotFound,
-		/// Encode error
-		InvalidEncode,
-		/// Decode Error
-		InvalidDecode,
-		/// FromUtf8Error
-		InvalidFromUtf8,
-		/// Invalid signed_commitment
-		InvalidSignedCommitment,
-		/// Empty latest_commitment
-		EmptyLatestCommitment,
+		/// decode String failed
+		DecodeStringFailed,
 	}
 
 	/// Dispatchable functions allows users to interact with the pallet and invoke state changes.
@@ -273,41 +373,40 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			messages: Vec<ibc_support::Any>,
 		) -> DispatchResultWithPostInfo {
-			sp_tracing::within_span!(
-			sp_tracing::Level::TRACE, "deliver";
-			{
-				let _sender = ensure_signed(origin)?;
-				let mut ctx = Context::<T>::default();
+			ensure_signed(origin)?;
+			let mut ctx = Context::<T>::new();
 
-				let messages: Vec<ibc_proto::google::protobuf::Any> = messages
-					.into_iter()
-					.map(|message| ibc_proto::google::protobuf::Any {
-						type_url: String::from_utf8(message.type_url.clone()).unwrap(),
-						value: message.value,
-					})
-					.collect();
+			let messages = messages
+				.into_iter()
+				.map(|message| {
+					let type_url = String::from_utf8(message.type_url.clone())
+						.map_err(|_| Error::<T>::DecodeStringFailed)?;
+					Ok(ibc_proto::google::protobuf::Any { type_url, value: message.value })
+				})
+				.collect::<Result<Vec<ibc_proto::google::protobuf::Any>, Error<T>>>()?;
 
-				for (_, message) in messages.into_iter().enumerate() {
+			let (events, logs, errors) = messages.into_iter().fold(
+				(vec![], vec![], vec![]),
+				|(mut events, mut logs, mut errors), msg| {
+					match ibc::core::ics26_routing::handler::deliver(&mut ctx, msg) {
+						Ok(MsgReceipt { events: temp_events, log: temp_logs }) => {
+							events.extend(temp_events);
+							logs.extend(temp_logs);
+						},
+						Err(e) => errors.push(e),
+					}
+					(events, logs, errors)
+				},
+			);
+			log::trace!(target: "pallet_ibc", "[pallet_ibc_deliver]: logs: {:?}", logs);
+			log::trace!(target: "pallet_ibc", "[pallet_ibc_deliver]: errors: {:?}", errors);
 
-					match ibc::core::ics26_routing::handler::deliver(&mut ctx, message.clone()) {
-						Ok(ibc::core::ics26_routing::handler::MsgReceipt { events, log: _log}) => {
-							// deposit events about send packet event and ics20 transfer event
-							for event in events {
-								Self::deposit_event(event.into());
-							}
-						}
-						Err(error) => {
-							log::trace!(
-								target: LOG_TARGET,
-								"deliver error  : {:?} ",
-								error
-							);
-						}
-					};
-				}
+			events.into_iter().for_each(|event| {
+				Self::deposit_event(event.into());
+			});
+			Self::deposit_event(errors.into());
 
-				Ok(().into())
-			})
+			Ok(().into())
 		}
 	}
 }

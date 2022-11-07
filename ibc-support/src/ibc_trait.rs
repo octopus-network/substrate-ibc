@@ -1,4 +1,5 @@
 use alloc::{boxed::Box, vec::Vec};
+use codec::{Decode, Encode};
 use core::time::Duration;
 use ibc::{
 	core::{
@@ -16,7 +17,10 @@ use ibc::{
 	Height,
 };
 
-/// A context supplying all the necessary read-only dependencies for processing any `ChannelMsg`.
+use ibc::core::ics26_routing::context::Module;
+
+pub trait TransferModule: Module + Encode + Decode {}
+
 pub trait IbcSupportChannelReader {
 	/// Returns the ChannelEnd for the given `port_id` and `chan_id`.
 	fn channel_end(port_id: &PortId, channel_id: &ChannelId) -> Result<ChannelEnd, Ics04Error>;
@@ -54,7 +58,7 @@ pub trait IbcSupportChannelReader {
 		port_id: &PortId,
 		channel_id: &ChannelId,
 		sequence: Sequence,
-	) -> Result<PacketCommitment, Ics04Error>;
+	) -> Result<IbcPacketCommitment, Ics04Error>;
 
 	fn get_packet_receipt(
 		port_id: &PortId,
@@ -66,7 +70,7 @@ pub trait IbcSupportChannelReader {
 		port_id: &PortId,
 		channel_id: &ChannelId,
 		sequence: Sequence,
-	) -> Result<AcknowledgementCommitment, Ics04Error>;
+	) -> Result<IbcAcknowledgementCommitment, Ics04Error>;
 
 	/// A hashing function for packet commitments
 	fn hash(value: Vec<u8>) -> Vec<u8>;
@@ -104,7 +108,7 @@ pub trait IbcSupportChannelKeeper {
 		port_id: PortId,
 		channel_id: ChannelId,
 		sequence: Sequence,
-		commitment: PacketCommitment,
+		commitment: IbcPacketCommitment,
 	) -> Result<(), Ics04Error>;
 
 	fn delete_packet_commitment(
@@ -124,7 +128,7 @@ pub trait IbcSupportChannelKeeper {
 		port_id: PortId,
 		channel_id: ChannelId,
 		sequence: Sequence,
-		ack_commitment: AcknowledgementCommitment,
+		ack_commitment: IbcAcknowledgementCommitment,
 	) -> Result<(), Ics04Error>;
 
 	fn delete_packet_acknowledgement(

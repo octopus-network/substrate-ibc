@@ -7,8 +7,9 @@ edition = "2021"
 
 [dependencies]
 # ibc crates
-ibc = { version = "0.19.0", default-features = false, branch = "dev", git = "https://github.com/octopus-network/cosmos-ibc-rs.git" }
-ibc-proto = { version = "0.20", default-features = false }
+ibc = { version = "0.21.0", default-features = false,git = "https://github.com/octopus-network/ibc-rs.git", branch = "dev"}
+ibc-proto = { version = "0.21.0", default-features = false, git = "https://github.com/octopus-network/ibc-proto-rs.git", branch = "dev"}
+
 # substrate crates
 codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive"] }
 scale-info = { version = "2.1.2", default-features = false, features = ["derive"] }

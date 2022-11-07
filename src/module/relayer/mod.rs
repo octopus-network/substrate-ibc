@@ -23,6 +23,7 @@ impl<T: Config> Ics18Context for Context<T> {
 	}
 
 	fn query_client_full_state(&self, client_id: &ClientId) -> Option<Box<dyn ClientState>> {
+		// Forward call to Ics2.
 		ClientReader::client_state(self, client_id).ok()
 	}
 

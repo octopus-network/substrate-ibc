@@ -12,6 +12,7 @@ use ibc::{
 		error::Error as Ics20Error,
 		PrefixedCoin, PORT_ID_STR,
 	},
+	bigint::U256,
 	core::ics24_host::identifier::{ChannelId, PortId},
 	signer::Signer,
 };
@@ -41,7 +42,7 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 		match is_native_asset {
 			// transfer native token
 			true => {
-				let amount = U256::from(amt.amount).low_u128().checked_into().unwrap();
+				let amount = U256::from(amt.amount).low_u128().checked_into().unwrap(); // TODO: FIX IN THE FUTURE
 				let native_token_name = T::NATIVE_TOKEN_NAME;
 				let ibc_token_name = amt.denom.base_denom.as_str().as_bytes();
 
