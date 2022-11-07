@@ -4,3 +4,4 @@
 .vscode
 .idea
 Cargo.lock
+dprint.json

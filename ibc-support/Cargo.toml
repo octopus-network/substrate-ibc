@@ -16,14 +16,13 @@ scale-info = { version = "2.1.2", default-features = false, features = ["derive"
 sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30", default-features = false }
 sp-std = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30", default-features = false }
 
-
 [features]
 default = ['std']
 std = [
-    "ibc/std",
-    "ibc-proto/std",
-    "codec/std",
-    "scale-info/std",
-    "sp-runtime/std",
-    "sp-std/std",
+  "ibc/std",
+  "ibc-proto/std",
+  "codec/std",
+  "scale-info/std",
+  "sp-runtime/std",
+  "sp-std/std",
 ]

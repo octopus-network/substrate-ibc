@@ -1,33 +1,31 @@
 [package]
 name = "pallet-ics20-transfer"
 version = "0.1.0"
-description = "FRAME pallet ibc protocol ics20 token transfer"
 authors = ["Octopus Network <hi@oct.network>"]
-homepage = "https://github.com/octopus-network"
 edition = "2021"
+homepage = "https://github.com/octopus-network"
 license = "Unlicense"
 publish = false
 repository = "https://github.com/octopus-network/substrate-ibc"
+description = "FRAME pallet ibc protocol ics20 token transfer"
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
 # local libraries
-ibc-support = { version = "0.1.0", default-features = false, path = "../../ibc-support" }
-# third-party crates
-hex = {version = "0.4.0", default-features = false }
 # substrate crates
-codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = [
-	"derive",
-] }
-scale-info = { version = "2.1.1", default-features = false, features = ["derive"] }
-log = { version = "0.4", default-features = false }
+codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive"] }
 frame-benchmarking = { version = "4.0.0-dev", default-features = false, optional = true, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
 frame-support = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
-frame-system = { version = "4.0.0-dev", default-features = false,git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
-sp-runtime = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
+frame-system = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
+# third-party crates
+hex = { version = "0.4.0", default-features = false }
+ibc-support = { version = "0.1.0", default-features = false, path = "../../ibc-support" }
+log = { version = "0.4", default-features = false }
+scale-info = { version = "2.1.1", default-features = false, features = ["derive"] }
 sp-io = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
+sp-runtime = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
 sp-std = { version = "4.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.30" }
 
 ## for ibc protocl
@@ -45,19 +43,19 @@ sp-runtime = { version = "6.0.0", default-features = false, git = "https://githu
 [features]
 default = ["std"]
 std = [
-	"hex/std",
-	"codec/std",
-	"log/std",
-	"frame-benchmarking/std",
-	"frame-support/std",
-	"frame-system/std",
-	"scale-info/std",
-	"ibc/std",
-	"ibc-proto/std",
-	"ibc-support/std",
-	"sp-runtime/std",
-	"sp-io/std",
-	"sp-std/std",
+  "hex/std",
+  "codec/std",
+  "log/std",
+  "frame-benchmarking/std",
+  "frame-support/std",
+  "frame-system/std",
+  "scale-info/std",
+  "ibc/std",
+  "ibc-proto/std",
+  "ibc-support/std",
+  "sp-runtime/std",
+  "sp-io/std",
+  "sp-std/std",
 ]
 runtime-benchmarks = ["frame-benchmarking/runtime-benchmarks"]
 try-runtime = ["frame-support/try-runtime"]
