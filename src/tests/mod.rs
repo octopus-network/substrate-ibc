@@ -1,4 +1,7 @@
 mod client;
+mod connection;
+mod channel;
+mod routing;
 
 use super::*;
 use crate::{mock::*, Context};
