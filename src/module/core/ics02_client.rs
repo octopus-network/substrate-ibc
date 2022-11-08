@@ -9,6 +9,7 @@ use sp_std::{boxed::Box, vec::Vec};
 
 #[cfg(test)]
 use crate::module::core::ics24_host::MOCK_CLIENT_TYPE;
+use frame_support::traits::UnixTime;
 #[cfg(test)]
 use ibc::mock::{client_state::MockClientState, consensus_state::MockConsensusState};
 use ibc::{
@@ -32,7 +33,6 @@ use ibc::{
 	timestamp::Timestamp,
 	Height,
 };
-use frame_support::traits::UnixTime;
 use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
 
 impl<T: Config> ClientReader for Context<T> {
@@ -80,11 +80,11 @@ impl<T: Config> ClientReader for Context<T> {
 
 	fn decode_client_state(&self, client_state: Any) -> Result<Box<dyn ClientState>, Ics02Error> {
 		if let Ok(client_state) = Ics07ClientState::try_from(client_state.clone()) {
-			return Ok(client_state.into_box());
-		} 
+			return Ok(client_state.into_box())
+		}
 		#[cfg(test)]
-		if let Ok(client_state)  = MockClientState::try_from(client_state.clone()) {
-			return Ok(client_state.into_box());
+		if let Ok(client_state) = MockClientState::try_from(client_state.clone()) {
+			return Ok(client_state.into_box())
 		}
 		Err(Ics02Error::unknown_client_state_type(client_state.type_url))
 	}
@@ -243,9 +243,16 @@ impl<T: Config> ClientReader for Context<T> {
 	}
 
 	fn host_timestamp(&self) -> Timestamp {
-		let nanoseconds = <T as Config>::TimeProvider::now().as_nanos();
-		Timestamp::from_nanoseconds(nanoseconds as u64).unwrap()
-    }
+		#[cfg(not(test))]
+		{
+			let nanoseconds = <T as Config>::TimeProvider::now().as_nanos();
+			return Timestamp::from_nanoseconds(nanoseconds as u64).unwrap()
+		}
+		#[cfg(test)]
+		{
+			Timestamp::now()
+		}
+	}
 
 	fn host_consensus_state(&self, _height: Height) -> Result<Box<dyn ConsensusState>, Ics02Error> {
 		Err(Ics02Error::implementation_specific())
