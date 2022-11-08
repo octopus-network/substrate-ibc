@@ -223,7 +223,7 @@ pub mod pallet {
 					match event {
 						IbcEvent::SendPacket(ref send_packet) => {
 							let sequence =
-								send_packet.packet.sequence.to_string().as_bytes().to_vec();
+								send_packet.sequence.sequence.to_string().as_bytes().to_vec();
 							let source_port =
 								send_packet.packet.source_port.to_string().as_bytes().to_vec();
 							let source_channel =
