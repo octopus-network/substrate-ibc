@@ -14,6 +14,7 @@ use ibc::{
 		ics24_host::identifier::ClientId,
 	},
 	mock::client_state::{client_type as mock_client_type, MockClientState},
+	mock::host::HostBlock,
 	Height,
 };
 
@@ -55,12 +56,18 @@ impl<T: Config> Context<T> {
 		client_type: Option<ClientType>,
 		consensus_state_height: Option<Height>,
 	) -> Self {
+		use crate::module::core::ics24_host::TENDERMINT_CLIENT_TYPE;
 		use ibc::{
-			core::ics02_client::{client_state::ClientState, consensus_state::ConsensusState},
+			clients::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state,
+			core::{
+				ics02_client::{client_state::ClientState, consensus_state::ConsensusState},
+				ics24_host::identifier::ChainId,
+			},
 			mock::{
 				client_state::MOCK_CLIENT_TYPE, consensus_state::MockConsensusState,
 				header::MockHeader,
 			},
+			timestamp::Timestamp,
 		};
 
 		let cs_height = consensus_state_height.unwrap_or(client_state_height);
@@ -71,6 +78,18 @@ impl<T: Config> Context<T> {
 				Some(MockClientState::new(MockHeader::new(client_state_height)).into_box()),
 				MockConsensusState::new(MockHeader::new(cs_height)).into_box(),
 			)
+		} else if client_type.as_str() == TENDERMINT_CLIENT_TYPE {
+			let light_block = HostBlock::generate_tm_block(
+				ChainId::default(),
+				cs_height.revision_height(),
+				Timestamp::now(),
+			);
+
+			let client_state =
+				get_dummy_tendermint_client_state(light_block.header().clone()).into_box();
+
+			// Return the tuple.
+			(Some(client_state), light_block.into())
 		} else {
 			panic!("unknown client type")
 		};

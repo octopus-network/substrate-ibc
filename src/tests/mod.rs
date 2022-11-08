@@ -1,6 +1,10 @@
-mod client;
-mod connection;
+#[cfg(test)]
 mod channel;
+#[cfg(test)]
+mod client;
+#[cfg(test)]
+mod connection;
+#[cfg(test)]
 mod routing;
 
 use super::*;

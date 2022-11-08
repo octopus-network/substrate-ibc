@@ -7,6 +7,6 @@ mod chan_open_init;
 mod chan_open_try;
 mod recv_packet;
 mod send_packet;
-mod timeout_on_close;
 mod timeout;
+mod timeout_on_close;
 mod write_acknowledgement;
