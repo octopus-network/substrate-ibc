@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 # ibc crates
-ibc = { version = "0.21.1", default-features = false, git = "https://github.com/cosmos/ibc-rs.git", branch = "main" }
+ibc = { version = "0.22.0", default-features = false, git = "https://github.com/cosmos/ibc-rs.git", branch = "main" }
 ibc-proto = { version = "0.21.0", default-features = false }
 
 # substrate crates

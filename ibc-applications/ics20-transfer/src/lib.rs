@@ -125,14 +125,16 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		/// Send packet event
 		SendPacket {
-			sequence: Vec<u8>,
-			source_port: Vec<u8>,
-			source_channel: Vec<u8>,
-			destination_port: Vec<u8>,
-			destination_channel: Vec<u8>,
-			data: Vec<u8>,
+			packet_data: Vec<u8>,
 			timeout_height: Vec<u8>,
 			timeout_timestamp: Vec<u8>,
+			sequence: Vec<u8>,
+			src_port_id: Vec<u8>,
+			src_channel_id: Vec<u8>,
+			dst_port_id: Vec<u8>,
+			dst_channel_id: Vec<u8>,
+			channel_ordering: Vec<u8>,
+			src_connection_id: Vec<u8>,
 		},
 		// unsupported event
 		UnsupportedEvent,
@@ -222,38 +224,35 @@ pub mod pallet {
 					log::trace!(target: LOG_TARGET, "raw_transfer event : {:?} ", event);
 					match event {
 						IbcEvent::SendPacket(ref send_packet) => {
-							let sequence =
-								send_packet.sequence.sequence.to_string().as_bytes().to_vec();
-							let source_port =
-								send_packet.packet.source_port.to_string().as_bytes().to_vec();
-							let source_channel =
-								send_packet.packet.source_channel.to_string().as_bytes().to_vec();
-							let destination_port =
-								send_packet.packet.destination_port.to_string().as_bytes().to_vec();
-							let destination_channel = send_packet
-								.packet
-								.destination_channel
-								.to_string()
-								.as_bytes()
-								.to_vec();
-							let data = send_packet.packet.data.clone();
+							let packet_data = send_packet.packet_data().clone();
 							let timeout_height =
-								send_packet.packet.timeout_height.to_string().as_bytes().to_vec();
-							let timeout_timestamp = send_packet
-								.packet
-								.timeout_timestamp
-								.to_string()
-								.as_bytes()
-								.to_vec();
+								format!("{:?}", send_packet.timeout_height()).as_bytes().to_vec();
+							let timeout_timestamp =
+								send_packet.timeout_timestamp().to_string().as_bytes().to_vec();
+							let sequence = send_packet.sequence().to_string().as_bytes().to_vec();
+							let src_port_id =
+								send_packet.src_port_id().to_string().as_bytes().to_vec();
+							let src_channel_id =
+								send_packet.src_channel_id().to_string().as_bytes().to_vec();
+							let dst_port_id =
+								send_packet.dst_port_id().to_string().as_bytes().to_vec();
+							let dst_channel_id =
+								send_packet.dst_channel_id().to_string().as_bytes().to_vec();
+							let channel_ordering =
+								send_packet.channel_ordering().to_string().as_bytes().to_vec();
+							let src_connection_id =
+								send_packet.src_connection_id().to_string().as_bytes().to_vec();
 							Self::deposit_event(Event::SendPacket {
-								sequence,
-								source_port,
-								source_channel,
-								destination_port,
-								destination_channel,
-								data,
+								packet_data: packet_data.to_vec(),
 								timeout_height,
 								timeout_timestamp,
+								sequence,
+								src_port_id,
+								src_channel_id,
+								dst_port_id,
+								dst_channel_id,
+								channel_ordering,
+								src_connection_id,
 							});
 						},
 						_ => {

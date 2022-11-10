@@ -35,13 +35,13 @@ use ibc::core::{
 // test store and read client-type
 #[test]
 fn test_store_client_type_ok() {
-	let client_type = ClientType::new(TENDERMINT_CLIENT_TYPE);
-	let client_id = ClientId::new(client_type, 0).unwrap();
+	let client_type = ClientType::new(TENDERMINT_CLIENT_TYPE.into());
+	let client_id = ClientId::new(client_type.clone(), 0).unwrap();
 
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
-		assert!(context.store_client_type(client_id.clone(), client_type).is_ok());
+		assert!(context.store_client_type(client_id.clone(), client_type.clone()).is_ok());
 		let ret = context.client_type(&client_id).unwrap();
 		assert_eq!(ret, client_type);
 	})
@@ -49,9 +49,9 @@ fn test_store_client_type_ok() {
 
 #[test]
 fn test_read_client_type_failed_by_supply_error_client_id() {
-	let client_type = ClientType::new(TENDERMINT_CLIENT_TYPE);
-	let client_id = ClientId::new(client_type, 0).unwrap();
-	let client_id_failed = ClientId::new(client_type, 1).unwrap();
+	let client_type = ClientType::new(TENDERMINT_CLIENT_TYPE.into());
+	let client_id = ClientId::new(client_type.clone(), 0).unwrap();
+	let client_id_failed = ClientId::new(client_type.clone(), 1).unwrap();
 	let mut context: Context<Test> = Context::new();
 
 	new_test_ext().execute_with(|| {
@@ -164,7 +164,7 @@ fn test_connection_fail() {
 
 #[test]
 fn test_connection_client_ok() {
-	let client_id = ClientId::new(ClientType::new(TENDERMINT_CLIENT_TYPE), 0).unwrap();
+	let client_id = ClientId::new(ClientType::new(TENDERMINT_CLIENT_TYPE.into()), 0).unwrap();
 	let connection_id = ConnectionId::new(0);
 	let mut context: Context<Test> = Context::new();
 

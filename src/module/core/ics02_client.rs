@@ -43,9 +43,9 @@ impl<T: Config> ClientReader for Context<T> {
 			let data =
 				String::from_utf8(data).map_err(|_| Ics02Error::implementation_specific())?;
 			match data.as_str() {
-				TENDERMINT_CLIENT_TYPE => Ok(ClientType::new(TENDERMINT_CLIENT_TYPE)),
+				TENDERMINT_CLIENT_TYPE => Ok(ClientType::new(TENDERMINT_CLIENT_TYPE.into())),
 				#[cfg(test)]
-				MOCK_CLIENT_TYPE => Ok(ClientType::new(MOCK_CLIENT_TYPE)),
+				MOCK_CLIENT_TYPE => Ok(ClientType::new(MOCK_CLIENT_TYPE.into())),
 				unimplemented =>
 					return Err(Ics02Error::unknown_client_type(unimplemented.to_string())),
 			}

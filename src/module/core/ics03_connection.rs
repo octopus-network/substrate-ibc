@@ -79,6 +79,11 @@ impl<T: Config> ConnectionReader for Context<T> {
 	fn connection_counter(&self) -> Result<u64, Ics03Error> {
 		Ok(<ConnectionCounter<T>>::get())
 	}
+
+	// TODO
+	fn validate_self_client(&self, _counterparty_client_state: Any) -> Result<(), Ics03Error> {
+		Ok(())
+	}
 }
 
 impl<T: Config> ConnectionKeeper for Context<T> {

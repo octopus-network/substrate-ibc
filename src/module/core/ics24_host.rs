@@ -8,13 +8,18 @@ use ibc::{
 			client_type::ClientType as IbcClientType, error::Error as Ics02Error,
 			height::Height as IbcHeight,
 		},
-		ics04_channel::packet::{Packet as IbcPacket, Sequence as IbcSequence},
+		ics04_channel::{
+			channel::Order as IbcOrder,
+			packet::{Packet as IbcPacket, Sequence as IbcSequence},
+			Version as IbcVersion,
+		},
 		ics24_host::identifier::{
 			ChannelId as IbcChannelId, ClientId as IbcClientId, ConnectionId as IbcConnectionId,
 			PortId as IbcPortId,
 		},
 	},
 	timestamp::Timestamp as IbcTimestamp,
+	
 };
 use sp_std::{str::FromStr, vec::Vec};
 
@@ -72,6 +77,24 @@ pub enum TimeoutHeight {
 	At(Height),
 }
 
+impl From<IbcTimeoutHeight> for TimeoutHeight {
+	fn from(ibc_time_height: IbcTimeoutHeight) -> Self {
+		match  ibc_time_height {
+			IbcTimeoutHeight::Never => Self::Never,
+			IbcTimeoutHeight::At(height) => Self::At(height.into()),
+		}
+	}
+}
+
+impl From<TimeoutHeight> for IbcTimeoutHeight {
+	fn from(time_height: TimeoutHeight) -> Self {
+		match time_height {
+			TimeoutHeight::Never => Self::Never,
+			TimeoutHeight::At(height) => Self::At(height.into()),
+		}
+	}
+}
+
 /// ibc-rs' `Height` representation in substrate
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub struct Height {
@@ -126,9 +149,9 @@ impl TryFrom<ClientType> for IbcClientType {
 
 	fn try_from(client_type: ClientType) -> Result<IbcClientType, Self::Error> {
 		match client_type.to_string().as_str() {
-			"07-tendermint" => Ok(IbcClientType::new(TENDERMINT_CLIENT_TYPE)),
+			"07-tendermint" => Ok(IbcClientType::new(TENDERMINT_CLIENT_TYPE.into())),
 			#[cfg(test)]
-			"9999-mock" => Ok(IbcClientType::new(MOCK_CLIENT_TYPE)),
+			"9999-mock" => Ok(IbcClientType::new(MOCK_CLIENT_TYPE.into())),
 			unimplemented => Err(Ics02Error::unknown_client_type(unimplemented.to_string())),
 		}
 	}
@@ -256,6 +279,51 @@ impl From<Packet> for IbcPacket {
 				),
 			},
 			timeout_timestamp: packet.timeout_timestamp.into(),
+		}
+	}
+}
+
+#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
+pub struct Version(pub Vec<u8>);
+
+impl From<IbcVersion> for Version {
+	fn from(ibc_versoion: IbcVersion) -> Self {
+		let value = ibc_versoion.to_string().as_bytes().to_vec();
+		Self(value)
+	}
+}
+
+impl From<Version> for IbcVersion {
+	fn from(version: Version) -> Self {
+		let value =
+			String::from_utf8(version.0).expect("hex-encoded string should always be valid UTF-8");
+		IbcVersion::from_str(&value).expect("Never failed")
+	}
+}
+
+#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
+pub enum Order {
+	None = 0,
+	Unordered = 1,
+	Ordered = 2,
+}
+
+impl From<IbcOrder> for Order {
+	fn from(ibc_order: IbcOrder) -> Self {
+		match ibc_order {
+			IbcOrder::None => Self::None,
+			IbcOrder::Unordered => Self::Unordered,
+			IbcOrder::Ordered => Self::Ordered,
+		}
+	}
+}
+
+impl From<Order> for IbcOrder {
+	fn from(order: Order) -> Self {
+		match order {
+			Order::None => Self::None,
+			Order::Unordered => Self::Unordered,
+			Order::Ordered => Self::Ordered,
 		}
 	}
 }

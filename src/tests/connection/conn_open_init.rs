@@ -72,7 +72,7 @@ mod tests {
 			let default_context = Context::<PalletIbcTest>::new();
 			let good_context = default_context
 				.clone()
-				.with_client(&msg_conn_init_default.client_id, Height::new(0, 10).unwrap());
+				.with_client(&msg_conn_init_default.client_id_on_a, Height::new(0, 10).unwrap());
 
 			let tests: Vec<Test> = vec![
 				// todo(davirain) test ok because in substrate use global storage, above good

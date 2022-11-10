@@ -37,7 +37,7 @@ sp-tracing = { version = "5.0.0", default-features = false, git = "https://githu
 flex-error = { version = "0.4.4", default-features = false }
 hex = { version = "0.4.0", default-features = false }
 ## for ibc protocl
-ibc = { version = "0.21.1", default-features = false, git = "https://github.com/cosmos/ibc-rs.git", branch = "main"}
+ibc = { version = "0.22.0", default-features = false, git = "https://github.com/cosmos/ibc-rs.git", branch = "main"}
 ibc-proto = { version = "0.21.0", default-features = false }
 log = { version = "0.4.0", default-features = false }
 prost = { version = "0.11", default-features = false }
@@ -54,7 +54,7 @@ frame-support = { git = "https://github.com/paritytech/substrate.git", branch = 
 # thrid party crates
 hex = '0.4.0'
 # ibc protocol crates
-ibc = { version = "0.21.1", features = ["mocks"], git = "https://github.com/cosmos/ibc-rs.git", branch = "main" }
+ibc = { version = "0.22.0", features = ["mocks"], git = "https://github.com/cosmos/ibc-rs.git", branch = "main" }
 pallet-assets = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
 pallet-babe = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
 pallet-balances = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
