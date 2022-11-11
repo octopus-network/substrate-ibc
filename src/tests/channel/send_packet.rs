@@ -26,18 +26,9 @@ use ibc::{
 	timestamp::{Timestamp, ZERO_DURATION},
 };
 
-// TODO: 
-// running 1 test
-// test tests::channel::send_packet::send_packet_processing ... FAILED
-
-// failures:
-
-// ---- tests::channel::send_packet::send_packet_processing stdout ----
-// thread 'tests::channel::send_packet::send_packet_processing' panicked at 'send_packet: did not pass test: Good parameters,
-// params Packet { sequence: Sequence(1), source_port: PortId("defaultPort"), source_channel: ChannelId("channel-0"), destination_port: PortId("defaultPort"), destination_channel: ChannelId("channel-0"), data: [0], timeout_height: At(Height { revision: 0, height: 10 }), timeout_timestamp: Timestamp { time: Some(Time(PrimitiveDateTime { date: Date { year: 2022, ordinal: 315 }, time: Time { hour: 8, minute: 50, second: 9, nanosecond: 359585000 } })) } } Context { _pd: PhantomData<pallet_ibc::mock::Test>, router: Router(BTreeMap(key("transfer") } error: ics03 connection error
-
+// TODO:
 // Caused by:
-    // implementation specific error
+// implementation specific error
 #[test]
 #[ignore]
 fn send_packet_processing() {
