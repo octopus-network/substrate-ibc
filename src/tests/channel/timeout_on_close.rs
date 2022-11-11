@@ -1,24 +1,23 @@
-use ibc::core::{
-	ics02_client::height::Height,
-	ics03_connection::{
-		connection::{
-			ConnectionEnd, Counterparty as ConnectionCounterparty, State as ConnectionState,
-		},
-		version::get_compatible_versions,
-	},
-	ics04_channel::{
-		channel::{ChannelEnd, Counterparty, Order, State},
-		context::ChannelReader,
-		handler::timeout_on_close::process,
-	},
-};
 use crate::{
 	mock::{new_test_ext, Test as PalletIbcTest},
 	Context,
 };
 use ibc::{
 	core::{
-		ics04_channel::{msgs::timeout_on_close::MsgTimeoutOnClose, Version},
+		ics02_client::height::Height,
+		ics03_connection::{
+			connection::{
+				ConnectionEnd, Counterparty as ConnectionCounterparty, State as ConnectionState,
+			},
+			version::get_compatible_versions,
+		},
+		ics04_channel::{
+			channel::{ChannelEnd, Counterparty, Order, State},
+			context::ChannelReader,
+			handler::timeout_on_close::process,
+			msgs::timeout_on_close::MsgTimeoutOnClose,
+			Version,
+		},
 		ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
 	},
 	events::IbcEvent,

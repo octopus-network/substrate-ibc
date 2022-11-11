@@ -1,22 +1,31 @@
-use ibc::core::ics02_client::height::Height;
-use ibc::core::ics03_connection::connection::ConnectionEnd;
-use ibc::core::ics03_connection::connection::Counterparty as ConnectionCounterparty;
-use ibc::core::ics03_connection::connection::State as ConnectionState;
-use ibc::core::ics03_connection::version::get_compatible_versions;
-use ibc::core::ics04_channel::channel::{ChannelEnd, Counterparty, Order, State};
-use ibc::core::ics04_channel::handler::write_acknowledgement::process;
-use crate::tests::channel::packet::test_utils::get_dummy_raw_packet;
-use ibc::core::ics04_channel::Version;
-use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
-use ibc::timestamp::ZERO_DURATION;
-use ibc::{core::ics04_channel::packet::Packet, events::IbcEvent};
 use crate::{
 	mock::{new_test_ext, Test as PalletIbcTest},
+	tests::channel::packet::test_utils::get_dummy_raw_packet,
 	Context,
+};
+use ibc::{
+	core::{
+		ics02_client::height::Height,
+		ics03_connection::{
+			connection::{
+				ConnectionEnd, Counterparty as ConnectionCounterparty, State as ConnectionState,
+			},
+			version::get_compatible_versions,
+		},
+		ics04_channel::{
+			channel::{ChannelEnd, Counterparty, Order, State},
+			handler::write_acknowledgement::process,
+			packet::Packet,
+			Version,
+		},
+		ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
+	},
+	events::IbcEvent,
+	timestamp::ZERO_DURATION,
 };
 #[test]
 fn write_ack_packet_processing() {
-    new_test_ext().execute_with(|| {
+	new_test_ext().execute_with(|| {
     struct Test {
         name: String,
         ctx: Context<PalletIbcTest>,
