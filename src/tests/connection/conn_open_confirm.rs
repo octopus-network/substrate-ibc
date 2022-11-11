@@ -12,7 +12,6 @@ use ibc::{
 		ics24_host::identifier::ClientId,
 	},
 	events::IbcEvent,
-	mock::context::MockContext,
 	timestamp::ZERO_DURATION,
 	Height,
 };

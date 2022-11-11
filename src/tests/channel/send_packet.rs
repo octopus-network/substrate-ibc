@@ -1,7 +1,7 @@
 use core::{ops::Add, time::Duration};
 
 use crate::{
-	mock::{new_test_ext, System, Test as PalletIbcTest},
+	mock::{new_test_ext, Test as PalletIbcTest},
 	tests::channel::packet::test_utils::get_dummy_raw_packet,
 	Context,
 };

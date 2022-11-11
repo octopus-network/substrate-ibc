@@ -9,10 +9,9 @@ use ibc::{
 			msgs::{conn_open_ack::MsgConnectionOpenAck, ConnectionMsg},
 		},
 		ics23_commitment::commitment::CommitmentPrefix,
-		ics24_host::identifier::{ChainId, ClientId},
+		ics24_host::identifier::ClientId,
 	},
 	events::IbcEvent,
-	mock::{context::MockContext, host::HostType},
 	timestamp::ZERO_DURATION,
 };
 
@@ -86,7 +85,7 @@ fn conn_open_ack_msg_processing() {
      let latest_height = proof_height.increment();
      System::set_block_number(latest_height.revision_height() as u32);
 
-     let max_history_size = 5;
+     let _max_history_size = 5;
      let default_context = Context::<PalletIbcTest>::new();
 
      // A connection end that will exercise the successful path.

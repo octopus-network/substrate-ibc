@@ -1,7 +1,7 @@
 use core::str::FromStr;
 
 use crate::{
-	mock::{new_test_ext, System, Test as PalletIbcTest},
+	mock::{new_test_ext, Test as PalletIbcTest},
 	tests::{
 		channel::chan_open_try::test_util::get_dummy_raw_msg_chan_open_try,
 		connection::{
@@ -127,7 +127,7 @@ fn chan_open_ack_msg_processing() {
          msg_chan_try.chan_end_on_b.version().clone(),
      );
 
-     let failed_chan_end = ChannelEnd::new(
+     let _failed_chan_end = ChannelEnd::new(
          State::Open,
          *msg_chan_try.chan_end_on_b.ordering(),
          Counterparty::new(

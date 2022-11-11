@@ -1,5 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(unreachable_patterns)]
+#![allow(unused_imports)]
+#![allow(deprecated)]
 
 //! # Overview
 //!

@@ -187,7 +187,7 @@ fn chan_open_try_msg_processing() {
         let res = channel_dispatch(&test.ctx, &test_msg);
         // Additionally check the events and the output objects in the result.
         match res {
-            Ok((proto_outpu, res)) => {
+            Ok((_proto_outpu, res)) => {
                 assert!(
                     test.want_pass,
                     "chan_open_ack: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",

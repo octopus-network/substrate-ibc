@@ -20,7 +20,6 @@ use ibc::{
 		ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
 	},
 	events::IbcEvent,
-	mock::context::MockContext,
 	relayer::ics18_relayer::context::Ics18Context,
 	test_utils::get_dummy_account_id,
 	timestamp::{Timestamp, ZERO_DURATION},

@@ -123,7 +123,7 @@ mod tests {
 			let pruned_height =
 				host_chain_height.sub(max_history_size as u64 + 1).unwrap().revision_height();
 			// The consensus proof targets a missing height (pruned) on destination chain.
-			let msg_height_old = MsgConnectionOpenTry::try_from(get_dummy_raw_msg_conn_open_try(
+			let _msg_height_old = MsgConnectionOpenTry::try_from(get_dummy_raw_msg_conn_open_try(
 				client_consensus_state_height,
 				pruned_height,
 			))
