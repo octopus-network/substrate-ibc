@@ -1,4 +1,3 @@
-mod common;
 mod acknowledgement;
 mod chan_close_confirm;
 mod chan_close_init;
@@ -6,6 +5,7 @@ mod chan_open_ack;
 mod chan_open_confirm;
 mod chan_open_init;
 mod chan_open_try;
+mod common;
 mod recv_packet;
 mod send_packet;
 mod timeout;
