@@ -1,46 +1,48 @@
-
 use core::str::FromStr;
 
-use ibc::core::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
-use ibc::core::ics03_connection::context::ConnectionReader;
-use ibc::core::ics03_connection::handler::{dispatch, ConnectionResult};
-use ibc::core::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
-use ibc::core::ics03_connection::msgs::ConnectionMsg;
-use ibc::core::ics23_commitment::commitment::CommitmentPrefix;
-use ibc::core::ics24_host::identifier::ClientId;
-use ibc::events::IbcEvent;
-use ibc::mock::context::MockContext;
-use ibc::timestamp::ZERO_DURATION;
-use ibc::Height;
-
- #[cfg(test)]
-pub mod test_util {
-    use ibc_proto::ibc::core::client::v1::Height;
-    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
-
-    use ibc::test_utils::{get_dummy_bech32_account, get_dummy_proof};
-
-    pub fn get_dummy_raw_msg_conn_open_confirm() -> RawMsgConnectionOpenConfirm {
-        RawMsgConnectionOpenConfirm {
-            connection_id: "srcconnection".to_string(),
-            proof_ack: get_dummy_proof(),
-            proof_height: Some(Height {
-                revision_number: 0,
-                revision_height: 10,
-            }),
-            signer: get_dummy_bech32_account(),
-        }
-    }
-}
-use test_util::get_dummy_raw_msg_conn_open_confirm;
-use crate::{
-    mock::{new_test_ext, System, Test as PalletIbcTest},
-    Context,
+use ibc::{
+	core::{
+		ics03_connection::{
+			connection::{ConnectionEnd, Counterparty, State},
+			context::ConnectionReader,
+			handler::{dispatch, ConnectionResult},
+			msgs::{conn_open_confirm::MsgConnectionOpenConfirm, ConnectionMsg},
+		},
+		ics23_commitment::commitment::CommitmentPrefix,
+		ics24_host::identifier::ClientId,
+	},
+	events::IbcEvent,
+	mock::context::MockContext,
+	timestamp::ZERO_DURATION,
+	Height,
 };
 
- #[test]
- fn conn_open_confirm_msg_processing() {
-    new_test_ext().execute_with(|| { 
+#[cfg(test)]
+pub mod test_util {
+	use ibc_proto::ibc::core::{
+		client::v1::Height, connection::v1::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm,
+	};
+
+	use ibc::test_utils::{get_dummy_bech32_account, get_dummy_proof};
+
+	pub fn get_dummy_raw_msg_conn_open_confirm() -> RawMsgConnectionOpenConfirm {
+		RawMsgConnectionOpenConfirm {
+			connection_id: "srcconnection".to_string(),
+			proof_ack: get_dummy_proof(),
+			proof_height: Some(Height { revision_number: 0, revision_height: 10 }),
+			signer: get_dummy_bech32_account(),
+		}
+	}
+}
+use crate::{
+	mock::{new_test_ext, System, Test as PalletIbcTest},
+	Context,
+};
+use test_util::get_dummy_raw_msg_conn_open_confirm;
+
+#[test]
+fn conn_open_confirm_msg_processing() {
+	new_test_ext().execute_with(|| {
      struct Test {
          name: String,
          ctx: Context<PalletIbcTest>,
@@ -136,4 +138,4 @@ use crate::{
          }
      }
     })
- }
+}

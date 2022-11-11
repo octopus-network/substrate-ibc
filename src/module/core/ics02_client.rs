@@ -11,7 +11,9 @@ use sp_std::{boxed::Box, vec::Vec};
 use crate::module::core::ics24_host::MOCK_CLIENT_TYPE;
 use frame_support::traits::UnixTime;
 #[cfg(test)]
-use ibc::mock::{client_state::MockClientState, consensus_state::MockConsensusState, header::MockHeader};
+use ibc::mock::{
+	client_state::MockClientState, consensus_state::MockConsensusState, header::MockHeader,
+};
 use ibc::{
 	clients::ics07_tendermint::{
 		client_state::ClientState as Ics07ClientState,
@@ -261,10 +263,8 @@ impl<T: Config> ClientReader for Context<T> {
 		}
 		#[cfg(test)]
 		{
-			let mock_header = MockHeader {
-    			height: self.host_height(),
-    			timestamp: Default::default(),
-			};
+			let mock_header =
+				MockHeader { height: self.host_height(), timestamp: Default::default() };
 			Ok(Box::new(MockConsensusState::new(mock_header)))
 		}
 	}
