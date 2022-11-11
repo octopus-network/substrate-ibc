@@ -28,7 +28,7 @@ pub mod test_util {
 	}
 }
 use crate::{
-	mock::{new_test_ext, System, Test as PalletIbcTest},
+	mock::{new_test_ext, Test as PalletIbcTest},
 	Context,
 };
 

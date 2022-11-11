@@ -19,7 +19,7 @@ use ibc::{
 		},
 		ics24_host::identifier::{ClientId, ConnectionId},
 	},
-	mock::{client_state::client_type as mock_client_type, context::MockContext},
+	mock::client_state::client_type as mock_client_type,
 	timestamp::ZERO_DURATION,
 	Height,
 };
