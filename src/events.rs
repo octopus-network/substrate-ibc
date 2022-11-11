@@ -396,7 +396,7 @@ impl<T: Config> From<RawIbcEvent> for Event<T> {
 				let src_channel_id = time_out_packet.src_channel_id().clone();
 				let dst_port_id = time_out_packet.dst_port_id().clone();
 				let dst_channel_id = time_out_packet.dst_channel_id().clone();
-				
+
 				Event::<T>::TimeoutPacket {
 					timeout_height: timeout_height.into(),
 					timeout_timestamp: timeout_timestamp.into(),
@@ -411,15 +411,17 @@ impl<T: Config> From<RawIbcEvent> for Event<T> {
 				let port_id = timeout_on_close_packet.port_id().clone();
 				let channel_id = timeout_on_close_packet.channel_id().clone();
 				let counterparty_port_id = timeout_on_close_packet.counterparty_port_id().clone();
-				let maybe_counterparty_channel_id = timeout_on_close_packet.counterparty_channel_id().clone();
+				let maybe_counterparty_channel_id =
+					timeout_on_close_packet.counterparty_channel_id().clone();
 				let connection_id = timeout_on_close_packet.connection_id().clone();
 				let channel_ordering = timeout_on_close_packet.channel_ordering().clone();
-				
+
 				Event::<T>::ChannelClosed {
 					port_id: port_id.into(),
 					channel_id: channel_id.into(),
 					counterparty_port_id: counterparty_port_id.into(),
-					maybe_counterparty_channel_id: maybe_counterparty_channel_id.map(|value| value.clone().into()),
+					maybe_counterparty_channel_id: maybe_counterparty_channel_id
+						.map(|value| value.clone().into()),
 					connection_id: connection_id.into(),
 					channel_ordering: channel_ordering.into(),
 				}

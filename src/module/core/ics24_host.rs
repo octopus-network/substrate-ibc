@@ -19,7 +19,6 @@ use ibc::{
 		},
 	},
 	timestamp::Timestamp as IbcTimestamp,
-	
 };
 use sp_std::{str::FromStr, vec::Vec};
 
@@ -79,7 +78,7 @@ pub enum TimeoutHeight {
 
 impl From<IbcTimeoutHeight> for TimeoutHeight {
 	fn from(ibc_time_height: IbcTimeoutHeight) -> Self {
-		match  ibc_time_height {
+		match ibc_time_height {
 			IbcTimeoutHeight::Never => Self::Never,
 			IbcTimeoutHeight::At(height) => Self::At(height.into()),
 		}

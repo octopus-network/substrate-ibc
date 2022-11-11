@@ -30,7 +30,7 @@ pub use crate::{
 	context::Context,
 	module::core::ics24_host::{
 		ChannelId, ClientId, ClientType, ConnectionId, Height, Order, Packet, PortId, Sequence,
-		Timestamp, Version, TimeoutHeight,
+		TimeoutHeight, Timestamp, Version,
 	},
 };
 
