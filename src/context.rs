@@ -161,6 +161,20 @@ impl<T: Config> Context<T> {
 
 		self
 	}
+
+	#[cfg(test)]
+	pub fn with_send_sequence(
+		mut self,
+		port_id: PortId,
+		chan_id: ChannelId,
+		seq_number: Sequence,
+	) -> Self {
+		use ibc::core::ics04_channel::context::ChannelKeeper;
+
+		let _ = self.store_next_sequence_ack(port_id, chan_id, seq_number);
+
+		self
+	}
 }
 
 impl<T: Config> Default for Context<T> {

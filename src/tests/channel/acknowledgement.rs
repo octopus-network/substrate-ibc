@@ -55,6 +55,7 @@ pub mod test_util {
 }
 
 // todo(davirian) need fix
+//  implementation specific error
 #[test]
 #[ignore]
 fn ack_packet_processing() {
