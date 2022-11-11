@@ -10,8 +10,9 @@ use crate::module::core::ics26_routing::{Router, SubstrateRouterBuilder};
 #[cfg(test)]
 use ibc::{
 	core::{
+		ics04_channel::channel::ChannelEnd,
 		ics02_client::{client_type::ClientType, context::ClientKeeper},
-		ics24_host::identifier::ClientId,
+		ics24_host::identifier::{ClientId, PortId, ChannelId},
 	},
 	core::{ics03_connection::connection::ConnectionEnd, ics24_host::identifier::ConnectionId},
 	mock::client_state::{client_type as mock_client_type, MockClientState},
@@ -115,6 +116,21 @@ impl<T: Config> Context<T> {
 
 		self
 	}
+
+
+	#[cfg(test)]
+	/// Associates a channel (in an arbitrary state) to this context.
+    pub fn with_channel(
+        mut self,
+        port_id: PortId,
+        chan_id: ChannelId,
+        channel_end: ChannelEnd,
+    ) -> Self {
+        use ibc::core::ics04_channel::context::ChannelKeeper;
+		let _ = self.store_channel(port_id,chan_id, channel_end);
+        
+        self
+    }
 }
 
 impl<T: Config> Default for Context<T> {

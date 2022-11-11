@@ -1,3 +1,4 @@
+mod common;
 mod acknowledgement;
 mod chan_close_confirm;
 mod chan_close_init;

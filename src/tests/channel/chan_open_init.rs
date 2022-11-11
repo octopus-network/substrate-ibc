@@ -15,41 +15,8 @@ use ibc::core::{
 #[cfg(test)]
 pub mod test_util {
 	use ibc_proto::ibc::core::channel::v1::MsgChannelOpenInit as RawMsgChannelOpenInit;
-
-	use ibc::{
-		core::ics24_host::identifier::PortId,
-		test_utils::get_dummy_bech32_account,
-	};
-
-    #[cfg(test)]
-    pub mod test_util {
-        use ibc::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
-        
-        use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
-        use ibc_proto::ibc::core::channel::v1::Counterparty as RawCounterparty;
-
-        /// Returns a dummy `RawCounterparty`, for testing only!
-        /// Can be optionally parametrized with a specific channel identifier.
-        pub fn get_dummy_raw_counterparty() -> RawCounterparty {
-            RawCounterparty {
-                port_id: PortId::default().to_string(),
-                channel_id: ChannelId::default().to_string(),
-            }
-        }
-
-        /// Returns a dummy `RawChannel`, for testing only!
-        pub fn get_dummy_raw_channel_end() -> RawChannel {
-            RawChannel {
-                state: 1,
-                ordering: 2,
-                counterparty: Some(get_dummy_raw_counterparty()),
-                connection_hops: vec![ConnectionId::default().to_string()],
-                version: "ics20".to_string(), // The version is not validated.
-            }
-        }
-    }
-    
-    use test_util::get_dummy_raw_channel_end;
+	use ibc::{core::ics24_host::identifier::PortId, test_utils::get_dummy_bech32_account};
+	use crate::tests::channel::common::test_util::get_dummy_raw_channel_end;
 
 	/// Returns a dummy `RawMsgChannelOpenInit`, for testing only!
 	pub fn get_dummy_raw_msg_chan_open_init() -> RawMsgChannelOpenInit {
@@ -65,13 +32,14 @@ use crate::{
 	Context,
 };
 
-use crate::tests::channel::chan_open_init::test_util::get_dummy_raw_msg_chan_open_init;
-use crate::tests::connection::conn_open_init::test_util::get_dummy_raw_msg_conn_open_init;
+use crate::tests::{
+	channel::chan_open_init::test_util::get_dummy_raw_msg_chan_open_init,
+	connection::conn_open_init::test_util::get_dummy_raw_msg_conn_open_init,
+};
 
 #[test]
 fn chan_open_init_msg_processing() {
 	new_test_ext().execute_with(|| {
-        
      struct Test {
          name: String,
          ctx: Context<PalletIbcTest>,
