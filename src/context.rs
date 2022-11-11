@@ -178,17 +178,17 @@ impl<T: Config> Context<T> {
 
 	#[cfg(test)]
 	pub fn with_recv_sequence(
-        mut self,
-        port_id: PortId,
-        chan_id: ChannelId,
-        seq_number: Sequence,
-    ) -> Self {
+		mut self,
+		port_id: PortId,
+		chan_id: ChannelId,
+		seq_number: Sequence,
+	) -> Self {
 		use ibc::core::ics04_channel::context::ChannelKeeper;
 
 		let _ = self.store_next_sequence_recv(port_id, chan_id, seq_number);
 
 		self
-    }
+	}
 }
 
 impl<T: Config> Default for Context<T> {

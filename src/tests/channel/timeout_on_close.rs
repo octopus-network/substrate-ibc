@@ -1,55 +1,61 @@
-
-use ibc::core::ics02_client::height::Height;
-use ibc::core::ics03_connection::connection::ConnectionEnd;
-use ibc::core::ics03_connection::connection::Counterparty as ConnectionCounterparty;
-use ibc::core::ics03_connection::connection::State as ConnectionState;
-use ibc::core::ics03_connection::version::get_compatible_versions;
-use ibc::core::ics04_channel::channel::{ChannelEnd, Counterparty, Order, State};
-use ibc::core::ics04_channel::context::ChannelReader;
-use ibc::core::ics04_channel::handler::timeout_on_close::process;
+use ibc::core::{
+	ics02_client::height::Height,
+	ics03_connection::{
+		connection::{
+			ConnectionEnd, Counterparty as ConnectionCounterparty, State as ConnectionState,
+		},
+		version::get_compatible_versions,
+	},
+	ics04_channel::{
+		channel::{ChannelEnd, Counterparty, Order, State},
+		context::ChannelReader,
+		handler::timeout_on_close::process,
+	},
+};
 // use ibc::core::ics04_channel::msgs::timeout_on_close::test_util::get_dummy_raw_msg_timeout_on_close;
-use ibc::core::ics04_channel::msgs::timeout_on_close::MsgTimeoutOnClose;
-use ibc::core::ics04_channel::Version;
-use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
-use ibc::events::IbcEvent;
-use ibc::timestamp::ZERO_DURATION;
-use test_util::get_dummy_raw_msg_timeout_on_close;
 use crate::{
 	mock::{new_test_ext, System, Test as PalletIbcTest},
 	Context,
 };
+use ibc::{
+	core::{
+		ics04_channel::{msgs::timeout_on_close::MsgTimeoutOnClose, Version},
+		ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
+	},
+	events::IbcEvent,
+	timestamp::ZERO_DURATION,
+};
+use test_util::get_dummy_raw_msg_timeout_on_close;
 #[cfg(test)]
 pub mod test_util {
-    use ibc_proto::ibc::core::channel::v1::MsgTimeoutOnClose as RawMsgTimeoutOnClose;
-    use ibc_proto::ibc::core::client::v1::Height as RawHeight;
-    use crate::tests::channel::packet::test_utils::get_dummy_raw_packet;
-    use ibc::test_utils::{get_dummy_bech32_account, get_dummy_proof};
+	use crate::tests::channel::packet::test_utils::get_dummy_raw_packet;
+	use ibc::test_utils::{get_dummy_bech32_account, get_dummy_proof};
+	use ibc_proto::ibc::core::{
+		channel::v1::MsgTimeoutOnClose as RawMsgTimeoutOnClose, client::v1::Height as RawHeight,
+	};
 
-    /// Returns a dummy `RawMsgTimeoutOnClose`, for testing only!
-    /// The `height` parametrizes both the proof height as well as the timeout height.
-    pub fn get_dummy_raw_msg_timeout_on_close(
-        height: u64,
-        timeout_timestamp: u64,
-    ) -> RawMsgTimeoutOnClose {
-        RawMsgTimeoutOnClose {
-            packet: Some(get_dummy_raw_packet(height, timeout_timestamp)),
-            proof_unreceived: get_dummy_proof(),
-            proof_close: get_dummy_proof(),
-            proof_height: Some(RawHeight {
-                revision_number: 0,
-                revision_height: height,
-            }),
-            next_sequence_recv: 1,
-            signer: get_dummy_bech32_account(),
-        }
-    }
+	/// Returns a dummy `RawMsgTimeoutOnClose`, for testing only!
+	/// The `height` parametrizes both the proof height as well as the timeout height.
+	pub fn get_dummy_raw_msg_timeout_on_close(
+		height: u64,
+		timeout_timestamp: u64,
+	) -> RawMsgTimeoutOnClose {
+		RawMsgTimeoutOnClose {
+			packet: Some(get_dummy_raw_packet(height, timeout_timestamp)),
+			proof_unreceived: get_dummy_proof(),
+			proof_close: get_dummy_proof(),
+			proof_height: Some(RawHeight { revision_number: 0, revision_height: height }),
+			next_sequence_recv: 1,
+			signer: get_dummy_bech32_account(),
+		}
+	}
 }
 
 // todo
 // implementation specific error
 #[test]
 fn timeout_on_close_packet_processing() {
-    new_test_ext().execute_with(|| {
+	new_test_ext().execute_with(|| {
     struct Test {
         name: String,
         ctx: Context<PalletIbcTest>,
