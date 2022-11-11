@@ -1,58 +1,67 @@
-
 use core::str::FromStr;
 
-use ibc::core::ics03_connection::connection::ConnectionEnd;
-use ibc::core::ics03_connection::connection::Counterparty as ConnectionCounterparty;
-use ibc::core::ics03_connection::connection::State as ConnectionState;
-use crate::tests::connection::conn_open_init::test_util::get_dummy_raw_msg_conn_open_init;
-use ibc::core::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
-use crate::tests::connection::conn_open_try::test_util::get_dummy_raw_msg_conn_open_try;
-use ibc::core::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
-use ibc::core::ics03_connection::version::get_compatible_versions;
-use ibc::core::ics04_channel::channel::{ChannelEnd, Counterparty, State};
-use ibc::core::ics04_channel::handler::channel_dispatch;
-use ibc::core::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;
-use crate::tests::channel::chan_open_try::test_util::get_dummy_raw_msg_chan_open_try;
-use ibc::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
-use ibc::core::ics04_channel::msgs::ChannelMsg;
-use ibc::core::ics24_host::identifier::ConnectionId;
-use ibc::Height;
 use crate::{
 	mock::{new_test_ext, System, Test as PalletIbcTest},
+	tests::{
+		channel::chan_open_try::test_util::get_dummy_raw_msg_chan_open_try,
+		connection::{
+			conn_open_init::test_util::get_dummy_raw_msg_conn_open_init,
+			conn_open_try::test_util::get_dummy_raw_msg_conn_open_try,
+		},
+	},
 	Context,
+};
+use ibc::{
+	core::{
+		ics03_connection::{
+			connection::{
+				ConnectionEnd, Counterparty as ConnectionCounterparty, State as ConnectionState,
+			},
+			msgs::{conn_open_init::MsgConnectionOpenInit, conn_open_try::MsgConnectionOpenTry},
+			version::get_compatible_versions,
+		},
+		ics04_channel::{
+			channel::{ChannelEnd, Counterparty, State},
+			handler::channel_dispatch,
+			msgs::{
+				chan_open_ack::MsgChannelOpenAck, chan_open_try::MsgChannelOpenTry, ChannelMsg,
+			},
+		},
+		ics24_host::identifier::ConnectionId,
+	},
+	Height,
 };
 use test_util::get_dummy_raw_msg_chan_open_ack;
 
 #[cfg(test)]
 pub mod test_util {
-    use ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
+	use ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
 
-    use ibc::core::ics24_host::identifier::{ChannelId, PortId};
-    use ibc::test_utils::{get_dummy_bech32_account, get_dummy_proof};
-    use ibc_proto::ibc::core::client::v1::Height;
+	use ibc::{
+		core::ics24_host::identifier::{ChannelId, PortId},
+		test_utils::{get_dummy_bech32_account, get_dummy_proof},
+	};
+	use ibc_proto::ibc::core::client::v1::Height;
 
-    /// Returns a dummy `RawMsgChannelOpenAck`, for testing only!
-    pub fn get_dummy_raw_msg_chan_open_ack(proof_height: u64) -> RawMsgChannelOpenAck {
-        RawMsgChannelOpenAck {
-            port_id: PortId::default().to_string(),
-            channel_id: ChannelId::default().to_string(),
-            counterparty_channel_id: ChannelId::default().to_string(),
-            counterparty_version: "".to_string(),
-            proof_try: get_dummy_proof(),
-            proof_height: Some(Height {
-                revision_number: 0,
-                revision_height: proof_height,
-            }),
-            signer: get_dummy_bech32_account(),
-        }
-    }
+	/// Returns a dummy `RawMsgChannelOpenAck`, for testing only!
+	pub fn get_dummy_raw_msg_chan_open_ack(proof_height: u64) -> RawMsgChannelOpenAck {
+		RawMsgChannelOpenAck {
+			port_id: PortId::default().to_string(),
+			channel_id: ChannelId::default().to_string(),
+			counterparty_channel_id: ChannelId::default().to_string(),
+			counterparty_version: "".to_string(),
+			proof_try: get_dummy_proof(),
+			proof_height: Some(Height { revision_number: 0, revision_height: proof_height }),
+			signer: get_dummy_bech32_account(),
+		}
+	}
 }
 
- // TODO: The tests here are very fragile and complex.
- //  Should be adapted to use the same structure as `handler::chan_open_try::tests`.
- #[test]
- fn chan_open_ack_msg_processing() {
-    new_test_ext().execute_with(|| {
+// TODO: The tests here are very fragile and complex.
+//  Should be adapted to use the same structure as `handler::chan_open_try::tests`.
+#[test]
+fn chan_open_ack_msg_processing() {
+	new_test_ext().execute_with(|| {
      struct Test {
          name: String,
          ctx: Context<PalletIbcTest>,
@@ -232,4 +241,4 @@ pub mod test_util {
          }
      }
     })
- }
+}

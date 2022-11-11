@@ -9,6 +9,8 @@ use pallet_ics20_transfer::ics20_callback::IbcTransferModule;
 use crate::module::core::ics26_routing::{Router, SubstrateRouterBuilder};
 #[cfg(test)]
 use ibc::{
+	core::ics04_channel::commitment::PacketCommitment,
+	core::ics04_channel::packet::Sequence,
 	core::{
 		ics02_client::{client_type::ClientType, context::ClientKeeper},
 		ics04_channel::channel::ChannelEnd,
@@ -127,6 +129,35 @@ impl<T: Config> Context<T> {
 	) -> Self {
 		use ibc::core::ics04_channel::context::ChannelKeeper;
 		let _ = self.store_channel(port_id, chan_id, channel_end);
+
+		self
+	}
+
+	#[cfg(test)]
+	pub fn with_packet_commitment(
+		mut self,
+		port_id: PortId,
+		chan_id: ChannelId,
+		seq: Sequence,
+		data: PacketCommitment,
+	) -> Self {
+		use ibc::core::ics04_channel::context::ChannelKeeper;
+
+		let _ = self.store_packet_commitment(port_id, chan_id, seq, data);
+
+		self
+	}
+
+	#[cfg(test)]
+	pub fn with_ack_sequence(
+		mut self,
+		port_id: PortId,
+		chan_id: ChannelId,
+		seq_number: Sequence,
+	) -> Self {
+		use ibc::core::ics04_channel::context::ChannelKeeper;
+
+		let _ = self.store_next_sequence_ack(port_id, chan_id, seq_number);
 
 		self
 	}

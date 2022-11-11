@@ -1,5 +1,6 @@
 use crate::{
 	mock::{new_test_ext, System, Test as PalletIbcTest},
+	tests::connection::common::test_util::get_dummy_raw_counterparty,
 	Context,
 };
 use ibc::{
@@ -23,7 +24,6 @@ use ibc::{
 	timestamp::ZERO_DURATION,
 	Height,
 };
-use crate::tests::connection::common::test_util::get_dummy_raw_counterparty;
 
 #[cfg(test)]
 pub mod test_util {
@@ -63,7 +63,6 @@ fn chan_open_confirm_msg_processing() {
     let conn_id = ConnectionId::new(2);
     let context = Context::<PalletIbcTest>::new();
     System::set_block_number(20);
-    
     let client_consensus_state_height = context.host_current_height().revision_height();
 
     // The connection underlying the channel we're trying to open.
