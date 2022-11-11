@@ -16,6 +16,7 @@ use ibc::{
 	mock::client_state::{client_type as mock_client_type, MockClientState},
 	mock::host::HostBlock,
 	Height,
+	core::{ics24_host::identifier::ConnectionId, ics03_connection::connection::ConnectionEnd},
 };
 
 #[derive(Clone, Debug)]
@@ -101,6 +102,19 @@ impl<T: Config> Context<T> {
 
 		self
 	}
+
+	#[cfg(test)]
+	/// Associates a connection to this context.
+    pub fn with_connection(
+        mut self,
+        connection_id: ConnectionId,
+        connection_end: ConnectionEnd,
+    ) -> Self {
+        use ibc::core::ics03_connection::context::ConnectionKeeper;
+		self.store_connection(connection_id, &connection_end);
+
+        self
+    }
 }
 
 impl<T: Config> Default for Context<T> {
