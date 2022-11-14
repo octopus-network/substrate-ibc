@@ -1049,7 +1049,7 @@ dependencies = [
 [[package]]
 name = "ibc"
 version = "0.14.1"
-source = "git+https://github.com/octopus-network/ibc-rs.git?branch=feature/integrate_mmr_srv#8d83d4cb8397d3c40bad3132abcf3fc012cd1658"
+source = "git+https://github.com/octopus-network/hermes.git?branch=feature/m4-hermes1.0#8f7753b1c76713c53eef9f34681aec556bcc1887"
 dependencies = [
  "beefy-light-client",
  "beefy-merkle-tree",
@@ -1089,7 +1089,7 @@ dependencies = [
 [[package]]
 name = "ibc-proto"
 version = "0.17.1"
-source = "git+https://github.com/octopus-network/ibc-rs.git?branch=feature/integrate_mmr_srv#8d83d4cb8397d3c40bad3132abcf3fc012cd1658"
+source = "git+https://github.com/octopus-network/hermes.git?branch=feature/m4-hermes1.0#8f7753b1c76713c53eef9f34681aec556bcc1887"
 dependencies = [
  "base64",
  "bytes",
