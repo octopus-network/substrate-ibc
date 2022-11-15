@@ -129,7 +129,7 @@ impl<T: Config> ChannelReader for Context<T> {
 					"in channel: [client_consensus_state] >> any consensus state = {:?}",
 					any_consensus_state
 				);
-				return Ok(any_consensus_state);
+				return Ok(any_consensus_state)
 			}
 		}
 		trace!(target:"runtime::pallet-ibc",
@@ -146,16 +146,14 @@ impl<T: Config> ChannelReader for Context<T> {
 		trace!(target:"runtime::pallet-ibc","in channel : [authenticated_capability] port_id:{:?}",port_id);
 
 		match PortReader::lookup_module_by_port(self, port_id) {
-			Ok((_, key)) => {
+			Ok((_, key)) =>
 				if !PortReader::authenticate(self, port_id.clone(), &key) {
 					Err(Ics04Error::invalid_port_capability())
 				} else {
 					Ok(Capability::from(key).into())
-				}
-			},
-			Err(e) if e.detail() == Ics05Error::unknown_port(port_id.clone()).detail() => {
-				Err(Ics04Error::no_port_capability(port_id.clone()))
-			},
+				},
+			Err(e) if e.detail() == Ics05Error::unknown_port(port_id.clone()).detail() =>
+				Err(Ics04Error::no_port_capability(port_id.clone())),
 			Err(_) => Err(Ics04Error::implementation_specific()),
 		}
 	}
@@ -344,7 +342,8 @@ impl<T: Config> ChannelReader for Context<T> {
 	fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Ics04Error> {
 		trace!(target:"runtime::pallet-ibc","in channel: [host_consensus_state] height:{:?}",height);
 
-		// ConnectionReader::host_consensus_state(self, height).map_err(Ics04Error::ics03_connection)
+		// ConnectionReader::host_consensus_state(self,
+		// height).map_err(Ics04Error::ics03_connection)
 		use frame_support::traits::UnixTime;
 		let time = T::TimeProvider::now();
 		let ts = Timestamp::from_nanoseconds(time.as_nanos() as u64)
@@ -363,7 +362,8 @@ impl<T: Config> ChannelReader for Context<T> {
 
 		//TODO: need to build a real consensus state from substrate chain
 		let cs = ibc::clients::ics10_grandpa::consensus_state::ConsensusState {
-			root: CommitmentRoot::from(vec![1, 2, 3]),
+			commitment: Commitment::default(),
+			state_root: CommitmentRoot::from(vec![1, 2, 3]),
 			timestamp: ts,
 		};
 		trace!(target:"runtime::pallet-ibc","in connection : [host_consensus_state] consensus_state = {:?}", cs);
@@ -394,7 +394,8 @@ impl<T: Config> ChannelReader for Context<T> {
 		//TODO: need to build a real consensus state from substrate chain
 
 		let cs = ibc::clients::ics10_grandpa::consensus_state::ConsensusState {
-			root: CommitmentRoot::from(vec![1, 2, 3]),
+			commitment: Commitment::default(),
+			state_root: CommitmentRoot::from(vec![1, 2, 3]),
 			timestamp: ts,
 		};
 		trace!(target:"runtime::pallet-ibc","in connection : [host_consensus_state] consensus_state = {:?}", cs);

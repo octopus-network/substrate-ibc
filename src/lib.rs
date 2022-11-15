@@ -55,8 +55,7 @@ use ibc::{
 		ics02_client::{client_state::AnyClientState, height},
 		ics04_channel::msgs::{ChannelMsg, PacketMsg},
 		ics24_host::identifier::{self, ChainId as ICS24ChainId, ChannelId as IbcChannelId},
-		ics26_routing::handler,
-		ics26_routing::msgs::Ics26Envelope,
+		ics26_routing::{handler, msgs::Ics26Envelope},
 	},
 	events::IbcEvent,
 	timestamp,
@@ -820,16 +819,18 @@ pub mod pallet {
 							.map_err(|_| Error::<T>::InvalidSigner)?;
 
 						let ics20_modlue = Ics20IBCModule::<T>::new();
-						let raw_ack = ibc::core::ics26_routing::ibc_module::IBCModule::on_recv_packet(
-							&ics20_modlue,
-							ctx,
-							value.clone().packet,
-							relayer_signer,
-						)
-						.map_err(|_| Error::<T>::ReceivePacketError)?;
-						
-						let ack: ibc::core::ics04_channel::msgs::acknowledgement::Acknowledgement = raw_ack.into();
-	
+						let raw_ack =
+							ibc::core::ics26_routing::ibc_module::IBCModule::on_recv_packet(
+								&ics20_modlue,
+								ctx,
+								value.clone().packet,
+								relayer_signer,
+							)
+							.map_err(|_| Error::<T>::ReceivePacketError)?;
+
+						let ack: ibc::core::ics04_channel::msgs::acknowledgement::Acknowledgement =
+							raw_ack.into();
+
 						log::trace!(
 							target: LOG_TARGET,
 							"[handle_result] receive packet on_recv_packet ack : {:?}",
@@ -947,7 +948,6 @@ pub mod pallet {
 						);
 						// let ret = ibc::core::ics26_routing::ibc_module::IBCModule::on_acknowledgement_packet(&ics20_module, ctx, value.clone().packet, vec![], relayer_signer).map_err(|_| Error::<T>::AcknowledgePacketError)?;
 						let ret = ibc::core::ics26_routing::ibc_module::IBCModule::on_acknowledgement_packet(&ics20_module, ctx, value.clone().packet, ack.into_bytes(), relayer_signer).map_err(|_| Error::<T>::AcknowledgePacketError)?;
-
 
 						Self::deposit_event(event.clone().into());
 					},
@@ -1294,7 +1294,10 @@ pub mod pallet {
 		// 				let ics20_module = Ics20IBCModule::<T>::new();
 
 		// 				//TODO: get ack from message
-		// 				let ret = ibc::core::ics26_routing::ibc_module::IBCModule::on_acknowledgement_packet(&ics20_module, ctx, value.clone().packet, vec![], relayer_signer).map_err(|_| Error::<T>::AcknowledgePacketError)?;
+		// 				let ret =
+		// ibc::core::ics26_routing::ibc_module::IBCModule::on_acknowledgement_packet(&ics20_module,
+		// ctx, value.clone().packet, vec![], relayer_signer).map_err(|_|
+		// Error::<T>::AcknowledgePacketError)?;
 
 		// 				Self::deposit_event(event.clone().into());
 		// 			},
@@ -1536,7 +1539,7 @@ pub mod pallet {
 					client_id_str
 				);
 
-				return Err(Error::<T>::ClientIdNotFound.into());
+				return Err(Error::<T>::ClientIdNotFound.into())
 			} else {
 				// get client state from chain storage
 				let data = <ClientStates<T>>::get(client_id.clone());
@@ -1607,7 +1610,7 @@ pub mod pallet {
 					// update client_client block number and latest commitment
 					let latest_commitment =
 						light_client.latest_commitment.ok_or(Error::<T>::EmptyLatestCommitment)?;
-					client_state.block_number = latest_commitment.block_number;
+					client_state.latest_height = latest_commitment.block_number;
 					client_state.latest_commitment = help::Commitment::from(latest_commitment);
 
 					// update validator_set
@@ -1649,13 +1652,14 @@ pub mod pallet {
 					// consensus_state.digest = client_state.latest_commitment.payload.clone();
 					// let any_consensus_state = AnyConsensusState::Grandpa(consensus_state);
 
-
 					// let height = ibc::Height {
 					// 	revision_number: 0,
 					// 	revision_height: client_state.block_number as u64,
 					// };
 
-					// log::trace!(target: LOG_TARGET,"in ibc-lib : [store_consensus_state] >> client_id: {:?}, height = {:?}, consensus_state = {:?}", client_id, height, any_consensus_state);
+					// log::trace!(target: LOG_TARGET,"in ibc-lib : [store_consensus_state] >>
+					// client_id: {:?}, height = {:?}, consensus_state = {:?}", client_id, height,
+					// any_consensus_state);
 
 					// let height = height.encode_vec().map_err(|_| Error::<T>::InvalidEncode)?;
 					// let data =
@@ -1679,7 +1683,7 @@ pub mod pallet {
 					// emit update state success event
 					let event_height = Height {
 						revision_number: 0,
-						revision_height: client_state.block_number as u64,
+						revision_height: client_state.latest_height as u64,
 					};
 					let event_client_state = EventClientState::from(client_state);
 					Self::deposit_event(Event::<T>::UpdateClientState(
@@ -1694,7 +1698,7 @@ pub mod pallet {
 						e
 					);
 
-					return Err(Error::<T>::UpdateBeefyLightClientFailure.into());
+					return Err(Error::<T>::UpdateBeefyLightClientFailure.into())
 				},
 			}
 

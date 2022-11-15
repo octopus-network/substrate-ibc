@@ -80,7 +80,7 @@ impl<T: Config> ClientReader for Context<T> {
 					"in client : [consensus_state] >> any consensus state = {:?}",
 					any_consensus_state
 				);
-				return Ok(any_consensus_state);
+				return Ok(any_consensus_state)
 			}
 		}
 
@@ -112,7 +112,7 @@ impl<T: Config> ClientReader for Context<T> {
 					"in client : [consensus_state] >> any consensus state = {:?}",
 					any_consensus_state
 				);
-				return Ok(Some(any_consensus_state));
+				return Ok(Some(any_consensus_state))
 			}
 		}
 
@@ -149,7 +149,7 @@ impl<T: Config> ClientReader for Context<T> {
 					"in client : [consensus_state] >> any consensus state = {:?}",
 					any_consensus_state
 				);
-				return Ok(Some(any_consensus_state));
+				return Ok(Some(any_consensus_state))
 			}
 		}
 
@@ -186,7 +186,8 @@ impl<T: Config> ClientReader for Context<T> {
 
 		//TODO: need to build a real consensus state from substrate chain
 		let cs = ibc::clients::ics10_grandpa::consensus_state::ConsensusState {
-			root: CommitmentRoot::from(vec![1, 2, 3]),
+			commitment: Commitment::default(),
+			state_root: CommitmentRoot::from(vec![1, 2, 3]),
 			timestamp: ts,
 		};
 		Ok(AnyConsensusState::Grandpa(cs))
@@ -207,7 +208,8 @@ impl<T: Config> ClientReader for Context<T> {
 
 		//TODO: need to build a real consensus state from substrate chain
 		let cs = ibc::clients::ics10_grandpa::consensus_state::ConsensusState {
-			root: CommitmentRoot::from(vec![1, 2, 3]),
+			commitment: Commitment::default(),
+			state_root: CommitmentRoot::from(vec![1, 2, 3]),
 			timestamp: ts,
 		};
 		Ok(AnyConsensusState::Grandpa(cs))
@@ -289,9 +291,9 @@ impl<T: Config> ClientKeeper for Context<T> {
 		match ct {
 			ClientType::Grandpa => {
 				// if !<ConsensusStates<T>>::contains_key(client_id.as_bytes()) {
-				// 	trace!(target:"runtime::pallet-ibc","in client : [store_consensus_state] need to insert new grandpa onsensus_state !");
-				// 	<ConsensusStates<T>>::insert(client_id.as_bytes(), vec![(height, data)]);
-				// }
+				// 	trace!(target:"runtime::pallet-ibc","in client : [store_consensus_state] need to
+				// insert new grandpa onsensus_state !"); 	<ConsensusStates<T>>::insert(client_id.
+				// as_bytes(), vec![(height, data)]); }
 
 				if <ConsensusStates<T>>::contains_key(client_id.as_bytes()) {
 					// if consensus_state is no empty use push insert an exist
