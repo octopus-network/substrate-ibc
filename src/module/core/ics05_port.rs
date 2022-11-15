@@ -16,6 +16,9 @@ impl<T: Config> PortReader for Context<T> {
 		match port_id.as_str() {
 			TRANSFER_PORT_ID => Ok(ModuleId::from_str(TRANSFER_MODULE_ID)
 				.map_err(|_| ICS05Error::module_not_found(port_id.clone()))?),
+			#[cfg(test)]
+			"defaultPort" => Ok(ModuleId::from_str(TRANSFER_MODULE_ID)
+				.map_err(|_| ICS05Error::module_not_found(port_id.clone()))?),
 			_ => Err(ICS05Error::module_not_found(port_id.clone())),
 		}
 	}
