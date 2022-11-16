@@ -161,6 +161,8 @@ pub mod pallet {
 		InvalidTokenId,
 		/// Wrong assert id
 		WrongAssetId,
+		///
+		DecodeStringFailed,
 	}
 
 	// Dispatchable functions allows users to interact with the pallet and invoke state changes.
@@ -183,13 +185,13 @@ pub mod pallet {
 			let _sender = ensure_signed(origin)?;
 			let mut ctx = IbcTransferModule(PhantomData::<T>);
 
-			let messages: Vec<ibc_proto::google::protobuf::Any> = messages
+			let messages = messages
 				.into_iter()
-				.map(|message| ibc_proto::google::protobuf::Any {
-					type_url: String::from_utf8(message.type_url.clone()).unwrap(),
+				.map(|message| Ok(ibc_proto::google::protobuf::Any {
+					type_url: String::from_utf8(message.type_url.clone()).map_err(|_| Error::<T>::DecodeStringFailed)?,
 					value: message.value,
-				})
-				.collect();
+				}))
+				.collect::<Result<Vec<ibc_proto::google::protobuf::Any>, Error<T>>>()?;
 
 			log::trace!(
 				target: LOG_TARGET,

@@ -1,3 +1,5 @@
+use core::marker::PhantomData;
+
 use crate::{
 	module::core::ics24_host::{ClientId, ClientType, ConnectionId, Height},
 	prelude::{format, String},
@@ -11,13 +13,13 @@ use sp_std::{str::FromStr, vec::Vec};
 
 /// ibc-rs' `ModuleEvent` representation in substrate
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
-pub struct ModuleEvent {
+pub struct ModuleEvent<T> {
 	pub kind: Vec<u8>,
-	pub module_name: ModuleId,
+	pub module_name: ModuleId<T>,
 	pub attributes: Vec<ModuleEventAttribute>,
 }
 
-impl From<ibc::events::ModuleEvent> for ModuleEvent {
+impl<T> From<ibc::events::ModuleEvent> for ModuleEvent<T> {
 	fn from(module_event: ibc::events::ModuleEvent) -> Self {
 		Self {
 			kind: module_event.kind.as_bytes().to_vec(),
@@ -27,30 +29,40 @@ impl From<ibc::events::ModuleEvent> for ModuleEvent {
 	}
 }
 
-impl From<ModuleEvent> for ibc::events::ModuleEvent {
-	fn from(module_event: ModuleEvent) -> Self {
-		Self {
+impl<T: Config> TryFrom<ModuleEvent<T>> for ibc::events::ModuleEvent {
+	type Error = Error<T>;
+
+	fn try_from(module_event: ModuleEvent<T>) -> Result<Self, Self::Error> {
+		Ok(Self {
 			kind: String::from_utf8(module_event.kind).expect("never failed"),
-			module_name: module_event.module_name.into(),
+			module_name: module_event.module_name.try_into()?,
 			attributes: module_event.attributes.into_iter().map(|event| event.into()).collect(),
-		}
+		})
 	}
 }
 
 /// ibc-rs' `ModuleId` representation in substrate
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
-pub struct ModuleId(pub Vec<u8>);
+pub struct ModuleId<T> {
+	pub raw: Vec<u8>,
+	phantom: PhantomData<T>,
+}
 
-impl From<ics26_routing::context::ModuleId> for ModuleId {
+impl<T> From<ics26_routing::context::ModuleId> for ModuleId<T> {
 	fn from(module_id: ics26_routing::context::ModuleId) -> Self {
-		Self(format!("{}", module_id).as_bytes().to_vec())
+		Self {
+			raw: format!("{}", module_id).as_bytes().to_vec(),
+			phantom: PhantomData::default(),
+		}
 	}
 }
 
-impl From<ModuleId> for ics26_routing::context::ModuleId {
-	fn from(module_id: ModuleId) -> Self {
-		ics26_routing::context::ModuleId::from_str(&String::from_utf8(module_id.0).unwrap())
-			.expect("should never fiaild")
+impl<T: Config> TryFrom<ModuleId<T>> for ics26_routing::context::ModuleId {
+	type Error = Error<T>;
+	
+	fn try_from(module_id: ModuleId<T>) -> Result<Self, Self::Error> {
+		ics26_routing::context::ModuleId::from_str(&String::from_utf8(module_id.raw).map_err(|_| Error::<T>::DecodeStringFailed)?)
+			.map_err(|_| Error::<T>::InvalidModuleId)
 	}
 }
 

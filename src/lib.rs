@@ -394,7 +394,7 @@ pub mod pallet {
 			channel_ordering: Order,
 		},
 		/// App Module event
-		AppModule(ModuleEvent),
+		AppModule(ModuleEvent<T>),
 		/// Ibc errors
 		IbcErrors { errors: Vec<errors::IbcError> },
 	}
@@ -406,6 +406,22 @@ pub mod pallet {
 		DecodeStringFailed,
 		/// unknow Client type
 		UnknownClientType,
+		/// invalid portid
+		InvalidPortId,
+		/// invalid channel id
+		InvalidChannelId,
+		/// invalid height
+		InvalidHeight,
+		/// invalid client id
+		InvalidClientId,
+		/// invalid connection id
+		InvalidConnectionId,
+		/// invalid timestamp
+		InvalidTimestamp,
+		/// invalid version
+		InvalidVersion,
+		/// Invalid module id
+		InvalidModuleId,
 	}
 
 	/// Dispatchable functions allows users to interact with the pallet and invoke state changes.

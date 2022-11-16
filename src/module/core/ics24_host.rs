@@ -53,10 +53,10 @@ impl<T: Config> From<IbcPortId> for PortId<T> {
 impl<T: Config> TryFrom<PortId<T>> for IbcPortId {
 	type Error = Error<T>;
 	fn try_from(port_id: PortId<T>) -> Result<Self, Self::Error> {
-		Ok(IbcPortId::from_str(
-			&String::from_utf8(port_id.raw).expect("hex-encoded string should always be valid UTF-8"),
+		IbcPortId::from_str(
+			&String::from_utf8(port_id.raw).map_err(|_| Error::<T>::DecodeStringFailed)?,
 		)
-		.expect("Never failed"))
+		.map_err(|_| Error::<T>::InvalidPortId)
 	}
 }
 
@@ -80,9 +80,8 @@ impl<T: Config> TryFrom<ChannelId<T>> for IbcChannelId {
 	type Error = Error<T>;
 
 	fn try_from(channel_id: ChannelId<T>) -> Result<Self, Self::Error> {
-		let value = String::from_utf8(channel_id.raw)
-			.expect("hex-encoded string should always be valid UTF-8");
-		Ok(Self::from_str(&value).expect("convert channel id from str Error"))
+		let value = String::from_utf8(channel_id.raw).map_err(|_| Error::<T>::DecodeStringFailed)?;
+		Self::from_str(&value).map_err(|_| Error::<T>::InvalidChannelId)
 	}
 }
 
@@ -133,7 +132,7 @@ impl<T> From<IbcHeight> for Height<T> {
 impl<T: Config> TryFrom<Height<T>> for IbcHeight {
 	type Error = Error<T>;
 	fn try_from(height: Height<T>) -> Result<Self, Self::Error> {
-		Ok(IbcHeight::new(REVISION_NUMBER, height.revision_height).expect("Contruct IbcHeight Error"))
+		IbcHeight::new(REVISION_NUMBER, height.revision_height).map_err(|_| Error::<T>::InvalidHeight)
 	}
 }
 
@@ -150,7 +149,7 @@ pub struct ClientType<T> {
 	phantom: PhantomData<T>
 }
 
-impl<T> ClientType<T> {
+impl<T: Config> ClientType<T> {
 	pub fn new(s: &str) -> Self {
 		let value = s.as_bytes().to_vec();
 		Self {
@@ -159,12 +158,12 @@ impl<T> ClientType<T> {
 		}
 	}
 
-	pub fn to_string(&self) -> String {
-		String::from_utf8(self.raw.clone()).expect("hex-encoded string should always be valid UTF-8")
+	pub fn to_string(&self) -> Result<String, Error<T>> {
+		String::from_utf8(self.raw.clone()).map_err(|_| Error::<T>::DecodeStringFailed)
 	}
 }
 
-impl<T> From<IbcClientType> for ClientType<T> {
+impl<T: Config> From<IbcClientType> for ClientType<T> {
 	fn from(ibc_client_type: IbcClientType) -> Self {
 		Self::new(ibc_client_type.as_str())
 	}
@@ -174,7 +173,7 @@ impl<T: Config> TryFrom<ClientType<T>> for IbcClientType {
 	type Error = Error<T>;
 
 	fn try_from(client_type: ClientType<T>) -> Result<Self, Self::Error> {
-		match client_type.to_string().as_str() {
+		match client_type.to_string()?.as_str() {
 			"07-tendermint" => Ok(IbcClientType::new(TENDERMINT_CLIENT_TYPE.into())),
 			#[cfg(test)]
 			"9999-mock" => Ok(IbcClientType::new(MOCK_CLIENT_TYPE.into())),
@@ -204,9 +203,8 @@ impl<T: Config> TryFrom<ClientId<T>> for IbcClientId {
 	type Error = Error<T>;
 
 	fn try_from(client_id: ClientId<T>) -> Result<Self, Self::Error> {
-		let value = String::from_utf8(client_id.raw)
-			.expect("hex-encoded string should always be valid UTF-8");
-		Ok(IbcClientId::from_str(&value).expect("Never failed"))
+		let value = String::from_utf8(client_id.raw).map_err(|_| Error::<T>::DecodeStringFailed)?;
+		IbcClientId::from_str(&value).map_err(|_| Error::<T>::InvalidClientId)
 	}
 }
 
@@ -232,8 +230,8 @@ impl<T: Config> TryFrom<ConnectionId<T>> for IbcConnectionId {
 
 	fn try_from(connection_id: ConnectionId<T>) -> Result<Self, Self::Error> {
 		let value = String::from_utf8(connection_id.raw)
-			.expect("hex-encoded string should always be valid UTF-8");
-		Ok(IbcConnectionId::from_str(&value).expect("Never failed"))
+		.map_err(|_| Error::<T>::DecodeStringFailed)?;
+		IbcConnectionId::from_str(&value).map_err(|_| Error::<T>::InvalidConnectionId)
 	}
 }
 
@@ -255,8 +253,8 @@ impl<T: Config> TryFrom<Timestamp<T>> for IbcTimestamp {
 
 	fn try_from(timestamp: Timestamp<T>) -> Result<Self, Self::Error> {
 		let value = String::from_utf8(timestamp.time)
-			.expect("hex-encoded string should always be valid UTF-8");
-		Ok(Self::from_str(&value).expect("convert from str Error"))
+		.map_err(|_| Error::<T>::DecodeStringFailed)?;
+		Self::from_str(&value).map_err(|_| Error::<T>::InvalidTimestamp)
 	}
 }
 
@@ -322,7 +320,7 @@ impl<T: Config> TryFrom<Packet<T>> for IbcPacket {
 			timeout_height: match packet.timeout_height {
 				TimeoutHeight::Never => IbcTimeoutHeight::Never,
 				TimeoutHeight::At(value) => IbcTimeoutHeight::At(
-					IbcHeight::new(value.revision_number, value.revision_height).unwrap(),
+					IbcHeight::new(value.revision_number, value.revision_height).map_err(|_| Error::<T>::InvalidHeight)?,
 				),
 			},
 			timeout_timestamp: packet.timeout_timestamp.try_into()?,
@@ -350,8 +348,8 @@ impl<T: Config> TryFrom<Version<T>> for IbcVersion {
 
 	fn try_from(version: Version<T>) -> Result<Self, Self::Error> {
 		let value =
-			String::from_utf8(version.raw).expect("hex-encoded string should always be valid UTF-8");
-		Ok(IbcVersion::from_str(&value).expect("Never failed"))
+			String::from_utf8(version.raw).map_err(|_| Error::<T>::DecodeStringFailed)?;
+		IbcVersion::from_str(&value).map_err(|_| Error::<T>::InvalidVersion)
 	}
 }
 
