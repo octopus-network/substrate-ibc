@@ -32,7 +32,7 @@ sp-std = { version = "4.0.0", default-features = false, git = "https://github.co
 # octopus ibc-rs
 ibc = { version = "0.22.0", default-features = false, git = "https://github.com/cosmos/ibc-rs.git", branch = "main" }
 # octopus ibc-proto-rs
-ibc-proto = { version = "0.21.0", default-features = false }
+ibc-proto = { version = "0.22.0", default-features = false }
 tendermint-proto = { version = "=0.25.0", default-features = false }
 
 [dev-dependencies]

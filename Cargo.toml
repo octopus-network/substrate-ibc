@@ -38,7 +38,7 @@ flex-error = { version = "0.4.4", default-features = false }
 hex = { version = "0.4.0", default-features = false }
 ## for ibc protocl
 ibc = { version = "0.22.0", default-features = false, git = "https://github.com/cosmos/ibc-rs.git", branch = "main"}
-ibc-proto = { version = "0.21.0", default-features = false }
+ibc-proto = { version = "0.22.0", default-features = false }
 log = { version = "0.4.0", default-features = false }
 prost = { version = "0.11", default-features = false }
 prost-types = { version = "0.11", default-features = false }
