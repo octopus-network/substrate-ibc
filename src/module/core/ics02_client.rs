@@ -43,7 +43,7 @@ impl<T: Config> ClientReader for Context<T> {
 		if <Clients<T>>::contains_key(client_type_path.clone()) {
 			let data = <Clients<T>>::get(client_type_path);
 			let data =
-				String::from_utf8(data).map_err(|_| Ics02Error::implementation_specific())?;
+				String::from_utf8(data).map_err(|e| Ics02Error::other(format!("Decode ClientType Failed: {:?}", e)))?;
 			match data.as_str() {
 				TENDERMINT_CLIENT_TYPE => Ok(ClientType::new(TENDERMINT_CLIENT_TYPE.into())),
 				#[cfg(test)]
@@ -63,14 +63,14 @@ impl<T: Config> ClientReader for Context<T> {
 			match self.client_type(client_id)?.as_str() {
 				TENDERMINT_CLIENT_TYPE => {
 					let result: Ics07ClientState = Protobuf::<Any>::decode_vec(&data)
-						.map_err(|_| Ics02Error::implementation_specific())?;
+						.map_err(|e| Ics02Error::other(format!("Decode Ics07ClientState failed: {:?}", e)))?;
 
 					Ok(Box::new(result))
 				},
 				#[cfg(test)]
 				MOCK_CLIENT_TYPE => {
 					let result: MockClientState = Protobuf::<Any>::decode_vec(&data)
-						.map_err(|_| Ics02Error::implementation_specific())?;
+						.map_err(|e| Ics02Error::other(format!("Deocode Ics10ClientState failed: {:?}", e)))?;
 					Ok(Box::new(result))
 				},
 				unimplemented => Err(Ics02Error::unknown_client_type(unimplemented.to_string())),
@@ -110,13 +110,13 @@ impl<T: Config> ClientReader for Context<T> {
 			match self.client_type(client_id)?.as_str() {
 				TENDERMINT_CLIENT_TYPE => {
 					let result: Ics07ConsensusState = Protobuf::<Any>::decode_vec(&data)
-						.map_err(|_| Ics02Error::implementation_specific())?;
+						.map_err(|e| Ics02Error::other(format!("Decode Ics07ConsensusState failed: {:?}", e)))?;
 					Ok(Box::new(result))
 				},
 				#[cfg(test)]
 				MOCK_CLIENT_TYPE => {
 					let result: MockConsensusState = Protobuf::<Any>::decode_vec(&data)
-						.map_err(|_| Ics02Error::implementation_specific())?;
+						.map_err(|e| Ics02Error::other(format!("Decode MockConsensusState failed: {:?}", e)))?;
 					Ok(Box::new(result))
 				},
 				unimplemented => Err(Ics02Error::unknown_client_type(unimplemented.to_string())),
@@ -165,13 +165,13 @@ impl<T: Config> ClientReader for Context<T> {
 				match self.client_type(client_id)?.as_str() {
 					TENDERMINT_CLIENT_TYPE => {
 						let result: Ics07ConsensusState = Protobuf::<Any>::decode_vec(&data)
-							.map_err(|_| Ics02Error::implementation_specific())?;
+							.map_err(|e| Ics02Error::other(format!("Decode Ics07ConsensusState failed: {:?}", e)))?;
 						return Ok(Some(Box::new(result)))
 					},
 					#[cfg(test)]
 					MOCK_CLIENT_TYPE => {
 						let result: MockConsensusState = Protobuf::<Any>::decode_vec(&data)
-							.map_err(|_| Ics02Error::implementation_specific())?;
+							.map_err(|e| Ics02Error::other(format!("Decode MockConsensusState failed: {:?}", e)))?;
 						return Ok(Some(Box::new(result)))
 					},
 					_ => {},
@@ -222,13 +222,13 @@ impl<T: Config> ClientReader for Context<T> {
 						let result: Ics07ConsensusState = ibc_proto::protobuf::Protobuf::<
 							ibc_proto::google::protobuf::Any,
 						>::decode_vec(&data)
-						.map_err(|_| Ics02Error::implementation_specific())?;
+						.map_err(|e| Ics02Error::other(format!("Decode Ics07ConsensusState failed: {:?}", e)))?;
 						return Ok(Some(Box::new(result)))
 					},
 					#[cfg(test)]
 					MOCK_CLIENT_TYPE => {
 						let result: MockConsensusState = Protobuf::<Any>::decode_vec(&data)
-							.map_err(|_| Ics02Error::implementation_specific())?;
+							.map_err(|e| Ics02Error::other(format!("Decode MockConsensusState failed: {:?}", e)))?;
 						return Ok(Some(Box::new(result)))
 					},
 					_ => {},
@@ -297,7 +297,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 	) -> Result<(), Ics02Error> {
 		let client_state_path = ClientStatePath(client_id).to_string().as_bytes().to_vec();
 
-		let data = client_state.encode_vec().map_err(|_| Ics02Error::implementation_specific())?;
+		let data = client_state.encode_vec().map_err(|e| Ics02Error::other(format!("Encode ClientState Failed: {:?}", e)))?;
 
 		<ClientStates<T>>::insert(client_state_path, data);
 		Ok(())
@@ -320,7 +320,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 
 		let consensus_state = consensus_state
 			.encode_vec()
-			.map_err(|_| Ics02Error::implementation_specific())?;
+			.map_err(|e| Ics02Error::other(format!("Encode ConsensusStates failed: {:?}", e)))?;
 
 		<ConsensusStates<T>>::insert(client_consensus_state_path, consensus_state);
 
@@ -342,13 +342,13 @@ impl<T: Config> ClientKeeper for Context<T> {
 		timestamp: Timestamp,
 	) -> Result<(), Ics02Error> {
 		let encode_timestamp = serde_json::to_string(&timestamp)
-			.map_err(|_| Ics02Error::implementation_specific())?
+			.map_err(|e| Ics02Error::other(format!("Encode timestamp failed: {:?}", e)))?
 			.as_bytes()
 			.to_vec();
 
 		<ClientProcessedTimes<T>>::insert(
 			client_id.as_bytes(),
-			height.encode_vec().map_err(|_| Ics02Error::implementation_specific())?,
+			height.encode_vec().map_err(|e| Ics02Error::other(format!("Encode Height failed: {:?}", e)))?,
 			encode_timestamp,
 		);
 
@@ -363,8 +363,8 @@ impl<T: Config> ClientKeeper for Context<T> {
 	) -> Result<(), Ics02Error> {
 		<ClientProcessedHeights<T>>::insert(
 			client_id.as_bytes(),
-			height.encode_vec().map_err(|_| Ics02Error::implementation_specific())?,
-			host_height.encode_vec().map_err(|_| Ics02Error::implementation_specific())?,
+			height.encode_vec().map_err(|e| Ics02Error::other(format!("Encode height failed: {:?}", e)))?,
+			host_height.encode_vec().map_err(|e| Ics02Error::other(format!("Encode Host height failed: {:?}", e)))?,
 		);
 
 		Ok(())

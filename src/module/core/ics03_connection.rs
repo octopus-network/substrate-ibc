@@ -31,7 +31,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 		if <Connections<T>>::contains_key(&connections_path) {
 			let data = <Connections<T>>::get(&connections_path);
 			let ret = ConnectionEnd::decode_vec(&data)
-				.map_err(|_| Ics03Error::implementation_specific())?;
+				.map_err(|e| Ics03Error::other(format!("Decode ConnectionEnd failed: {:?}", e)))?;
 
 			Ok(ret)
 		} else {
@@ -94,7 +94,7 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 	) -> Result<(), Ics03Error> {
 		let connections_path = ConnectionsPath(connection_id).to_string().as_bytes().to_vec();
 		let data =
-			connection_end.encode_vec().map_err(|_| Ics03Error::implementation_specific())?;
+			connection_end.encode_vec().map_err(|e| Ics03Error::other(format!("Encode ConnectionEnd failed: {:?}", e)))?;
 		<Connections<T>>::insert(connections_path, data);
 
 		Ok(())
