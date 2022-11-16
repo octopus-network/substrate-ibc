@@ -146,15 +146,15 @@ impl<T: Config> ClientReader for Context<T> {
 			.into_iter()
 			.map(|value| {
 				let value = String::from_utf8(value)
-					.expect("hex-encoded string should always be valid UTF-8");
-				let client_consensus_state_path = value.rsplit_once('/').expect("Never failed");
+					.map_err(|e| Ics02Error::other(format!("hex-encoded string should always be valid UTF-8: {:?}", e)))?;
+				let client_consensus_state_path = value.rsplit_once('/').ok_or(Ics02Error::other(format!("split client consensus state path failed")))?;
 				let (epoch, height) =
-					client_consensus_state_path.1.split_once('-').expect("never Failed");
-				let epoch = epoch.parse::<u64>().expect("Never failed");
-				let height = height.parse::<u64>().expect("Never failed");
-				Height::new(epoch, height).expect("Never failed")
+					client_consensus_state_path.1.split_once('-').ok_or(Ics02Error::other(format!("split height failed")))?;
+				let epoch = epoch.parse::<u64>().map_err(|e| Ics02Error::other(format!("parse epoch number failed: {:?}", e)))?;
+				let height = height.parse::<u64>().map_err(|e| Ics02Error::other(format!("parse height failed: {:?}", e)))?;
+				Height::new(epoch, height).map_err(|e| Ics02Error::other(format!("contruct IBC height failed: {:?}", e)))
 			})
-			.collect::<Vec<Height>>();
+			.collect::<Result<Vec<Height>, Ics02Error>>()?;
 
 		heights.sort_by(|a, b| b.cmp(a));
 
@@ -201,15 +201,15 @@ impl<T: Config> ClientReader for Context<T> {
 			.into_iter()
 			.map(|value| {
 				let value = String::from_utf8(value)
-					.expect("hex-encoded string should always be valid UTF-8");
-				let client_consensus_state_path = value.rsplit_once('/').expect("Never failed");
+					.map_err(|e| Ics02Error::other(format!("hex-encoded string should always be valid UTF-8: {:?}", e)))?;
+				let client_consensus_state_path = value.rsplit_once('/').ok_or(Ics02Error::other(format!("split client consensus state path failed")))?;
 				let (epoch, height) =
-					client_consensus_state_path.1.split_once('-').expect("never Failed");
-				let epoch = epoch.parse::<u64>().expect("Never failed");
-				let height = height.parse::<u64>().expect("Never failed");
-				Height::new(epoch, height).expect("Never failed")
+					client_consensus_state_path.1.split_once('-').ok_or(Ics02Error::other(format!("split height failed")))?;
+				let epoch = epoch.parse::<u64>().map_err(|e| Ics02Error::other(format!("parse epoch number failed: {:?}", e)))?;
+				let height = height.parse::<u64>().map_err(|e| Ics02Error::other(format!("parse height failed: {:?}", e)))?;
+				Height::new(epoch, height).map_err(|e| Ics02Error::other(format!("contruct IBC height failed: {:?}", e)))
 			})
-			.collect::<Vec<Height>>();
+			.collect::<Result<Vec<Height>, Ics02Error>>()?;
 
 		heights.sort_by(|a, b| b.cmp(a));
 
@@ -329,7 +329,7 @@ impl<T: Config> ClientKeeper for Context<T> {
 
 	fn increase_client_counter(&mut self) {
 		let _ = <ClientCounter<T>>::try_mutate(|val| -> Result<(), Ics02Error> {
-			let new = val.checked_add(1).expect("increase client coubter overflow");
+			let new = val.checked_add(1).ok_or( Ics02Error::other(format!("increase client coubter overflow")))?;
 			*val = new;
 			Ok(())
 		});

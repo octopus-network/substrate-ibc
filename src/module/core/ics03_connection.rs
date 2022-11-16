@@ -114,7 +114,7 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 
 	fn increase_connection_counter(&mut self) {
 		let _ = <ConnectionCounter<T>>::try_mutate(|val| -> Result<(), Ics03Error> {
-			let new = val.checked_add(1).expect("increase connection counter overflow!");
+			let new = val.checked_add(1).ok_or(Ics03Error::other("increase connection counter overflow!".to_string()))?;
 			*val = new;
 			Ok(())
 		});

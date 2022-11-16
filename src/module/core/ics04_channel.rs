@@ -740,7 +740,7 @@ impl<T: Config> IbcSupportChannelKeeper for Context<T> {
 	/// Should never fail.
 	fn increase_channel_counter() {
 		let _ = <ChannelCounter<T>>::try_mutate(|val| -> Result<(), Ics04Error> {
-			let new = val.checked_add(1).expect("add channel counter overflow");
+			let new = val.checked_add(1).ok_or(Ics04Error::other(format!("add channel counter overflow")))?;
 			*val = new;
 			Ok(())
 		});
