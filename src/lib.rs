@@ -233,7 +233,11 @@ pub mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// Client created event
-		CreateClient { client_id: ClientId<T>, client_type: ClientType<T>, consensus_height: Height<T> },
+		CreateClient {
+			client_id: ClientId<T>,
+			client_type: ClientType<T>,
+			consensus_height: Height<T>,
+		},
 		/// Client updated event
 		UpdateClient {
 			client_id: ClientId<T>,
@@ -243,7 +247,11 @@ pub mod pallet {
 			header: Any,
 		},
 		/// Client upgraded event
-		UpgradeClient { client_id: ClientId<T>, client_type: ClientType<T>, consensus_height: Height<T> },
+		UpgradeClient {
+			client_id: ClientId<T>,
+			client_type: ClientType<T>,
+			consensus_height: Height<T>,
+		},
 		/// Client misbehaviour event
 		ClientMisbehaviour { client_id: ClientId<T>, client_type: ClientType<T> },
 		/// Connection open init event

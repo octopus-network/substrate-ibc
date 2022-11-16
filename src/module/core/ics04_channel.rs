@@ -316,10 +316,15 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 			let mut result = vec![];
 
 			for item in channel_ends_paths.into_iter() {
-				let raw_path =
-					String::from_utf8(item).map_err(|e| Ics04Error::other(format!("Decode ChannelEnds Paths String format failed: {:?}", e)))?;
-				let path =
-					Path::from_str(&raw_path).map_err(|e| Ics04Error::other(format!("Decode ChannelEnds Path format Failed: {:?}", e)))?;
+				let raw_path = String::from_utf8(item).map_err(|e| {
+					Ics04Error::other(format!(
+						"Decode ChannelEnds Paths String format failed: {:?}",
+						e
+					))
+				})?;
+				let path = Path::from_str(&raw_path).map_err(|e| {
+					Ics04Error::other(format!("Decode ChannelEnds Path format Failed: {:?}", e))
+				})?;
 				match path {
 					Path::ChannelEnds(channel_ends_path) => {
 						let ChannelEndsPath(port_id, channel_id) = channel_ends_path;
@@ -439,8 +444,8 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 
 		if <PacketReceipt<T>>::contains_key(&packet_receipt_path) {
 			let data = <PacketReceipt<T>>::get(&packet_receipt_path);
-			let data =
-				String::from_utf8(data).map_err(|e| Ics04Error::other(format!("Decode packet receipt failed: {:?}", e)))?;
+			let data = String::from_utf8(data)
+				.map_err(|e| Ics04Error::other(format!("Decode packet receipt failed: {:?}", e)))?;
 			let data = match data.as_ref() {
 				"Ok" => Receipt::Ok,
 				e => return Err(Ics04Error::other(format!("Unknown Receipts {:?}", e))),
@@ -502,16 +507,21 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 	fn client_update_time(client_id: &ClientId, height: Height) -> Result<Timestamp, Ics04Error> {
 		if <ClientProcessedTimes<T>>::contains_key(
 			client_id.as_bytes(),
-			height.encode_vec().map_err(|e| Ics04Error::other(format!("Encode height failed: {:?}",e)))?,
+			height
+				.encode_vec()
+				.map_err(|e| Ics04Error::other(format!("Encode height failed: {:?}", e)))?,
 		) {
 			let time = <ClientProcessedTimes<T>>::get(
 				client_id.as_bytes(),
-				height.encode_vec().map_err(|e| Ics04Error::other(format!("Encode height failed: {:?}",e)))?,
+				height
+					.encode_vec()
+					.map_err(|e| Ics04Error::other(format!("Encode height failed: {:?}", e)))?,
 			);
-			let timestamp =
-				String::from_utf8(time).map_err(|e| Ics04Error::other(format!("Decode timestamp format String failed: {:?}",e)))?;
+			let timestamp = String::from_utf8(time).map_err(|e| {
+				Ics04Error::other(format!("Decode timestamp format String failed: {:?}", e))
+			})?;
 			let time: Timestamp = serde_json::from_str(&timestamp)
-				.map_err(|e| Ics04Error::other(format!("Decode timestamp  failed: {:?}",e)))?;
+				.map_err(|e| Ics04Error::other(format!("Decode timestamp  failed: {:?}", e)))?;
 			Ok(time)
 		} else {
 			Err(Ics04Error::processed_time_not_found(client_id.clone(), height))
@@ -521,14 +531,18 @@ impl<T: Config> IbcSupportChannelReader for Context<T> {
 	fn client_update_height(client_id: &ClientId, height: Height) -> Result<Height, Ics04Error> {
 		if <ClientProcessedHeights<T>>::contains_key(
 			client_id.as_bytes(),
-			height.encode_vec().map_err(|e| Ics04Error::other(format!("Encode height failed: {:?}",e)))?,
+			height
+				.encode_vec()
+				.map_err(|e| Ics04Error::other(format!("Encode height failed: {:?}", e)))?,
 		) {
 			let host_height = <ClientProcessedHeights<T>>::get(
 				client_id.as_bytes(),
-				height.encode_vec().map_err(|e| Ics04Error::other(format!("Encode height failed: {:?}",e)))?,
+				height
+					.encode_vec()
+					.map_err(|e| Ics04Error::other(format!("Encode height failed: {:?}", e)))?,
 			);
 			let host_height = Height::decode(&mut &host_height[..])
-				.map_err(|e| Ics04Error::other(format!("Decode Host height failed: {:?}",e)))?;
+				.map_err(|e| Ics04Error::other(format!("Decode Host height failed: {:?}", e)))?;
 			Ok(host_height)
 		} else {
 			Err(Ics04Error::processed_height_not_found(client_id.clone(), height))
@@ -681,8 +695,9 @@ impl<T: Config> IbcSupportChannelKeeper for Context<T> {
 			.to_string()
 			.as_bytes()
 			.to_vec();
-		let channel_end =
-			channel_end.encode_vec().map_err(|e| Ics04Error::other(format!("encode channel end failed: {:?}", e)))?;
+		let channel_end = channel_end
+			.encode_vec()
+			.map_err(|e| Ics04Error::other(format!("encode channel end failed: {:?}", e)))?;
 		<Channels<T>>::insert(channel_end_path, channel_end);
 
 		Ok(())
@@ -740,7 +755,9 @@ impl<T: Config> IbcSupportChannelKeeper for Context<T> {
 	/// Should never fail.
 	fn increase_channel_counter() {
 		let _ = <ChannelCounter<T>>::try_mutate(|val| -> Result<(), Ics04Error> {
-			let new = val.checked_add(1).ok_or(Ics04Error::other(format!("add channel counter overflow")))?;
+			let new = val
+				.checked_add(1)
+				.ok_or(Ics04Error::other(format!("add channel counter overflow")))?;
 			*val = new;
 			Ok(())
 		});

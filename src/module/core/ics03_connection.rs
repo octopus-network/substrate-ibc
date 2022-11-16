@@ -93,8 +93,9 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		connection_end: &ConnectionEnd,
 	) -> Result<(), Ics03Error> {
 		let connections_path = ConnectionsPath(connection_id).to_string().as_bytes().to_vec();
-		let data =
-			connection_end.encode_vec().map_err(|e| Ics03Error::other(format!("Encode ConnectionEnd failed: {:?}", e)))?;
+		let data = connection_end
+			.encode_vec()
+			.map_err(|e| Ics03Error::other(format!("Encode ConnectionEnd failed: {:?}", e)))?;
 		<Connections<T>>::insert(connections_path, data);
 
 		Ok(())
@@ -114,7 +115,9 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 
 	fn increase_connection_counter(&mut self) {
 		let _ = <ConnectionCounter<T>>::try_mutate(|val| -> Result<(), Ics03Error> {
-			let new = val.checked_add(1).ok_or(Ics03Error::other("increase connection counter overflow!".to_string()))?;
+			let new = val
+				.checked_add(1)
+				.ok_or(Ics03Error::other("increase connection counter overflow!".to_string()))?;
 			*val = new;
 			Ok(())
 		});

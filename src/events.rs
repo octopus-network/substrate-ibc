@@ -3,7 +3,7 @@ use core::marker::PhantomData;
 use crate::{
 	module::core::ics24_host::{ClientId, ClientType, ConnectionId, Height},
 	prelude::{format, String},
-	Config, Event, Error,
+	Config, Error, Event,
 };
 use codec::{Decode, Encode};
 use ibc::{core::ics26_routing, events::IbcEvent as RawIbcEvent};
@@ -50,19 +50,18 @@ pub struct ModuleId<T> {
 
 impl<T> From<ics26_routing::context::ModuleId> for ModuleId<T> {
 	fn from(module_id: ics26_routing::context::ModuleId) -> Self {
-		Self {
-			raw: format!("{}", module_id).as_bytes().to_vec(),
-			phantom: PhantomData::default(),
-		}
+		Self { raw: format!("{}", module_id).as_bytes().to_vec(), phantom: PhantomData::default() }
 	}
 }
 
 impl<T: Config> TryFrom<ModuleId<T>> for ics26_routing::context::ModuleId {
 	type Error = Error<T>;
-	
+
 	fn try_from(module_id: ModuleId<T>) -> Result<Self, Self::Error> {
-		ics26_routing::context::ModuleId::from_str(&String::from_utf8(module_id.raw).map_err(|_| Error::<T>::DecodeStringFailed)?)
-			.map_err(|_| Error::<T>::InvalidModuleId)
+		ics26_routing::context::ModuleId::from_str(
+			&String::from_utf8(module_id.raw).map_err(|_| Error::<T>::DecodeStringFailed)?,
+		)
+		.map_err(|_| Error::<T>::InvalidModuleId)
 	}
 }
 

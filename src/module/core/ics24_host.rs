@@ -2,7 +2,7 @@ use core::marker::PhantomData;
 
 use crate::{
 	prelude::{String, ToString},
-	REVISION_NUMBER, Error, Config
+	Config, Error, REVISION_NUMBER,
 };
 use ibc::{
 	core::{
@@ -43,10 +43,7 @@ pub struct PortId<T> {
 impl<T: Config> From<IbcPortId> for PortId<T> {
 	fn from(ibc_port_id: IbcPortId) -> Self {
 		let value = ibc_port_id.as_str().as_bytes().to_vec();
-		Self { 
-			raw: value, 
-			phantom: PhantomData::default(),
-		}
+		Self { raw: value, phantom: PhantomData::default() }
 	}
 }
 
@@ -64,15 +61,13 @@ impl<T: Config> TryFrom<PortId<T>> for IbcPortId {
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub struct ChannelId<T> {
 	pub raw: Vec<u8>,
-	phantom: PhantomData<T>,	
+	phantom: PhantomData<T>,
 }
 
 impl<T> From<IbcChannelId> for ChannelId<T> {
 	fn from(ibc_channel_id: IbcChannelId) -> Self {
 		let value = ibc_channel_id.to_string().as_bytes().to_vec();
-		Self {
-			raw: value, phantom: PhantomData::default(),
-		}
+		Self { raw: value, phantom: PhantomData::default() }
 	}
 }
 
@@ -80,7 +75,8 @@ impl<T: Config> TryFrom<ChannelId<T>> for IbcChannelId {
 	type Error = Error<T>;
 
 	fn try_from(channel_id: ChannelId<T>) -> Result<Self, Self::Error> {
-		let value = String::from_utf8(channel_id.raw).map_err(|_| Error::<T>::DecodeStringFailed)?;
+		let value =
+			String::from_utf8(channel_id.raw).map_err(|_| Error::<T>::DecodeStringFailed)?;
 		Self::from_str(&value).map_err(|_| Error::<T>::InvalidChannelId)
 	}
 }
@@ -132,7 +128,8 @@ impl<T> From<IbcHeight> for Height<T> {
 impl<T: Config> TryFrom<Height<T>> for IbcHeight {
 	type Error = Error<T>;
 	fn try_from(height: Height<T>) -> Result<Self, Self::Error> {
-		IbcHeight::new(REVISION_NUMBER, height.revision_height).map_err(|_| Error::<T>::InvalidHeight)
+		IbcHeight::new(REVISION_NUMBER, height.revision_height)
+			.map_err(|_| Error::<T>::InvalidHeight)
 	}
 }
 
@@ -146,16 +143,13 @@ impl<T> Height<T> {
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub struct ClientType<T> {
 	pub raw: Vec<u8>,
-	phantom: PhantomData<T>
+	phantom: PhantomData<T>,
 }
 
 impl<T: Config> ClientType<T> {
 	pub fn new(s: &str) -> Self {
 		let value = s.as_bytes().to_vec();
-		Self {
-			raw: value, 
-			phantom: PhantomData::default()
-		}
+		Self { raw: value, phantom: PhantomData::default() }
 	}
 
 	pub fn to_string(&self) -> Result<String, Error<T>> {
@@ -177,7 +171,7 @@ impl<T: Config> TryFrom<ClientType<T>> for IbcClientType {
 			"07-tendermint" => Ok(IbcClientType::new(TENDERMINT_CLIENT_TYPE.into())),
 			#[cfg(test)]
 			"9999-mock" => Ok(IbcClientType::new(MOCK_CLIENT_TYPE.into())),
-		 	_ => Err(Error::<T>::UnknownClientType),
+			_ => Err(Error::<T>::UnknownClientType),
 		}
 	}
 }
@@ -185,19 +179,16 @@ impl<T: Config> TryFrom<ClientType<T>> for IbcClientType {
 /// ibc-rs' `ClientId` representation in substrate
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub struct ClientId<T> {
-	pub raw: Vec<u8>, 
+	pub raw: Vec<u8>,
 	phantom: PhantomData<T>,
 }
 
 impl<T> From<IbcClientId> for ClientId<T> {
 	fn from(ibc_client_id: IbcClientId) -> Self {
 		let value = ibc_client_id.as_str().as_bytes().to_vec();
-		Self {
-			raw: value, phantom: PhantomData::default()
-		}
+		Self { raw: value, phantom: PhantomData::default() }
 	}
 }
-
 
 impl<T: Config> TryFrom<ClientId<T>> for IbcClientId {
 	type Error = Error<T>;
@@ -211,17 +202,14 @@ impl<T: Config> TryFrom<ClientId<T>> for IbcClientId {
 /// ibc-rs' `ConnectionId` representation in substrate
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub struct ConnectionId<T> {
-	pub raw:  Vec<u8>,
+	pub raw: Vec<u8>,
 	phantom: PhantomData<T>,
 }
 
 impl<T> From<IbcConnectionId> for ConnectionId<T> {
 	fn from(ibc_connection_id: IbcConnectionId) -> Self {
 		let value = ibc_connection_id.as_str().as_bytes().to_vec();
-		Self {
-			raw: value,
-			phantom: PhantomData::default(),
-		}
+		Self { raw: value, phantom: PhantomData::default() }
 	}
 }
 
@@ -229,8 +217,8 @@ impl<T: Config> TryFrom<ConnectionId<T>> for IbcConnectionId {
 	type Error = Error<T>;
 
 	fn try_from(connection_id: ConnectionId<T>) -> Result<Self, Self::Error> {
-		let value = String::from_utf8(connection_id.raw)
-		.map_err(|_| Error::<T>::DecodeStringFailed)?;
+		let value =
+			String::from_utf8(connection_id.raw).map_err(|_| Error::<T>::DecodeStringFailed)?;
 		IbcConnectionId::from_str(&value).map_err(|_| Error::<T>::InvalidConnectionId)
 	}
 }
@@ -239,12 +227,15 @@ impl<T: Config> TryFrom<ConnectionId<T>> for IbcConnectionId {
 #[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub struct Timestamp<T> {
 	pub time: Vec<u8>,
-	phantom: PhantomData<T>
+	phantom: PhantomData<T>,
 }
 
 impl<T> From<IbcTimestamp> for Timestamp<T> {
 	fn from(ibc_timestamp: IbcTimestamp) -> Self {
-		Self { time: ibc_timestamp.nanoseconds().to_string().as_bytes().to_vec(), phantom: PhantomData::default() }
+		Self {
+			time: ibc_timestamp.nanoseconds().to_string().as_bytes().to_vec(),
+			phantom: PhantomData::default(),
+		}
 	}
 }
 
@@ -252,8 +243,8 @@ impl<T: Config> TryFrom<Timestamp<T>> for IbcTimestamp {
 	type Error = Error<T>;
 
 	fn try_from(timestamp: Timestamp<T>) -> Result<Self, Self::Error> {
-		let value = String::from_utf8(timestamp.time)
-		.map_err(|_| Error::<T>::DecodeStringFailed)?;
+		let value =
+			String::from_utf8(timestamp.time).map_err(|_| Error::<T>::DecodeStringFailed)?;
 		Self::from_str(&value).map_err(|_| Error::<T>::InvalidTimestamp)
 	}
 }
@@ -320,7 +311,8 @@ impl<T: Config> TryFrom<Packet<T>> for IbcPacket {
 			timeout_height: match packet.timeout_height {
 				TimeoutHeight::Never => IbcTimeoutHeight::Never,
 				TimeoutHeight::At(value) => IbcTimeoutHeight::At(
-					IbcHeight::new(value.revision_number, value.revision_height).map_err(|_| Error::<T>::InvalidHeight)?,
+					IbcHeight::new(value.revision_number, value.revision_height)
+						.map_err(|_| Error::<T>::InvalidHeight)?,
 				),
 			},
 			timeout_timestamp: packet.timeout_timestamp.try_into()?,
@@ -337,9 +329,7 @@ pub struct Version<T> {
 impl<T> From<IbcVersion> for Version<T> {
 	fn from(ibc_versoion: IbcVersion) -> Self {
 		let value = ibc_versoion.to_string().as_bytes().to_vec();
-		Self {
-			raw: value, phantom: PhantomData::default()
-		}
+		Self { raw: value, phantom: PhantomData::default() }
 	}
 }
 
@@ -347,8 +337,7 @@ impl<T: Config> TryFrom<Version<T>> for IbcVersion {
 	type Error = Error<T>;
 
 	fn try_from(version: Version<T>) -> Result<Self, Self::Error> {
-		let value =
-			String::from_utf8(version.raw).map_err(|_| Error::<T>::DecodeStringFailed)?;
+		let value = String::from_utf8(version.raw).map_err(|_| Error::<T>::DecodeStringFailed)?;
 		IbcVersion::from_str(&value).map_err(|_| Error::<T>::InvalidVersion)
 	}
 }
