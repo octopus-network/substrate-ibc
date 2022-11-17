@@ -34,7 +34,12 @@ pub struct Context<T: Config> {
 
 impl<T: Config> Context<T> {
 	pub fn new() -> Self {
-		Self { _pd: PhantomData::default(), router: Router::default() }
+		let r = SubstrateRouterBuilder::default()
+			.add_route(MODULE_ID_STR.parse().unwrap(), IbcTransferModule(PhantomData::<T>)) // register transfer Module
+			.unwrap()
+			.build();
+			
+		Self { _pd: PhantomData::default(), router: r }
 	}
 
 	pub fn add_route(&mut self, module_id: ModuleId, module: impl Module) -> Result<(), String> {
@@ -177,7 +182,7 @@ impl<T: Config> Context<T> {
 	) -> Self {
 		use ibc::core::ics04_channel::context::ChannelKeeper;
 
-		let _ = self.store_next_sequence_ack(port_id, chan_id, seq_number);
+		let _ = self.store_next_sequence_send(port_id, chan_id, seq_number);
 
 		self
 	}

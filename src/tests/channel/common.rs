@@ -10,7 +10,7 @@ pub mod test_util {
 	/// Can be optionally parametrized with a specific channel identifier.
 	pub fn get_dummy_raw_counterparty() -> RawCounterparty {
 		RawCounterparty {
-			port_id: PortId::default().to_string(),
+			port_id: PortId::transfer().to_string(),
 			channel_id: ChannelId::default().to_string(),
 		}
 	}
@@ -19,10 +19,10 @@ pub mod test_util {
 	pub fn get_dummy_raw_channel_end() -> RawChannel {
 		RawChannel {
 			state: 1,
-			ordering: 2,
+			ordering: 1,
 			counterparty: Some(get_dummy_raw_counterparty()),
 			connection_hops: vec![ConnectionId::default().to_string()],
-			version: "ics20".to_string(), // The version is not validated.
+			version: "ics20-1".to_string(), // The version is not validated.
 		}
 	}
 }

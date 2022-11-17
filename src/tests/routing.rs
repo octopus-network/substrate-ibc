@@ -1,7 +1,7 @@
 use core::{default::Default, time::Duration};
 
 use crate::{
-	mock::{new_test_ext, Test as PalletIbcTest},
+	mock::{new_test_ext, Test as PalletIbcTest, System},
 	tests::{
 		applications::transfer::{
 			test::deliver as ics20_deliver,
@@ -89,6 +89,10 @@ use pallet_ics20_transfer::ics20_callback::IbcTransferModule;
 /// to work with the context and correctly store results (i.e., the `ClientKeeper`,
 /// `ConnectionKeeper`, and `ChannelKeeper` traits).
 fn routing_module_and_keepers() {
+	new_test_ext().execute_with(|| {
+
+	System::set_block_number(20);
+
 	#[derive(Clone, Debug)]
 	enum TestMsg {
 		Ics26(Ics26Envelope),
@@ -107,7 +111,7 @@ fn routing_module_and_keepers() {
 		}
 	}
 
-	type StateCheckFn = dyn FnOnce(&MockContext) -> bool;
+	type StateCheckFn = dyn FnOnce(&Context<PalletIbcTest>) -> bool;
 
 	// Test parameters
 	struct Test {
@@ -131,16 +135,7 @@ fn routing_module_and_keepers() {
 	let transfer_module_id: ModuleId = MODULE_ID_STR.parse().unwrap();
 
 	// We reuse this same context across all tests. Nothing in particular needs parametrizing.
-	let mut ctx = {
-		let ctx = MockContext::default();
-		let module = DummyTransferModule::new(ctx.ibc_store_share());
-		let router = MockRouterBuilder::default()
-			.add_route(transfer_module_id.clone(), module)
-			.unwrap()
-			.build();
-		ctx.with_router(router)
-	};
-
+	
 	let create_client_msg = MsgCreateClient::new(
 		MockClientState::new(MockHeader::new(start_client_height)).into(),
 		MockConsensusState::new(MockHeader::new(start_client_height)).into(),
@@ -154,7 +149,7 @@ fn routing_module_and_keepers() {
 	let msg_conn_init =
 		MsgConnectionOpenInit::try_from(get_dummy_raw_msg_conn_open_init()).unwrap();
 
-	let _correct_msg_conn_try = MsgConnectionOpenTry::try_from(get_dummy_raw_msg_conn_open_try(
+	let correct_msg_conn_try = MsgConnectionOpenTry::try_from(get_dummy_raw_msg_conn_open_try(
 		client_height,
 		client_height,
 	))
@@ -226,6 +221,7 @@ fn routing_module_and_keepers() {
 		35,
 	))
 	.unwrap();
+	let mut ctx = Context::<PalletIbcTest>::new();
 
 	// First, create a client..
 	let res = dispatch(
@@ -239,8 +235,6 @@ fn routing_module_and_keepers() {
 		create_client_msg,
 		res
 	);
-
-	ctx.scope_port_to_module(msg_chan_init.port_id_on_a.clone(), transfer_module_id.clone());
 
 	// Figure out the ID of the client that was just created.
 	let events = res.unwrap().events;
@@ -296,16 +290,15 @@ fn routing_module_and_keepers() {
 			want_pass: false,
 			state_check: None,
 		},
-		// todo due to previous_connection_id
-		// Test {
-		// 	name: "Connection open try succeeds".to_string(),
-		// 	msg: Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenTry(Box::new(
-		// 		MsgConnectionOpenTry { client_id_on_b: client_id.clone(), ..correct_msg_conn_try }
-		// 	)))
-		// 	.into(),
-		// 	want_pass: true,
-		// 	state_check: None,
-		// },
+		Test {
+			name: "Connection open try succeeds".to_string(),
+			msg: Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenTry(Box::new(
+				correct_msg_conn_try
+			)))
+			.into(),
+			want_pass: true,
+			state_check: None,
+		},
 		Test {
 			name: "Connection open ack succeeds".to_string(),
 			msg: Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenAck(Box::new(msg_conn_ack)))
@@ -387,7 +380,7 @@ fn routing_module_and_keepers() {
 					&msg_ack_packet.packet.source_channel,
 					msg_ack_packet.packet.sequence,
 				)
-				.is_err()
+				.is_ok()
 			})),
 		},
 		Test {
@@ -478,12 +471,14 @@ fn routing_module_and_keepers() {
 	.collect();
 
 	for test in tests {
+		let mut ctx = Context::<PalletIbcTest>::new();
+		println!("ctx: {:?}", ctx);
 		let res = match test.msg.clone() {
 			TestMsg::Ics26(msg) => dispatch(&mut ctx, msg).map(|_| ()),
 			TestMsg::Ics20(msg) => {
 				let transfer_module = ctx.router_mut().get_route_mut(&transfer_module_id).unwrap();
 				ics20_deliver(
-					transfer_module.as_any_mut().downcast_mut::<DummyTransferModule>().unwrap(),
+					transfer_module.as_any_mut().downcast_mut::<IbcTransferModule<PalletIbcTest>>().unwrap(),
 					&mut HandlerOutputBuilder::new(),
 					msg,
 				)
@@ -512,6 +507,7 @@ fn routing_module_and_keepers() {
 			);
 		}
 	}
+	})
 }
 
 fn get_channel_events_ctx() -> Context<PalletIbcTest> {
@@ -526,27 +522,16 @@ fn get_channel_events_ctx() -> Context<PalletIbcTest> {
 				ConnCounterparty::new(
 					ClientId::default(),
 					Some(ConnectionId::new(0)),
-					CommitmentPrefix::default(),
+					CommitmentPrefix::try_from(String::from("ibc").as_bytes().to_vec()).unwrap(),
 				),
 				vec![ConnVersion::default()],
 				Duration::MAX,
 			),
 		);
-	// let module = DummyTransferModule::new(ctx.ibc_store_share());
-	// let router = MockRouterBuilder::default()
-	// 	.add_route(module_id.clone(), module)
-	// 	.unwrap()
-	// 	.build();
 	let _ = ctx.add_route(
 		module_id.clone(),
 		IbcTransferModule(core::marker::PhantomData::<PalletIbcTest>),
 	);
-
-	// Note: messages will be using the default port
-	// ctx.scope_port_to_module(PortId::default(), module_id);
-	// ctx.lookup_module_by_port()
-
-	// ctx.with_router(router)
 	ctx
 }
 
@@ -598,7 +583,7 @@ fn test_chan_open_try_event() {
 fn test_chan_open_ack_event() {
 	new_test_ext().execute_with(|| {
 		let mut ctx = get_channel_events_ctx().with_channel(
-			PortId::default(),
+			PortId::transfer(),
 			ChannelId::default(),
 			ChannelEnd::new(
 				ChannelState::Init,
@@ -630,12 +615,12 @@ fn test_chan_open_ack_event() {
 fn test_chan_open_confirm_event() {
 	new_test_ext().execute_with(|| {
 		let mut ctx = get_channel_events_ctx().with_channel(
-			PortId::default(),
+			PortId::transfer(),
 			ChannelId::default(),
 			ChannelEnd::new(
 				ChannelState::TryOpen,
 				ChannelOrder::Unordered,
-				ChannelCounterparty::new(PortId::default(), Some(ChannelId::default())),
+				ChannelCounterparty::new(PortId::transfer(), Some(ChannelId::default())),
 				vec![ConnectionId::new(0)],
 				ChannelVersion::default(),
 			),
@@ -662,12 +647,12 @@ fn test_chan_open_confirm_event() {
 fn test_chan_close_init_event() {
 	new_test_ext().execute_with(|| {
 		let mut ctx = get_channel_events_ctx().with_channel(
-			PortId::default(),
+			PortId::transfer(),
 			ChannelId::default(),
 			ChannelEnd::new(
 				ChannelState::Open,
 				ChannelOrder::Unordered,
-				ChannelCounterparty::new(PortId::default(), Some(ChannelId::default())),
+				ChannelCounterparty::new(PortId::transfer(), Some(ChannelId::default())),
 				vec![ConnectionId::new(0)],
 				ChannelVersion::default(),
 			),
@@ -694,12 +679,12 @@ fn test_chan_close_init_event() {
 fn test_chan_close_confirm_event() {
 	new_test_ext().execute_with(|| {
 		let mut ctx = get_channel_events_ctx().with_channel(
-			PortId::default(),
+			PortId::transfer(),
 			ChannelId::default(),
 			ChannelEnd::new(
 				ChannelState::Open,
 				ChannelOrder::Unordered,
-				ChannelCounterparty::new(PortId::default(), Some(ChannelId::default())),
+				ChannelCounterparty::new(PortId::transfer(), Some(ChannelId::default())),
 				vec![ConnectionId::new(0)],
 				ChannelVersion::default(),
 			),

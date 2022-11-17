@@ -18,9 +18,11 @@ pub mod test {
 		handler::HandlerOutputBuilder,
 		test_utils::{get_dummy_transfer_module, DummyTransferModule},
 	};
+	use pallet_ics20_transfer::ics20_callback::IbcTransferModule;
+	use crate::mock::Test as PalletIbcTest;
 
 	pub fn deliver(
-		ctx: &mut DummyTransferModule,
+		ctx: &mut IbcTransferModule<PalletIbcTest>,
 		output: &mut HandlerOutputBuilder<()>,
 		msg: MsgTransfer<PrefixedCoin>,
 	) -> Result<(), Error> {
@@ -47,17 +49,21 @@ pub mod test_util {
 		timestamp::Timestamp,
 	};
 
+	pub fn get_dummy_substrate_account() -> String {
+		"0x3E5DA34F651595C1257265E30370146E0C94B9FBFA78BDB92893DE367AC792A0".to_string()
+	}
+
 	// Returns a dummy ICS20 `MsgTransfer`. If no `timeout_timestamp` is
 	// specified, a timestamp of 10 seconds in the future is used.
 	pub fn get_dummy_msg_transfer(
 		timeout_height: TimeoutHeight,
 		timeout_timestamp: Option<Timestamp>,
 	) -> MsgTransfer<PrefixedCoin> {
-		let address: Signer = get_dummy_bech32_account().as_str().parse().unwrap();
+		let address: Signer = get_dummy_substrate_account().as_str().parse().unwrap();
 		MsgTransfer {
-			source_port: PortId::default(),
+			source_port: PortId::transfer(),
 			source_channel: ChannelId::default(),
-			token: BaseCoin { denom: "uatom".parse().unwrap(), amount: U256::from(10).into() }
+			token: BaseCoin { denom: "DEMO".parse().unwrap(), amount: U256::from(10).into() }
 				.into(),
 			sender: address.clone(),
 			receiver: address,
@@ -83,7 +89,7 @@ pub mod test_util {
 			sequence,
 			source_port: msg.source_port,
 			source_channel: msg.source_channel,
-			destination_port: PortId::default(),
+			destination_port: PortId::transfer(),
 			destination_channel: ChannelId::default(),
 			data,
 			timeout_height: msg.timeout_height,

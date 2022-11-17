@@ -37,10 +37,10 @@ pub mod test_util {
 	pub fn get_dummy_raw_msg_chan_open_try(proof_height: u64) -> RawMsgChannelOpenTry {
 		#[allow(deprecated)]
 		RawMsgChannelOpenTry {
-			port_id: PortId::default().to_string(),
+			port_id: PortId::transfer().to_string(),
 			previous_channel_id: ChannelId::default().to_string(),
 			channel: Some(get_dummy_raw_channel_end()),
-			counterparty_version: "".to_string(),
+			counterparty_version: "ics20-1".to_string(),
 			proof_init: get_dummy_proof(),
 			proof_height: Some(Height { revision_number: 0, revision_height: proof_height }),
 			signer: get_dummy_bech32_account(),

@@ -7,7 +7,7 @@ pub mod test_util {
 			ics03_connection::{msgs::conn_open_init::MsgConnectionOpenInit, version::Version},
 			ics24_host::identifier::ClientId,
 		},
-		test_utils::get_dummy_bech32_account,
+		test_utils::get_dummy_bech32_account, mock::client_state::client_type as mock_client_type,
 	};
 	use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 
@@ -15,7 +15,7 @@ pub mod test_util {
 	/// Other unit tests may import this if they depend on a MsgConnectionOpenInit.
 	pub fn get_dummy_raw_msg_conn_open_init() -> RawMsgConnectionOpenInit {
 		RawMsgConnectionOpenInit {
-			client_id: ClientId::default().to_string(),
+			client_id:  ClientId::new(mock_client_type(), 0).unwrap().to_string(),
 			counterparty: Some(get_dummy_raw_counterparty()),
 			version: Some(Version::default().into()),
 			delay_period: 0,
@@ -78,8 +78,8 @@ mod tests {
 				.with_client(&msg_conn_init_default.client_id_on_a, Height::new(0, 10).unwrap());
 
 			let tests: Vec<Test> = vec![
-				// todo(davirain) test ok because in substrate use global storage, above good
-				// context have store client to store Test {
+				// todo
+				// Test {
 				// 	name: "Processing fails because no client exists in the context".to_string(),
 				// 	ctx: default_context,
 				// 	msg: ConnectionMsg::ConnectionOpenInit(msg_conn_init_default.clone()),

@@ -93,11 +93,10 @@ impl<T: Config> Module for IbcTransferModule<T> {
 
 	fn on_chan_close_init(
 		&mut self,
-		port_id: &PortId,
-		channel_id: &ChannelId,
+		_port_id: &PortId,
+		_channel_id: &ChannelId,
 	) -> Result<ModuleExtras, Ics04Error> {
-		ibc::applications::transfer::context::on_chan_close_init(self, port_id, channel_id)
-			.map_err(|e| Ics04Error::app_module(e.to_string()))
+		Ok(ModuleExtras::empty())
 	}
 
 	fn on_chan_close_confirm(

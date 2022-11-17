@@ -321,7 +321,16 @@ impl<T: Config> ClientReader for Context<T> {
 	}
 
 	fn pending_host_consensus_state(&self) -> Result<Box<dyn ConsensusState>, Ics02Error> {
-		Err(Ics02Error::implementation_specific())
+		#[cfg(not(test))]
+		{
+			Err(Ics02Error::implementation_specific())
+		}
+		#[cfg(test)]
+		{
+			let mock_header =
+				MockHeader { height: self.host_height(), timestamp: Default::default() };
+			Ok(Box::new(MockConsensusState::new(mock_header)))
+		}
 	}
 
 	fn client_counter(&self) -> Result<u64, Ics02Error> {

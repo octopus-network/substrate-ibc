@@ -38,7 +38,7 @@ pub mod test_util {
 	/// Returns a dummy `RawMsgChannelOpenConfirm`, for testing only!
 	pub fn get_dummy_raw_msg_chan_open_confirm(proof_height: u64) -> RawMsgChannelOpenConfirm {
 		RawMsgChannelOpenConfirm {
-			port_id: PortId::default().to_string(),
+			port_id: PortId::transfer().to_string(),
 			channel_id: ChannelId::default().to_string(),
 			proof_ack: get_dummy_proof(),
 			proof_height: Some(Height { revision_number: 0, revision_height: proof_height }),
@@ -49,7 +49,6 @@ pub mod test_util {
 
 use test_util::get_dummy_raw_msg_chan_open_confirm;
 
-// TODO: The tests here should use the same structure as `handler::chan_open_try::tests`.
 #[test]
 fn chan_open_confirm_msg_processing() {
 	new_test_ext().execute_with(|| {

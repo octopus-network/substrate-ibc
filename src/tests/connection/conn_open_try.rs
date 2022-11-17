@@ -7,7 +7,7 @@ pub mod test_util {
 			ics03_connection::version::get_compatible_versions,
 			ics24_host::identifier::{ClientId, ConnectionId},
 		},
-		mock::{client_state::MockClientState, header::MockHeader},
+		mock::{client_state::{MockClientState, client_type as mock_client_type}, header::MockHeader},
 		test_utils::{get_dummy_bech32_account, get_dummy_proof},
 	};
 	use ibc_proto::ibc::core::{
@@ -25,7 +25,7 @@ pub mod test_util {
 	) -> RawMsgConnectionOpenTry {
 		let client_state_height = Height::new(0, consensus_height).unwrap();
 		RawMsgConnectionOpenTry {
-			client_id: ClientId::default().to_string(),
+			client_id: ClientId::new(mock_client_type(), 0).unwrap().to_string(),
 			previous_connection_id: ConnectionId::default().to_string(),
 			client_state: Some(MockClientState::new(MockHeader::new(client_state_height)).into()),
 			counterparty: Some(get_dummy_raw_counterparty()),

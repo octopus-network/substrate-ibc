@@ -46,10 +46,10 @@ pub mod test_util {
 	/// Returns a dummy `RawMsgChannelOpenAck`, for testing only!
 	pub fn get_dummy_raw_msg_chan_open_ack(proof_height: u64) -> RawMsgChannelOpenAck {
 		RawMsgChannelOpenAck {
-			port_id: PortId::default().to_string(),
+			port_id: PortId::transfer().to_string(),
 			channel_id: ChannelId::default().to_string(),
 			counterparty_channel_id: ChannelId::default().to_string(),
-			counterparty_version: "".to_string(),
+			counterparty_version: "ics20-1".to_string(),
 			proof_try: get_dummy_proof(),
 			proof_height: Some(Height { revision_number: 0, revision_height: proof_height }),
 			signer: get_dummy_bech32_account(),
@@ -57,8 +57,6 @@ pub mod test_util {
 	}
 }
 
-// TODO: The tests here are very fragile and complex.
-//  Should be adapted to use the same structure as `handler::chan_open_try::tests`.
 #[test]
 fn chan_open_ack_msg_processing() {
 	new_test_ext().execute_with(|| {
@@ -193,7 +191,7 @@ fn chan_open_ack_msg_processing() {
         //  },
          Test {
              name: "Good parameters".to_string(),
-             ctx: context //  .clone()
+             ctx: context
                  .with_client(
                      &msg_conn_try.client_id_on_b,
                      Height::new(0, client_consensus_state_height).unwrap(),

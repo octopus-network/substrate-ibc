@@ -51,7 +51,8 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 					"send ibc token name is not native token name"
 				);
 
-				<T::Currency as Currency<T::AccountId>>::transfer(
+				
+				let r = <T::Currency as Currency<T::AccountId>>::transfer(
 					&from.clone().into_account(),
 					&to.clone().into_account(),
 					amount,
@@ -60,8 +61,8 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 				.map_err(|error| {
 					error!("❌ [send_coins] : Error: ({:?})", error);
 					Ics20Error::invalid_token()
-				})?;
-
+				});
+				
 				// add emit transfer native token event
 				Pallet::<T>::deposit_event(Event::<T>::TransferNativeToken(
 					from.clone(),

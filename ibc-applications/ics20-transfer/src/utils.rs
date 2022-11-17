@@ -25,3 +25,9 @@ pub fn get_channel_escrow_address(
 	hex_string.insert_str(0, "0x");
 	hex_string.parse::<Signer>().map_err(Ics20Error::signer)
 }
+
+#[test]
+fn test_get_channel_escrow_address() {
+	let signer = get_channel_escrow_address(&PortId::default(), &IbcChannelId::default()).unwrap();
+	println!("{:?}", signer)
+}

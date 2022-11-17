@@ -80,7 +80,6 @@ impl<T: Config> ConnectionReader for Context<T> {
 		Ok(<ConnectionCounter<T>>::get())
 	}
 
-	// TODO
 	fn validate_self_client(&self, _counterparty_client_state: Any) -> Result<(), Ics03Error> {
 		Ok(())
 	}

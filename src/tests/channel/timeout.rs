@@ -18,7 +18,7 @@ use ibc::{
 			msgs::timeout::MsgTimeout,
 			Version,
 		},
-		ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
+		ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId}, ics23_commitment::commitment::CommitmentPrefix,
 	},
 	events::IbcEvent,
 	timestamp::ZERO_DURATION,
@@ -51,10 +51,7 @@ pub mod test_util {
 	}
 }
 
-// todo
-// implementation specific error
 #[test]
-#[ignore]
 fn timeout_packet_processing() {
 	new_test_ext().execute_with(|| {
     struct Test {
@@ -109,7 +106,7 @@ fn timeout_packet_processing() {
         ConnectionCounterparty::new(
             ClientId::default(),
             Some(ConnectionId::default()),
-            Default::default(),
+            CommitmentPrefix::try_from(String::from("ibc").as_bytes().to_vec()).unwrap(),
         ),
         get_compatible_versions(),
         ZERO_DURATION,

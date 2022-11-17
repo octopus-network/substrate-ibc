@@ -21,7 +21,7 @@ pub mod test_util {
 	/// Returns a dummy `RawMsgChannelOpenInit`, for testing only!
 	pub fn get_dummy_raw_msg_chan_open_init() -> RawMsgChannelOpenInit {
 		RawMsgChannelOpenInit {
-			port_id: PortId::default().to_string(),
+			port_id: PortId::transfer().to_string(),
 			channel: Some(get_dummy_raw_channel_end()),
 			signer: get_dummy_bech32_account(),
 		}
