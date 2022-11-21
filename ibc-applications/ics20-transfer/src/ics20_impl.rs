@@ -52,7 +52,7 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 				);
 
 				
-				let r = <T::Currency as Currency<T::AccountId>>::transfer(
+				<T::Currency as Currency<T::AccountId>>::transfer(
 					&from.clone().into_account(),
 					&to.clone().into_account(),
 					amount,
@@ -61,7 +61,7 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 				.map_err(|error| {
 					error!("❌ [send_coins] : Error: ({:?})", error);
 					Ics20Error::invalid_token()
-				});
+				})?;
 				
 				// add emit transfer native token event
 				Pallet::<T>::deposit_event(Event::<T>::TransferNativeToken(

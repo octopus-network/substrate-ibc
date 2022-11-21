@@ -1,5 +1,7 @@
 use crate::Config;
 use alloc::sync::Arc;
+use alloc::string::String;
+use alloc::borrow::ToOwned;
 use sp_std::marker::PhantomData;
 
 use ibc::{

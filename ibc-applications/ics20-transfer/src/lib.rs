@@ -231,7 +231,7 @@ pub mod pallet {
 						IbcEvent::SendPacket(ref send_packet) => {
 							let packet_data = send_packet.packet_data().clone();
 							let timeout_height =
-								format!("{:?}", send_packet.timeout_height()).as_bytes().to_vec();
+								alloc::format!("{:?}", send_packet.timeout_height()).as_bytes().to_vec();
 							let timeout_timestamp =
 								send_packet.timeout_timestamp().to_string().as_bytes().to_vec();
 							let sequence = send_packet.sequence().to_string().as_bytes().to_vec();
