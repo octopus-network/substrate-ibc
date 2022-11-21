@@ -40,6 +40,25 @@ pallet-ibc = { version = "3.0.0", default-features = false, path = "../../" }
 sp-core = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
 sp-io = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
 sp-runtime = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
+# local crates
+chrono = "0.4.19"
+frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
+# thrid party crates
+hex = '0.4.0'
+# ibc protocol crates
+ibc = { version = "0.22.0", features = ["mocks"], git = "https://github.com/cosmos/ibc-rs.git", branch = "main" }
+pallet-assets = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
+pallet-babe = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
+pallet-balances = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
+pallet-timestamp = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
+pallet-ibc = { version = "3.0.0", path = "../../" }
+serde = "1.0"
+sha2 = '0.10.2'
+# substrate crates
+sp-keyring = { version = "6.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
+sp-std = { version = "4.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
+sp-version = { version = "5.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
+serde_json = { version = "1.0" }
 
 [features]
 default = ["std"]

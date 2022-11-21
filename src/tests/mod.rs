@@ -5,11 +5,6 @@ mod client;
 #[cfg(test)]
 mod connection;
 #[cfg(test)]
-mod routing;
-
-#[cfg(test)]
-mod applications;
-#[cfg(test)]
 mod commitment;
 
 use super::*;

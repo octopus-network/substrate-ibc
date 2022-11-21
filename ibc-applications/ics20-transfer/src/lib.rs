@@ -13,6 +13,12 @@ pub mod ics20_context_channel;
 pub mod ics20_impl;
 pub mod utils;
 
+#[cfg(test)]
+mod tests;
+
+#[cfg(test)]
+mod mock;
+
 use ibc_support::AssetIdAndNameProvider;
 use sp_std::vec::Vec;
 
@@ -84,9 +90,6 @@ pub mod pallet {
 
 		// The native token name
 		const NATIVE_TOKEN_NAME: &'static [u8];
-
-		/// IbcContext need to implements to ics20
-		type IbcContext: ibc::core::ics04_channel::context::ChannelKeeper + ibc::core::ics04_channel::context::ChannelReader;
 	}
 
 	type AssetName = Vec<u8>;

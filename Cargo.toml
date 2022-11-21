@@ -57,7 +57,6 @@ ibc = { version = "0.22.0", features = ["mocks"], git = "https://github.com/cosm
 pallet-assets = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
 pallet-babe = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
 pallet-balances = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
-pallet-ics20-transfer = { version = "0.1.0", path = "./ibc-applications/ics20-transfer" }
 pallet-timestamp = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
 serde = "1.0"
 sha2 = '0.10.2'
@@ -93,7 +92,6 @@ std = [
   "flex-error/std",
   "hex/std",
   "time/std",
-  "pallet-ics20-transfer/std",
 ]
 runtime-benchmarks = ["frame-benchmarking"]
 try-runtime = ["frame-support/try-runtime"]
