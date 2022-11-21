@@ -20,9 +20,7 @@ use crate::prelude::String;
 use frame_system::ensure_signed;
 use ibc::core::ics24_host::identifier::ChannelId as IbcChannelId;
 use sp_std::{fmt::Debug, vec, vec::Vec};
-use codec::{Decode, Encode};
-use sp_runtime::RuntimeDebug;
-use scale_info::TypeInfo;
+
 
 pub mod context;
 pub mod errors;
@@ -41,20 +39,6 @@ pub use crate::{
 
 pub const LOG_TARGET: &str = "runtime::pallet-ibc";
 pub const REVISION_NUMBER: u64 = 0;
-
-/// A struct corresponds to `Any` in crate "prost-types", used in ibc-rs.
-#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
-pub struct Any {
-	pub type_url: Vec<u8>,
-	pub value: Vec<u8>,
-}
-
-impl From<ibc_proto::google::protobuf::Any> for Any {
-	fn from(any: ibc_proto::google::protobuf::Any) -> Self {
-		Self { type_url: any.type_url.as_bytes().to_vec(), value: any.value }
-	}
-}
-
 
 #[cfg(test)]
 mod mock;
@@ -260,7 +244,7 @@ pub mod pallet {
 			client_type: ClientType<T>,
 			consensus_height: Height<T>,
 			consensus_heights: Vec<Height<T>>,
-			header: Any,
+			header: ibc_support::Any,
 		},
 		/// Client upgraded event
 		UpgradeClient {
@@ -468,7 +452,7 @@ pub mod pallet {
 		#[pallet::weight(0)]
 		pub fn deliver(
 			origin: OriginFor<T>,
-			messages: Vec<Any>,
+			messages: Vec<ibc_support::Any>,
 		) -> DispatchResultWithPostInfo {
 			ensure_signed(origin)?;
 			let mut ctx = Context::<T>::new();
