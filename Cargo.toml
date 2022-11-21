@@ -24,7 +24,6 @@ codec = { package = "parity-scale-codec", version = "3.0.0", default-features = 
 frame-benchmarking = { version = "4.0.0-dev", default-features = false, optional = true, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
 frame-support = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
 frame-system = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
-ibc-support = { version = "0.1.0", default-features = false, path = "./ibc-support" }
 scale-info = { version = "2.1.2", default-features = false, features = ["derive"] }
 sp-core = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
 sp-io = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
@@ -72,7 +71,6 @@ sp-version = { version = "5.0.0", git = "https://github.com/paritytech/substrate
 [features]
 default = ['std']
 std = [
-  "ibc-support/std",
   "codec/std",
   "log/std",
   "scale-info/std",
