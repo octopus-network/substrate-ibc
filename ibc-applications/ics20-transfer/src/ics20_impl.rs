@@ -7,7 +7,7 @@ use frame_support::traits::{
 };
 use ibc::{
 	applications::transfer::{
-		context::{BankKeeper, Ics20Context, Ics20Keeper, Ics20Reader},
+		context::{BankKeeper, Ics20Context, TokenTransferReader},
 		error::Error as Ics20Error,
 		PrefixedCoin, PORT_ID_STR,
 	},
@@ -23,10 +23,6 @@ use sp_runtime::{
 	MultiSignature,
 };
 use sp_std::str::FromStr;
-
-impl<T: Config> Ics20Keeper for IbcTransferModule<T> {
-	type AccountId = <Self as Ics20Context>::AccountId;
-}
 
 impl<T: Config> BankKeeper for IbcTransferModule<T> {
 	type AccountId = <Self as Ics20Context>::AccountId;
@@ -178,7 +174,7 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 	}
 }
 
-impl<T: Config> Ics20Reader for IbcTransferModule<T> {
+impl<T: Config> TokenTransferReader for IbcTransferModule<T> {
 	type AccountId = <Self as Ics20Context>::AccountId;
 
 	fn get_port(&self) -> Result<PortId, Ics20Error> {
