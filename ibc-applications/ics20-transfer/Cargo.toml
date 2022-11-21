@@ -33,13 +33,10 @@ sp-std = { version = "4.0.0", default-features = false, git = "https://github.co
 ibc = { version = "0.22.0", default-features = false, git = "https://github.com/cosmos/ibc-rs.git", branch = "main" }
 # octopus ibc-proto-rs
 ibc-proto = { version = "0.22.0", default-features = false }
-tendermint-proto = { version = "=0.26.0", default-features = false }
 pallet-ibc = { version = "3.0.0", default-features = false, path = "../../" }
+tendermint-proto = { version = "=0.26.0", default-features = false }
 
 [dev-dependencies]
-sp-core = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
-sp-io = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
-sp-runtime = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
 # local crates
 chrono = "0.4.19"
 frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
@@ -50,15 +47,18 @@ ibc = { version = "0.22.0", features = ["mocks"], git = "https://github.com/cosm
 pallet-assets = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
 pallet-babe = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
 pallet-balances = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
-pallet-timestamp = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
 pallet-ibc = { version = "3.0.0", path = "../../" }
+pallet-timestamp = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
 serde = "1.0"
+serde_json = { version = "1.0" }
 sha2 = '0.10.2'
+sp-core = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
+sp-io = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
 # substrate crates
 sp-keyring = { version = "6.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
+sp-runtime = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
 sp-std = { version = "4.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
 sp-version = { version = "5.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
-serde_json = { version = "1.0" }
 
 [features]
 default = ["std"]
