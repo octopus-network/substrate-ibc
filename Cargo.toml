@@ -43,7 +43,7 @@ prost = { version = "0.11", default-features = false }
 prost-types = { version = "0.11", default-features = false }
 serde = { version = "1.0", default-features = false }
 serde_json = { version = "1.0", default-features = false }
-tendermint-proto = { version = "=0.25.0", default-features = false }
+tendermint-proto = { version = "=0.26.0", default-features = false }
 time = { version = ">=0.3.0, <0.3.12", default-features = false, features = ["macros", "parsing"] }
 
 [dev-dependencies]
