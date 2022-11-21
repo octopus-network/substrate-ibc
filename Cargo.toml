@@ -25,7 +25,6 @@ frame-benchmarking = { version = "4.0.0-dev", default-features = false, optional
 frame-support = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
 frame-system = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
 ibc-support = { version = "0.1.0", default-features = false, path = "./ibc-support" }
-pallet-ics20-transfer = { version = "0.1.0", default-features = false, path = "./ibc-applications/ics20-transfer" }
 scale-info = { version = "2.1.2", default-features = false, features = ["derive"] }
 sp-core = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
 sp-io = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }

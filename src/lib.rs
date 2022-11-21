@@ -88,7 +88,7 @@ pub mod pallet {
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
 	pub trait Config:
-		frame_system::Config + Sync + Send + Debug + pallet_ics20_transfer::Config
+		frame_system::Config + Sync + Send + Debug
 	{
 		/// The aggregated event type of the runtime.
 		type RuntimeEvent: Parameter

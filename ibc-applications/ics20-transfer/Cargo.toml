@@ -34,6 +34,7 @@ ibc = { version = "0.22.0", default-features = false, git = "https://github.com/
 # octopus ibc-proto-rs
 ibc-proto = { version = "0.22.0", default-features = false }
 tendermint-proto = { version = "=0.25.0", default-features = false }
+pallet-ibc = { version = "3.0.0", default-features = false, path = "../../" }
 
 [dev-dependencies]
 sp-core = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }

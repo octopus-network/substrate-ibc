@@ -37,7 +37,6 @@ construct_runtime!(
 		Balances: pallet_balances,
 		Timestamp: pallet_timestamp,
 		Ibc: pallet_ibc,
-		Ics20Transfer: pallet_ics20_transfer,
 	}
 );
 
@@ -186,17 +185,6 @@ pub const MILLISECS_PER_BLOCK: Moment = 6000;
 //       Attempting to do so will brick block production.
 pub const SLOT_DURATION: Moment = MILLISECS_PER_BLOCK;
 
-impl pallet_ics20_transfer::Config for Test {
-	type RuntimeEvent = RuntimeEvent;
-	type Currency = Balances;
-	type AssetId = AssetId;
-	type AssetBalance = AssetBalance;
-	type Fungibles = Assets;
-	type AssetIdByName = Ics20Transfer;
-	type AccountIdConversion = pallet_ics20_transfer::ics20_impl::IbcAccount;
-	const NATIVE_TOKEN_NAME: &'static [u8] = b"DEMO";
-	type IbcContext = pallet_ibc::context::Context<Test>;
-}
 
 pub type AssetBalance = u128;
 pub type AssetId = u32;

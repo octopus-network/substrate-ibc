@@ -51,7 +51,7 @@ pub mod pallet {
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
-	pub trait Config: frame_system::Config + Sync + Send + Debug {
+	pub trait Config: frame_system::Config + Sync + Send + Debug + pallet_ibc::Config {
 		/// The aggregated event type of the runtime.
 		type RuntimeEvent: Parameter
 			+ Member
@@ -86,8 +86,7 @@ pub mod pallet {
 		const NATIVE_TOKEN_NAME: &'static [u8];
 
 		/// IbcContext need to implements to ics20
-		type IbcContext: ibc_support::ibc_trait::IbcSupportChannelKeeper
-			+ ibc_support::ibc_trait::IbcSupportChannelReader;
+		type IbcContext: ibc::core::ics04_channel::context::ChannelKeeper + ibc::core::ics04_channel::context::ChannelReader;
 	}
 
 	type AssetName = Vec<u8>;

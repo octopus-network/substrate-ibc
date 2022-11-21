@@ -16,13 +16,11 @@ use ibc::{
 	},
 	signer::Signer,
 };
-use ibc_support::ibc_trait::TransferModule;
 use sp_std::marker::PhantomData;
 
 #[derive(Debug, Encode, Decode)]
 pub struct IbcTransferModule<T>(pub PhantomData<T>);
 
-impl<T: Config> TransferModule for IbcTransferModule<T> {}
 
 impl<T: Config> Module for IbcTransferModule<T> {
 	fn on_chan_open_init(
