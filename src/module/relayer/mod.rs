@@ -6,7 +6,7 @@ use ibc::{
 		ics26_routing::handler::{deliver, MsgReceipt},
 	},
 	events::IbcEvent,
-	relayer::ics18_relayer::{context::Ics18Context, error::Error as ICS18Error},
+	relayer::ics18_relayer::{context::RelayerContext, error::Error as ICS18Error},
 	signer::Signer,
 	Height,
 };
@@ -14,7 +14,7 @@ use ibc_proto::google::protobuf::Any;
 use scale_info::prelude::{vec, vec::Vec};
 use sp_std::boxed::Box;
 
-impl<T: Config> Ics18Context for Context<T> {
+impl<T: Config> RelayerContext for Context<T> {
 	fn query_latest_height(&self) -> Height {
 		let revision_height = host_height::<T>();
 		Height::new(REVISION_NUMBER, revision_height).expect(&REVISION_NUMBER.to_string())

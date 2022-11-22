@@ -3,7 +3,7 @@ use crate::{
 	prelude::{format, String},
 	Config,
 };
-use ibc::core::ics26_routing::context::{Ics26Context, Module, ModuleId, RouterBuilder};
+use ibc::core::ics26_routing::context::{RouterContext, Module, ModuleId, RouterBuilder};
 use sp_std::{
 	borrow::{Borrow, ToOwned},
 	collections::btree_map::BTreeMap,
@@ -54,7 +54,7 @@ impl ibc::core::ics26_routing::context::Router for Router {
 	}
 }
 
-impl<T: Config> Ics26Context for Context<T> {
+impl<T: Config> RouterContext for Context<T> {
 	type Router = Router;
 
 	fn router(&self) -> &Self::Router {
