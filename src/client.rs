@@ -1,6 +1,6 @@
 use crate::{
 	context::Context,
-	module::core::ics24_host::TENDERMINT_CLIENT_TYPE,
+	host::TENDERMINT_CLIENT_TYPE,
 	prelude::{format, String, ToString},
 	ClientCounter, ClientProcessedHeights, ClientProcessedTimes, ClientStates, Clients, Config,
 	ConsensusStates, REVISION_NUMBER,
@@ -8,7 +8,7 @@ use crate::{
 use sp_std::{boxed::Box, vec::Vec};
 
 #[cfg(test)]
-use crate::module::core::ics24_host::MOCK_CLIENT_TYPE;
+use crate::host::MOCK_CLIENT_TYPE;
 use frame_support::traits::UnixTime;
 #[cfg(test)]
 use ibc::mock::{

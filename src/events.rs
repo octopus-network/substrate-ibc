@@ -1,7 +1,7 @@
 use core::marker::PhantomData;
 
 use crate::{
-	module::core::ics24_host::{ClientId, ClientType, ConnectionId, Height},
+	host::{ClientId, ClientType, ConnectionId, Height},
 	prelude::{format, String},
 	Config, Error, Event,
 };

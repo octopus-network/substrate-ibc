@@ -25,13 +25,19 @@ use sp_std::{fmt::Debug, vec, vec::Vec};
 pub mod context;
 pub mod errors;
 pub mod events;
-pub mod module;
 pub mod prelude;
 pub mod utils;
+pub mod client;
+pub mod connection;
+pub mod channel;
+pub mod host;
+pub mod port;
+pub mod routing;
+pub mod relayer;
 
 pub use crate::{
 	context::Context,
-	module::core::ics24_host::{
+	host::{
 		ChannelId, ClientId, ClientType, ConnectionId, Height, Order, Packet, PortId, Sequence,
 		TimeoutHeight, Timestamp, Version,
 	},
@@ -81,7 +87,7 @@ mod type_define {
 #[frame_support::pallet]
 pub mod pallet {
 	use super::{errors, type_define::*, *};
-	use crate::{events::ModuleEvent, module::core::ics24_host::Height};
+	use crate::{events::ModuleEvent, host::Height};
 	use frame_support::{pallet_prelude::*, traits::UnixTime};
 	use frame_system::pallet_prelude::*;
 	use ibc::core::ics26_routing::handler::MsgReceipt;

@@ -11,7 +11,7 @@ use super::*;
 use crate::{mock::*, Context};
 use core::str::FromStr;
 
-use crate::module::core::ics24_host::TENDERMINT_CLIENT_TYPE;
+use crate::host::TENDERMINT_CLIENT_TYPE;
 use ibc::core::{
 	ics02_client::{
 		client_type::ClientType,
