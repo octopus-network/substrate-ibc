@@ -7,7 +7,7 @@ use frame_support::traits::{
 };
 use ibc::{
 	applications::transfer::{
-		context::{BankKeeper, Ics20Context, TokenTransferReader},
+		context::{BankKeeper, TokenTransferContext, TokenTransferReader},
 		error::Error as Ics20Error,
 		PrefixedCoin, PORT_ID_STR,
 	},
@@ -25,7 +25,7 @@ use sp_runtime::{
 use sp_std::str::FromStr;
 
 impl<T: Config> BankKeeper for IbcTransferModule<T> {
-	type AccountId = <Self as Ics20Context>::AccountId;
+	type AccountId = <Self as TokenTransferContext>::AccountId;
 
 	fn send_coins(
 		&mut self,
@@ -175,7 +175,7 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 }
 
 impl<T: Config> TokenTransferReader for IbcTransferModule<T> {
-	type AccountId = <Self as Ics20Context>::AccountId;
+	type AccountId = <Self as TokenTransferContext>::AccountId;
 
 	fn get_port(&self) -> Result<PortId, Ics20Error> {
 		PortId::from_str(PORT_ID_STR)
@@ -203,7 +203,7 @@ impl<T: Config> TokenTransferReader for IbcTransferModule<T> {
 	}
 }
 
-impl<T: Config> Ics20Context for IbcTransferModule<T> {
+impl<T: Config> TokenTransferContext for IbcTransferModule<T> {
 	type AccountId = <T as Config>::AccountIdConversion;
 }
 
