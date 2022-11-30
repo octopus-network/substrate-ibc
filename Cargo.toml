@@ -46,7 +46,7 @@ ibc-proto = { git = "https://github.com/octopus-network/hermes.git", branch = "f
 #ibc = { path = "/home/burt/p2/src/blk/cdot/ibc/hermes-oct/modules", default-features = false }
 #ibc-proto = { path = "/home/burt/p2/src/blk/cdot/ibc/hermes-oct/proto", default-features = false }
 tendermint-proto = { version = "=0.23.7", default-features = false }
-beefy-light-client = { git = "https://github.com/octopus-network/beefy-light-client.git", branch="main", default-features = false }
+beefy-light-client = { git = "https://github.com/octopus-network/beefy-light-client.git", branch="feature/v0.9.18", default-features = false }
 # beefy-light-client = { path = "../beefy-light-client", default-features = false}
 
 [dependencies.time]
