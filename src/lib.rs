@@ -51,45 +51,25 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
-mod type_define {
-	use sp_std::vec::Vec;
-
-	pub type OctopusClientStatePath = Vec<u8>;
-	pub type OctopusClientState = Vec<u8>;
-	pub type OctopusClientId = Vec<u8>;
-	pub type OctopusIbcHeight = Vec<u8>;
-	pub type OctopusTimeStamp = Vec<u8>;
-	pub type OctopusIbcHostHeight = Vec<u8>;
-	pub type OctopusClientConsensusStatePath = Vec<u8>;
-	pub type OctopusConsensusState = Vec<u8>;
-	pub type OctopusConnectionsPath = Vec<u8>;
-	pub type OctopusConnectionEnd = Vec<u8>;
-	pub type OctopusChannelEndPath = Vec<u8>;
-	pub type OctopusChannelEnd = Vec<u8>;
-	pub type OctopusSeqSendsPath = Vec<u8>;
-	pub type OctopusSeqRecvsPath = Vec<u8>;
-	pub type OctopusSeqAcksPath = Vec<u8>;
-	pub type OctopusAcksPath = Vec<u8>;
-	pub type OctopusAcksHash = Vec<u8>;
-	pub type OctopusClientTypePath = Vec<u8>;
-	pub type OctopusClientType = Vec<u8>;
-	pub type OctopusClientConnectionsPath = Vec<u8>;
-	pub type OctopusConnectionId = Vec<u8>;
-	pub type OctopusRecipientsPath = Vec<u8>;
-	pub type OctopusRecipient = Vec<u8>;
-	pub type OctopusCommitmentsPath = Vec<u8>;
-	pub type OctopusCommitmentHash = Vec<u8>;
-	pub type OctopusSequence = u64;
-	pub type PreviousHostHeight = u64;
-}
-
 #[frame_support::pallet]
 pub mod pallet {
-	use super::{errors, type_define::*, *};
+	use super::{errors, *};
 	use crate::{events::ModuleEvent, host::Height};
 	use frame_support::{pallet_prelude::*, traits::UnixTime};
 	use frame_system::pallet_prelude::*;
-	use ibc::core::ics26_routing::handler::MsgReceipt;
+	use ibc::{
+		core::{
+			ics02_client::{client_type::ClientType as IbcClientType, height::Height as IbcHeight},
+			ics04_channel::packet::Sequence as IbcSequence,
+			ics24_host::identifier::{
+				ChannelId as IbcChannelId, ClientId as IbcClientId,
+				ConnectionId as IbcConnectionId, PortId as IbcPortId,
+			},
+			ics26_routing::handler::MsgReceipt,
+		},
+		timestamp::Timestamp as IbcTimestamp,
+	};
+
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
 	pub trait Config: frame_system::Config + Sync + Send + Debug {
@@ -110,88 +90,164 @@ pub mod pallet {
 	pub struct Pallet<T>(_);
 
 	#[pallet::storage]
-	/// ClientStatePath(client_id) => ClientState
+	/// Key: client_id
+	/// value: ClientState
 	pub type ClientStates<T: Config> =
-		StorageMap<_, Blake2_128Concat, OctopusClientStatePath, OctopusClientState, ValueQuery>;
+		StorageMap<_, Blake2_128Concat, IbcClientId, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
-	/// (client_id, height) => timestamp
+	/// key1: client_id
+	/// key2: height
+	/// value: timestamp
 	pub type ClientProcessedTimes<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
-		OctopusClientId,
+		IbcClientId,
 		Blake2_128Concat,
-		OctopusIbcHeight,
-		OctopusTimeStamp,
+		IbcHeight,
+		u64,
 		ValueQuery,
 	>;
 
+	#[pallet::type_value]
+	pub fn DefaultIbcHeight() -> IbcHeight {
+		IbcHeight::new(0, 1).expect("Never falied")
+	}
+
 	#[pallet::storage]
-	/// (client_id, height) => host_height
+	/// key1: client_id
+	/// key2: height
+	/// value: host_height
 	pub type ClientProcessedHeights<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
-		OctopusClientId,
+		IbcClientId,
 		Blake2_128Concat,
-		OctopusIbcHeight,
-		OctopusIbcHostHeight,
+		IbcHeight,
+		IbcHeight,
 		ValueQuery,
+		DefaultIbcHeight,
 	>;
 
 	#[pallet::storage]
-	/// ClientConsensusStatePath(client_id, Height) => ConsensusState
-	pub type ConsensusStates<T: Config> = StorageMap<
+	/// key1: client_id
+	/// key2: height
+	/// value: ConsensusState
+	pub type ConsensusStates<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
-		OctopusClientConsensusStatePath,
-		OctopusConsensusState,
+		IbcClientId,
+		Blake2_128Concat,
+		IbcHeight,
+		Vec<u8>,
 		ValueQuery,
 	>;
 
 	#[pallet::storage]
-	/// ConnectionsPath(connection_id) => ConnectionEnd
+	/// key: connection_id
+	/// value: ConnectionEnd
 	pub type Connections<T: Config> =
-		StorageMap<_, Blake2_128Concat, OctopusConnectionsPath, OctopusConnectionEnd, ValueQuery>;
+		StorageMap<_, Blake2_128Concat, IbcConnectionId, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
-	/// ChannelEndPath(port_id, channel_id) => ChannelEnd
-	pub type Channels<T: Config> =
-		StorageMap<_, Blake2_128Concat, OctopusChannelEndPath, OctopusChannelEnd, ValueQuery>;
+	/// key1: port_id
+	/// key2: channel_id
+	/// value: ChannelEnd
+	pub type Channels<T: Config> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		IbcPortId,
+		Blake2_128Concat,
+		IbcChannelId,
+		Vec<u8>,
+		ValueQuery,
+	>;
 
 	#[pallet::storage]
-	/// ConnectionsPath(connection_id) => Vec<ChannelEndPath(port_id, channel_id)>
+	/// key: connection_id
+	/// value: Vec<(port_id, channel_id)>
 	pub type ChannelsConnection<T: Config> = StorageMap<
 		_,
 		Blake2_128Concat,
-		OctopusConnectionsPath,
-		Vec<OctopusChannelEndPath>,
+		IbcConnectionId,
+		Vec<(IbcPortId, IbcChannelId)>,
 		ValueQuery,
 	>;
 
 	#[pallet::storage]
-	/// SeqSendsPath(port_id, channel_id) => sequence
-	pub type NextSequenceSend<T: Config> =
-		StorageMap<_, Blake2_128Concat, OctopusSeqSendsPath, OctopusSequence, ValueQuery>;
+	/// Key1: port_id
+	/// key2: channel_id
+	/// value: sequence
+	pub type NextSequenceSend<T: Config> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		IbcPortId,
+		Blake2_128Concat,
+		IbcChannelId,
+		IbcSequence,
+		ValueQuery,
+	>;
 
 	#[pallet::storage]
-	/// SeqRecvsPath(port_id, channel_id) => sequence
-	pub type NextSequenceRecv<T: Config> =
-		StorageMap<_, Blake2_128Concat, OctopusSeqRecvsPath, OctopusSequence, ValueQuery>;
+	/// key1: port_id
+	/// key2: channel_id
+	/// value: sequence
+	pub type NextSequenceRecv<T: Config> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		IbcPortId,
+		Blake2_128Concat,
+		IbcChannelId,
+		IbcSequence,
+		ValueQuery,
+	>;
 
 	#[pallet::storage]
-	/// SeqAcksPath(port_id, channel_id) => sequence
-	pub type NextSequenceAck<T: Config> =
-		StorageMap<_, Blake2_128Concat, OctopusSeqAcksPath, OctopusSequence, ValueQuery>;
+	/// key1: port_id
+	/// key2: channel_id
+	/// value: sequence
+	pub type NextSequenceAck<T: Config> = StorageDoubleMap<
+		_,
+		Blake2_128Concat,
+		IbcPortId,
+		Blake2_128Concat,
+		IbcChannelId,
+		IbcSequence,
+		ValueQuery,
+	>;
 
 	#[pallet::storage]
-	/// AcksPath(port_id, channel_id, sequence) => hash of acknowledgement
-	pub type Acknowledgements<T: Config> =
-		StorageMap<_, Blake2_128Concat, OctopusAcksPath, OctopusAcksHash, ValueQuery>;
+	/// key1: port_id
+	/// key2: channel_id
+	/// key3: sequence
+	/// value: hash of acknowledgement
+	pub type Acknowledgements<T: Config> = StorageNMap<
+		_,
+		(
+			NMapKey<Blake2_128Concat, IbcPortId>,
+			NMapKey<Blake2_128Concat, IbcChannelId>,
+			NMapKey<Blake2_128Concat, IbcSequence>,
+		),
+		Vec<u8>,
+		ValueQuery,
+	>;
+
+	#[pallet::type_value]
+	pub fn DefaultIbcClientType() -> IbcClientType {
+		IbcClientType::new("07-tendermint".to_string())
+	}
 
 	#[pallet::storage]
-	/// ClientTypePath(client_id) => client_type
-	pub type Clients<T: Config> =
-		StorageMap<_, Blake2_128Concat, OctopusClientTypePath, OctopusClientType, ValueQuery>;
+	/// key: client_id
+	/// value: ClientType
+	pub type Clients<T: Config> = StorageMap<
+		_,
+		Blake2_128Concat,
+		IbcClientId,
+		IbcClientType,
+		ValueQuery,
+		DefaultIbcClientType,
+	>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn client_counter)]
@@ -208,28 +264,47 @@ pub mod pallet {
 	pub type ChannelCounter<T: Config> = StorageValue<_, u64, ValueQuery>;
 
 	#[pallet::storage]
-	/// ClientConnectionsPath(client_id) => connection_id
-	pub type ConnectionClient<T: Config> = StorageMap<
+	/// key: ClientId
+	/// value: ConnectionId
+	pub type ConnectionClient<T: Config> =
+		StorageMap<_, Blake2_128Concat, IbcClientId, IbcConnectionId, ValueQuery>;
+
+	#[pallet::storage]
+	/// ReceiptsPath(port_id, channel_id, sequence) => receipt
+	/// key1: port_id
+	/// key2: channel_id
+	/// key3: sequence
+	/// value: receipt
+	pub type PacketReceipt<T: Config> = StorageNMap<
 		_,
-		Blake2_128Concat,
-		OctopusClientConnectionsPath,
-		OctopusConnectionId,
+		(
+			NMapKey<Blake2_128Concat, IbcPortId>,
+			NMapKey<Blake2_128Concat, IbcChannelId>,
+			NMapKey<Blake2_128Concat, IbcSequence>,
+		),
+		Vec<u8>,
 		ValueQuery,
 	>;
 
 	#[pallet::storage]
-	/// ReceiptsPath(port_id, channel_id, sequence) => receipt
-	pub type PacketReceipt<T: Config> =
-		StorageMap<_, Blake2_128Concat, OctopusRecipientsPath, OctopusRecipient, ValueQuery>;
-
-	#[pallet::storage]
-	/// CommitmentsPath(port_id, channel_id, sequence) => hash of (timestamp, height, packet)
-	pub type PacketCommitment<T: Config> =
-		StorageMap<_, Blake2_128Concat, OctopusCommitmentsPath, OctopusCommitmentHash, ValueQuery>;
+	/// key1: port_id
+	/// key2: channel_id
+	/// key3: sequence
+	/// value: hash of (timestamp, height, packet)
+	pub type PacketCommitment<T: Config> = StorageNMap<
+		_,
+		(
+			NMapKey<Blake2_128Concat, IbcPortId>,
+			NMapKey<Blake2_128Concat, IbcChannelId>,
+			NMapKey<Blake2_128Concat, IbcSequence>,
+		),
+		Vec<u8>,
+		ValueQuery,
+	>;
 
 	#[pallet::storage]
 	/// Previous host block height
-	pub type OldHeight<T: Config> = StorageValue<_, PreviousHostHeight, ValueQuery>;
+	pub type OldHeight<T: Config> = StorageValue<_, u64, ValueQuery>;
 
 	/// Substrate IBC event list
 	#[pallet::event]

@@ -26,10 +26,8 @@ use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
 
 impl<T: Config> ConnectionReader for Context<T> {
 	fn connection_end(&self, conn_id: &ConnectionId) -> Result<ConnectionEnd, ConnectionError> {
-		let connections_path = ConnectionsPath(conn_id.clone()).to_string().as_bytes().to_vec();
-
-		if <Connections<T>>::contains_key(&connections_path) {
-			let data = <Connections<T>>::get(&connections_path);
+		if <Connections<T>>::contains_key(conn_id) {
+			let data = <Connections<T>>::get(conn_id);
 			let ret = ConnectionEnd::decode_vec(&data).map_err(|e| ConnectionError::Other {
 				description: format!("Decode ConnectionEnd failed: {:?}", e),
 			})?;
@@ -98,11 +96,10 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		connection_id: ConnectionId,
 		connection_end: &ConnectionEnd,
 	) -> Result<(), ConnectionError> {
-		let connections_path = ConnectionsPath(connection_id).to_string().as_bytes().to_vec();
 		let data = connection_end.encode_vec().map_err(|e| ConnectionError::Other {
 			description: format!("Encode ConnectionEnd failed: {:?}", e),
 		})?;
-		<Connections<T>>::insert(connections_path, data);
+		<Connections<T>>::insert(connection_id, data);
 
 		Ok(())
 	}
@@ -112,10 +109,8 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		connection_id: ConnectionId,
 		client_id: &ClientId,
 	) -> Result<(), ConnectionError> {
-		let client_connection_paths =
-			ClientConnectionsPath(client_id.clone()).to_string().as_bytes().to_vec();
+		<ConnectionClient<T>>::insert(client_id, connection_id);
 
-		<ConnectionClient<T>>::insert(client_connection_paths, connection_id.as_bytes().to_vec());
 		Ok(())
 	}
 
