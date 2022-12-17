@@ -1,5 +1,8 @@
 pub mod test_util {
-	use ibc::{core::ics24_host::identifier::{ClientId, ConnectionId}, mock::client_state::client_type as mock_client_type};
+	use ibc::{
+		core::ics24_host::identifier::{ClientId, ConnectionId},
+		mock::client_state::client_type as mock_client_type,
+	};
 	use ibc_proto::ibc::core::{
 		commitment::v1::MerklePrefix, connection::v1::Counterparty as RawCounterparty,
 	};

@@ -30,11 +30,11 @@ sp-std = { version = "4.0.0", default-features = false, git = "https://github.co
 
 ## for ibc protocl
 # octopus ibc-rs
-ibc = { version = "0.22.0", default-features = false, git = "https://github.com/cosmos/ibc-rs.git", branch = "main" }
+ibc = { version = "0.25.0", default-features = false, git = "https://github.com/cosmos/ibc-rs.git", branch = "main" }
 # octopus ibc-proto-rs
-ibc-proto = { version = "0.22.0", default-features = false }
+ibc-proto = { version = "0.24.0", default-features = false }
 pallet-ibc = { version = "3.0.0", default-features = false, path = "../../" }
-tendermint-proto = { version = "=0.26.0", default-features = false }
+tendermint-proto = { version = "=0.28.0", default-features = false }
 
 [dev-dependencies]
 # local crates
@@ -43,7 +43,7 @@ frame-support = { git = "https://github.com/paritytech/substrate.git", branch = 
 # thrid party crates
 hex = '0.4.0'
 # ibc protocol crates
-ibc = { version = "0.22.0", features = ["mocks"], git = "https://github.com/cosmos/ibc-rs.git", branch = "main" }
+ibc = { version = "0.25.0", features = ["mocks"], git = "https://github.com/cosmos/ibc-rs.git", branch = "main" }
 pallet-assets = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
 pallet-babe = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
 pallet-balances = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }

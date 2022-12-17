@@ -3,7 +3,7 @@ use crate::{
 	prelude::{format, String},
 	Config,
 };
-use ibc::core::ics26_routing::context::{RouterContext, Module, ModuleId, RouterBuilder};
+use ibc::core::ics26_routing::context::{Module, ModuleId, RouterBuilder, RouterContext};
 use sp_std::{
 	borrow::{Borrow, ToOwned},
 	collections::btree_map::BTreeMap,

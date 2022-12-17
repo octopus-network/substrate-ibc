@@ -185,7 +185,6 @@ pub const MILLISECS_PER_BLOCK: Moment = 6000;
 //       Attempting to do so will brick block production.
 pub const SLOT_DURATION: Moment = MILLISECS_PER_BLOCK;
 
-
 pub type AssetBalance = u128;
 pub type AssetId = u32;
 

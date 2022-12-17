@@ -56,7 +56,7 @@ fn chan_close_confirm_event_height() {
 		let conn_id = ConnectionId::new(2);
 		let default_context = Context::<PalletIbcTest>::new();
 		System::set_block_number(20);
-		let client_consensus_state_height = default_context.host_height();
+		let client_consensus_state_height = default_context.host_height().unwrap();
 
 		let conn_end = ConnectionEnd::new(
 			ConnectionState::Open,

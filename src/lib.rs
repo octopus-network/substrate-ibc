@@ -21,19 +21,18 @@ use frame_system::ensure_signed;
 use ibc::core::ics24_host::identifier::ChannelId as IbcChannelId;
 use sp_std::{fmt::Debug, vec, vec::Vec};
 
-
+pub mod channel;
+pub mod client;
+pub mod connection;
 pub mod context;
 pub mod errors;
 pub mod events;
-pub mod prelude;
-pub mod utils;
-pub mod client;
-pub mod connection;
-pub mod channel;
 pub mod host;
 pub mod port;
-pub mod routing;
+pub mod prelude;
 pub mod relayer;
+pub mod routing;
+pub mod utils;
 
 pub use crate::{
 	context::Context,
@@ -93,9 +92,7 @@ pub mod pallet {
 	use ibc::core::ics26_routing::handler::MsgReceipt;
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
-	pub trait Config:
-		frame_system::Config + Sync + Send + Debug
-	{
+	pub trait Config: frame_system::Config + Sync + Send + Debug {
 		/// The aggregated event type of the runtime.
 		type RuntimeEvent: Parameter
 			+ Member

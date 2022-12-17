@@ -1,32 +1,21 @@
 pub mod test {
+	use crate::{ics20_callback::IbcTransferModule, mock::Test as PalletIbcTest};
 	use ibc::{
 		applications::transfer::{
-			context::{cosmos_adr028_escrow_address, on_chan_open_try},
-			error::Error as Ics20Error,
-			msgs::transfer::MsgTransfer,
-			relay::send_transfer::send_transfer,
-			PrefixedCoin,
+			error::TokenTransferError, msgs::transfer::MsgTransfer,
+			relay::send_transfer::send_transfer, PrefixedCoin,
 		},
-		core::{
-			ics04_channel::{
-				channel::{Counterparty, Order},
-				error::Error,
-				Version,
-			},
-			ics24_host::identifier::{ChannelId, ConnectionId, PortId},
-		},
+		core::ics04_channel::error::ChannelError,
 		handler::HandlerOutputBuilder,
-		test_utils::{get_dummy_transfer_module, DummyTransferModule},
 	};
-	use crate::ics20_callback::IbcTransferModule;
-	use crate::mock::Test as PalletIbcTest;
 
 	pub fn deliver(
 		ctx: &mut IbcTransferModule<PalletIbcTest>,
 		output: &mut HandlerOutputBuilder<()>,
 		msg: MsgTransfer<PrefixedCoin>,
-	) -> Result<(), Error> {
-		send_transfer(ctx, output, msg).map_err(|e: Ics20Error| Error::app_module(e.to_string()))
+	) -> Result<(), ChannelError> {
+		send_transfer(ctx, output, msg)
+			.map_err(|e: TokenTransferError| ChannelError::AppModule { description: e.to_string() })
 	}
 }
 pub mod test_util {
@@ -45,7 +34,6 @@ pub mod test_util {
 			ics24_host::identifier::{ChannelId, PortId},
 		},
 		signer::Signer,
-		test_utils::get_dummy_bech32_account,
 		timestamp::Timestamp,
 	};
 

@@ -3,9 +3,9 @@ mod channel;
 #[cfg(test)]
 mod client;
 #[cfg(test)]
-mod connection;
-#[cfg(test)]
 mod commitment;
+#[cfg(test)]
+mod connection;
 
 use super::*;
 use crate::{mock::*, Context};
@@ -16,17 +16,17 @@ use ibc::core::{
 	ics02_client::{
 		client_type::ClientType,
 		context::{ClientKeeper, ClientReader},
-		error::Error as ICS02Error,
+		error::ClientError,
 	},
 	ics03_connection::{
 		connection::ConnectionEnd,
 		context::{ConnectionKeeper, ConnectionReader},
-		error::Error as ICS03Error,
+		error::ConnectionError,
 	},
 	ics04_channel::{
 		channel::ChannelEnd,
 		context::{ChannelKeeper, ChannelReader},
-		error::Error as ICS04Error,
+		error::{ChannelError, PacketError},
 		packet::Sequence,
 	},
 	ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
@@ -57,7 +57,7 @@ fn test_read_client_type_failed_by_supply_error_client_id() {
 	new_test_ext().execute_with(|| {
 		assert!(context.store_client_type(client_id.clone(), client_type).is_ok());
 		let ret = context.client_type(&client_id_failed).unwrap_err().to_string();
-		assert_eq!(ret, ICS02Error::client_not_found(client_id_failed).to_string());
+		assert_eq!(ret, ClientError::ClientNotFound { client_id: client_id_failed }.to_string());
 	})
 }
 
@@ -158,7 +158,7 @@ fn test_connection_fail() {
 		let ret = ConnectionReader::connection_end(&context, &connection_id)
 			.unwrap_err()
 			.to_string();
-		assert_eq!(ret, ICS03Error::connection_mismatch(connection_id).to_string());
+		assert_eq!(ret, ConnectionError::ConnectionMismatch { connection_id }.to_string());
 	})
 }
 
@@ -199,7 +199,7 @@ fn test_delete_packet_acknowledgement_ok() {
 			.unwrap_err()
 			.to_string();
 
-		assert_eq!(result, ICS04Error::packet_acknowledgement_not_found(sequence).to_string());
+		assert_eq!(result, PacketError::PacketAcknowledgementNotFound { sequence }.to_string());
 	})
 }
 
@@ -290,7 +290,8 @@ fn test_read_conection_channels_failed_by_suppley_error_conneciton_id() {
 		let result = context.connection_channels(&connection_id_failed).unwrap_err().to_string();
 		assert_eq!(
 			result,
-			ICS04Error::connection_not_open(connection_id_failed.clone()).to_string()
+			ChannelError::ConnectionNotOpen { connection_id: connection_id_failed.clone() }
+				.to_string()
 		);
 	})
 }
@@ -321,7 +322,7 @@ fn test_next_sequence_send_fail() {
 
 	new_test_ext().execute_with(|| {
 		let result = context.get_next_sequence_send(&port_id, &channel_id).unwrap_err().to_string();
-		assert_eq!(result, ICS04Error::missing_next_send_seq(port_id, channel_id).to_string());
+		assert_eq!(result, PacketError::MissingNextSendSeq { port_id, channel_id }.to_string());
 	})
 }
 
@@ -360,17 +361,29 @@ fn test_read_channel_end_failed_by_supply_error_channel_id_port_id() {
 		let result = context.channel_end(&port_id_1, &channel_id).unwrap_err().to_string();
 		assert_eq!(
 			result,
-			ICS04Error::channel_not_found(port_id_1.clone(), channel_id.clone()).to_string()
+			ChannelError::ChannelNotFound {
+				port_id: port_id_1.clone(),
+				channel_id: channel_id.clone()
+			}
+			.to_string()
 		);
 		let result = context.channel_end(&port_id, &channel_id_1).unwrap_err().to_string();
 		assert_eq!(
 			result,
-			ICS04Error::channel_not_found(port_id.clone(), channel_id_1.clone()).to_string()
+			ChannelError::ChannelNotFound {
+				port_id: port_id.clone(),
+				channel_id: channel_id_1.clone()
+			}
+			.to_string()
 		);
 		let result = context.channel_end(&port_id_1, &channel_id_1).unwrap_err().to_string();
 		assert_eq!(
 			result,
-			ICS04Error::channel_not_found(port_id_1.clone(), channel_id_1.clone()).to_string()
+			ChannelError::ChannelNotFound {
+				port_id: port_id_1.clone(),
+				channel_id: channel_id_1.clone()
+			}
+			.to_string()
 		);
 	})
 }
@@ -412,7 +425,7 @@ fn test_next_sequence_recv_fail() {
 
 	new_test_ext().execute_with(|| {
 		let result = context.get_next_sequence_recv(&port_id, &channel_id).unwrap_err().to_string();
-		assert_eq!(result, ICS04Error::missing_next_recv_seq(port_id, channel_id).to_string());
+		assert_eq!(result, PacketError::MissingNextRecvSeq { port_id, channel_id }.to_string());
 	})
 }
 
@@ -440,6 +453,6 @@ fn test_next_sequence_ack_fail() {
 
 	new_test_ext().execute_with(|| {
 		let result = context.get_next_sequence_ack(&port_id, &channel_id).unwrap_err().to_string();
-		assert_eq!(result, ICS04Error::missing_next_ack_seq(port_id, channel_id).to_string());
+		assert_eq!(result, PacketError::MissingNextAckSeq { port_id, channel_id }.to_string());
 	})
 }

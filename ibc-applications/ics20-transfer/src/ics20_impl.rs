@@ -8,7 +8,7 @@ use frame_support::traits::{
 use ibc::{
 	applications::transfer::{
 		context::{BankKeeper, TokenTransferContext, TokenTransferReader},
-		error::Error as Ics20Error,
+		error::TokenTransferError,
 		PrefixedCoin, PORT_ID_STR,
 	},
 	bigint::U256,
@@ -32,7 +32,7 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 		from: &Self::AccountId,
 		to: &Self::AccountId,
 		amt: &PrefixedCoin,
-	) -> Result<(), Ics20Error> {
+	) -> Result<(), TokenTransferError> {
 		let is_native_asset = amt.denom.trace_path.is_empty();
 		match is_native_asset {
 			// transfer native token
@@ -47,7 +47,6 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 					"send ibc token name is not native token name"
 				);
 
-				
 				<T::Currency as Currency<T::AccountId>>::transfer(
 					&from.clone().into_account(),
 					&to.clone().into_account(),
@@ -56,9 +55,9 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 				)
 				.map_err(|error| {
 					error!("❌ [send_coins] : Error: ({:?})", error);
-					Ics20Error::invalid_token()
+					TokenTransferError::InvalidToken
 				})?;
-				
+
 				// add emit transfer native token event
 				Pallet::<T>::deposit_event(Event::<T>::TransferNativeToken(
 					from.clone(),
@@ -82,7 +81,7 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 						)
 						.map_err(|error| {
 							error!("❌ [send_coins] : Error: ({:?})", error);
-							Ics20Error::invalid_token()
+							TokenTransferError::InvalidToken
 						})?;
 
 						// add emit transfer no native token event
@@ -94,7 +93,7 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 					},
 					Err(_error) => {
 						error!("❌ [send_coins]: denom: ({:?})", denom);
-						return Err(Ics20Error::invalid_token())
+						return Err(TokenTransferError::InvalidToken)
 					},
 				}
 			},
@@ -107,7 +106,7 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 		&mut self,
 		account: &Self::AccountId,
 		amt: &PrefixedCoin,
-	) -> Result<(), Ics20Error> {
+	) -> Result<(), TokenTransferError> {
 		let amount = U256::from(amt.amount).low_u128().into();
 		let denom = amt.denom.base_denom.as_str();
 		// look cross chain asset have register in host chain
@@ -120,7 +119,7 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 				)
 				.map_err(|error| {
 					error!("❌ [mint_coins] : Error: ({:?})", error);
-					Ics20Error::invalid_token()
+					TokenTransferError::InvalidToken
 				})?;
 
 				// add mint token event
@@ -132,7 +131,7 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 			},
 			Err(_error) => {
 				error!("❌ [mint_coins]: denom: ({:?})", denom);
-				return Err(Ics20Error::invalid_token())
+				return Err(TokenTransferError::InvalidToken)
 			},
 		}
 		Ok(())
@@ -142,7 +141,7 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 		&mut self,
 		account: &Self::AccountId,
 		amt: &PrefixedCoin,
-	) -> Result<(), Ics20Error> {
+	) -> Result<(), TokenTransferError> {
 		let amount = U256::from(amt.amount).low_u128().into();
 		let denom = amt.denom.base_denom.as_str();
 		// look cross chain asset have register in host chain
@@ -155,7 +154,7 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 				)
 				.map_err(|error| {
 					error!("❌ [burn_coins] : Error: ({:?})", error);
-					Ics20Error::invalid_token()
+					TokenTransferError::InvalidToken
 				})?;
 
 				// add burn token event
@@ -167,7 +166,7 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 			},
 			Err(_error) => {
 				error!("❌ [burn_coins]: denom: ({:?})", denom);
-				return Err(Ics20Error::invalid_token())
+				return Err(TokenTransferError::InvalidToken)
 			},
 		}
 		Ok(())
@@ -177,19 +176,21 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 impl<T: Config> TokenTransferReader for IbcTransferModule<T> {
 	type AccountId = <Self as TokenTransferContext>::AccountId;
 
-	fn get_port(&self) -> Result<PortId, Ics20Error> {
-		PortId::from_str(PORT_ID_STR)
-			.map_err(|e| Ics20Error::invalid_port_id(PORT_ID_STR.to_string(), e))
+	fn get_port(&self) -> Result<PortId, TokenTransferError> {
+		PortId::from_str(PORT_ID_STR).map_err(|e| TokenTransferError::InvalidPortId {
+			context: PORT_ID_STR.to_string(),
+			validation_error: e,
+		})
 	}
 
 	fn get_channel_escrow_address(
 		&self,
 		port_id: &PortId,
 		channel_id: &ChannelId,
-	) -> Result<Self::AccountId, Ics20Error> {
+	) -> Result<Self::AccountId, TokenTransferError> {
 		get_channel_escrow_address(port_id, channel_id)?
 			.try_into()
-			.map_err(|_| Ics20Error::parse_account_failure())
+			.map_err(|_| TokenTransferError::ParseAccountFailure)
 	}
 
 	fn is_send_enabled(&self) -> bool {

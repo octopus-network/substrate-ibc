@@ -76,7 +76,7 @@ fn chan_close_init_event_height() {
 		System::set_block_number(20);
 		let context = {
 			let default_context = Context::<PalletIbcTest>::new();
-			let client_consensus_state_height = default_context.host_height();
+			let client_consensus_state_height = default_context.host_height().unwrap();
 
 			default_context
 				.with_client(&client_id, client_consensus_state_height)

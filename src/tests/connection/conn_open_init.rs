@@ -7,7 +7,8 @@ pub mod test_util {
 			ics03_connection::{msgs::conn_open_init::MsgConnectionOpenInit, version::Version},
 			ics24_host::identifier::ClientId,
 		},
-		test_utils::get_dummy_bech32_account, mock::client_state::client_type as mock_client_type,
+		mock::client_state::client_type as mock_client_type,
+		test_utils::get_dummy_bech32_account,
 	};
 	use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 
@@ -15,7 +16,7 @@ pub mod test_util {
 	/// Other unit tests may import this if they depend on a MsgConnectionOpenInit.
 	pub fn get_dummy_raw_msg_conn_open_init() -> RawMsgConnectionOpenInit {
 		RawMsgConnectionOpenInit {
-			client_id:  ClientId::new(mock_client_type(), 0).unwrap().to_string(),
+			client_id: ClientId::new(mock_client_type(), 0).unwrap().to_string(),
 			counterparty: Some(get_dummy_raw_counterparty()),
 			version: Some(Version::default().into()),
 			delay_period: 0,

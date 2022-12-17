@@ -7,7 +7,7 @@ use crate::{
 use ibc::{
 	core::{
 		ics02_client::{
-			client_type::ClientType as IbcClientType, error::Error as Ics02Error,
+			client_type::ClientType as IbcClientType, error::ClientError,
 			height::Height as IbcHeight,
 		},
 		ics04_channel::{

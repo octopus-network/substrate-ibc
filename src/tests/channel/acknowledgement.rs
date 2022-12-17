@@ -18,7 +18,8 @@ use ibc::{
 			msgs::acknowledgement::MsgAcknowledgement,
 			Version,
 		},
-		ics24_host::identifier::{ClientId, ConnectionId}, ics23_commitment::commitment::CommitmentPrefix,
+		ics23_commitment::commitment::CommitmentPrefix,
+		ics24_host::identifier::{ClientId, ConnectionId},
 	},
 	events::IbcEvent,
 	timestamp::ZERO_DURATION,
@@ -40,11 +41,11 @@ pub mod test_util {
 		get_dummy_raw_msg_ack_with_packet(get_dummy_raw_packet(height, 1), height)
 	}
 
-    pub fn acknowledgement() -> Vec<u8> {
-        use ibc::applications::transfer::acknowledgement::Acknowledgement;
-        serde_json::to_string(&Acknowledgement::success()).unwrap().as_bytes().to_vec()
-    }
-   
+	pub fn acknowledgement() -> Vec<u8> {
+		use ibc::applications::transfer::acknowledgement::Acknowledgement;
+		serde_json::to_string(&Acknowledgement::success()).unwrap().as_bytes().to_vec()
+	}
+
 	pub fn get_dummy_raw_msg_ack_with_packet(
 		packet: RawPacket,
 		height: u64,

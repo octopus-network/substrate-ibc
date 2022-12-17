@@ -5,7 +5,7 @@ use ibc::{
 	core::{
 		ics04_channel::{
 			channel::{Counterparty, Order},
-			error::Error as Ics04Error,
+			error::{ChannelError, PacketError},
 			handler::ModuleExtras,
 			msgs::acknowledgement::Acknowledgement as GenericAcknowledgement,
 			packet::Packet,
@@ -21,7 +21,6 @@ use sp_std::marker::PhantomData;
 #[derive(Debug, Encode, Decode)]
 pub struct IbcTransferModule<T>(pub PhantomData<T>);
 
-
 impl<T: Config> Module for IbcTransferModule<T> {
 	fn on_chan_open_init(
 		&mut self,
@@ -31,7 +30,7 @@ impl<T: Config> Module for IbcTransferModule<T> {
 		channel_id: &ChannelId,
 		counterparty: &Counterparty,
 		version: &Version,
-	) -> Result<(ModuleExtras, Version), Ics04Error> {
+	) -> Result<(ModuleExtras, Version), ChannelError> {
 		ibc::applications::transfer::context::on_chan_open_init(
 			self,
 			order,
@@ -41,7 +40,7 @@ impl<T: Config> Module for IbcTransferModule<T> {
 			counterparty,
 			version,
 		)
-		.map_err(|e| Ics04Error::app_module(e.to_string()))
+		.map_err(|e| ChannelError::AppModule { description: e.to_string() })
 	}
 
 	fn on_chan_open_try(
@@ -52,7 +51,7 @@ impl<T: Config> Module for IbcTransferModule<T> {
 		channel_id: &ChannelId,
 		counterparty: &Counterparty,
 		counterparty_version: &Version,
-	) -> Result<(ModuleExtras, Version), Ics04Error> {
+	) -> Result<(ModuleExtras, Version), ChannelError> {
 		ibc::applications::transfer::context::on_chan_open_try(
 			self,
 			order,
@@ -62,7 +61,7 @@ impl<T: Config> Module for IbcTransferModule<T> {
 			counterparty,
 			counterparty_version,
 		)
-		.map_err(|e| Ics04Error::app_module(e.to_string()))
+		.map_err(|e| ChannelError::AppModule { description: e.to_string() })
 	}
 
 	fn on_chan_open_ack(
@@ -70,30 +69,30 @@ impl<T: Config> Module for IbcTransferModule<T> {
 		port_id: &PortId,
 		channel_id: &ChannelId,
 		counterparty_version: &Version,
-	) -> Result<ModuleExtras, Ics04Error> {
+	) -> Result<ModuleExtras, ChannelError> {
 		ibc::applications::transfer::context::on_chan_open_ack(
 			self,
 			port_id,
 			channel_id,
 			counterparty_version,
 		)
-		.map_err(|e| Ics04Error::app_module(e.to_string()))
+		.map_err(|e| ChannelError::AppModule { description: e.to_string() })
 	}
 
 	fn on_chan_open_confirm(
 		&mut self,
 		port_id: &PortId,
 		channel_id: &ChannelId,
-	) -> Result<ModuleExtras, Ics04Error> {
+	) -> Result<ModuleExtras, ChannelError> {
 		ibc::applications::transfer::context::on_chan_open_confirm(self, port_id, channel_id)
-			.map_err(|e| Ics04Error::app_module(e.to_string()))
+			.map_err(|e| ChannelError::AppModule { description: e.to_string() })
 	}
 
 	fn on_chan_close_init(
 		&mut self,
 		_port_id: &PortId,
 		_channel_id: &ChannelId,
-	) -> Result<ModuleExtras, Ics04Error> {
+	) -> Result<ModuleExtras, ChannelError> {
 		Ok(ModuleExtras::empty())
 	}
 
@@ -101,9 +100,9 @@ impl<T: Config> Module for IbcTransferModule<T> {
 		&mut self,
 		port_id: &PortId,
 		channel_id: &ChannelId,
-	) -> Result<ModuleExtras, Ics04Error> {
+	) -> Result<ModuleExtras, ChannelError> {
 		ibc::applications::transfer::context::on_chan_close_confirm(self, port_id, channel_id)
-			.map_err(|e| Ics04Error::app_module(e.to_string()))
+			.map_err(|e| ChannelError::AppModule { description: e.to_string() })
 	}
 
 	fn on_recv_packet(
@@ -121,7 +120,7 @@ impl<T: Config> Module for IbcTransferModule<T> {
 		packet: &Packet,
 		acknowledgement: &GenericAcknowledgement,
 		relayer: &Signer,
-	) -> Result<(), Ics04Error> {
+	) -> Result<(), PacketError> {
 		ibc::applications::transfer::context::on_acknowledgement_packet(
 			self,
 			output,
@@ -129,7 +128,7 @@ impl<T: Config> Module for IbcTransferModule<T> {
 			acknowledgement,
 			relayer,
 		)
-		.map_err(|e| Ics04Error::app_module(e.to_string()))
+		.map_err(|e| PacketError::AppModule { description: e.to_string() })
 	}
 
 	fn on_timeout_packet(
@@ -137,8 +136,8 @@ impl<T: Config> Module for IbcTransferModule<T> {
 		output: &mut ModuleOutputBuilder,
 		packet: &Packet,
 		relayer: &Signer,
-	) -> Result<(), Ics04Error> {
+	) -> Result<(), PacketError> {
 		ibc::applications::transfer::context::on_timeout_packet(self, output, packet, relayer)
-			.map_err(|e| Ics04Error::app_module(e.to_string()))
+			.map_err(|e| PacketError::AppModule { description: e.to_string() })
 	}
 }

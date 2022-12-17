@@ -6,7 +6,7 @@ use ibc::{
 		ics26_routing::handler::{deliver, MsgReceipt},
 	},
 	events::IbcEvent,
-	relayer::ics18_relayer::{context::RelayerContext, error::Error as ICS18Error},
+	relayer::ics18_relayer::{context::RelayerContext, error::RelayerError},
 	signer::Signer,
 	Height,
 };
@@ -15,9 +15,9 @@ use scale_info::prelude::{vec, vec::Vec};
 use sp_std::boxed::Box;
 
 impl<T: Config> RelayerContext for Context<T> {
-	fn query_latest_height(&self) -> Height {
+	fn query_latest_height(&self) -> Result<Height, RelayerError> {
 		let revision_height = host_height::<T>();
-		Height::new(REVISION_NUMBER, revision_height).expect(&REVISION_NUMBER.to_string())
+		Ok(Height::new(REVISION_NUMBER, revision_height).expect(&REVISION_NUMBER.to_string()))
 	}
 
 	fn query_client_full_state(&self, client_id: &ClientId) -> Option<Box<dyn ClientState>> {
@@ -29,11 +29,11 @@ impl<T: Config> RelayerContext for Context<T> {
 		todo!()
 	}
 
-	fn send(&mut self, msgs: Vec<Any>) -> Result<Vec<IbcEvent>, ICS18Error> {
+	fn send(&mut self, msgs: Vec<Any>) -> Result<Vec<IbcEvent>, RelayerError> {
 		let mut all_events = vec![];
 		for msg in msgs {
 			let MsgReceipt { mut events, .. } =
-				deliver(self, msg).map_err(ICS18Error::transaction_failed)?;
+				deliver(self, msg).map_err(RelayerError::TransactionFailed)?;
 			all_events.append(&mut events);
 		}
 		Ok(all_events)

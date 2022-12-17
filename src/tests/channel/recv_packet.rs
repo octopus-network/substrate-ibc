@@ -17,7 +17,8 @@ use ibc::{
 			packet::Packet,
 			Version,
 		},
-		ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId}, ics23_commitment::commitment::CommitmentPrefix,
+		ics23_commitment::commitment::CommitmentPrefix,
+		ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
 	},
 	events::IbcEvent,
 	relayer::ics18_relayer::context::RelayerContext,
@@ -67,7 +68,7 @@ fn recv_packet_processing() {
 
     let context = Context::<PalletIbcTest>::new();
 
-    let host_height = context.query_latest_height().increment();
+    let host_height = context.query_latest_height().unwrap().increment();
 
     let client_height = host_height.increment();
 

@@ -7,7 +7,10 @@ pub mod test_util {
 			ics03_connection::version::get_compatible_versions,
 			ics24_host::identifier::{ClientId, ConnectionId},
 		},
-		mock::{client_state::{MockClientState, client_type as mock_client_type}, header::MockHeader},
+		mock::{
+			client_state::{client_type as mock_client_type, MockClientState},
+			header::MockHeader,
+		},
 		test_utils::{get_dummy_bech32_account, get_dummy_proof},
 	};
 	use ibc_proto::ibc::core::{

@@ -9,7 +9,7 @@ use ibc::{
 				AcknowledgementCommitment as IbcAcknowledgementCommitment, PacketCommitment,
 			},
 			context::{ChannelKeeper, ChannelReader},
-			error::Error as Ics04Error,
+			error::{ChannelError, PacketError},
 			packet::{Receipt, Sequence},
 		},
 		ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
@@ -24,11 +24,11 @@ impl<T: Config> ChannelReader for IbcTransferModule<T> {
 		&self,
 		port_id: &PortId,
 		channel_id: &ChannelId,
-	) -> Result<ChannelEnd, Ics04Error> {
+	) -> Result<ChannelEnd, ChannelError> {
 		ChannelReader::channel_end(&pallet_ibc::context::Context::<T>::new(), port_id, channel_id)
 	}
 
-	fn connection_end(&self, connection_id: &ConnectionId) -> Result<ConnectionEnd, Ics04Error> {
+	fn connection_end(&self, connection_id: &ConnectionId) -> Result<ConnectionEnd, ChannelError> {
 		ChannelReader::connection_end(&pallet_ibc::context::Context::<T>::new(), connection_id)
 	}
 
@@ -36,11 +36,11 @@ impl<T: Config> ChannelReader for IbcTransferModule<T> {
 	fn connection_channels(
 		&self,
 		conn_id: &ConnectionId,
-	) -> Result<Vec<(PortId, ChannelId)>, Ics04Error> {
+	) -> Result<Vec<(PortId, ChannelId)>, ChannelError> {
 		ChannelReader::connection_channels(&pallet_ibc::context::Context::<T>::new(), conn_id)
 	}
 
-	fn client_state(&self, client_id: &ClientId) -> Result<Box<dyn ClientState>, Ics04Error> {
+	fn client_state(&self, client_id: &ClientId) -> Result<Box<dyn ClientState>, ChannelError> {
 		ChannelReader::client_state(&pallet_ibc::context::Context::<T>::new(), client_id)
 	}
 
@@ -48,32 +48,48 @@ impl<T: Config> ChannelReader for IbcTransferModule<T> {
 		&self,
 		client_id: &ClientId,
 		height: Height,
-	) -> Result<Box<dyn ConsensusState>, Ics04Error> {
-		ChannelReader::client_consensus_state(&pallet_ibc::context::Context::<T>::new(), client_id, height)
+	) -> Result<Box<dyn ConsensusState>, ChannelError> {
+		ChannelReader::client_consensus_state(
+			&pallet_ibc::context::Context::<T>::new(),
+			client_id,
+			height,
+		)
 	}
 
 	fn get_next_sequence_send(
 		&self,
 		port_id: &PortId,
 		channel_id: &ChannelId,
-	) -> Result<Sequence, Ics04Error> {
-		ChannelReader::get_next_sequence_send(&pallet_ibc::context::Context::<T>::new(), port_id, channel_id)
+	) -> Result<Sequence, PacketError> {
+		ChannelReader::get_next_sequence_send(
+			&pallet_ibc::context::Context::<T>::new(),
+			port_id,
+			channel_id,
+		)
 	}
 
 	fn get_next_sequence_recv(
 		&self,
 		port_id: &PortId,
 		channel_id: &ChannelId,
-	) -> Result<Sequence, Ics04Error> {
-		ChannelReader::get_next_sequence_recv(&pallet_ibc::context::Context::<T>::new(), port_id, channel_id)
+	) -> Result<Sequence, PacketError> {
+		ChannelReader::get_next_sequence_recv(
+			&pallet_ibc::context::Context::<T>::new(),
+			port_id,
+			channel_id,
+		)
 	}
 
 	fn get_next_sequence_ack(
 		&self,
 		port_id: &PortId,
 		channel_id: &ChannelId,
-	) -> Result<Sequence, Ics04Error> {
-		ChannelReader::get_next_sequence_ack(&pallet_ibc::context::Context::<T>::new(), port_id, channel_id)
+	) -> Result<Sequence, PacketError> {
+		ChannelReader::get_next_sequence_ack(
+			&pallet_ibc::context::Context::<T>::new(),
+			port_id,
+			channel_id,
+		)
 	}
 
 	/// Returns the `PacketCommitment` for the given identifier `(PortId, ChannelId, Sequence)`.
@@ -82,8 +98,13 @@ impl<T: Config> ChannelReader for IbcTransferModule<T> {
 		port_id: &PortId,
 		channel_id: &ChannelId,
 		seq: Sequence,
-	) -> Result<PacketCommitment, Ics04Error> {
-		ChannelReader::get_packet_commitment(&pallet_ibc::context::Context::<T>::new(), port_id, channel_id, seq)
+	) -> Result<PacketCommitment, PacketError> {
+		ChannelReader::get_packet_commitment(
+			&pallet_ibc::context::Context::<T>::new(),
+			port_id,
+			channel_id,
+			seq,
+		)
 	}
 
 	fn get_packet_receipt(
@@ -91,8 +112,13 @@ impl<T: Config> ChannelReader for IbcTransferModule<T> {
 		port_id: &PortId,
 		channel_id: &ChannelId,
 		seq: Sequence,
-	) -> Result<Receipt, Ics04Error> {
-		ChannelReader::get_packet_receipt(&pallet_ibc::context::Context::<T>::new(), port_id, channel_id, seq)
+	) -> Result<Receipt, PacketError> {
+		ChannelReader::get_packet_receipt(
+			&pallet_ibc::context::Context::<T>::new(),
+			port_id,
+			channel_id,
+			seq,
+		)
 	}
 
 	/// Returns the `Acknowledgements` for the given identifier `(PortId, ChannelId, Sequence)`.
@@ -101,8 +127,13 @@ impl<T: Config> ChannelReader for IbcTransferModule<T> {
 		port_id: &PortId,
 		channel_id: &ChannelId,
 		seq: Sequence,
-	) -> Result<IbcAcknowledgementCommitment, Ics04Error> {
-		ChannelReader::get_packet_acknowledgement(&pallet_ibc::context::Context::<T>::new(), port_id, channel_id, seq)
+	) -> Result<IbcAcknowledgementCommitment, PacketError> {
+		ChannelReader::get_packet_acknowledgement(
+			&pallet_ibc::context::Context::<T>::new(),
+			port_id,
+			channel_id,
+			seq,
+		)
 	}
 
 	/// A hashing function for packet commitments
@@ -111,16 +142,19 @@ impl<T: Config> ChannelReader for IbcTransferModule<T> {
 	}
 
 	/// Returns the current height of the local chain.
-	fn host_height(&self) -> Height {
+	fn host_height(&self) -> Result<Height, ChannelError> {
 		ChannelReader::host_height(&pallet_ibc::context::Context::<T>::new())
 	}
 
 	/// Returns the `AnyConsensusState` for the given identifier `height`.
-	fn host_consensus_state(&self, height: Height) -> Result<Box<dyn ConsensusState>, Ics04Error> {
+	fn host_consensus_state(
+		&self,
+		height: Height,
+	) -> Result<Box<dyn ConsensusState>, ChannelError> {
 		ChannelReader::host_consensus_state(&pallet_ibc::context::Context::<T>::new(), height)
 	}
 
-	fn pending_host_consensus_state(&self) -> Result<Box<dyn ConsensusState>, Ics04Error> {
+	fn pending_host_consensus_state(&self) -> Result<Box<dyn ConsensusState>, ChannelError> {
 		ChannelReader::pending_host_consensus_state(&pallet_ibc::context::Context::<T>::new())
 	}
 
@@ -129,22 +163,30 @@ impl<T: Config> ChannelReader for IbcTransferModule<T> {
 		&self,
 		client_id: &ClientId,
 		height: Height,
-	) -> Result<Timestamp, Ics04Error> {
-		ChannelReader::client_update_time(&pallet_ibc::context::Context::<T>::new(), client_id, height)
+	) -> Result<Timestamp, ChannelError> {
+		ChannelReader::client_update_time(
+			&pallet_ibc::context::Context::<T>::new(),
+			client_id,
+			height,
+		)
 	}
 
 	fn client_update_height(
 		&self,
 		client_id: &ClientId,
 		height: Height,
-	) -> Result<Height, Ics04Error> {
-		ChannelReader::client_update_height(&pallet_ibc::context::Context::<T>::new(), client_id, height)
+	) -> Result<Height, ChannelError> {
+		ChannelReader::client_update_height(
+			&pallet_ibc::context::Context::<T>::new(),
+			client_id,
+			height,
+		)
 	}
 
 	/// Returns a counter on the number of channel ids have been created thus far.
 	/// The value of this counter should increase only via method
 	/// `ChannelKeeper::increase_channel_counter`.
-	fn channel_counter(&self) -> Result<u64, Ics04Error> {
+	fn channel_counter(&self) -> Result<u64, ChannelError> {
 		ChannelReader::channel_counter(&pallet_ibc::context::Context::<T>::new())
 	}
 
@@ -160,8 +202,14 @@ impl<T: Config> ChannelKeeper for IbcTransferModule<T> {
 		channel_id: ChannelId,
 		sequence: Sequence,
 		commitment: PacketCommitment,
-	) -> Result<(), Ics04Error> {
-		ChannelKeeper::store_packet_commitment(&mut pallet_ibc::context::Context::<T>::new(), port_id, channel_id, sequence, commitment)
+	) -> Result<(), PacketError> {
+		ChannelKeeper::store_packet_commitment(
+			&mut pallet_ibc::context::Context::<T>::new(),
+			port_id,
+			channel_id,
+			sequence,
+			commitment,
+		)
 	}
 
 	fn delete_packet_commitment(
@@ -169,8 +217,13 @@ impl<T: Config> ChannelKeeper for IbcTransferModule<T> {
 		port_id: &PortId,
 		channel_id: &ChannelId,
 		seq: Sequence,
-	) -> Result<(), Ics04Error> {
-		ChannelKeeper::delete_packet_commitment(&mut pallet_ibc::context::Context::<T>::new(), port_id, channel_id, seq)
+	) -> Result<(), PacketError> {
+		ChannelKeeper::delete_packet_commitment(
+			&mut pallet_ibc::context::Context::<T>::new(),
+			port_id,
+			channel_id,
+			seq,
+		)
 	}
 
 	fn store_packet_receipt(
@@ -179,8 +232,14 @@ impl<T: Config> ChannelKeeper for IbcTransferModule<T> {
 		channel_id: ChannelId,
 		seq: Sequence,
 		receipt: Receipt,
-	) -> Result<(), Ics04Error> {
-		ChannelKeeper::store_packet_receipt(&mut pallet_ibc::context::Context::<T>::new(), port_id, channel_id, seq, receipt)
+	) -> Result<(), PacketError> {
+		ChannelKeeper::store_packet_receipt(
+			&mut pallet_ibc::context::Context::<T>::new(),
+			port_id,
+			channel_id,
+			seq,
+			receipt,
+		)
 	}
 
 	fn store_packet_acknowledgement(
@@ -189,8 +248,14 @@ impl<T: Config> ChannelKeeper for IbcTransferModule<T> {
 		channel_id: ChannelId,
 		seq: Sequence,
 		ack_commitment: IbcAcknowledgementCommitment,
-	) -> Result<(), Ics04Error> {
-		ChannelKeeper::store_packet_acknowledgement(&mut pallet_ibc::context::Context::<T>::new(), port_id, channel_id, seq, ack_commitment)
+	) -> Result<(), PacketError> {
+		ChannelKeeper::store_packet_acknowledgement(
+			&mut pallet_ibc::context::Context::<T>::new(),
+			port_id,
+			channel_id,
+			seq,
+			ack_commitment,
+		)
 	}
 
 	fn delete_packet_acknowledgement(
@@ -198,8 +263,13 @@ impl<T: Config> ChannelKeeper for IbcTransferModule<T> {
 		port_id: &PortId,
 		channel_id: &ChannelId,
 		seq: Sequence,
-	) -> Result<(), Ics04Error> {
-		ChannelKeeper::delete_packet_commitment(&mut pallet_ibc::context::Context::<T>::new(), port_id, channel_id, seq)
+	) -> Result<(), PacketError> {
+		ChannelKeeper::delete_packet_commitment(
+			&mut pallet_ibc::context::Context::<T>::new(),
+			port_id,
+			channel_id,
+			seq,
+		)
 	}
 
 	fn store_connection_channels(
@@ -207,8 +277,13 @@ impl<T: Config> ChannelKeeper for IbcTransferModule<T> {
 		conn_id: ConnectionId,
 		port_id: PortId,
 		channel_id: ChannelId,
-	) -> Result<(), Ics04Error> {
-		ChannelKeeper::store_connection_channels(&mut pallet_ibc::context::Context::<T>::new(), conn_id, port_id, channel_id)
+	) -> Result<(), ChannelError> {
+		ChannelKeeper::store_connection_channels(
+			&mut pallet_ibc::context::Context::<T>::new(),
+			conn_id,
+			port_id,
+			channel_id,
+		)
 	}
 
 	/// Stores the given channel_end at a path associated with the port_id and channel_id.
@@ -217,8 +292,13 @@ impl<T: Config> ChannelKeeper for IbcTransferModule<T> {
 		port_id: PortId,
 		channel_id: ChannelId,
 		channel_end: ChannelEnd,
-	) -> Result<(), Ics04Error> {
-		ChannelKeeper::store_channel(&mut pallet_ibc::context::Context::<T>::new(), port_id, channel_id, channel_end)
+	) -> Result<(), ChannelError> {
+		ChannelKeeper::store_channel(
+			&mut pallet_ibc::context::Context::<T>::new(),
+			port_id,
+			channel_id,
+			channel_end,
+		)
 	}
 
 	fn store_next_sequence_send(
@@ -226,8 +306,13 @@ impl<T: Config> ChannelKeeper for IbcTransferModule<T> {
 		port_id: PortId,
 		channel_id: ChannelId,
 		seq: Sequence,
-	) -> Result<(), Ics04Error> {
-		ChannelKeeper::store_next_sequence_send(&mut pallet_ibc::context::Context::<T>::new(), port_id, channel_id, seq)
+	) -> Result<(), PacketError> {
+		ChannelKeeper::store_next_sequence_send(
+			&mut pallet_ibc::context::Context::<T>::new(),
+			port_id,
+			channel_id,
+			seq,
+		)
 	}
 
 	fn store_next_sequence_recv(
@@ -235,8 +320,13 @@ impl<T: Config> ChannelKeeper for IbcTransferModule<T> {
 		port_id: PortId,
 		channel_id: ChannelId,
 		seq: Sequence,
-	) -> Result<(), Ics04Error> {
-		ChannelKeeper::store_next_sequence_recv(&mut pallet_ibc::context::Context::<T>::new(), port_id, channel_id, seq)
+	) -> Result<(), PacketError> {
+		ChannelKeeper::store_next_sequence_recv(
+			&mut pallet_ibc::context::Context::<T>::new(),
+			port_id,
+			channel_id,
+			seq,
+		)
 	}
 
 	fn store_next_sequence_ack(
@@ -244,8 +334,13 @@ impl<T: Config> ChannelKeeper for IbcTransferModule<T> {
 		port_id: PortId,
 		channel_id: ChannelId,
 		seq: Sequence,
-	) -> Result<(), Ics04Error> {
-		ChannelKeeper::store_next_sequence_ack(&mut pallet_ibc::context::Context::<T>::new(), port_id, channel_id, seq)
+	) -> Result<(), PacketError> {
+		ChannelKeeper::store_next_sequence_ack(
+			&mut pallet_ibc::context::Context::<T>::new(),
+			port_id,
+			channel_id,
+			seq,
+		)
 	}
 
 	fn increase_channel_counter(&mut self) {

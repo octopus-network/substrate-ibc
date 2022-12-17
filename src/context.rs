@@ -1,7 +1,5 @@
 use crate::Config;
-use alloc::sync::Arc;
-use alloc::string::String;
-use alloc::borrow::ToOwned;
+use alloc::{borrow::ToOwned, string::String, sync::Arc};
 use sp_std::marker::PhantomData;
 
 use ibc::{
@@ -35,9 +33,8 @@ pub struct Context<T: Config> {
 
 impl<T: Config> Context<T> {
 	pub fn new() -> Self {
-		let r = SubstrateRouterBuilder::default()
-			.build();
-			
+		let r = SubstrateRouterBuilder::default().build();
+
 		Self { _pd: PhantomData::default(), router: r }
 	}
 
