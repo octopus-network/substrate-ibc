@@ -7,7 +7,7 @@ use ibc::{
 	core::{
 		ics02_client::{
 			client_state::ClientState,
-			error::{Error, ErrorDetail},
+			error::ClientError,
 			handler::{dispatch, ClientResult::Update},
 			msgs::{update_client::MsgUpdateClient, ClientMsg},
 		},
@@ -87,8 +87,8 @@ fn test_update_nonexisting_client() {
 		let output = dispatch(&ctx, ClientMsg::UpdateClient(msg.clone()));
 
 		match output {
-			Err(Error(ErrorDetail::ClientNotFound(e), _)) => {
-				assert_eq!(e.client_id, msg.client_id);
+			Err(ClientError::ClientNotFound { client_id: e }) => {
+				assert_eq!(e, msg.client_id);
 			},
 			_ => {
 				panic!("expected ClientNotFound error, instead got {:?}", output)

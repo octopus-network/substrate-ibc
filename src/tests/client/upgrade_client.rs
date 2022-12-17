@@ -10,7 +10,7 @@ use core::str::FromStr;
 use ibc::{
 	core::{
 		ics02_client::{
-			error::{Error, ErrorDetail},
+			error::ClientError,
 			handler::{dispatch, ClientResult::Upgrade},
 			msgs::{upgrade_client::MsgUpgradeClient, ClientMsg},
 		},
@@ -88,8 +88,8 @@ fn test_upgrade_nonexisting_client() {
 		let output = dispatch(&ctx, ClientMsg::UpgradeClient(msg.clone()));
 
 		match output {
-			Err(Error(ErrorDetail::ClientNotFound(e), _)) => {
-				assert_eq!(e.client_id, msg.client_id);
+			Err(ClientError::ClientNotFound { client_id: e }) => {
+				assert_eq!(e, msg.client_id);
 			},
 			_ => {
 				panic!("expected ClientNotFound error, instead got {:?}", output);
@@ -120,10 +120,10 @@ fn test_upgrade_client_low_height() {
 		let output = dispatch(&ctx, ClientMsg::UpgradeClient(msg.clone()));
 
 		match output {
-			Err(Error(ErrorDetail::LowUpgradeHeight(e), _)) => {
-				assert_eq!(e.upgraded_height, Height::new(0, 42).unwrap());
+			Err(ClientError::LowUpgradeHeight { upgraded_height, client_height }) => {
+				assert_eq!(upgraded_height, Height::new(0, 42).unwrap());
 				assert_eq!(
-					e.client_height,
+					client_height,
 					MockClientState::try_from(msg.client_state).unwrap().latest_height()
 				);
 			},

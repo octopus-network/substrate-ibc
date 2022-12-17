@@ -68,7 +68,7 @@ fn conn_open_ack_msg_processing() {
          ctx: Context<PalletIbcTest>,
          msg: ConnectionMsg,
          want_pass: bool,
-         match_error: Box<dyn FnOnce(error::Error)>,
+         match_error: Box<dyn FnOnce(error::ConnectionError)>,
      }
 
      let msg_ack =
@@ -141,13 +141,13 @@ fn conn_open_ack_msg_processing() {
              ctx: default_context
                  .with_client(&client_id, proof_height)
                  .with_connection(conn_id.clone(), conn_end_open),
-             msg: ConnectionMsg::ConnectionOpenAck(Box::new(msg_ack)),
+             msg: ConnectionMsg::ConnectionOpenAck(msg_ack),
              want_pass: false,
              match_error: {
                  let connection_id = conn_id;
-                 Box::new(move |e| match e.detail() {
-                     error::ErrorDetail::ConnectionMismatch(e) => {
-                         assert_eq!(e.connection_id, connection_id);
+                 Box::new(move |e| match e {
+                     error::ConnectionError::ConnectionMismatch{ connection_id: e } => {
+                         assert_eq!(e, connection_id);
                      }
                      _ => {
                          panic!("Expected ConnectionMismatch error");

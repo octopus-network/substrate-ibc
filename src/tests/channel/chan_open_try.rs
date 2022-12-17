@@ -10,7 +10,7 @@ use ibc::{
 		},
 		ics04_channel::{
 			channel::{ChannelEnd, State},
-			error,
+			error::ChannelError,
 			handler::channel_dispatch,
 			msgs::{chan_open_try::MsgChannelOpenTry, ChannelMsg},
 		},
@@ -62,7 +62,7 @@ fn chan_open_try_msg_processing() {
         ctx: Context<PalletIbcTest>,
         msg: ChannelMsg,
         want_pass: bool,
-        match_error: Box<dyn FnOnce(error::ErrorDetail)>,
+        match_error: Box<dyn FnOnce(ChannelError)>,
     }
 
     // Some general-purpose variable to parametrize the messages and the context.
@@ -208,7 +208,7 @@ fn chan_open_try_msg_processing() {
                     e,
                 );
 
-                (test.match_error)(e.0);
+                (test.match_error)(e);
             }
         }
     }
