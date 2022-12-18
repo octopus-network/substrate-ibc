@@ -5,8 +5,6 @@ use crate::{
 	ClientProcessedTimes, Config, IbcChannelId, NextSequenceAck, NextSequenceRecv,
 	NextSequenceSend, PacketCommitment, PacketReceipt, Pallet, Store, REVISION_NUMBER,
 };
-use sp_std::{boxed::Box, vec, vec::Vec};
-
 use core::{str::FromStr, time::Duration};
 use ibc::{
 	core::{
@@ -39,6 +37,8 @@ use ibc::{
 	Height,
 };
 use ibc_proto::protobuf::Protobuf;
+use sp_core::Get;
+use sp_std::{boxed::Box, vec, vec::Vec};
 
 impl<T: Config> ChannelReader for Context<T> {
 	fn channel_end(
@@ -269,7 +269,7 @@ impl<T: Config> ChannelReader for Context<T> {
 	}
 
 	fn max_expected_time_per_block(&self) -> Duration {
-		Duration::from_secs(6)
+		Duration::from_secs(T::ExpectedBlockTime::get())
 	}
 }
 

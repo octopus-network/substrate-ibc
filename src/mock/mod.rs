@@ -188,9 +188,14 @@ pub const SLOT_DURATION: Moment = MILLISECS_PER_BLOCK;
 pub type AssetBalance = u128;
 pub type AssetId = u32;
 
+parameter_types! {
+	pub const ExpectedBlockTime: u64 = 6;
+}
+
 impl pallet::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type TimeProvider = pallet_timestamp::Pallet<Test>;
+	type ExpectedBlockTime = ExpectedBlockTime;
 }
 
 // Build genesis storage according to the mock runtime.

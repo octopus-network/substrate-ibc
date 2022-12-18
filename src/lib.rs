@@ -82,6 +82,8 @@ pub mod pallet {
 
 		/// The provider providing timestamp of host chain
 		type TimeProvider: UnixTime;
+
+		type ExpectedBlockTime: Get<u64>;
 	}
 
 	#[pallet::pallet]
