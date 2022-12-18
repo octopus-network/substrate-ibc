@@ -1,9 +1,12 @@
 use crate::{
-	context::Context,
-	prelude::{format, String, ToString},
-	Acknowledgements, ChannelCounter, Channels, ChannelsConnection, ClientProcessedHeights,
-	ClientProcessedTimes, Config, IbcChannelId, NextSequenceAck, NextSequenceRecv,
-	NextSequenceSend, PacketCommitment, PacketReceipt, Pallet, Store, REVISION_NUMBER,
+	context::Context, Acknowledgements, ChannelCounter, Channels, ChannelsConnection,
+	ClientProcessedHeights, ClientProcessedTimes, Config, IbcChannelId, NextSequenceAck,
+	NextSequenceRecv, NextSequenceSend, PacketCommitment, PacketReceipt, Pallet, Store,
+	REVISION_NUMBER,
+};
+pub use alloc::{
+	format,
+	string::{String, ToString},
 };
 use core::{str::FromStr, time::Duration};
 use ibc::{

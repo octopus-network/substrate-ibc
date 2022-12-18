@@ -1,9 +1,10 @@
 use crate::{
-	context::Context,
-	host::TENDERMINT_CLIENT_TYPE,
-	prelude::{format, String, ToString},
-	ClientCounter, ClientProcessedHeights, ClientProcessedTimes, ClientStates, Clients, Config,
-	ConsensusStates, REVISION_NUMBER,
+	context::Context, host::TENDERMINT_CLIENT_TYPE, ClientCounter, ClientProcessedHeights,
+	ClientProcessedTimes, ClientStates, Clients, Config, ConsensusStates, REVISION_NUMBER,
+};
+pub use alloc::{
+	format,
+	string::{String, ToString},
 };
 use sp_std::{boxed::Box, vec::Vec};
 

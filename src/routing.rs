@@ -1,7 +1,7 @@
-use crate::{
-	context::Context,
-	prelude::{format, String},
-	Config,
+use crate::{context::Context, Config};
+pub use alloc::{
+	format,
+	string::{String, ToString},
 };
 use ibc::core::ics26_routing::context::{Module, ModuleId, RouterBuilder, RouterContext};
 use sp_std::{

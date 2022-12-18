@@ -16,11 +16,13 @@ extern crate core;
 
 pub use pallet::*;
 
-use crate::prelude::String;
+pub use alloc::{
+	format,
+	string::{String, ToString},
+};
 use frame_system::ensure_signed;
 use ibc::core::ics24_host::identifier::ChannelId as IbcChannelId;
 use sp_std::{fmt::Debug, vec, vec::Vec};
-
 pub mod channel;
 pub mod client;
 pub mod connection;
@@ -29,7 +31,6 @@ pub mod errors;
 pub mod events;
 pub mod host;
 pub mod port;
-pub mod prelude;
 pub mod relayer;
 pub mod routing;
 pub mod utils;

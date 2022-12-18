@@ -1,8 +1,9 @@
 use core::marker::PhantomData;
 
-use crate::{
-	prelude::{String, ToString},
-	Config, Error, REVISION_NUMBER,
+use crate::{Config, Error, REVISION_NUMBER};
+pub use alloc::{
+	format,
+	string::{String, ToString},
 };
 use ibc::{
 	core::{

@@ -2,8 +2,11 @@ use core::marker::PhantomData;
 
 use crate::{
 	host::{ClientId, ClientType, ConnectionId, Height},
-	prelude::{format, String},
 	Config, Error, Event,
+};
+pub use alloc::{
+	format,
+	string::{String, ToString},
 };
 use codec::{Decode, Encode};
 use ibc::{core::ics26_routing, events::IbcEvent as RawIbcEvent};
