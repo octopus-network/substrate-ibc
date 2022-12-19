@@ -200,9 +200,14 @@ impl pallet_ics20_transfer::Config for Test {
 pub type AssetBalance = u128;
 pub type AssetId = u32;
 
+parameter_types! {
+	pub const ExpectedBlockTime: u64 = 6;
+}
+
 impl pallet_ibc::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type TimeProvider = pallet_timestamp::Pallet<Test>;
+	type ExpectedBlockTime = ExpectedBlockTime;
 }
 
 // Build genesis storage according to the mock runtime.

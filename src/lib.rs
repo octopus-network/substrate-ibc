@@ -35,13 +35,7 @@ pub mod relayer;
 pub mod routing;
 pub mod utils;
 
-pub use crate::{
-	context::Context,
-	host::{
-		ChannelId, ClientId, ClientType, ConnectionId, Height, Order, Packet, PortId, Sequence,
-		TimeoutHeight, Timestamp, Version,
-	},
-};
+pub use crate::context::Context;
 
 pub const LOG_TARGET: &str = "runtime::pallet-ibc";
 pub const REVISION_NUMBER: u64 = 0;
@@ -55,20 +49,19 @@ mod tests;
 #[frame_support::pallet]
 pub mod pallet {
 	use super::{errors, *};
-	use crate::{events::ModuleEvent, host::Height};
+	use crate::events::ModuleEvent;
 	use frame_support::{pallet_prelude::*, traits::UnixTime};
 	use frame_system::pallet_prelude::*;
 	use ibc::{
 		core::{
-			ics02_client::{client_type::ClientType as IbcClientType, height::Height as IbcHeight},
-			ics04_channel::packet::Sequence as IbcSequence,
-			ics24_host::identifier::{
-				ChannelId as IbcChannelId, ClientId as IbcClientId,
-				ConnectionId as IbcConnectionId, PortId as IbcPortId,
+			ics02_client::{client_type::ClientType, height::Height},
+			ics04_channel::{
+				channel::Order, packet::Sequence, timeout::TimeoutHeight, Version as ChannelVersion,
 			},
+			ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
 			ics26_routing::handler::MsgReceipt,
 		},
-		timestamp::Timestamp as IbcTimestamp,
+		timestamp::Timestamp,
 	};
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
@@ -96,25 +89,18 @@ pub mod pallet {
 	/// Key: client_id
 	/// value: ClientState
 	pub type ClientStates<T: Config> =
-		StorageMap<_, Blake2_128Concat, IbcClientId, Vec<u8>, ValueQuery>;
+		StorageMap<_, Blake2_128Concat, ClientId, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
 	/// key1: client_id
 	/// key2: height
 	/// value: timestamp
-	pub type ClientProcessedTimes<T: Config> = StorageDoubleMap<
-		_,
-		Blake2_128Concat,
-		IbcClientId,
-		Blake2_128Concat,
-		IbcHeight,
-		u64,
-		ValueQuery,
-	>;
+	pub type ClientProcessedTimes<T: Config> =
+		StorageDoubleMap<_, Blake2_128Concat, ClientId, Blake2_128Concat, Height, u64, ValueQuery>;
 
 	#[pallet::type_value]
-	pub fn DefaultIbcHeight() -> IbcHeight {
-		IbcHeight::new(0, 1).expect("Never falied")
+	pub fn DefaultIbcHeight() -> Height {
+		Height::new(0, 1).expect("Never falied")
 	}
 
 	#[pallet::storage]
@@ -124,10 +110,10 @@ pub mod pallet {
 	pub type ClientProcessedHeights<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
-		IbcClientId,
+		ClientId,
 		Blake2_128Concat,
-		IbcHeight,
-		IbcHeight,
+		Height,
+		Height,
 		ValueQuery,
 		DefaultIbcHeight,
 	>;
@@ -139,9 +125,9 @@ pub mod pallet {
 	pub type ConsensusStates<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
-		IbcClientId,
+		ClientId,
 		Blake2_128Concat,
-		IbcHeight,
+		Height,
 		Vec<u8>,
 		ValueQuery,
 	>;
@@ -150,7 +136,7 @@ pub mod pallet {
 	/// key: connection_id
 	/// value: ConnectionEnd
 	pub type Connections<T: Config> =
-		StorageMap<_, Blake2_128Concat, IbcConnectionId, Vec<u8>, ValueQuery>;
+		StorageMap<_, Blake2_128Concat, ConnectionId, Vec<u8>, ValueQuery>;
 
 	#[pallet::storage]
 	/// key1: port_id
@@ -159,9 +145,9 @@ pub mod pallet {
 	pub type Channels<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
-		IbcPortId,
+		PortId,
 		Blake2_128Concat,
-		IbcChannelId,
+		ChannelId,
 		Vec<u8>,
 		ValueQuery,
 	>;
@@ -169,13 +155,8 @@ pub mod pallet {
 	#[pallet::storage]
 	/// key: connection_id
 	/// value: Vec<(port_id, channel_id)>
-	pub type ChannelsConnection<T: Config> = StorageMap<
-		_,
-		Blake2_128Concat,
-		IbcConnectionId,
-		Vec<(IbcPortId, IbcChannelId)>,
-		ValueQuery,
-	>;
+	pub type ChannelsConnection<T: Config> =
+		StorageMap<_, Blake2_128Concat, ConnectionId, Vec<(PortId, ChannelId)>, ValueQuery>;
 
 	#[pallet::storage]
 	/// Key1: port_id
@@ -184,10 +165,10 @@ pub mod pallet {
 	pub type NextSequenceSend<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
-		IbcPortId,
+		PortId,
 		Blake2_128Concat,
-		IbcChannelId,
-		IbcSequence,
+		ChannelId,
+		Sequence,
 		ValueQuery,
 	>;
 
@@ -198,10 +179,10 @@ pub mod pallet {
 	pub type NextSequenceRecv<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
-		IbcPortId,
+		PortId,
 		Blake2_128Concat,
-		IbcChannelId,
-		IbcSequence,
+		ChannelId,
+		Sequence,
 		ValueQuery,
 	>;
 
@@ -212,10 +193,10 @@ pub mod pallet {
 	pub type NextSequenceAck<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
-		IbcPortId,
+		PortId,
 		Blake2_128Concat,
-		IbcChannelId,
-		IbcSequence,
+		ChannelId,
+		Sequence,
 		ValueQuery,
 	>;
 
@@ -227,30 +208,24 @@ pub mod pallet {
 	pub type Acknowledgements<T: Config> = StorageNMap<
 		_,
 		(
-			NMapKey<Blake2_128Concat, IbcPortId>,
-			NMapKey<Blake2_128Concat, IbcChannelId>,
-			NMapKey<Blake2_128Concat, IbcSequence>,
+			NMapKey<Blake2_128Concat, PortId>,
+			NMapKey<Blake2_128Concat, ChannelId>,
+			NMapKey<Blake2_128Concat, Sequence>,
 		),
 		Vec<u8>,
 		ValueQuery,
 	>;
 
 	#[pallet::type_value]
-	pub fn DefaultIbcClientType() -> IbcClientType {
-		IbcClientType::new("07-tendermint".to_string())
+	pub fn DefaultIbcClientType() -> ClientType {
+		ClientType::new("07-tendermint".to_string())
 	}
 
 	#[pallet::storage]
 	/// key: client_id
 	/// value: ClientType
-	pub type Clients<T: Config> = StorageMap<
-		_,
-		Blake2_128Concat,
-		IbcClientId,
-		IbcClientType,
-		ValueQuery,
-		DefaultIbcClientType,
-	>;
+	pub type Clients<T: Config> =
+		StorageMap<_, Blake2_128Concat, ClientId, ClientType, ValueQuery, DefaultIbcClientType>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn client_counter)]
@@ -270,7 +245,7 @@ pub mod pallet {
 	/// key: ClientId
 	/// value: ConnectionId
 	pub type ConnectionClient<T: Config> =
-		StorageMap<_, Blake2_128Concat, IbcClientId, IbcConnectionId, ValueQuery>;
+		StorageMap<_, Blake2_128Concat, ClientId, ConnectionId, ValueQuery>;
 
 	#[pallet::storage]
 	/// ReceiptsPath(port_id, channel_id, sequence) => receipt
@@ -281,9 +256,9 @@ pub mod pallet {
 	pub type PacketReceipt<T: Config> = StorageNMap<
 		_,
 		(
-			NMapKey<Blake2_128Concat, IbcPortId>,
-			NMapKey<Blake2_128Concat, IbcChannelId>,
-			NMapKey<Blake2_128Concat, IbcSequence>,
+			NMapKey<Blake2_128Concat, PortId>,
+			NMapKey<Blake2_128Concat, ChannelId>,
+			NMapKey<Blake2_128Concat, Sequence>,
 		),
 		Vec<u8>,
 		ValueQuery,
@@ -297,9 +272,9 @@ pub mod pallet {
 	pub type PacketCommitment<T: Config> = StorageNMap<
 		_,
 		(
-			NMapKey<Blake2_128Concat, IbcPortId>,
-			NMapKey<Blake2_128Concat, IbcChannelId>,
-			NMapKey<Blake2_128Concat, IbcSequence>,
+			NMapKey<Blake2_128Concat, PortId>,
+			NMapKey<Blake2_128Concat, ChannelId>,
+			NMapKey<Blake2_128Concat, Sequence>,
 		),
 		Vec<u8>,
 		ValueQuery,
@@ -314,172 +289,164 @@ pub mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// Client created event
-		CreateClient {
-			client_id: ClientId<T>,
-			client_type: ClientType<T>,
-			consensus_height: Height<T>,
-		},
+		CreateClient { client_id: ClientId, client_type: ClientType, consensus_height: Height },
 		/// Client updated event
 		UpdateClient {
-			client_id: ClientId<T>,
-			client_type: ClientType<T>,
-			consensus_height: Height<T>,
-			consensus_heights: Vec<Height<T>>,
+			client_id: ClientId,
+			client_type: ClientType,
+			consensus_height: Height,
+			consensus_heights: Vec<Height>,
 			header: ibc_support::Any,
 		},
 		/// Client upgraded event
-		UpgradeClient {
-			client_id: ClientId<T>,
-			client_type: ClientType<T>,
-			consensus_height: Height<T>,
-		},
+		UpgradeClient { client_id: ClientId, client_type: ClientType, consensus_height: Height },
 		/// Client misbehaviour event
-		ClientMisbehaviour { client_id: ClientId<T>, client_type: ClientType<T> },
+		ClientMisbehaviour { client_id: ClientId, client_type: ClientType },
 		/// Connection open init event
 		OpenInitConnection {
-			connection_id: ConnectionId<T>,
-			client_id: ClientId<T>,
-			counterparty_connection_id: Option<ConnectionId<T>>,
-			counterparty_client_id: ClientId<T>,
+			connection_id: ConnectionId,
+			client_id: ClientId,
+			counterparty_connection_id: Option<ConnectionId>,
+			counterparty_client_id: ClientId,
 		},
 		/// Connection open try event
 		OpenTryConnection {
-			connection_id: ConnectionId<T>,
-			client_id: ClientId<T>,
-			counterparty_connection_id: Option<ConnectionId<T>>,
-			counterparty_client_id: ClientId<T>,
+			connection_id: ConnectionId,
+			client_id: ClientId,
+			counterparty_connection_id: Option<ConnectionId>,
+			counterparty_client_id: ClientId,
 		},
 		/// Connection open acknowledgement event
 		OpenAckConnection {
-			connection_id: ConnectionId<T>,
-			client_id: ClientId<T>,
-			counterparty_connection_id: Option<ConnectionId<T>>,
-			counterparty_client_id: ClientId<T>,
+			connection_id: ConnectionId,
+			client_id: ClientId,
+			counterparty_connection_id: Option<ConnectionId>,
+			counterparty_client_id: ClientId,
 		},
 		/// Connection open confirm event
 		OpenConfirmConnection {
-			connection_id: ConnectionId<T>,
-			client_id: ClientId<T>,
-			counterparty_connection_id: Option<ConnectionId<T>>,
-			counterparty_client_id: ClientId<T>,
+			connection_id: ConnectionId,
+			client_id: ClientId,
+			counterparty_connection_id: Option<ConnectionId>,
+			counterparty_client_id: ClientId,
 		},
 		/// Channel open init event
 		OpenInitChannel {
-			port_id: PortId<T>,
-			channel_id: ChannelId<T>,
-			counterparty_port_id: PortId<T>,
-			connection_id: ConnectionId<T>,
-			version: Version<T>,
+			port_id: PortId,
+			channel_id: ChannelId,
+			counterparty_port_id: PortId,
+			connection_id: ConnectionId,
+			version: ChannelVersion,
 		},
 		/// Channel open try event
 		OpenTryChannel {
-			port_id: PortId<T>,
-			channel_id: ChannelId<T>,
-			counterparty_port_id: PortId<T>,
-			counterparty_channel_id: ChannelId<T>,
-			connection_id: ConnectionId<T>,
-			version: Version<T>,
+			port_id: PortId,
+			channel_id: ChannelId,
+			counterparty_port_id: PortId,
+			counterparty_channel_id: ChannelId,
+			connection_id: ConnectionId,
+			version: ChannelVersion,
 		},
 		/// Channel open acknowledgement event
 		OpenAckChannel {
-			port_id: PortId<T>,
-			channel_id: ChannelId<T>,
-			counterparty_port_id: PortId<T>,
-			counterparty_channel_id: ChannelId<T>,
-			connection_id: ConnectionId<T>,
+			port_id: PortId,
+			channel_id: ChannelId,
+			counterparty_port_id: PortId,
+			counterparty_channel_id: ChannelId,
+			connection_id: ConnectionId,
 		},
 		/// Channel open confirm event
 		OpenConfirmChannel {
-			port_id: PortId<T>,
-			channel_id: ChannelId<T>,
-			counterparty_port_id: PortId<T>,
-			counterparty_channel_id: ChannelId<T>,
-			connection_id: ConnectionId<T>,
+			port_id: PortId,
+			channel_id: ChannelId,
+			counterparty_port_id: PortId,
+			counterparty_channel_id: ChannelId,
+			connection_id: ConnectionId,
 		},
 		/// Channel close init event
 		CloseInitChannel {
-			port_id: PortId<T>,
-			channel_id: ChannelId<T>,
-			counterparty_port_id: PortId<T>,
-			counterparty_channel_id: ChannelId<T>,
-			connection_id: ConnectionId<T>,
+			port_id: PortId,
+			channel_id: ChannelId,
+			counterparty_port_id: PortId,
+			counterparty_channel_id: ChannelId,
+			connection_id: ConnectionId,
 		},
 		/// Channel close confirm event
 		CloseConfirmChannel {
-			port_id: PortId<T>,
-			channel_id: ChannelId<T>,
-			counterparty_port_id: PortId<T>,
-			counterparty_channel_id: ChannelId<T>,
-			connection_id: ConnectionId<T>,
+			port_id: PortId,
+			channel_id: ChannelId,
+			counterparty_port_id: PortId,
+			counterparty_channel_id: ChannelId,
+			connection_id: ConnectionId,
 		},
 		/// Send packet event
 		SendPacket {
 			packet_data: Vec<u8>,
-			timeout_height: TimeoutHeight<T>,
-			timeout_timestamp: Timestamp<T>,
+			timeout_height: TimeoutHeight,
+			timeout_timestamp: Timestamp,
 			sequence: Sequence,
-			src_port_id: PortId<T>,
-			src_channel_id: ChannelId<T>,
-			dst_port_id: PortId<T>,
-			dst_channel_id: ChannelId<T>,
+			src_port_id: PortId,
+			src_channel_id: ChannelId,
+			dst_port_id: PortId,
+			dst_channel_id: ChannelId,
 			channel_ordering: Order,
-			src_connection_id: ConnectionId<T>,
+			src_connection_id: ConnectionId,
 		},
 		/// Receive packet event
 		ReceivePacket {
 			packet_data: Vec<u8>,
-			timeout_height: TimeoutHeight<T>,
-			timeout_timestamp: Timestamp<T>,
+			timeout_height: TimeoutHeight,
+			timeout_timestamp: Timestamp,
 			sequence: Sequence,
-			src_port_id: PortId<T>,
-			src_channel_id: ChannelId<T>,
-			dst_port_id: PortId<T>,
-			dst_channel_id: ChannelId<T>,
+			src_port_id: PortId,
+			src_channel_id: ChannelId,
+			dst_port_id: PortId,
+			dst_channel_id: ChannelId,
 			channel_ordering: Order,
-			dst_connection_id: ConnectionId<T>,
+			dst_connection_id: ConnectionId,
 		},
 		/// WriteAcknowledgement packet event
 		WriteAcknowledgement {
 			packet_data: Vec<u8>,
-			timeout_height: TimeoutHeight<T>,
-			timeout_timestamp: Timestamp<T>,
+			timeout_height: TimeoutHeight,
+			timeout_timestamp: Timestamp,
 			sequence: Sequence,
-			src_port_id: PortId<T>,
-			src_channel_id: ChannelId<T>,
-			dst_port_id: PortId<T>,
-			dst_channel_id: ChannelId<T>,
+			src_port_id: PortId,
+			src_channel_id: ChannelId,
+			dst_port_id: PortId,
+			dst_channel_id: ChannelId,
 			acknowledgement: Vec<u8>,
-			dst_connection_id: ConnectionId<T>,
+			dst_connection_id: ConnectionId,
 		},
 		/// Acknowledgements packet event
 		AcknowledgePacket {
-			timeout_height: TimeoutHeight<T>,
-			timeout_timestamp: Timestamp<T>,
+			timeout_height: TimeoutHeight,
+			timeout_timestamp: Timestamp,
 			sequence: Sequence,
-			src_port_id: PortId<T>,
-			src_channel_id: ChannelId<T>,
-			dst_port_id: PortId<T>,
-			dst_channel_id: ChannelId<T>,
+			src_port_id: PortId,
+			src_channel_id: ChannelId,
+			dst_port_id: PortId,
+			dst_channel_id: ChannelId,
 			channel_ordering: Order,
-			src_connection_id: ConnectionId<T>,
+			src_connection_id: ConnectionId,
 		},
 		/// Timeout packet event
 		TimeoutPacket {
-			timeout_height: TimeoutHeight<T>,
-			timeout_timestamp: Timestamp<T>,
+			timeout_height: TimeoutHeight,
+			timeout_timestamp: Timestamp,
 			sequence: Sequence,
-			src_port_id: PortId<T>,
-			src_channel_id: ChannelId<T>,
-			dst_port_id: PortId<T>,
-			dst_channel_id: ChannelId<T>,
+			src_port_id: PortId,
+			src_channel_id: ChannelId,
+			dst_port_id: PortId,
+			dst_channel_id: ChannelId,
 		},
 		/// TimoutOnClose packet event
 		ChannelClosed {
-			port_id: PortId<T>,
-			channel_id: ChannelId<T>,
-			counterparty_port_id: PortId<T>,
-			maybe_counterparty_channel_id: Option<ChannelId<T>>,
-			connection_id: ConnectionId<T>,
+			port_id: PortId,
+			channel_id: ChannelId,
+			counterparty_port_id: PortId,
+			maybe_counterparty_channel_id: Option<ChannelId>,
+			connection_id: ConnectionId,
 			channel_ordering: Order,
 		},
 		/// App Module event
