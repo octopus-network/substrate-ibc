@@ -63,7 +63,11 @@ pub mod pallet {
 			ics03_connection::connection::ConnectionEnd,
 			ics04_channel::{
 				channel::{ChannelEnd, Order},
-				packet::Sequence,
+				commitment::{
+					AcknowledgementCommitment as IbcAcknowledgementCommitment,
+					PacketCommitment as IbcPacketCommitment,
+				},
+				packet::{Receipt, Sequence},
 				timeout::TimeoutHeight,
 				Version as ChannelVersion,
 			},
@@ -169,7 +173,7 @@ pub mod pallet {
 			NMapKey<Blake2_128Concat, ChannelId>,
 			NMapKey<Blake2_128Concat, Sequence>,
 		),
-		Vec<u8>,
+		IbcAcknowledgementCommitment,
 	>;
 
 	#[pallet::storage]
@@ -209,7 +213,7 @@ pub mod pallet {
 			NMapKey<Blake2_128Concat, ChannelId>,
 			NMapKey<Blake2_128Concat, Sequence>,
 		),
-		Vec<u8>,
+		Receipt,
 	>;
 
 	#[pallet::storage]
@@ -224,7 +228,7 @@ pub mod pallet {
 			NMapKey<Blake2_128Concat, ChannelId>,
 			NMapKey<Blake2_128Concat, Sequence>,
 		),
-		Vec<u8>,
+		IbcPacketCommitment,
 	>;
 
 	#[pallet::storage]

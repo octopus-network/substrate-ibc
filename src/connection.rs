@@ -49,12 +49,12 @@ impl<T: Config> ConnectionReader for Context<T> {
 		let block_number = format!("{:?}", <frame_system::Pallet<T>>::block_number());
 		let current_height: u64 = block_number.parse().unwrap_or_default();
 		<OldHeight<T>>::put(current_height);
-		Ok(Height::new(REVISION_NUMBER, current_height).unwrap())
+		Height::new(REVISION_NUMBER, current_height).map_err(ConnectionError::Client)
 	}
 
 	fn host_oldest_height(&self) -> Result<Height, ConnectionError> {
 		let height = <OldHeight<T>>::get();
-		Ok(Height::new(REVISION_NUMBER, height).unwrap())
+		Height::new(REVISION_NUMBER, height).map_err(ConnectionError::Client)
 	}
 
 	fn commitment_prefix(&self) -> CommitmentPrefix {
@@ -93,6 +93,7 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		connection_end: &ConnectionEnd,
 	) -> Result<(), ConnectionError> {
 		<Connections<T>>::insert(connection_id, connection_end);
+
 		Ok(())
 	}
 
@@ -108,10 +109,9 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 
 	fn increase_connection_counter(&mut self) {
 		let _ = <ConnectionCounter<T>>::try_mutate(|val| -> Result<(), ConnectionError> {
-			let new = val.checked_add(1).ok_or(ConnectionError::Other {
+			*val = val.checked_add(1).ok_or(ConnectionError::Other {
 				description: "increase connection counter overflow!".to_string(),
 			})?;
-			*val = new;
 			Ok(())
 		});
 	}

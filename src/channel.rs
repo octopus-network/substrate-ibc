@@ -125,10 +125,8 @@ impl<T: Config> ChannelReader for Context<T> {
 		channel_id: &ChannelId,
 		seq: Sequence,
 	) -> Result<IbcPacketCommitment, PacketError> {
-		let data = <PacketCommitment<T>>::get((port_id, channel_id, seq))
-			.ok_or(PacketError::PacketCommitmentNotFound { sequence: seq })?;
-		let packet_commitment = IbcPacketCommitment::from(data);
-		Ok(packet_commitment)
+		<PacketCommitment<T>>::get((port_id, channel_id, seq))
+			.ok_or(PacketError::PacketCommitmentNotFound { sequence: seq })
 	}
 
 	fn get_packet_receipt(
@@ -137,19 +135,8 @@ impl<T: Config> ChannelReader for Context<T> {
 		channel_id: &ChannelId,
 		seq: Sequence,
 	) -> Result<Receipt, PacketError> {
-		let data = <PacketReceipt<T>>::get((port_id, channel_id, seq))
-			.ok_or(PacketError::PacketReceiptNotFound { sequence: seq })?;
-		let data = String::from_utf8(data).map_err(|e| PacketError::AppModule {
-			description: format!("Decode packet receipt failed: {:?}", e),
-		})?;
-		let data = match data.as_ref() {
-			"Ok" => Receipt::Ok,
-			e =>
-				return Err(PacketError::AppModule {
-					description: format!("Unknown Receipts {:?}", e),
-				}),
-		};
-		Ok(data)
+		<PacketReceipt<T>>::get((port_id, channel_id, seq))
+			.ok_or(PacketError::PacketReceiptNotFound { sequence: seq })
 	}
 
 	/// Returns the `Acknowledgements` for the given identifier `(PortId, ChannelId, Sequence)`.
@@ -159,11 +146,8 @@ impl<T: Config> ChannelReader for Context<T> {
 		channel_id: &ChannelId,
 		seq: Sequence,
 	) -> Result<IbcAcknowledgementCommitment, PacketError> {
-		let data = <Acknowledgements<T>>::get((port_id, channel_id, seq))
-			.ok_or(PacketError::PacketAcknowledgementNotFound { sequence: seq })?;
-		let acknowledgement = IbcAcknowledgementCommitment::from(data);
-
-		Ok(acknowledgement)
+		<Acknowledgements<T>>::get((port_id, channel_id, seq))
+			.ok_or(PacketError::PacketAcknowledgementNotFound { sequence: seq })
 	}
 
 	/// A hashing function for packet commitments
@@ -175,7 +159,8 @@ impl<T: Config> ChannelReader for Context<T> {
 	fn host_height(&self) -> Result<Height, ChannelError> {
 		let block_number = format!("{:?}", <frame_system::Pallet<T>>::block_number());
 		let current_height: u64 = block_number.parse().unwrap_or_default();
-		Ok(Height::new(REVISION_NUMBER, current_height).unwrap())
+		Height::new(REVISION_NUMBER, current_height)
+			.map_err(|e| ChannelError::Connection(ConnectionError::Client(e)))
 	}
 
 	/// Returns the `AnyConsensusState` for the given identifier `height`.
@@ -235,7 +220,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		seq: Sequence,
 		commitment: IbcPacketCommitment,
 	) -> Result<(), PacketError> {
-		<PacketCommitment<T>>::insert((port_id, channel_id, seq), commitment.into_vec());
+		<PacketCommitment<T>>::insert((port_id, channel_id, seq), commitment);
 
 		Ok(())
 	}
@@ -258,10 +243,6 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		seq: Sequence,
 		receipt: Receipt,
 	) -> Result<(), PacketError> {
-		let receipt = match receipt {
-			Receipt::Ok => "Ok".as_bytes().to_vec(),
-		};
-
 		<PacketReceipt<T>>::insert((port_id, channel_id, seq), receipt);
 
 		Ok(())
@@ -274,7 +255,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		seq: Sequence,
 		ack_commitment: IbcAcknowledgementCommitment,
 	) -> Result<(), PacketError> {
-		<Acknowledgements<T>>::insert((port_id, channel_id, seq), ack_commitment.into_vec());
+		<Acknowledgements<T>>::insert((port_id, channel_id, seq), ack_commitment);
 
 		Ok(())
 	}
@@ -364,10 +345,9 @@ impl<T: Config> ChannelKeeper for Context<T> {
 	/// Should never fail.
 	fn increase_channel_counter(&mut self) {
 		let _ = <ChannelCounter<T>>::try_mutate(|val| -> Result<(), ChannelError> {
-			let new = val.checked_add(1).ok_or(ChannelError::Other {
+			*val = val.checked_add(1).ok_or(ChannelError::Other {
 				description: format!("add channel counter overflow"),
 			})?;
-			*val = new;
 			Ok(())
 		});
 	}
