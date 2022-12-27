@@ -50,15 +50,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		channel_id: &ChannelId,
 	) -> Result<ChannelEnd, ChannelError> {
 		if <Channels<T>>::contains_key(port_id, channel_id) {
-			let data = <Channels<T>>::get(port_id, channel_id);
-
-			let channel_end =
-				ChannelEnd::decode_vec(&data).map_err(|_| ChannelError::ChannelNotFound {
-					port_id: port_id.clone(),
-					channel_id: channel_id.clone(),
-				})?;
-
-			Ok(channel_end)
+			Ok(<Channels<T>>::get(port_id, channel_id))
 		} else {
 			Err(ChannelError::ChannelNotFound {
 				port_id: port_id.clone(),
@@ -368,9 +360,6 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		channel_id: ChannelId,
 		channel_end: ChannelEnd,
 	) -> Result<(), ChannelError> {
-		let channel_end = channel_end.encode_vec().map_err(|e| ChannelError::Other {
-			description: format!("encode channel end failed: {:?}", e),
-		})?;
 		<Channels<T>>::insert(port_id, channel_id, channel_end);
 
 		Ok(())

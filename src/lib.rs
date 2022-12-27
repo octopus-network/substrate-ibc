@@ -46,7 +46,7 @@ mod mock;
 mod tests;
 
 #[cfg(feature = "runtime-benchmarks")]
-pub(crate) mod benchmarks;
+pub mod benchmarks;
 mod weights;
 
 pub use weights::WeightInfo;
@@ -60,8 +60,12 @@ pub mod pallet {
 	use ibc::{
 		core::{
 			ics02_client::{client_type::ClientType, height::Height},
+			ics03_connection::connection::ConnectionEnd,
 			ics04_channel::{
-				channel::Order, packet::Sequence, timeout::TimeoutHeight, Version as ChannelVersion,
+				channel::{ChannelEnd, Order},
+				packet::Sequence,
+				timeout::TimeoutHeight,
+				Version as ChannelVersion,
 			},
 			ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
 			ics26_routing::handler::MsgReceipt,
@@ -141,22 +145,17 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
-	/// key: connection_id
-	/// value: ConnectionEnd
 	pub type Connections<T: Config> =
-		StorageMap<_, Blake2_128Concat, ConnectionId, Vec<u8>, ValueQuery>;
+		StorageMap<_, Blake2_128Concat, ConnectionId, ConnectionEnd, ValueQuery>;
 
 	#[pallet::storage]
-	/// key1: port_id
-	/// key2: channel_id
-	/// value: ChannelEnd
 	pub type Channels<T: Config> = StorageDoubleMap<
 		_,
 		Blake2_128Concat,
 		PortId,
 		Blake2_128Concat,
 		ChannelId,
-		Vec<u8>,
+		ChannelEnd,
 		ValueQuery,
 	>;
 

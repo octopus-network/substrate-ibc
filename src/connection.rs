@@ -31,12 +31,7 @@ use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
 impl<T: Config> ConnectionReader for Context<T> {
 	fn connection_end(&self, conn_id: &ConnectionId) -> Result<ConnectionEnd, ConnectionError> {
 		if <Connections<T>>::contains_key(conn_id) {
-			let data = <Connections<T>>::get(conn_id);
-			let ret = ConnectionEnd::decode_vec(&data).map_err(|e| ConnectionError::Other {
-				description: format!("Decode ConnectionEnd failed: {:?}", e),
-			})?;
-
-			Ok(ret)
+			Ok(<Connections<T>>::get(conn_id))
 		} else {
 			Err(ConnectionError::ConnectionMismatch { connection_id: conn_id.clone() })
 		}
@@ -100,11 +95,7 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		connection_id: ConnectionId,
 		connection_end: &ConnectionEnd,
 	) -> Result<(), ConnectionError> {
-		let data = connection_end.encode_vec().map_err(|e| ConnectionError::Other {
-			description: format!("Encode ConnectionEnd failed: {:?}", e),
-		})?;
-		<Connections<T>>::insert(connection_id, data);
-
+		<Connections<T>>::insert(connection_id, connection_end);
 		Ok(())
 	}
 
