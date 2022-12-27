@@ -11,85 +11,6 @@ use scale_info::TypeInfo;
 use sp_core::RuntimeDebug;
 use sp_std::{str::FromStr, vec::Vec};
 
-/// ibc-rs' `ModuleEvent` representation in substrate
-#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
-pub struct ModuleEvent<T> {
-	pub kind: Vec<u8>,
-	pub module_name: ModuleId<T>,
-	pub attributes: Vec<ModuleEventAttribute>,
-}
-
-impl<T> From<ibc::events::ModuleEvent> for ModuleEvent<T> {
-	fn from(module_event: ibc::events::ModuleEvent) -> Self {
-		Self {
-			kind: module_event.kind.as_bytes().to_vec(),
-			module_name: module_event.module_name.into(),
-			attributes: module_event.attributes.into_iter().map(|event| event.into()).collect(),
-		}
-	}
-}
-
-impl<T: Config> TryFrom<ModuleEvent<T>> for ibc::events::ModuleEvent {
-	type Error = Error<T>;
-
-	fn try_from(module_event: ModuleEvent<T>) -> Result<Self, Self::Error> {
-		Ok(Self {
-			kind: String::from_utf8(module_event.kind).expect("never failed"),
-			module_name: module_event.module_name.try_into()?,
-			attributes: module_event.attributes.into_iter().map(|event| event.into()).collect(),
-		})
-	}
-}
-
-/// ibc-rs' `ModuleId` representation in substrate
-#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
-pub struct ModuleId<T> {
-	pub raw: Vec<u8>,
-	phantom: PhantomData<T>,
-}
-
-impl<T> From<ics26_routing::context::ModuleId> for ModuleId<T> {
-	fn from(module_id: ics26_routing::context::ModuleId) -> Self {
-		Self { raw: format!("{}", module_id).as_bytes().to_vec(), phantom: PhantomData::default() }
-	}
-}
-
-impl<T: Config> TryFrom<ModuleId<T>> for ics26_routing::context::ModuleId {
-	type Error = Error<T>;
-
-	fn try_from(module_id: ModuleId<T>) -> Result<Self, Self::Error> {
-		ics26_routing::context::ModuleId::from_str(
-			&String::from_utf8(module_id.raw).map_err(|_| Error::<T>::DecodeStringFailed)?,
-		)
-		.map_err(|_| Error::<T>::InvalidModuleId)
-	}
-}
-
-/// ibc-rs' `ModuleEventAttribute` representation in substrate
-#[derive(Clone, PartialEq, Eq, Encode, Decode, RuntimeDebug, TypeInfo)]
-pub struct ModuleEventAttribute {
-	pub key: Vec<u8>,
-	pub value: Vec<u8>,
-}
-
-impl From<ibc::events::ModuleEventAttribute> for ModuleEventAttribute {
-	fn from(module_event_attribute: ibc::events::ModuleEventAttribute) -> Self {
-		Self {
-			key: module_event_attribute.key.as_bytes().to_vec(),
-			value: module_event_attribute.value.as_bytes().to_vec(),
-		}
-	}
-}
-
-impl From<ModuleEventAttribute> for ibc::events::ModuleEventAttribute {
-	fn from(module_event_attribute: ModuleEventAttribute) -> Self {
-		Self {
-			key: String::from_utf8(module_event_attribute.key).expect("should not be filled"),
-			value: String::from_utf8(module_event_attribute.value).expect("should not be filled"),
-		}
-	}
-}
-
 impl<T: Config> TryFrom<RawIbcEvent> for Event<T> {
 	type Error = Error<T>;
 
@@ -418,7 +339,7 @@ impl<T: Config> TryFrom<RawIbcEvent> for Event<T> {
 					channel_ordering,
 				})
 			},
-			RawIbcEvent::AppModule(app_module) => Ok(Event::<T>::AppModule(app_module.into())),
+			RawIbcEvent::AppModule(app_module) => Ok(Event::<T>::AppModule(app_module)),
 		}
 	}
 }

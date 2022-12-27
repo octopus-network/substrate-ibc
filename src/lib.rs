@@ -54,7 +54,6 @@ pub use weights::WeightInfo;
 #[frame_support::pallet]
 pub mod pallet {
 	use super::{errors, *};
-	use crate::events::ModuleEvent;
 	use frame_support::{pallet_prelude::*, traits::UnixTime};
 	use frame_system::pallet_prelude::*;
 	use ibc::{
@@ -74,6 +73,7 @@ pub mod pallet {
 			ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
 			ics26_routing::handler::MsgReceipt,
 		},
+		events::ModuleEvent,
 		timestamp::Timestamp,
 	};
 
@@ -401,7 +401,7 @@ pub mod pallet {
 			channel_ordering: Order,
 		},
 		/// App Module event
-		AppModule(ModuleEvent<T>),
+		AppModule(ModuleEvent),
 		/// Ibc errors
 		IbcErrors { errors: Vec<errors::IbcError> },
 	}
