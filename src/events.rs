@@ -20,6 +20,7 @@ impl<T: Config> TryFrom<RawIbcEvent> for Event<T> {
 				let client_id = create_client.client_id().clone();
 				let client_type = create_client.client_type().clone();
 				let consensus_height = create_client.consensus_height().clone();
+
 				Ok(Event::<T>::CreateClient { client_id, client_type, consensus_height })
 			},
 			RawIbcEvent::UpdateClient(update_client) => {
@@ -28,6 +29,7 @@ impl<T: Config> TryFrom<RawIbcEvent> for Event<T> {
 				let consensus_height = update_client.consensus_height().clone();
 				let consensus_heights = update_client.consensus_heights().to_vec();
 				let header = update_client.header();
+
 				Ok(Event::<T>::UpdateClient {
 					client_id,
 					client_type,
@@ -41,6 +43,7 @@ impl<T: Config> TryFrom<RawIbcEvent> for Event<T> {
 				let client_id = upgrade_client.client_id().clone();
 				let client_type = upgrade_client.client_type().clone();
 				let consensus_height = upgrade_client.consensus_height().clone();
+
 				Ok(Event::<T>::UpgradeClient { client_id, client_type, consensus_height })
 			},
 			RawIbcEvent::ClientMisbehaviour(client_misbehaviour) => {
@@ -54,7 +57,6 @@ impl<T: Config> TryFrom<RawIbcEvent> for Event<T> {
 				let client_id = open_init_connection.client_id().clone();
 				let counterparty_connection_id =
 					open_init_connection.counterparty_connection_id().map(|value| value.clone());
-
 				let counterparty_client_id = open_init_connection.counterparty_client_id().clone();
 
 				Ok(Event::<T>::OpenInitConnection {
@@ -69,7 +71,6 @@ impl<T: Config> TryFrom<RawIbcEvent> for Event<T> {
 				let client_id = open_try_connection.client_id().clone();
 				let counterparty_connection_id =
 					open_try_connection.counterparty_connection_id().map(|value| value.clone());
-
 				let counterparty_client_id = open_try_connection.counterparty_client_id().clone();
 
 				Ok(Event::<T>::OpenTryConnection {
@@ -84,7 +85,6 @@ impl<T: Config> TryFrom<RawIbcEvent> for Event<T> {
 				let client_id = open_ack_connection.client_id().clone();
 				let counterparty_connection_id =
 					open_ack_connection.counterparty_connection_id().map(|value| value.clone());
-
 				let counterparty_client_id = open_ack_connection.counterparty_client_id().clone();
 
 				Ok(Event::<T>::OpenAckConnection {
@@ -99,7 +99,6 @@ impl<T: Config> TryFrom<RawIbcEvent> for Event<T> {
 				let client_id = open_confirm_connection.client_id().clone();
 				let counterparty_connection_id =
 					open_confirm_connection.counterparty_connection_id().map(|value| value.clone());
-
 				let counterparty_client_id =
 					open_confirm_connection.counterparty_client_id().clone();
 

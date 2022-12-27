@@ -6,8 +6,6 @@ pub use alloc::{
 	format,
 	string::{String, ToString},
 };
-use sp_std::boxed::Box;
-
 use ibc::{
 	core::{
 		ics02_client::{
@@ -27,6 +25,8 @@ use ibc::{
 	Height,
 };
 use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
+use sp_core::Get;
+use sp_std::boxed::Box;
 
 impl<T: Config> ConnectionReader for Context<T> {
 	fn connection_end(&self, conn_id: &ConnectionId) -> Result<ConnectionEnd, ConnectionError> {
@@ -58,7 +58,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 	}
 
 	fn commitment_prefix(&self) -> CommitmentPrefix {
-		CommitmentPrefix::try_from(b"Ibc".to_vec()).unwrap_or_default()
+		CommitmentPrefix::try_from(T::IbcCommitmentPrefix::get()).unwrap_or_default()
 	}
 
 	fn client_consensus_state(
