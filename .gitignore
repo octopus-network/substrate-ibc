@@ -5,3 +5,4 @@
 .idea
 Cargo.lock
 dprint.json
+.DS_Store

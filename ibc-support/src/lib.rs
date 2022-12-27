@@ -5,6 +5,9 @@ use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
 use sp_std::vec::Vec;
 
+pub mod weights;
+pub use weights::*;
+
 /// A trait handling asset ID and name
 pub trait AssetIdAndNameProvider<AssetId> {
 	type Err;

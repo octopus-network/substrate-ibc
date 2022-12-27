@@ -6,8 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-# ibc crates
-ibc = { version = "0.25.0", default-features = false, git = "https://github.com/cosmos/ibc-rs.git", branch = "main" }
+
+ibc = { version = "0.25.0", default-features = false, git = "https://github.com/octopus-network/ibc-rs.git", branch = "fix-mock", features = ["parity-scale-codec", "mocks-primitives"]}
 ibc-proto = { version = "0.24.0", default-features = false }
 
 # substrate crates
@@ -15,6 +15,8 @@ codec = { package = "parity-scale-codec", version = "3.0.0", default-features = 
 scale-info = { version = "2.1.2", default-features = false, features = ["derive"] }
 sp-runtime = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
 sp-std = { version = "4.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
+frame-benchmarking = { version = "4.0.0-dev", default-features = false, optional = true, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
+frame-support = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
 
 [features]
 default = ['std']
@@ -25,4 +27,10 @@ std = [
   "scale-info/std",
   "sp-runtime/std",
   "sp-std/std",
+  "frame-support/std",
+  "frame-benchmarking?/std",
 ]
+runtime-benchmarks = [
+    "frame-benchmarking/runtime-benchmarks",
+]
+try-runtime = ["frame-support/try-runtime"]
