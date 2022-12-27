@@ -8,13 +8,8 @@ pub use alloc::{
 };
 use sp_std::{boxed::Box, vec::Vec};
 
-#[cfg(test)]
 use crate::host::MOCK_CLIENT_TYPE;
 use frame_support::traits::UnixTime;
-#[cfg(test)]
-use ibc::mock::{
-	client_state::MockClientState, consensus_state::MockConsensusState, header::MockHeader,
-};
 use ibc::{
 	clients::ics07_tendermint::{
 		client_state::ClientState as Ics07ClientState,
@@ -33,6 +28,9 @@ use ibc::{
 			path::{ClientConsensusStatePath, ClientStatePath, ClientTypePath},
 		},
 	},
+	mock::{
+		client_state::MockClientState, consensus_state::MockConsensusState, header::MockHeader,
+	},
 	timestamp::Timestamp,
 	Height,
 };
@@ -40,48 +38,40 @@ use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
 
 impl<T: Config> ClientReader for Context<T> {
 	fn client_type(&self, client_id: &ClientId) -> Result<ClientType, ClientError> {
-		if <Clients<T>>::contains_key(client_id) {
-			let data = <Clients<T>>::get(client_id);
-			match data.as_str() {
-				TENDERMINT_CLIENT_TYPE => Ok(ClientType::new(TENDERMINT_CLIENT_TYPE.into())),
-				#[cfg(test)]
-				MOCK_CLIENT_TYPE => Ok(ClientType::new(MOCK_CLIENT_TYPE.into())),
-				unimplemented =>
-					return Err(ClientError::UnknownClientStateType {
-						client_state_type: unimplemented.to_string(),
-					}),
-			}
-		} else {
-			Err(ClientError::ClientNotFound { client_id: client_id.clone() })
+		let data = <Clients<T>>::get(client_id)
+			.ok_or(ClientError::ClientNotFound { client_id: client_id.clone() })?;
+		match data.as_str() {
+			TENDERMINT_CLIENT_TYPE => Ok(ClientType::new(TENDERMINT_CLIENT_TYPE.into())),
+			MOCK_CLIENT_TYPE => Ok(ClientType::new(MOCK_CLIENT_TYPE.into())),
+			unimplemented =>
+				return Err(ClientError::UnknownClientStateType {
+					client_state_type: unimplemented.to_string(),
+				}),
 		}
 	}
 
 	fn client_state(&self, client_id: &ClientId) -> Result<Box<dyn ClientState>, ClientError> {
-		if <ClientStates<T>>::contains_key(&client_id) {
-			let data = <ClientStates<T>>::get(&client_id);
-			match self.client_type(client_id)?.as_str() {
-				TENDERMINT_CLIENT_TYPE => {
-					let result: Ics07ClientState =
-						Protobuf::<Any>::decode_vec(&data).map_err(|e| ClientError::Other {
-							description: format!("Decode Ics07ClientState failed: {:?}", e),
-						})?;
+		let data = <ClientStates<T>>::get(&client_id)
+			.ok_or(ClientError::ClientNotFound { client_id: client_id.clone() })?;
+		match self.client_type(client_id)?.as_str() {
+			TENDERMINT_CLIENT_TYPE => {
+				let result: Ics07ClientState =
+					Protobuf::<Any>::decode_vec(&data).map_err(|e| ClientError::Other {
+						description: format!("Decode Ics07ClientState failed: {:?}", e),
+					})?;
 
-					Ok(Box::new(result))
-				},
-				#[cfg(test)]
-				MOCK_CLIENT_TYPE => {
-					let result: MockClientState =
-						Protobuf::<Any>::decode_vec(&data).map_err(|e| ClientError::Other {
-							description: format!("Deocode Ics10ClientState failed: {:?}", e),
-						})?;
-					Ok(Box::new(result))
-				},
-				unimplemented => Err(ClientError::UnknownClientStateType {
-					client_state_type: unimplemented.to_string(),
-				}),
-			}
-		} else {
-			Err(ClientError::ClientNotFound { client_id: client_id.clone() })
+				Ok(Box::new(result))
+			},
+			MOCK_CLIENT_TYPE => {
+				let result: MockClientState =
+					Protobuf::<Any>::decode_vec(&data).map_err(|e| ClientError::Other {
+						description: format!("Deocode Ics10ClientState failed: {:?}", e),
+					})?;
+				Ok(Box::new(result))
+			},
+			unimplemented => Err(ClientError::UnknownClientStateType {
+				client_state_type: unimplemented.to_string(),
+			}),
 		}
 	}
 
@@ -101,30 +91,26 @@ impl<T: Config> ClientReader for Context<T> {
 		client_id: &ClientId,
 		height: Height,
 	) -> Result<Box<dyn ConsensusState>, ClientError> {
-		if <ConsensusStates<T>>::contains_key(client_id, height) {
-			let data = <ConsensusStates<T>>::get(client_id, height);
-			match self.client_type(client_id)?.as_str() {
-				TENDERMINT_CLIENT_TYPE => {
-					let result: Ics07ConsensusState =
-						Protobuf::<Any>::decode_vec(&data).map_err(|e| ClientError::Other {
-							description: format!("Decode Ics07ConsensusState failed: {:?}", e),
-						})?;
-					Ok(Box::new(result))
-				},
-				#[cfg(test)]
-				MOCK_CLIENT_TYPE => {
-					let result: MockConsensusState =
-						Protobuf::<Any>::decode_vec(&data).map_err(|e| ClientError::Other {
-							description: format!("Decode MockConsensusState failed: {:?}", e),
-						})?;
-					Ok(Box::new(result))
-				},
-				unimplemented => Err(ClientError::UnknownClientStateType {
-					client_state_type: unimplemented.to_string(),
-				}),
-			}
-		} else {
-			Err(ClientError::ConsensusStateNotFound { client_id: client_id.clone(), height })
+		let data = <ConsensusStates<T>>::get(client_id, height)
+			.ok_or(ClientError::ConsensusStateNotFound { client_id: client_id.clone(), height })?;
+		match self.client_type(client_id)?.as_str() {
+			TENDERMINT_CLIENT_TYPE => {
+				let result: Ics07ConsensusState =
+					Protobuf::<Any>::decode_vec(&data).map_err(|e| ClientError::Other {
+						description: format!("Decode Ics07ConsensusState failed: {:?}", e),
+					})?;
+				Ok(Box::new(result))
+			},
+			MOCK_CLIENT_TYPE => {
+				let result: MockConsensusState =
+					Protobuf::<Any>::decode_vec(&data).map_err(|e| ClientError::Other {
+						description: format!("Decode MockConsensusState failed: {:?}", e),
+					})?;
+				Ok(Box::new(result))
+			},
+			unimplemented => Err(ClientError::UnknownClientStateType {
+				client_state_type: unimplemented.to_string(),
+			}),
 		}
 	}
 
@@ -145,7 +131,9 @@ impl<T: Config> ClientReader for Context<T> {
 		// Search for previous state.
 		for h in heights {
 			if h > height {
-				let data = <ConsensusStates<T>>::get(client_id, height);
+				let data = <ConsensusStates<T>>::get(client_id, height).ok_or(
+					ClientError::ConsensusStateNotFound { client_id: client_id.clone(), height },
+				)?;
 				match self.client_type(client_id)?.as_str() {
 					TENDERMINT_CLIENT_TYPE => {
 						let result: Ics07ConsensusState = Protobuf::<Any>::decode_vec(&data)
@@ -154,7 +142,6 @@ impl<T: Config> ClientReader for Context<T> {
 							})?;
 						return Ok(Some(Box::new(result)))
 					},
-					#[cfg(test)]
 					MOCK_CLIENT_TYPE => {
 						let result: MockConsensusState = Protobuf::<Any>::decode_vec(&data)
 							.map_err(|e| ClientError::Other {
@@ -186,7 +173,9 @@ impl<T: Config> ClientReader for Context<T> {
 		// Search for previous state.
 		for h in heights {
 			if h < height {
-				let data = <ConsensusStates<T>>::get(client_id, height);
+				let data = <ConsensusStates<T>>::get(client_id, height).ok_or(
+					ClientError::ConsensusStateNotFound { client_id: client_id.clone(), height },
+				)?;
 				match self.client_type(client_id)?.as_str() {
 					TENDERMINT_CLIENT_TYPE => {
 						let result: Ics07ConsensusState = ibc_proto::protobuf::Protobuf::<
@@ -197,7 +186,6 @@ impl<T: Config> ClientReader for Context<T> {
 						})?;
 						return Ok(Some(Box::new(result)))
 					},
-					#[cfg(test)]
 					MOCK_CLIENT_TYPE => {
 						let result: MockConsensusState = Protobuf::<Any>::decode_vec(&data)
 							.map_err(|e| ClientError::Other {

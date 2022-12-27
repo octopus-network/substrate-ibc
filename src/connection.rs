@@ -30,11 +30,8 @@ use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
 
 impl<T: Config> ConnectionReader for Context<T> {
 	fn connection_end(&self, conn_id: &ConnectionId) -> Result<ConnectionEnd, ConnectionError> {
-		if <Connections<T>>::contains_key(conn_id) {
-			Ok(<Connections<T>>::get(conn_id))
-		} else {
-			Err(ConnectionError::ConnectionMismatch { connection_id: conn_id.clone() })
-		}
+		<Connections<T>>::get(conn_id)
+			.ok_or(ConnectionError::ConnectionMismatch { connection_id: conn_id.clone() })
 	}
 
 	fn client_state(&self, client_id: &ClientId) -> Result<Box<dyn ClientState>, ConnectionError> {

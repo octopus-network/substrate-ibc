@@ -49,14 +49,10 @@ impl<T: Config> ChannelReader for Context<T> {
 		port_id: &PortId,
 		channel_id: &ChannelId,
 	) -> Result<ChannelEnd, ChannelError> {
-		if <Channels<T>>::contains_key(port_id, channel_id) {
-			Ok(<Channels<T>>::get(port_id, channel_id))
-		} else {
-			Err(ChannelError::ChannelNotFound {
-				port_id: port_id.clone(),
-				channel_id: channel_id.clone(),
-			})
-		}
+		<Channels<T>>::get(port_id, channel_id).ok_or(ChannelError::ChannelNotFound {
+			port_id: port_id.clone(),
+			channel_id: channel_id.clone(),
+		})
 	}
 
 	fn connection_end(&self, connection_id: &ConnectionId) -> Result<ConnectionEnd, ChannelError> {
@@ -69,12 +65,8 @@ impl<T: Config> ChannelReader for Context<T> {
 		&self,
 		conn_id: &ConnectionId,
 	) -> Result<Vec<(PortId, ChannelId)>, ChannelError> {
-		if <ChannelsConnection<T>>::contains_key(&conn_id) {
-			let result = <ChannelsConnection<T>>::get(&conn_id);
-			Ok(result)
-		} else {
-			Err(ChannelError::ConnectionNotOpen { connection_id: conn_id.clone() })
-		}
+		<ChannelsConnection<T>>::get(&conn_id)
+			.ok_or(ChannelError::ConnectionNotOpen { connection_id: conn_id.clone() })
 	}
 
 	fn client_state(&self, client_id: &ClientId) -> Result<Box<dyn ClientState>, ChannelError> {
@@ -98,15 +90,10 @@ impl<T: Config> ChannelReader for Context<T> {
 		port_id: &PortId,
 		channel_id: &ChannelId,
 	) -> Result<Sequence, PacketError> {
-		if <NextSequenceSend<T>>::contains_key(port_id, channel_id) {
-			let sequence = <NextSequenceSend<T>>::get(port_id, channel_id);
-			Ok(sequence)
-		} else {
-			Err(PacketError::MissingNextSendSeq {
-				port_id: port_id.clone(),
-				channel_id: channel_id.clone(),
-			})
-		}
+		<NextSequenceSend<T>>::get(port_id, channel_id).ok_or(PacketError::MissingNextSendSeq {
+			port_id: port_id.clone(),
+			channel_id: channel_id.clone(),
+		})
 	}
 
 	fn get_next_sequence_recv(
@@ -114,15 +101,10 @@ impl<T: Config> ChannelReader for Context<T> {
 		port_id: &PortId,
 		channel_id: &ChannelId,
 	) -> Result<Sequence, PacketError> {
-		if <NextSequenceRecv<T>>::contains_key(port_id, channel_id) {
-			let sequence = <NextSequenceRecv<T>>::get(port_id, channel_id);
-			Ok(sequence)
-		} else {
-			Err(PacketError::MissingNextRecvSeq {
-				port_id: port_id.clone(),
-				channel_id: channel_id.clone(),
-			})
-		}
+		<NextSequenceRecv<T>>::get(port_id, channel_id).ok_or(PacketError::MissingNextRecvSeq {
+			port_id: port_id.clone(),
+			channel_id: channel_id.clone(),
+		})
 	}
 
 	fn get_next_sequence_ack(
@@ -130,16 +112,10 @@ impl<T: Config> ChannelReader for Context<T> {
 		port_id: &PortId,
 		channel_id: &ChannelId,
 	) -> Result<Sequence, PacketError> {
-		if <NextSequenceAck<T>>::contains_key(port_id, channel_id) {
-			let sequence = <NextSequenceAck<T>>::get(port_id, channel_id);
-
-			Ok(Sequence::from(sequence))
-		} else {
-			Err(PacketError::MissingNextAckSeq {
-				port_id: port_id.clone(),
-				channel_id: channel_id.clone(),
-			})
-		}
+		<NextSequenceAck<T>>::get(port_id, channel_id).ok_or(PacketError::MissingNextAckSeq {
+			port_id: port_id.clone(),
+			channel_id: channel_id.clone(),
+		})
 	}
 
 	/// Returns the `PacketCommitment` for the given identifier `(PortId, ChannelId, Sequence)`.
@@ -149,13 +125,10 @@ impl<T: Config> ChannelReader for Context<T> {
 		channel_id: &ChannelId,
 		seq: Sequence,
 	) -> Result<IbcPacketCommitment, PacketError> {
-		if <PacketCommitment<T>>::contains_key((port_id, channel_id, seq)) {
-			let data = <PacketCommitment<T>>::get((port_id, channel_id, seq));
-			let packet_commitment = IbcPacketCommitment::from(data);
-			Ok(packet_commitment)
-		} else {
-			Err(PacketError::PacketCommitmentNotFound { sequence: seq })
-		}
+		let data = <PacketCommitment<T>>::get((port_id, channel_id, seq))
+			.ok_or(PacketError::PacketCommitmentNotFound { sequence: seq })?;
+		let packet_commitment = IbcPacketCommitment::from(data);
+		Ok(packet_commitment)
 	}
 
 	fn get_packet_receipt(
@@ -164,22 +137,19 @@ impl<T: Config> ChannelReader for Context<T> {
 		channel_id: &ChannelId,
 		seq: Sequence,
 	) -> Result<Receipt, PacketError> {
-		if <PacketReceipt<T>>::contains_key((port_id, channel_id, seq)) {
-			let data = <PacketReceipt<T>>::get((port_id, channel_id, seq));
-			let data = String::from_utf8(data).map_err(|e| PacketError::AppModule {
-				description: format!("Decode packet receipt failed: {:?}", e),
-			})?;
-			let data = match data.as_ref() {
-				"Ok" => Receipt::Ok,
-				e =>
-					return Err(PacketError::AppModule {
-						description: format!("Unknown Receipts {:?}", e),
-					}),
-			};
-			Ok(data)
-		} else {
-			Err(PacketError::PacketReceiptNotFound { sequence: seq })
-		}
+		let data = <PacketReceipt<T>>::get((port_id, channel_id, seq))
+			.ok_or(PacketError::PacketReceiptNotFound { sequence: seq })?;
+		let data = String::from_utf8(data).map_err(|e| PacketError::AppModule {
+			description: format!("Decode packet receipt failed: {:?}", e),
+		})?;
+		let data = match data.as_ref() {
+			"Ok" => Receipt::Ok,
+			e =>
+				return Err(PacketError::AppModule {
+					description: format!("Unknown Receipts {:?}", e),
+				}),
+		};
+		Ok(data)
 	}
 
 	/// Returns the `Acknowledgements` for the given identifier `(PortId, ChannelId, Sequence)`.
@@ -189,14 +159,11 @@ impl<T: Config> ChannelReader for Context<T> {
 		channel_id: &ChannelId,
 		seq: Sequence,
 	) -> Result<IbcAcknowledgementCommitment, PacketError> {
-		if <Acknowledgements<T>>::contains_key((port_id, channel_id, seq)) {
-			let data = <Acknowledgements<T>>::get((port_id, channel_id, seq));
-			let acknowledgement = IbcAcknowledgementCommitment::from(data);
+		let data = <Acknowledgements<T>>::get((port_id, channel_id, seq))
+			.ok_or(PacketError::PacketAcknowledgementNotFound { sequence: seq })?;
+		let acknowledgement = IbcAcknowledgementCommitment::from(data);
 
-			Ok(acknowledgement)
-		} else {
-			Err(PacketError::PacketAcknowledgementNotFound { sequence: seq })
-		}
+		Ok(acknowledgement)
 	}
 
 	/// A hashing function for packet commitments
@@ -232,14 +199,11 @@ impl<T: Config> ChannelReader for Context<T> {
 		client_id: &ClientId,
 		height: Height,
 	) -> Result<Timestamp, ChannelError> {
-		if <ClientProcessedTimes<T>>::contains_key(client_id, height) {
-			let time = <ClientProcessedTimes<T>>::get(client_id, height);
+		let time = <ClientProcessedTimes<T>>::get(client_id, height)
+			.ok_or(ChannelError::ProcessedTimeNotFound { client_id: client_id.clone(), height })?;
 
-			Timestamp::from_nanoseconds(time)
-				.map_err(|e| ChannelError::Other { description: e.to_string() })
-		} else {
-			Err(ChannelError::ProcessedTimeNotFound { client_id: client_id.clone(), height })
-		}
+		Timestamp::from_nanoseconds(time)
+			.map_err(|e| ChannelError::Other { description: e.to_string() })
 	}
 
 	fn client_update_height(
@@ -247,13 +211,8 @@ impl<T: Config> ChannelReader for Context<T> {
 		client_id: &ClientId,
 		height: Height,
 	) -> Result<Height, ChannelError> {
-		if <ClientProcessedHeights<T>>::contains_key(client_id, height) {
-			let host_height = <ClientProcessedHeights<T>>::get(client_id, height);
-
-			Ok(host_height)
-		} else {
-			Err(ChannelError::ProcessedHeightNotFound { client_id: client_id.clone(), height })
-		}
+		<ClientProcessedHeights<T>>::get(client_id, height)
+			.ok_or(ChannelError::ProcessedHeightNotFound { client_id: client_id.clone(), height })
 	}
 
 	/// Returns a counter on the number of channel ids have been created thus far.
@@ -340,7 +299,9 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		if <ChannelsConnection<T>>::contains_key(&conn_id) {
 			let _ =
 				<ChannelsConnection<T>>::try_mutate(&conn_id, |val| -> Result<(), ChannelError> {
-					val.push((port_id, channel_id));
+					if let Some(value) = val {
+						value.push((port_id, channel_id));
+					}
 					Ok(())
 				})
 				.map_err(|e| ChannelError::Other {

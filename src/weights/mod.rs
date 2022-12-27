@@ -162,7 +162,8 @@ impl<T: Config> WeightInfo<T> for () {
 		let ctx = Context::<T>::new();
 		let connection_end = ctx.connection_end(&connection_id).unwrap_or_default();
 		let client_id = connection_end.client_id();
-		let client_type = <Clients<T>>::get(client_id);
+		let client_type = <Clients<T>>::get(client_id)
+			.expect(&format!("cannt find client type by {}", client_id));
 		match client_type.as_str() {
 			MOCK_CLIENT_TYPE => {
 				let mock_client = MockClientWeightInfo::<T>::new();
