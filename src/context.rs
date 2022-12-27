@@ -21,7 +21,6 @@ use ibc::{
 	},
 	core::{ics03_connection::connection::ConnectionEnd, ics24_host::identifier::ConnectionId},
 	mock::client_state::{client_type as mock_client_type, MockClientState},
-	mock::host::HostBlock,
 	Height,
 };
 
@@ -43,6 +42,12 @@ impl<T: Config> Context<T> {
 			None => Ok(()),
 			Some(_) => Err("Duplicate module_id".to_owned()),
 		}
+	}
+}
+
+impl<T: Config> Default for Context<T> {
+	fn default() -> Self {
+		Self::new()
 	}
 }
 
@@ -70,7 +75,6 @@ impl<T: Config> Context<T> {
 	) -> Self {
 		use crate::host::TENDERMINT_CLIENT_TYPE;
 		use ibc::{
-			clients::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state,
 			core::{
 				ics02_client::{client_state::ClientState, consensus_state::ConsensusState},
 				ics24_host::identifier::ChainId,
@@ -90,18 +94,6 @@ impl<T: Config> Context<T> {
 				Some(MockClientState::new(MockHeader::new(client_state_height)).into_box()),
 				MockConsensusState::new(MockHeader::new(cs_height)).into_box(),
 			)
-		} else if client_type.as_str() == TENDERMINT_CLIENT_TYPE {
-			let light_block = HostBlock::generate_tm_block(
-				ChainId::default(),
-				cs_height.revision_height(),
-				Timestamp::now(),
-			);
-
-			let client_state =
-				get_dummy_tendermint_client_state(light_block.header().clone()).into_box();
-
-			// Return the tuple.
-			(Some(client_state), light_block.into())
 		} else {
 			panic!("unknown client type")
 		};
@@ -193,8 +185,4 @@ impl<T: Config> Context<T> {
 	}
 }
 
-impl<T: Config> Default for Context<T> {
-	fn default() -> Self {
-		Self::new()
-	}
-}
+

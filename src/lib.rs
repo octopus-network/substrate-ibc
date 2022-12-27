@@ -40,11 +40,16 @@ pub use crate::context::Context;
 pub const LOG_TARGET: &str = "runtime::pallet-ibc";
 pub const REVISION_NUMBER: u64 = 0;
 
-#[cfg(test)]
+#[cfg(any(test, feature = "runtime-benchmarks"))]
 mod mock;
-
-#[cfg(test)]
+#[cfg(any(test, feature = "runtime-benchmarks"))]
 mod tests;
+
+#[cfg(feature = "runtime-benchmarks")]
+pub(crate) mod benchmarks;
+mod weights;
+
+pub use weights::WeightInfo;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -78,6 +83,9 @@ pub mod pallet {
 		type TimeProvider: UnixTime;
 
 		type ExpectedBlockTime: Get<u64>;
+
+		/// benchmarking weight info
+		type WeightInfo: WeightInfo<Self>;
 	}
 
 	#[pallet::pallet]
@@ -478,6 +486,8 @@ pub mod pallet {
 		InvalidVersion,
 		/// Invalid module id
 		InvalidModuleId,
+		///
+		Other,
 	}
 
 	/// Dispatchable functions allows users to interact with the pallet and invoke state changes.
@@ -497,7 +507,8 @@ pub mod pallet {
 		/// the serialized protocol buffer message.
 		///
 		/// The relevant events are emitted when successful.
-		#[pallet::weight(0)]
+		#[pallet::call_index(0)]
+		#[pallet::weight(crate::weights::deliver::<T>(messages))]
 		pub fn deliver(
 			origin: OriginFor<T>,
 			messages: Vec<ibc_support::Any>,
