@@ -34,7 +34,6 @@ ibc = { version = "0.25.0", default-features = false, git = "https://github.com/
 # octopus ibc-proto-rs
 ibc-proto = { version = "0.24.0", default-features = false }
 pallet-ibc = { version = "3.0.0", default-features = false, path = "../../" }
-tendermint-proto = { version = "=0.28.0", default-features = false }
 
 [dev-dependencies]
 # local crates
@@ -48,7 +47,7 @@ pallet-babe = { version = "4.0.0-dev", git = "https://github.com/paritytech/subs
 pallet-balances = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
 pallet-ibc = { version = "3.0.0", path = "../../" }
 pallet-timestamp = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
-serde = "1.0"
+serde = "1.0.142"
 serde_json = { version = "1.0" }
 sha2 = '0.10.2'
 sp-core = { version = "6.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
