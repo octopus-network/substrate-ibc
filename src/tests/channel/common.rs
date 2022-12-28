@@ -1,4 +1,3 @@
-#[cfg(test)]
 pub mod test_util {
 	use ibc::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 

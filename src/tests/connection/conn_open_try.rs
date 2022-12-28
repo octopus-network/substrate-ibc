@@ -1,6 +1,6 @@
-#[cfg(test)]
 pub mod test_util {
 	use super::super::common::test_util::get_dummy_raw_counterparty;
+	use crate::tests::common::{get_dummy_bech32_account, get_dummy_proof};
 	use ibc::{
 		core::{
 			ics02_client::height::Height,
@@ -11,7 +11,6 @@ pub mod test_util {
 			client_state::{client_type as mock_client_type, MockClientState},
 			header::MockHeader,
 		},
-		test_utils::{get_dummy_bech32_account, get_dummy_proof},
 	};
 	use ibc_proto::ibc::core::{
 		client::v1::Height as RawHeight,

@@ -1,5 +1,6 @@
 use crate::{
 	mock::{new_test_ext, System, Test},
+	tests::common::{get_dummy_account_id, get_dummy_bech32_account, get_dummy_proof},
 	Context,
 };
 use ibc::{
@@ -16,7 +17,6 @@ use ibc::{
 		consensus_state::MockConsensusState,
 		header::MockHeader,
 	},
-	test_utils::get_dummy_account_id,
 	Height,
 };
 

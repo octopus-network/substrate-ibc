@@ -1,4 +1,3 @@
-#[cfg(test)]
 pub mod test_utils {
 	use ibc_proto::ibc::core::{channel::v1::Packet as RawPacket, client::v1::Height as RawHeight};
 

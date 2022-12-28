@@ -1,38 +1,13 @@
-use crate::{
-	mock::{new_test_ext, Test as PalletIbcTest},
-	Context,
-};
-use ibc::{
-	core::{
-		ics02_client::height::Height,
-		ics03_connection::{
-			connection::{
-				ConnectionEnd, Counterparty as ConnectionCounterparty, State as ConnectionState,
-			},
-			version::get_compatible_versions,
-		},
-		ics04_channel::{
-			channel::{ChannelEnd, Counterparty, Order, State},
-			context::ChannelReader,
-			handler::timeout_on_close::process,
-			msgs::timeout_on_close::MsgTimeoutOnClose,
-			Version,
-		},
-		ics23_commitment::commitment::CommitmentPrefix,
-		ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
-	},
-	events::IbcEvent,
-	timestamp::ZERO_DURATION,
-};
-use test_util::get_dummy_raw_msg_timeout_on_close;
-#[cfg(test)]
 pub mod test_util {
-	use crate::tests::channel::packet::test_utils::get_dummy_raw_packet;
-	use ibc::test_utils::{get_dummy_bech32_account, get_dummy_proof};
+	use crate::tests::{
+		channel::packet::test_utils::get_dummy_raw_packet,
+		common::{get_dummy_bech32_account, get_dummy_proof},
+	};
 	use ibc_proto::ibc::core::{
 		channel::v1::MsgTimeoutOnClose as RawMsgTimeoutOnClose, client::v1::Height as RawHeight,
 	};
 
+    #[allow(dead_code)]
 	/// Returns a dummy `RawMsgTimeoutOnClose`, for testing only!
 	/// The `height` parametrizes both the proof height as well as the timeout height.
 	pub fn get_dummy_raw_msg_timeout_on_close(
@@ -50,9 +25,39 @@ pub mod test_util {
 	}
 }
 
-#[test]
-fn timeout_on_close_packet_processing() {
-	new_test_ext().execute_with(|| {
+#[cfg(test)]
+mod tests {
+	use super::test_util::get_dummy_raw_msg_timeout_on_close;
+	use crate::{
+		mock::{new_test_ext, Test as PalletIbcTest},
+		Context,
+	};
+	use ibc::{
+		core::{
+			ics02_client::height::Height,
+			ics03_connection::{
+				connection::{
+					ConnectionEnd, Counterparty as ConnectionCounterparty, State as ConnectionState,
+				},
+				version::get_compatible_versions,
+			},
+			ics04_channel::{
+				channel::{ChannelEnd, Counterparty, Order, State},
+				context::ChannelReader,
+				handler::timeout_on_close::process,
+				msgs::timeout_on_close::MsgTimeoutOnClose,
+				Version,
+			},
+			ics23_commitment::commitment::CommitmentPrefix,
+			ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
+		},
+		events::IbcEvent,
+		timestamp::ZERO_DURATION,
+	};
+
+	#[test]
+	fn timeout_on_close_packet_processing() {
+		new_test_ext().execute_with(|| {
     struct Test {
         name: String,
         ctx: Context<PalletIbcTest>,
@@ -192,4 +197,5 @@ fn timeout_on_close_packet_processing() {
         }
     }
     })
+	}
 }

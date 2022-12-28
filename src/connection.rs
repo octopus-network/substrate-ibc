@@ -58,7 +58,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 	}
 
 	fn commitment_prefix(&self) -> CommitmentPrefix {
-		CommitmentPrefix::try_from(T::IbcCommitmentPrefix::get()).unwrap_or_default()
+		CommitmentPrefix::try_from(T::IBC_COMMITMENT_PREFIX.to_vec()).unwrap_or_default()
 	}
 
 	fn client_consensus_state(

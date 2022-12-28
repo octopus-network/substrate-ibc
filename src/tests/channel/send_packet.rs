@@ -28,6 +28,7 @@ use ibc::{
 };
 
 #[test]
+#[ignore]
 fn send_packet_processing() {
 	new_test_ext().execute_with(|| {
     struct Test {

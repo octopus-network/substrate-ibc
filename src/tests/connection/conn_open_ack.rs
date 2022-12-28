@@ -1,21 +1,3 @@
-use core::str::FromStr;
-
-use ibc::{
-	core::{
-		ics03_connection::{
-			connection::{ConnectionEnd, Counterparty, State},
-			error,
-			handler::{dispatch, ConnectionResult},
-			msgs::{conn_open_ack::MsgConnectionOpenAck, ConnectionMsg},
-		},
-		ics23_commitment::commitment::CommitmentPrefix,
-		ics24_host::identifier::ClientId,
-	},
-	events::IbcEvent,
-	timestamp::ZERO_DURATION,
-};
-
-#[cfg(test)]
 pub mod test_util {
 	use ibc::{
 		core::ics02_client::height::Height,
@@ -27,10 +9,8 @@ pub mod test_util {
 		connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck,
 	};
 
-	use ibc::{
-		core::{ics03_connection::version::Version, ics24_host::identifier::ConnectionId},
-		test_utils::{get_dummy_bech32_account, get_dummy_proof},
-	};
+	use crate::tests::common::{get_dummy_bech32_account, get_dummy_proof};
+	use ibc::core::{ics03_connection::version::Version, ics24_host::identifier::ConnectionId};
 
 	pub fn get_dummy_raw_msg_conn_open_ack(
 		proof_height: u64,
@@ -54,15 +34,34 @@ pub mod test_util {
 		}
 	}
 }
-use crate::{
-	mock::{new_test_ext, System, Test as PalletIbcTest},
-	Context,
-};
-use test_util::get_dummy_raw_msg_conn_open_ack;
 
-#[test]
-fn conn_open_ack_msg_processing() {
-	new_test_ext().execute_with(|| {
+#[cfg(test)]
+mod tests {
+	use super::test_util::get_dummy_raw_msg_conn_open_ack;
+	use crate::{
+		mock::{new_test_ext, System, Test as PalletIbcTest},
+		Context,
+	};
+	use core::str::FromStr;
+
+	use ibc::{
+		core::{
+			ics03_connection::{
+				connection::{ConnectionEnd, Counterparty, State},
+				error,
+				handler::{dispatch, ConnectionResult},
+				msgs::{conn_open_ack::MsgConnectionOpenAck, ConnectionMsg},
+			},
+			ics23_commitment::commitment::CommitmentPrefix,
+			ics24_host::identifier::ClientId,
+		},
+		events::IbcEvent,
+		timestamp::ZERO_DURATION,
+	};
+
+	#[test]
+	fn conn_open_ack_msg_processing() {
+		new_test_ext().execute_with(|| {
      struct Test {
          name: String,
          ctx: Context<PalletIbcTest>,
@@ -213,4 +212,5 @@ fn conn_open_ack_msg_processing() {
          }
      }
     })
+	}
 }

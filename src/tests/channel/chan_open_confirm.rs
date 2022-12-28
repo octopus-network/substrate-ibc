@@ -1,38 +1,8 @@
-use crate::{
-	mock::{new_test_ext, System, Test as PalletIbcTest},
-	tests::connection::common::test_util::get_dummy_raw_counterparty,
-	Context,
-};
-use ibc::{
-	core::{
-		ics03_connection::{
-			connection::{
-				ConnectionEnd, Counterparty as ConnectionCounterparty, State as ConnectionState,
-			},
-			context::ConnectionReader,
-			version::get_compatible_versions,
-		},
-		ics04_channel::{
-			channel::{ChannelEnd, Counterparty, Order, State},
-			handler::channel_dispatch,
-			msgs::{chan_open_confirm::MsgChannelOpenConfirm, ChannelMsg},
-			Version,
-		},
-		ics24_host::identifier::{ClientId, ConnectionId},
-	},
-	mock::client_state::client_type as mock_client_type,
-	timestamp::ZERO_DURATION,
-	Height,
-};
-
-#[cfg(test)]
 pub mod test_util {
 	use ibc_proto::ibc::core::channel::v1::MsgChannelOpenConfirm as RawMsgChannelOpenConfirm;
 
-	use ibc::{
-		core::ics24_host::identifier::{ChannelId, PortId},
-		test_utils::{get_dummy_bech32_account, get_dummy_proof},
-	};
+	use crate::tests::common::{get_dummy_bech32_account, get_dummy_proof};
+	use ibc::core::ics24_host::identifier::{ChannelId, PortId};
 	use ibc_proto::ibc::core::client::v1::Height;
 
 	/// Returns a dummy `RawMsgChannelOpenConfirm`, for testing only!
@@ -47,11 +17,39 @@ pub mod test_util {
 	}
 }
 
-use test_util::get_dummy_raw_msg_chan_open_confirm;
+mod tests {
 
-#[test]
-fn chan_open_confirm_msg_processing() {
-	new_test_ext().execute_with(|| {
+	use super::test_util::get_dummy_raw_msg_chan_open_confirm;
+	use crate::{
+		mock::{new_test_ext, System, Test as PalletIbcTest},
+		tests::connection::common::test_util::get_dummy_raw_counterparty,
+		Context,
+	};
+	use ibc::{
+		core::{
+			ics03_connection::{
+				connection::{
+					ConnectionEnd, Counterparty as ConnectionCounterparty, State as ConnectionState,
+				},
+				context::ConnectionReader,
+				version::get_compatible_versions,
+			},
+			ics04_channel::{
+				channel::{ChannelEnd, Counterparty, Order, State},
+				handler::channel_dispatch,
+				msgs::{chan_open_confirm::MsgChannelOpenConfirm, ChannelMsg},
+				Version,
+			},
+			ics24_host::identifier::{ClientId, ConnectionId},
+		},
+		mock::client_state::client_type as mock_client_type,
+		timestamp::ZERO_DURATION,
+		Height,
+	};
+
+	#[test]
+	fn chan_open_confirm_msg_processing() {
+		new_test_ext().execute_with(|| {
     struct Test {
         name: String,
         ctx: Context<PalletIbcTest>,
@@ -138,4 +136,5 @@ fn chan_open_confirm_msg_processing() {
         }
     }
     })
+	}
 }

@@ -1,46 +1,8 @@
-use core::str::FromStr;
-
-use crate::{
-	mock::{new_test_ext, Test as PalletIbcTest},
-	tests::{
-		channel::chan_open_try::test_util::get_dummy_raw_msg_chan_open_try,
-		connection::{
-			conn_open_init::test_util::get_dummy_raw_msg_conn_open_init,
-			conn_open_try::test_util::get_dummy_raw_msg_conn_open_try,
-		},
-	},
-	Context,
-};
-use ibc::{
-	core::{
-		ics03_connection::{
-			connection::{
-				ConnectionEnd, Counterparty as ConnectionCounterparty, State as ConnectionState,
-			},
-			msgs::{conn_open_init::MsgConnectionOpenInit, conn_open_try::MsgConnectionOpenTry},
-			version::get_compatible_versions,
-		},
-		ics04_channel::{
-			channel::{ChannelEnd, Counterparty, State},
-			handler::channel_dispatch,
-			msgs::{
-				chan_open_ack::MsgChannelOpenAck, chan_open_try::MsgChannelOpenTry, ChannelMsg,
-			},
-		},
-		ics24_host::identifier::ConnectionId,
-	},
-	Height,
-};
-use test_util::get_dummy_raw_msg_chan_open_ack;
-
-#[cfg(test)]
 pub mod test_util {
 	use ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
 
-	use ibc::{
-		core::ics24_host::identifier::{ChannelId, PortId},
-		test_utils::{get_dummy_bech32_account, get_dummy_proof},
-	};
+	use crate::tests::common::{get_dummy_bech32_account, get_dummy_proof};
+	use ibc::core::ics24_host::identifier::{ChannelId, PortId};
 	use ibc_proto::ibc::core::client::v1::Height;
 
 	/// Returns a dummy `RawMsgChannelOpenAck`, for testing only!
@@ -57,9 +19,50 @@ pub mod test_util {
 	}
 }
 
-#[test]
-fn chan_open_ack_msg_processing() {
-	new_test_ext().execute_with(|| {
+#[cfg(test)]
+
+mod tests {
+
+	use core::str::FromStr;
+
+	use super::test_util::get_dummy_raw_msg_chan_open_ack;
+	use crate::{
+		mock::{new_test_ext, Test as PalletIbcTest},
+		tests::{
+			channel::chan_open_try::test_util::get_dummy_raw_msg_chan_open_try,
+			connection::{
+				conn_open_init::test_util::get_dummy_raw_msg_conn_open_init,
+				conn_open_try::test_util::get_dummy_raw_msg_conn_open_try,
+			},
+		},
+		Context,
+	};
+	use ibc::{
+		core::{
+			ics03_connection::{
+				connection::{
+					ConnectionEnd, Counterparty as ConnectionCounterparty, State as ConnectionState,
+				},
+				msgs::{
+					conn_open_init::MsgConnectionOpenInit, conn_open_try::MsgConnectionOpenTry,
+				},
+				version::get_compatible_versions,
+			},
+			ics04_channel::{
+				channel::{ChannelEnd, Counterparty, State},
+				handler::channel_dispatch,
+				msgs::{
+					chan_open_ack::MsgChannelOpenAck, chan_open_try::MsgChannelOpenTry, ChannelMsg,
+				},
+			},
+			ics24_host::identifier::ConnectionId,
+		},
+		Height,
+	};
+
+	#[test]
+	fn chan_open_ack_msg_processing() {
+		new_test_ext().execute_with(|| {
      struct Test {
          name: String,
          ctx: Context<PalletIbcTest>,
@@ -239,4 +242,5 @@ fn chan_open_ack_msg_processing() {
          }
      }
     })
+	}
 }

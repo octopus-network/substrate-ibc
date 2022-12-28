@@ -1,44 +1,14 @@
-use crate::{
-	mock::{new_test_ext, System, Test as PalletIbcTest},
-	Context,
-};
-use ibc::{
-	core::{
-		ics03_connection::{
-			connection::{
-				ConnectionEnd, Counterparty as ConnectionCounterparty, State as ConnectionState,
-			},
-			version::get_compatible_versions,
-		},
-		ics04_channel::{
-			channel::{ChannelEnd, Counterparty, Order, State},
-			handler::recv_packet::process,
-			msgs::recv_packet::MsgRecvPacket,
-			packet::Packet,
-			Version,
-		},
-		ics23_commitment::commitment::CommitmentPrefix,
-		ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
-	},
-	events::IbcEvent,
-	relayer::ics18_relayer::context::RelayerContext,
-	test_utils::get_dummy_account_id,
-	timestamp::{Timestamp, ZERO_DURATION},
-};
-use test_util::get_dummy_raw_msg_recv_packet;
-
-#[cfg(test)]
 pub mod test_util {
 	use ibc_proto::ibc::core::{
 		channel::v1::MsgRecvPacket as RawMsgRecvPacket, client::v1::Height as RawHeight,
 	};
 
-	use crate::tests::channel::packet::test_utils::get_dummy_raw_packet;
-	use core::{ops::Add, time::Duration};
-	use ibc::{
-		test_utils::{get_dummy_bech32_account, get_dummy_proof},
-		timestamp::Timestamp,
+	use crate::tests::{
+		channel::packet::test_utils::get_dummy_raw_packet,
+		common::{get_dummy_bech32_account, get_dummy_proof},
 	};
+	use core::{ops::Add, time::Duration};
+	use ibc::timestamp::Timestamp;
 
 	/// Returns a dummy `RawMsgRecvPacket`, for testing only! The `height` parametrizes both the
 	/// proof height as well as the timeout height.
@@ -53,9 +23,41 @@ pub mod test_util {
 	}
 }
 
-#[test]
-fn recv_packet_processing() {
-	new_test_ext().execute_with(|| {
+#[cfg(test)]
+mod tests {
+
+	use super::test_util::get_dummy_raw_msg_recv_packet;
+	use crate::{
+		mock::{new_test_ext, System, Test as PalletIbcTest},
+		tests::common::{get_dummy_account_id, get_dummy_bech32_account, get_dummy_proof},
+		Context,
+	};
+	use ibc::{
+		core::{
+			ics03_connection::{
+				connection::{
+					ConnectionEnd, Counterparty as ConnectionCounterparty, State as ConnectionState,
+				},
+				version::get_compatible_versions,
+			},
+			ics04_channel::{
+				channel::{ChannelEnd, Counterparty, Order, State},
+				handler::recv_packet::process,
+				msgs::recv_packet::MsgRecvPacket,
+				packet::Packet,
+				Version,
+			},
+			ics23_commitment::commitment::CommitmentPrefix,
+			ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
+		},
+		events::IbcEvent,
+		relayer::ics18_relayer::context::RelayerContext,
+		timestamp::{Timestamp, ZERO_DURATION},
+	};
+
+	#[test]
+	fn recv_packet_processing() {
+		new_test_ext().execute_with(|| {
     struct Test {
         name: String,
         ctx: Context<PalletIbcTest>,
@@ -195,4 +197,5 @@ fn recv_packet_processing() {
         }
     }
 })
+	}
 }

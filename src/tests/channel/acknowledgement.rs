@@ -1,39 +1,13 @@
-use crate::{
-	mock::{new_test_ext, Test as PalletIbcTest},
-	Context,
-};
-use ibc::{
-	core::{
-		ics02_client::height::Height,
-		ics03_connection::{
-			connection::{
-				ConnectionEnd, Counterparty as ConnectionCounterparty, State as ConnectionState,
-			},
-			version::get_compatible_versions,
-		},
-		ics04_channel::{
-			channel::{ChannelEnd, Counterparty, Order, State},
-			context::ChannelReader,
-			handler::acknowledgement::process,
-			msgs::acknowledgement::MsgAcknowledgement,
-			Version,
-		},
-		ics23_commitment::commitment::CommitmentPrefix,
-		ics24_host::identifier::{ClientId, ConnectionId},
-	},
-	events::IbcEvent,
-	timestamp::ZERO_DURATION,
-};
-use test_util::get_dummy_raw_msg_acknowledgement;
-#[cfg(test)]
 pub mod test_util {
 	use ibc_proto::ibc::core::{
 		channel::v1::{MsgAcknowledgement as RawMsgAcknowledgement, Packet as RawPacket},
 		client::v1::Height as RawHeight,
 	};
 
-	use crate::tests::channel::packet::test_utils::get_dummy_raw_packet;
-	use ibc::test_utils::{get_dummy_bech32_account, get_dummy_proof};
+	use crate::tests::{
+		channel::packet::test_utils::get_dummy_raw_packet,
+		common::{get_dummy_bech32_account, get_dummy_proof},
+	};
 
 	/// Returns a dummy `RawMsgAcknowledgement`, for testing only!
 	/// The `height` parametrizes both the proof height as well as the timeout height.
@@ -60,9 +34,39 @@ pub mod test_util {
 	}
 }
 
-#[test]
-fn ack_packet_processing() {
-	new_test_ext().execute_with(|| {
+#[cfg(test)]
+mod tests {
+	use super::test_util::get_dummy_raw_msg_acknowledgement;
+	use crate::{
+		mock::{new_test_ext, Test as PalletIbcTest},
+		Context,
+	};
+	use ibc::{
+		core::{
+			ics02_client::height::Height,
+			ics03_connection::{
+				connection::{
+					ConnectionEnd, Counterparty as ConnectionCounterparty, State as ConnectionState,
+				},
+				version::get_compatible_versions,
+			},
+			ics04_channel::{
+				channel::{ChannelEnd, Counterparty, Order, State},
+				context::ChannelReader,
+				handler::acknowledgement::process,
+				msgs::acknowledgement::MsgAcknowledgement,
+				Version,
+			},
+			ics23_commitment::commitment::CommitmentPrefix,
+			ics24_host::identifier::{ClientId, ConnectionId},
+		},
+		events::IbcEvent,
+		timestamp::ZERO_DURATION,
+	};
+
+	#[test]
+	fn ack_packet_processing() {
+		new_test_ext().execute_with(|| {
     struct Test {
         name: String,
         ctx: Context<PalletIbcTest>,
@@ -176,4 +180,5 @@ fn ack_packet_processing() {
         }
     }
 })
+	}
 }

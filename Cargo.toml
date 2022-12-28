@@ -32,19 +32,16 @@ sp-runtime = { version = "6.0.0", default-features = false, git = "https://githu
 sp-std = { version = "4.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
 sp-tracing = { version = "5.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
 
-# third-party libraries
-flex-error = { version = "0.4.4", default-features = false }
-hex = { version = "0.4.0", default-features = false }
 ## for ibc protocl
 ibc = { version = "0.25.0", default-features = false, git = "https://github.com/octopus-network/ibc-rs.git", branch = "fix-mock", features = ["parity-scale-codec", "mocks-primitives"]}
 ibc-proto = { version = "0.24.0", default-features = false }
 log = { version = "0.4.0", default-features = false }
-prost = { version = "0.11", default-features = false }
-prost-types = { version = "0.11", default-features = false }
 serde = { version = "1.0", default-features = false }
 serde_json = { version = "1.0", default-features = false }
-tendermint-proto = { version = "=0.28.0", default-features = false }
-time = { version = ">=0.3.0, <0.3.12", default-features = false, features = ["macros", "parsing"] }
+
+## optional
+pallet-timestamp = { version = "4.0.0-dev", default-features = false,  git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31", optional = true }
+pallet-balances = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31", optional = true }
 
 [dev-dependencies]
 # local crates
@@ -81,15 +78,15 @@ std = [
   "sp-std/std",
   "sp-io/std",
   "sp-tracing/std",
-  "prost-types/std",
-  "prost/std",
   "ibc/std",
   "ibc-proto/std",
   "serde_json/std",
   "serde/std",
-  "flex-error/std",
-  "hex/std",
-  "time/std",
 ]
-runtime-benchmarks = ["frame-benchmarking"]
+runtime-benchmarks = [
+  "frame-benchmarking/runtime-benchmarks",
+  "frame-system/runtime-benchmarks",
+  "pallet-timestamp/runtime-benchmarks",
+  "pallet-balances/runtime-benchmarks",
+]
 try-runtime = ["frame-support/try-runtime"]
