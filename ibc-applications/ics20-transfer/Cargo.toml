@@ -32,7 +32,7 @@ sp-std = { version = "4.0.0", default-features = false, git = "https://github.co
 # octopus ibc-rs
 ibc = { version = "0.25.0", default-features = false, git = "https://github.com/octopus-network/ibc-rs.git", branch = "fix-mock", features = ["parity-scale-codec", "mocks-primitives"]}
 # octopus ibc-proto-rs
-ibc-proto = { version = "0.24.0", default-features = false }
+ibc-proto = { version = "0.24.0", default-features = false, features = ["parity-scale-codec"] }
 pallet-ibc = { version = "3.0.0", default-features = false, path = "../../" }
 
 [dev-dependencies]

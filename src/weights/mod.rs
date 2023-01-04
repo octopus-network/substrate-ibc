@@ -476,12 +476,10 @@ pub fn channel_client<T: Config>(
 	Err(Error::<T>::Other)
 }
 
-pub(crate) fn deliver<T: Config + Send + Sync>(msgs: &[ibc_support::Any]) -> Weight {
-	msgs.iter()
+pub(crate) fn deliver<T: Config + Send + Sync>(msgs: &[ibc_proto::google::protobuf::Any]) -> Weight {
+	msgs.into_iter()
 		.filter_map(|msg| {
-			let type_url = String::from_utf8(msg.type_url.clone()).unwrap_or_default();
-			let msg = ibc_proto::google::protobuf::Any { type_url, value: msg.value.clone() };
-			let msg: Option<MsgEnvelope> = msg.try_into().ok();
+			let msg: Option<MsgEnvelope> = msg.clone().try_into().ok();
 			msg
 		})
 		.fold(Weight::default(), |acc, msg| {

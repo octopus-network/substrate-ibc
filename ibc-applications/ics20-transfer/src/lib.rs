@@ -182,22 +182,11 @@ pub mod pallet {
 		#[pallet::weight(0)]
 		pub fn raw_transfer(
 			origin: OriginFor<T>,
-			messages: Vec<ibc_support::Any>,
+			messages: Vec<ibc_proto::google::protobuf::Any>,
 		) -> DispatchResultWithPostInfo {
 			let _sender = ensure_signed(origin)?;
 			let mut ctx = IbcTransferModule(PhantomData::<T>);
-
-			let messages = messages
-				.into_iter()
-				.map(|message| {
-					Ok(ibc_proto::google::protobuf::Any {
-						type_url: String::from_utf8(message.type_url.clone())
-							.map_err(|_| Error::<T>::DecodeStringFailed)?,
-						value: message.value,
-					})
-				})
-				.collect::<Result<Vec<ibc_proto::google::protobuf::Any>, Error<T>>>()?;
-
+	
 			log::trace!(
 				target: LOG_TARGET,
 				"raw_transfer : {:?} ",

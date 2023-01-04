@@ -294,19 +294,10 @@ pub mod pallet {
 		#[pallet::weight(crate::weights::deliver::<T>(messages))]
 		pub fn deliver(
 			origin: OriginFor<T>,
-			messages: Vec<ibc_support::Any>,
+			messages: Vec<ibc_proto::google::protobuf::Any>,
 		) -> DispatchResultWithPostInfo {
 			ensure_signed(origin)?;
 			let mut ctx = Context::<T>::new();
-
-			let messages = messages
-				.into_iter()
-				.map(|message| {
-					let type_url = String::from_utf8(message.type_url.clone())
-						.map_err(|_| Error::<T>::DecodeStringFailed)?;
-					Ok(ibc_proto::google::protobuf::Any { type_url, value: message.value })
-				})
-				.collect::<Result<Vec<ibc_proto::google::protobuf::Any>, Error<T>>>()?;
 
 			let (events, logs, errors) = messages.into_iter().fold(
 				(vec![], vec![], vec![]),
