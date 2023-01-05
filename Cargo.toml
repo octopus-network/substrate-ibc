@@ -1,6 +1,6 @@
 [package]
 name = 'pallet-ibc'
-version = "3.0.0"
+version = "4.0.0-dev"
 authors = ['Octopus Network <hi@oct.network>']
 edition = '2021'
 homepage = "https://oct.network"
@@ -11,7 +11,7 @@ description = "An IBC implementation on Substrate."
 
 [workspace]
 members = [
-  "ibc-applications/ics20-transfer",
+  "app/ics20-transfer",
   "ibc-support",
 ]
 
@@ -21,16 +21,16 @@ targets = ["x86_64-unknown-linux-gnu"]
 [dependencies]
 # substate crates
 codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive"] }
-frame-benchmarking = { version = "4.0.0-dev", default-features = false, optional = true, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
-frame-support = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
-frame-system = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
+frame-benchmarking = { version = "4.0.0-dev", default-features = false, optional = true, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.36" }
+frame-support = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.36" }
+frame-system = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.36" }
 ibc-support = { version = "0.1.0", default-features = false, path = "./ibc-support" }
 scale-info = { version = "2.1.2", default-features = false, features = ["derive"] }
-sp-core = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
-sp-io = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
-sp-runtime = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
-sp-std = { version = "4.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
-sp-tracing = { version = "5.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
+sp-core = { version = "7.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.36" }
+sp-io = { version = "7.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.36" }
+sp-runtime = { version = "7.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.36" }
+sp-std = { version = "5.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.36" }
+sp-tracing = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.36" }
 
 ## for ibc protocl
 ibc = { version = "0.25.0", default-features = false, git = "https://github.com/octopus-network/ibc-rs.git", branch = "fix-mock", features = ["parity-scale-codec", "mocks-primitives"]}
@@ -40,28 +40,28 @@ serde = { version = "1.0", default-features = false }
 serde_json = { version = "1.0", default-features = false }
 
 ## optional
-pallet-timestamp = { version = "4.0.0-dev", default-features = false,  git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31", optional = true }
-pallet-balances = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31", optional = true }
+pallet-timestamp = { version = "4.0.0-dev", default-features = false,  git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.36", optional = true }
+pallet-balances = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.36", optional = true }
 
 [dev-dependencies]
 # local crates
 chrono = "0.4.19"
-frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
+frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.36" }
 # thrid party crates
 hex = '0.4.0'
-pallet-assets = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
-pallet-babe = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
-pallet-balances = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
-pallet-timestamp = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
+pallet-assets = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.36" }
+pallet-babe = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.36" }
+pallet-balances = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.36" }
+pallet-timestamp = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.36" }
 serde = "1.0"
 sha2 = '0.10.2'
-sp-core = { version = "6.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
+sp-core = { version = "7.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.36" }
 # substrate crates
-sp-io = { version = "6.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
-sp-keyring = { version = "6.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
-sp-runtime = { version = "6.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
-sp-std = { version = "4.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
-sp-version = { version = "5.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.31" }
+sp-io = { version = "7.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.36" }
+sp-keyring = { version = "7.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.36" }
+sp-runtime = { version = "7.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.36" }
+sp-std = { version = "5.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.36" }
+sp-version = { version = "5.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.36" }
 
 [features]
 default = ['std']
