@@ -9,6 +9,7 @@ pub mod test {
 		handler::HandlerOutputBuilder,
 	};
 
+	#[allow(dead_code)]
 	pub fn deliver(
 		ctx: &mut IbcTransferModule<PalletIbcTest>,
 		output: &mut HandlerOutputBuilder<()>,
@@ -25,7 +26,6 @@ pub mod test_util {
 		applications::transfer::{
 			msgs::transfer::MsgTransfer, packet::PacketData, BaseCoin, Coin, PrefixedCoin,
 		},
-		bigint::U256,
 		core::{
 			ics04_channel::{
 				packet::{Packet, Sequence},
@@ -36,11 +36,14 @@ pub mod test_util {
 		signer::Signer,
 		timestamp::Timestamp,
 	};
+	use primitive_types::U256;
 
+	#[allow(dead_code)]
 	pub fn get_dummy_substrate_account() -> String {
 		"0x3E5DA34F651595C1257265E30370146E0C94B9FBFA78BDB92893DE367AC792A0".to_string()
 	}
 
+	#[allow(dead_code)]
 	// Returns a dummy ICS20 `MsgTransfer`. If no `timeout_timestamp` is
 	// specified, a timestamp of 10 seconds in the future is used.
 	pub fn get_dummy_msg_transfer(
@@ -61,6 +64,7 @@ pub mod test_util {
 		}
 	}
 
+	#[allow(dead_code)]
 	pub fn get_dummy_transfer_packet(msg: MsgTransfer<PrefixedCoin>, sequence: Sequence) -> Packet {
 		let coin = Coin { denom: msg.token.denom.clone(), amount: msg.token.amount };
 

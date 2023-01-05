@@ -5,7 +5,7 @@ pub mod test_util {
 	use ibc::core::ics24_host::identifier::PortId;
 	use ibc_proto::ibc::core::channel::v1::MsgChannelOpenInit as RawMsgChannelOpenInit;
 
-    #[allow(dead_code)]
+	#[allow(dead_code)]
 	/// Returns a dummy `RawMsgChannelOpenInit`, for testing only!
 	pub fn get_dummy_raw_msg_chan_open_init() -> RawMsgChannelOpenInit {
 		RawMsgChannelOpenInit {

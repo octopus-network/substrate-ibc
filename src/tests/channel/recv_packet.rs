@@ -51,7 +51,7 @@ mod tests {
 			ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
 		},
 		events::IbcEvent,
-		relayer::ics18_relayer::context::RelayerContext,
+		mock::ics18_relayer::context::RelayerContext,
 		timestamp::{Timestamp, ZERO_DURATION},
 	};
 

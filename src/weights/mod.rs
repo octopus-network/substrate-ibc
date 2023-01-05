@@ -476,7 +476,9 @@ pub fn channel_client<T: Config>(
 	Err(Error::<T>::Other)
 }
 
-pub(crate) fn deliver<T: Config + Send + Sync>(msgs: &[ibc_proto::google::protobuf::Any]) -> Weight {
+pub(crate) fn deliver<T: Config + Send + Sync>(
+	msgs: &[ibc_proto::google::protobuf::Any],
+) -> Weight {
 	msgs.into_iter()
 		.filter_map(|msg| {
 			let msg: Option<MsgEnvelope> = msg.clone().try_into().ok();

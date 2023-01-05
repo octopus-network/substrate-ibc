@@ -85,9 +85,9 @@ mod tess {
     msg_ok.packet.timeout_timestamp = Default::default();
 
     let data = context.packet_commitment(
-        msg_ok.packet.data.clone(),
-        msg_ok.packet.timeout_height,
-        msg_ok.packet.timeout_timestamp,
+        &msg_ok.packet.data,
+        &msg_ok.packet.timeout_height,
+        &msg_ok.packet.timeout_timestamp,
     );
 
     let source_channel_end = ChannelEnd::new(

@@ -11,12 +11,12 @@ use ibc::{
 		error::TokenTransferError,
 		PrefixedCoin, PORT_ID_STR,
 	},
-	bigint::U256,
 	core::ics24_host::identifier::{ChannelId, PortId},
 	signer::Signer,
 };
 use ibc_support::AssetIdAndNameProvider;
 use log::error;
+use primitive_types::U256;
 use scale_info::TypeInfo;
 use sp_runtime::{
 	traits::{CheckedConversion, IdentifyAccount, Verify},

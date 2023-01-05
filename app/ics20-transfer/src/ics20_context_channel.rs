@@ -47,7 +47,7 @@ impl<T: Config> ChannelReader for IbcTransferModule<T> {
 	fn client_consensus_state(
 		&self,
 		client_id: &ClientId,
-		height: Height,
+		height: &Height,
 	) -> Result<Box<dyn ConsensusState>, ChannelError> {
 		ChannelReader::client_consensus_state(
 			&pallet_ibc::context::Context::<T>::new(),
@@ -97,7 +97,7 @@ impl<T: Config> ChannelReader for IbcTransferModule<T> {
 		&self,
 		port_id: &PortId,
 		channel_id: &ChannelId,
-		seq: Sequence,
+		seq: &Sequence,
 	) -> Result<PacketCommitment, PacketError> {
 		ChannelReader::get_packet_commitment(
 			&pallet_ibc::context::Context::<T>::new(),
@@ -111,7 +111,7 @@ impl<T: Config> ChannelReader for IbcTransferModule<T> {
 		&self,
 		port_id: &PortId,
 		channel_id: &ChannelId,
-		seq: Sequence,
+		seq: &Sequence,
 	) -> Result<Receipt, PacketError> {
 		ChannelReader::get_packet_receipt(
 			&pallet_ibc::context::Context::<T>::new(),
@@ -126,7 +126,7 @@ impl<T: Config> ChannelReader for IbcTransferModule<T> {
 		&self,
 		port_id: &PortId,
 		channel_id: &ChannelId,
-		seq: Sequence,
+		seq: &Sequence,
 	) -> Result<IbcAcknowledgementCommitment, PacketError> {
 		ChannelReader::get_packet_acknowledgement(
 			&pallet_ibc::context::Context::<T>::new(),
@@ -137,7 +137,7 @@ impl<T: Config> ChannelReader for IbcTransferModule<T> {
 	}
 
 	/// A hashing function for packet commitments
-	fn hash(&self, value: Vec<u8>) -> Vec<u8> {
+	fn hash(&self, value: &[u8]) -> Vec<u8> {
 		ChannelReader::hash(&pallet_ibc::context::Context::<T>::new(), value)
 	}
 
@@ -149,7 +149,7 @@ impl<T: Config> ChannelReader for IbcTransferModule<T> {
 	/// Returns the `AnyConsensusState` for the given identifier `height`.
 	fn host_consensus_state(
 		&self,
-		height: Height,
+		height: &Height,
 	) -> Result<Box<dyn ConsensusState>, ChannelError> {
 		ChannelReader::host_consensus_state(&pallet_ibc::context::Context::<T>::new(), height)
 	}
@@ -162,7 +162,7 @@ impl<T: Config> ChannelReader for IbcTransferModule<T> {
 	fn client_update_time(
 		&self,
 		client_id: &ClientId,
-		height: Height,
+		height: &Height,
 	) -> Result<Timestamp, ChannelError> {
 		ChannelReader::client_update_time(
 			&pallet_ibc::context::Context::<T>::new(),
@@ -174,7 +174,7 @@ impl<T: Config> ChannelReader for IbcTransferModule<T> {
 	fn client_update_height(
 		&self,
 		client_id: &ClientId,
-		height: Height,
+		height: &Height,
 	) -> Result<Height, ChannelError> {
 		ChannelReader::client_update_height(
 			&pallet_ibc::context::Context::<T>::new(),
@@ -216,7 +216,7 @@ impl<T: Config> ChannelKeeper for IbcTransferModule<T> {
 		&mut self,
 		port_id: &PortId,
 		channel_id: &ChannelId,
-		seq: Sequence,
+		seq: &Sequence,
 	) -> Result<(), PacketError> {
 		ChannelKeeper::delete_packet_commitment(
 			&mut pallet_ibc::context::Context::<T>::new(),
@@ -262,7 +262,7 @@ impl<T: Config> ChannelKeeper for IbcTransferModule<T> {
 		&mut self,
 		port_id: &PortId,
 		channel_id: &ChannelId,
-		seq: Sequence,
+		seq: &Sequence,
 	) -> Result<(), PacketError> {
 		ChannelKeeper::delete_packet_commitment(
 			&mut pallet_ibc::context::Context::<T>::new(),

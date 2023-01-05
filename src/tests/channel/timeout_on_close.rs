@@ -7,7 +7,7 @@ pub mod test_util {
 		channel::v1::MsgTimeoutOnClose as RawMsgTimeoutOnClose, client::v1::Height as RawHeight,
 	};
 
-    #[allow(dead_code)]
+	#[allow(dead_code)]
 	/// Returns a dummy `RawMsgTimeoutOnClose`, for testing only!
 	/// The `height` parametrizes both the proof height as well as the timeout height.
 	pub fn get_dummy_raw_msg_timeout_on_close(
@@ -80,9 +80,9 @@ mod tests {
     let packet = msg.packet.clone();
 
     let data = context.packet_commitment(
-        msg.packet.data.clone(),
-        msg.packet.timeout_height,
-        msg.packet.timeout_timestamp,
+        &msg.packet.data,
+        &msg.packet.timeout_height,
+        &msg.packet.timeout_timestamp,
     );
 
     let source_channel_end = ChannelEnd::new(

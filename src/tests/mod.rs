@@ -124,7 +124,7 @@ mod tests {
 				ConnectionKeeper::store_connection(
 					&mut context,
 					connection_id0.clone(),
-					input.get(&connection_id0.clone()).unwrap()
+					input.get(&connection_id0.clone()).unwrap().clone()
 				)
 				.is_ok(),
 				true
@@ -135,7 +135,7 @@ mod tests {
 				ConnectionKeeper::store_connection(
 					&mut context,
 					connection_id1.clone(),
-					input.get(&connection_id1.clone()).unwrap()
+					input.get(&connection_id1.clone()).unwrap().clone()
 				)
 				.is_ok(),
 				true
@@ -144,7 +144,7 @@ mod tests {
 				ConnectionKeeper::store_connection(
 					&mut context,
 					connection_id2.clone(),
-					input.get(&connection_id2.clone()).unwrap()
+					input.get(&connection_id2.clone()).unwrap().clone()
 				)
 				.is_ok(),
 				true
@@ -171,7 +171,7 @@ mod tests {
 		let mut context: Context<Test> = Context::new();
 
 		new_test_ext().execute_with(|| {
-			assert!(context.store_connection_to_client(connection_id, &client_id).is_ok());
+			assert!(context.store_connection_to_client(connection_id, client_id).is_ok());
 		})
 	}
 
@@ -195,9 +195,11 @@ mod tests {
 					ack.clone()
 				)
 				.is_ok());
-			assert!(context.delete_packet_acknowledgement(&port_id, &channel_id, sequence).is_ok());
+			assert!(context
+				.delete_packet_acknowledgement(&port_id, &channel_id, &sequence)
+				.is_ok());
 			let result = context
-				.get_packet_acknowledgement(&port_id, &channel_id, sequence)
+				.get_packet_acknowledgement(&port_id, &channel_id, &sequence)
 				.unwrap_err()
 				.to_string();
 
@@ -228,7 +230,7 @@ mod tests {
 			sequence_vec.push(sequence);
 			ack_vec.push(AcknowledgementCommitment::from(vec![index as u8]));
 
-			value_vec.push(ChannelReader::hash(&context, vec![index as u8]));
+			value_vec.push(ChannelReader::hash(&context, &vec![index as u8]));
 		}
 
 		new_test_ext().execute_with(|| {

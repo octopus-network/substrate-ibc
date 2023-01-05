@@ -179,6 +179,7 @@ pub mod pallet {
 		/// - `messages`: A serialized protocol buffer message containing the transfer request.
 		///
 		/// The relevant events are emitted when successful.
+		#[pallet::call_index(0)]
 		#[pallet::weight(0)]
 		pub fn raw_transfer(
 			origin: OriginFor<T>,
@@ -186,7 +187,7 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			let _sender = ensure_signed(origin)?;
 			let mut ctx = IbcTransferModule(PhantomData::<T>);
-	
+
 			log::trace!(
 				target: LOG_TARGET,
 				"raw_transfer : {:?} ",

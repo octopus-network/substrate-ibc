@@ -3,10 +3,11 @@ use crate as pallet_ics20_transfer;
 pub use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{
-		ConstU128, ConstU16, ConstU32, ConstU8, KeyOwnerProofSystem, Randomness, StorageInfo,
+		AsEnsureOriginWithArg, ConstU128, ConstU16, ConstU32, ConstU8, KeyOwnerProofSystem,
+		Randomness, StorageInfo,
 	},
 	weights::{
-		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight, WEIGHT_PER_SECOND},
+		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
 		IdentityFee, Weight,
 	},
 	StorageValue,
@@ -126,7 +127,9 @@ impl pallet_assets::Config<pallet_assets::Instance1> for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type Balance = AssetBalance;
 	type AssetId = AssetId;
+	type AssetIdParameter = u32;
 	type Currency = Balances;
+	type CreateOrigin = AsEnsureOriginWithArg<frame_system::EnsureSigned<AccountId>>;
 	type ForceOrigin = EnsureRoot<AccountId>;
 	type AssetDeposit = AssetDeposit;
 	type AssetAccountDeposit = ConstU128<DOLLARS>;
@@ -136,6 +139,7 @@ impl pallet_assets::Config<pallet_assets::Instance1> for Test {
 	type StringLimit = StringLimit;
 	type Freezer = ();
 	type Extra = ();
+	type RemoveItemsLimit = ConstU32<5>;
 	type WeightInfo = pallet_assets::weights::SubstrateWeight<Test>;
 }
 
@@ -200,7 +204,6 @@ impl pallet_ics20_transfer::Config for Test {
 pub type AssetBalance = u128;
 pub type AssetId = u32;
 
-
 parameter_types! {
 	pub const ExpectedBlockTime: u64 = 6;
 }
@@ -213,6 +216,7 @@ impl pallet_ibc::Config for Test {
 	type WeightInfo = ();
 }
 
+#[allow(dead_code)]
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
 	system::GenesisConfig::default().build_storage::<Test>().unwrap().into()

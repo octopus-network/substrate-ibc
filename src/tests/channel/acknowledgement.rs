@@ -85,9 +85,9 @@ mod tests {
     let packet = msg.packet.clone();
 
     let data = context.packet_commitment(
-        packet.data.clone(),
-        packet.timeout_height,
-        packet.timeout_timestamp,
+        &packet.data,
+        &packet.timeout_height,
+        &packet.timeout_timestamp,
     );
 
     let source_channel_end = ChannelEnd::new(

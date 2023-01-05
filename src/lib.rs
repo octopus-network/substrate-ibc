@@ -239,7 +239,7 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		/// Ibc events 
+		/// Ibc events
 		IbcEvents { events: Vec<IbcEvent> },
 		/// Ibc errors
 		IbcErrors { errors: Vec<errors::IbcError> },

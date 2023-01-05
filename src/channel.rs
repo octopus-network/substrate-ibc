@@ -184,8 +184,9 @@ impl<T: Config> ChannelReader for Context<T> {
 		client_id: &ClientId,
 		height: &Height,
 	) -> Result<Timestamp, ChannelError> {
-		let time = <ClientProcessedTimes<T>>::get(client_id, height)
-			.ok_or(ChannelError::ProcessedTimeNotFound { client_id: client_id.clone(), height: *height })?;
+		let time = <ClientProcessedTimes<T>>::get(client_id, height).ok_or(
+			ChannelError::ProcessedTimeNotFound { client_id: client_id.clone(), height: *height },
+		)?;
 
 		Timestamp::from_nanoseconds(time)
 			.map_err(|e| ChannelError::Other { description: e.to_string() })
@@ -196,8 +197,9 @@ impl<T: Config> ChannelReader for Context<T> {
 		client_id: &ClientId,
 		height: &Height,
 	) -> Result<Height, ChannelError> {
-		<ClientProcessedHeights<T>>::get(client_id, height)
-			.ok_or(ChannelError::ProcessedHeightNotFound { client_id: client_id.clone(), height: *height })
+		<ClientProcessedHeights<T>>::get(client_id, height).ok_or(
+			ChannelError::ProcessedHeightNotFound { client_id: client_id.clone(), height: *height },
+		)
 	}
 
 	/// Returns a counter on the number of channel ids have been created thus far.

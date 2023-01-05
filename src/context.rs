@@ -113,7 +113,7 @@ impl<T: Config> Context<T> {
 		connection_end: ConnectionEnd,
 	) -> Self {
 		use ibc::core::ics03_connection::context::ConnectionKeeper;
-		let _ = self.store_connection(connection_id, &connection_end);
+		let _ = self.store_connection(connection_id, connection_end);
 
 		self
 	}

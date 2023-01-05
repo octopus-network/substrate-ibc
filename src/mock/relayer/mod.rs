@@ -10,7 +10,7 @@ use ibc::{
 		ics26_routing::handler::{deliver, MsgReceipt},
 	},
 	events::IbcEvent,
-	mock::relayer::ics18_relayer::{context::RelayerContext, error::RelayerError},
+	mock::ics18_relayer::{context::RelayerContext, error::RelayerError},
 	signer::Signer,
 	Height,
 };
