@@ -78,7 +78,7 @@ impl<T: Config> ChannelReader for Context<T> {
 	fn client_consensus_state(
 		&self,
 		client_id: &ClientId,
-		height: Height,
+		height: &Height,
 	) -> Result<Box<dyn ConsensusState>, ChannelError> {
 		let context = Context::<T>::new();
 		ClientReader::consensus_state(&context, client_id, height)
@@ -123,20 +123,20 @@ impl<T: Config> ChannelReader for Context<T> {
 		&self,
 		port_id: &PortId,
 		channel_id: &ChannelId,
-		seq: Sequence,
+		seq: &Sequence,
 	) -> Result<IbcPacketCommitment, PacketError> {
 		<PacketCommitment<T>>::get((port_id, channel_id, seq))
-			.ok_or(PacketError::PacketCommitmentNotFound { sequence: seq })
+			.ok_or(PacketError::PacketCommitmentNotFound { sequence: *seq })
 	}
 
 	fn get_packet_receipt(
 		&self,
 		port_id: &PortId,
 		channel_id: &ChannelId,
-		seq: Sequence,
+		seq: &Sequence,
 	) -> Result<Receipt, PacketError> {
 		<PacketReceipt<T>>::get((port_id, channel_id, seq))
-			.ok_or(PacketError::PacketReceiptNotFound { sequence: seq })
+			.ok_or(PacketError::PacketReceiptNotFound { sequence: *seq })
 	}
 
 	/// Returns the `Acknowledgements` for the given identifier `(PortId, ChannelId, Sequence)`.
@@ -144,15 +144,15 @@ impl<T: Config> ChannelReader for Context<T> {
 		&self,
 		port_id: &PortId,
 		channel_id: &ChannelId,
-		seq: Sequence,
+		seq: &Sequence,
 	) -> Result<IbcAcknowledgementCommitment, PacketError> {
 		<Acknowledgements<T>>::get((port_id, channel_id, seq))
-			.ok_or(PacketError::PacketAcknowledgementNotFound { sequence: seq })
+			.ok_or(PacketError::PacketAcknowledgementNotFound { sequence: *seq })
 	}
 
 	/// A hashing function for packet commitments
-	fn hash(&self, value: Vec<u8>) -> Vec<u8> {
-		sp_io::hashing::sha2_256(&value).to_vec()
+	fn hash(&self, value: &[u8]) -> Vec<u8> {
+		sp_io::hashing::sha2_256(value).to_vec()
 	}
 
 	/// Returns the current height of the local chain.
@@ -166,7 +166,7 @@ impl<T: Config> ChannelReader for Context<T> {
 	/// Returns the `AnyConsensusState` for the given identifier `height`.
 	fn host_consensus_state(
 		&self,
-		height: Height,
+		height: &Height,
 	) -> Result<Box<dyn ConsensusState>, ChannelError> {
 		let context = Context::<T>::new();
 		ConnectionReader::host_consensus_state(&context, height).map_err(ChannelError::Connection)
@@ -182,10 +182,10 @@ impl<T: Config> ChannelReader for Context<T> {
 	fn client_update_time(
 		&self,
 		client_id: &ClientId,
-		height: Height,
+		height: &Height,
 	) -> Result<Timestamp, ChannelError> {
 		let time = <ClientProcessedTimes<T>>::get(client_id, height)
-			.ok_or(ChannelError::ProcessedTimeNotFound { client_id: client_id.clone(), height })?;
+			.ok_or(ChannelError::ProcessedTimeNotFound { client_id: client_id.clone(), height: *height })?;
 
 		Timestamp::from_nanoseconds(time)
 			.map_err(|e| ChannelError::Other { description: e.to_string() })
@@ -194,10 +194,10 @@ impl<T: Config> ChannelReader for Context<T> {
 	fn client_update_height(
 		&self,
 		client_id: &ClientId,
-		height: Height,
+		height: &Height,
 	) -> Result<Height, ChannelError> {
 		<ClientProcessedHeights<T>>::get(client_id, height)
-			.ok_or(ChannelError::ProcessedHeightNotFound { client_id: client_id.clone(), height })
+			.ok_or(ChannelError::ProcessedHeightNotFound { client_id: client_id.clone(), height: *height })
 	}
 
 	/// Returns a counter on the number of channel ids have been created thus far.
@@ -229,7 +229,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		&mut self,
 		port_id: &PortId,
 		channel_id: &ChannelId,
-		seq: Sequence,
+		seq: &Sequence,
 	) -> Result<(), PacketError> {
 		<PacketCommitment<T>>::remove((port_id, channel_id, seq));
 
@@ -264,7 +264,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		&mut self,
 		port_id: &PortId,
 		channel_id: &ChannelId,
-		seq: Sequence,
+		seq: &Sequence,
 	) -> Result<(), PacketError> {
 		<Acknowledgements<T>>::remove((port_id, channel_id, seq));
 

@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 
-ibc = { version = "0.25.0", default-features = false, git = "https://github.com/octopus-network/ibc-rs.git", branch = "fix-mock", features = ["parity-scale-codec", "mocks-primitives"]}
+ibc = { version = "0.25.0", default-features = false, git = "https://github.com/octopus-network/ibc-rs.git", branch = "fix-mock", features = ["parity-scale-codec"]}
 ibc-proto = { version = "0.24.0", default-features = false }
 
 # substrate crates

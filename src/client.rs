@@ -89,10 +89,10 @@ impl<T: Config> ClientReader for Context<T> {
 	fn consensus_state(
 		&self,
 		client_id: &ClientId,
-		height: Height,
+		height: &Height,
 	) -> Result<Box<dyn ConsensusState>, ClientError> {
 		let data = <ConsensusStates<T>>::get(client_id, height)
-			.ok_or(ClientError::ConsensusStateNotFound { client_id: client_id.clone(), height })?;
+			.ok_or(ClientError::ConsensusStateNotFound { client_id: client_id.clone(), height: *height })?;
 		match self.client_type(client_id)?.as_str() {
 			TENDERMINT_CLIENT_TYPE => {
 				let result: Ics07ConsensusState =
@@ -117,7 +117,7 @@ impl<T: Config> ClientReader for Context<T> {
 	fn next_consensus_state(
 		&self,
 		client_id: &ClientId,
-		height: Height,
+		height: &Height,
 	) -> Result<Option<Box<dyn ConsensusState>>, ClientError> {
 		let client_consensus_state_key =
 			<ConsensusStates<T>>::iter_keys().collect::<Vec<(ClientId, Height)>>();
@@ -130,9 +130,9 @@ impl<T: Config> ClientReader for Context<T> {
 
 		// Search for previous state.
 		for h in heights {
-			if h > height {
+			if h > *height {
 				let data = <ConsensusStates<T>>::get(client_id, height).ok_or(
-					ClientError::ConsensusStateNotFound { client_id: client_id.clone(), height },
+					ClientError::ConsensusStateNotFound { client_id: client_id.clone(), height: *height },
 				)?;
 				match self.client_type(client_id)?.as_str() {
 					TENDERMINT_CLIENT_TYPE => {
@@ -159,7 +159,7 @@ impl<T: Config> ClientReader for Context<T> {
 	fn prev_consensus_state(
 		&self,
 		client_id: &ClientId,
-		height: Height,
+		height: &Height,
 	) -> Result<Option<Box<dyn ConsensusState>>, ClientError> {
 		let client_consensus_state_key =
 			<ConsensusStates<T>>::iter_keys().collect::<Vec<(ClientId, Height)>>();
@@ -172,9 +172,9 @@ impl<T: Config> ClientReader for Context<T> {
 
 		// Search for previous state.
 		for h in heights {
-			if h < height {
+			if h < *height {
 				let data = <ConsensusStates<T>>::get(client_id, height).ok_or(
-					ClientError::ConsensusStateNotFound { client_id: client_id.clone(), height },
+					ClientError::ConsensusStateNotFound { client_id: client_id.clone(), height: *height },
 				)?;
 				match self.client_type(client_id)?.as_str() {
 					TENDERMINT_CLIENT_TYPE => {
@@ -220,7 +220,7 @@ impl<T: Config> ClientReader for Context<T> {
 
 	fn host_consensus_state(
 		&self,
-		_height: Height,
+		_height: &Height,
 	) -> Result<Box<dyn ConsensusState>, ClientError> {
 		#[cfg(not(test))]
 		{

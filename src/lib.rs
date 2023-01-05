@@ -30,7 +30,6 @@ pub mod context;
 pub mod errors;
 pub mod host;
 pub mod port;
-pub mod relayer;
 pub mod routing;
 pub mod utils;
 

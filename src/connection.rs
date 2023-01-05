@@ -64,7 +64,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 	fn client_consensus_state(
 		&self,
 		client_id: &ClientId,
-		height: Height,
+		height: &Height,
 	) -> Result<Box<dyn ConsensusState>, ConnectionError> {
 		// Forward method call to the Ics2Client-specific method.
 		self.consensus_state(client_id, height).map_err(ConnectionError::Client)
@@ -72,7 +72,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 
 	fn host_consensus_state(
 		&self,
-		height: Height,
+		height: &Height,
 	) -> Result<Box<dyn ConsensusState>, ConnectionError> {
 		ClientReader::host_consensus_state(self, height).map_err(ConnectionError::Client)
 	}
@@ -90,7 +90,7 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 	fn store_connection(
 		&mut self,
 		connection_id: ConnectionId,
-		connection_end: &ConnectionEnd,
+		connection_end: ConnectionEnd,
 	) -> Result<(), ConnectionError> {
 		<Connections<T>>::insert(connection_id, connection_end);
 
@@ -100,7 +100,7 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 	fn store_connection_to_client(
 		&mut self,
 		connection_id: ConnectionId,
-		client_id: &ClientId,
+		client_id: ClientId,
 	) -> Result<(), ConnectionError> {
 		<ConnectionClient<T>>::insert(client_id, connection_id);
 
