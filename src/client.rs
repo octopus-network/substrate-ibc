@@ -299,10 +299,8 @@ impl<T: Config> ClientKeeper for Context<T> {
 	}
 
 	fn increase_client_counter(&mut self) {
-		let _ = <ClientCounter<T>>::try_mutate(|val| -> Result<(), ClientError> {
-			*val = val.checked_add(1).ok_or(ClientError::Other {
-				description: format!("increase client coubter overflow"),
-			})?;
+		let _ = ClientCounter::<T>::try_mutate::<_, (), _>(|val| {
+			*val = val.saturating_add(1);
 			Ok(())
 		});
 	}

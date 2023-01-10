@@ -1,2 +1,2 @@
 check:
-	cargo check --no-default-features --target=wasm32-unknown-unknown
+	cargo +nightly check --no-default-features --target=wasm32-unknown-unknown

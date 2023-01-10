@@ -92,4 +92,4 @@ runtime-benchmarks = [
 try-runtime = ["frame-support/try-runtime"]
 
 [patch.crates-io]
-ibc-proto  = { git = "https://github.com/octopus-network/ibc-proto-rs.git",  branch = "add-codec-borsh-for-any" }
+ibc-proto  = { git = "https://github.com/cosmos/ibc-proto-rs.git",  branch = "main" }

@@ -346,10 +346,8 @@ impl<T: Config> ChannelKeeper for Context<T> {
 	/// Increases the counter which keeps track of how many channels have been created.
 	/// Should never fail.
 	fn increase_channel_counter(&mut self) {
-		let _ = <ChannelCounter<T>>::try_mutate(|val| -> Result<(), ChannelError> {
-			*val = val.checked_add(1).ok_or(ChannelError::Other {
-				description: format!("add channel counter overflow"),
-			})?;
+		let _ = ChannelCounter::<T>::try_mutate::<_, (), _>(|val| {
+			*val = val.saturating_add(1);
 			Ok(())
 		});
 	}
