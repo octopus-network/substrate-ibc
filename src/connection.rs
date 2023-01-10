@@ -1,5 +1,5 @@
 use crate::{
-	context::Context, Config, ConnectionClient, ConnectionCounter, Connections, OldHeight,
+	context::Context, Config, ConnectionClient, ConnectionCounter, Connections, OldHeight, Pallet,
 	REVISION_NUMBER,
 };
 pub use alloc::{
@@ -78,7 +78,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 	}
 
 	fn connection_counter(&self) -> Result<u64, ConnectionError> {
-		Ok(<ConnectionCounter<T>>::get())
+		Ok(Pallet::<T>::connection_cnt())
 	}
 
 	fn validate_self_client(&self, _counterparty_client_state: Any) -> Result<(), ConnectionError> {

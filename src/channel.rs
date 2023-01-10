@@ -206,7 +206,7 @@ impl<T: Config> ChannelReader for Context<T> {
 	/// The value of this counter should increase only via method
 	/// `ChannelKeeper::increase_channel_counter`.
 	fn channel_counter(&self) -> Result<u64, ChannelError> {
-		Ok(<Pallet<T> as Store>::ChannelCounter::get())
+		Ok(Pallet::<T>::channel_cnt())
 	}
 
 	fn max_expected_time_per_block(&self) -> Duration {

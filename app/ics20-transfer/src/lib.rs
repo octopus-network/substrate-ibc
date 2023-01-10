@@ -42,10 +42,10 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use ibc::{
 		applications::transfer::msgs::transfer::MsgTransfer,
+		core::ics04_channel::events::SendPacket,
 		events::IbcEvent,
 		handler::{HandlerOutput, HandlerOutputBuilder},
 		signer::Signer,
-		core::ics04_channel::events::SendPacket,
 	};
 	use ibc_support::AssetIdAndNameProvider;
 	use sp_runtime::traits::IdentifyAccount;

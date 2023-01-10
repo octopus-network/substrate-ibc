@@ -182,16 +182,17 @@ pub mod pallet {
 	pub type Clients<T: Config> = StorageMap<_, Blake2_128Concat, ClientId, ClientType>;
 
 	#[pallet::storage]
-	#[pallet::getter(fn client_counter)]
+	#[pallet::getter(fn client_cnt)]
 	/// client counter
 	pub type ClientCounter<T: Config> = StorageValue<_, u64, ValueQuery>;
 
 	#[pallet::storage]
-	#[pallet::getter(fn connection_counter)]
+	#[pallet::getter(fn connection_cnt)]
 	/// connection counter
 	pub type ConnectionCounter<T: Config> = StorageValue<_, u64, ValueQuery>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn channel_cnt)]
 	/// channel counter
 	pub type ChannelCounter<T: Config> = StorageValue<_, u64, ValueQuery>;
 

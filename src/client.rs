@@ -1,6 +1,6 @@
 use crate::{
 	context::Context, host::TENDERMINT_CLIENT_TYPE, ClientCounter, ClientProcessedHeights,
-	ClientProcessedTimes, ClientStates, Clients, Config, ConsensusStates, REVISION_NUMBER,
+	ClientProcessedTimes, ClientStates, Clients, Config, ConsensusStates, Pallet, REVISION_NUMBER,
 };
 pub use alloc::{
 	format,
@@ -255,7 +255,7 @@ impl<T: Config> ClientReader for Context<T> {
 	}
 
 	fn client_counter(&self) -> Result<u64, ClientError> {
-		Ok(<ClientCounter<T>>::get())
+		Ok(Pallet::<T>::client_cnt())
 	}
 }
 
