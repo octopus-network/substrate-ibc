@@ -33,7 +33,7 @@ sp-std = { version = "5.0.0", default-features = false, git = "https://github.co
 sp-tracing = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.36" }
 
 ## for ibc protocl
-ibc = { version = "0.25.0", default-features = false, git = "https://github.com/octopus-network/ibc-rs.git", branch = "fix-mock", features = ["parity-scale-codec", "mocks-primitives"]}
+ibc = { version = "0.25.0", default-features = false, features = ["parity-scale-codec", "mocks-primitives"]}
 ibc-proto = { version = "0.24.0", default-features = false, features = ["parity-scale-codec"] }
 log = { version = "0.4.0", default-features = false }
 serde = { version = "1.0", default-features = false }
@@ -92,4 +92,5 @@ runtime-benchmarks = [
 try-runtime = ["frame-support/try-runtime"]
 
 [patch.crates-io]
+ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "fix-mock" }
 ibc-proto  = { git = "https://github.com/cosmos/ibc-proto-rs.git",  branch = "main" }
