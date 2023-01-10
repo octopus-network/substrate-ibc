@@ -30,7 +30,7 @@ type BalanceOf<T> =
 pub mod pallet {
 	use super::*;
 	use crate::{ics20_callback::IbcTransferModule, LOG_TARGET};
-	use alloc::string::{String, ToString};
+	use alloc::string::String;
 	use frame_support::{
 		pallet_prelude::*,
 		traits::{
@@ -45,6 +45,7 @@ pub mod pallet {
 		events::IbcEvent,
 		handler::{HandlerOutput, HandlerOutputBuilder},
 		signer::Signer,
+		core::ics04_channel::events::SendPacket,
 	};
 	use ibc_support::AssetIdAndNameProvider;
 	use sp_runtime::traits::IdentifyAccount;
@@ -126,18 +127,7 @@ pub mod pallet {
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// Send packet event
-		SendPacket {
-			packet_data: Vec<u8>,
-			timeout_height: Vec<u8>,
-			timeout_timestamp: Vec<u8>,
-			sequence: Vec<u8>,
-			src_port_id: Vec<u8>,
-			src_channel_id: Vec<u8>,
-			dst_port_id: Vec<u8>,
-			dst_channel_id: Vec<u8>,
-			channel_ordering: Vec<u8>,
-			src_connection_id: Vec<u8>,
-		},
+		SendPacket(SendPacket),
 		// unsupported event
 		UnsupportedEvent,
 		/// Transfer native token  event
@@ -221,38 +211,7 @@ pub mod pallet {
 					log::trace!(target: LOG_TARGET, "raw_transfer event : {:?} ", event);
 					match event {
 						IbcEvent::SendPacket(ref send_packet) => {
-							let packet_data = send_packet.packet_data().clone();
-							let timeout_height =
-								alloc::format!("{:?}", send_packet.timeout_height())
-									.as_bytes()
-									.to_vec();
-							let timeout_timestamp =
-								send_packet.timeout_timestamp().to_string().as_bytes().to_vec();
-							let sequence = send_packet.sequence().to_string().as_bytes().to_vec();
-							let src_port_id =
-								send_packet.src_port_id().to_string().as_bytes().to_vec();
-							let src_channel_id =
-								send_packet.src_channel_id().to_string().as_bytes().to_vec();
-							let dst_port_id =
-								send_packet.dst_port_id().to_string().as_bytes().to_vec();
-							let dst_channel_id =
-								send_packet.dst_channel_id().to_string().as_bytes().to_vec();
-							let channel_ordering =
-								send_packet.channel_ordering().to_string().as_bytes().to_vec();
-							let src_connection_id =
-								send_packet.src_connection_id().to_string().as_bytes().to_vec();
-							Self::deposit_event(Event::SendPacket {
-								packet_data: packet_data.to_vec(),
-								timeout_height,
-								timeout_timestamp,
-								sequence,
-								src_port_id,
-								src_channel_id,
-								dst_port_id,
-								dst_channel_id,
-								channel_ordering,
-								src_connection_id,
-							});
+							Self::deposit_event(Event::SendPacket(send_packet.clone()));
 						},
 						_ => {
 							Self::deposit_event(Event::UnsupportedEvent);
