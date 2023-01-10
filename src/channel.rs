@@ -49,7 +49,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		port_id: &PortId,
 		channel_id: &ChannelId,
 	) -> Result<ChannelEnd, ChannelError> {
-		<Channels<T>>::get(port_id, channel_id).ok_or(ChannelError::ChannelNotFound {
+		Pallet::<T>::channel_end(port_id, channel_id).ok_or(ChannelError::ChannelNotFound {
 			port_id: port_id.clone(),
 			channel_id: channel_id.clone(),
 		})
@@ -65,7 +65,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		&self,
 		conn_id: &ConnectionId,
 	) -> Result<Vec<(PortId, ChannelId)>, ChannelError> {
-		<ChannelsConnection<T>>::get(&conn_id)
+		Pallet::<T>::connection_channels(&conn_id)
 			.ok_or(ChannelError::ConnectionNotOpen { connection_id: conn_id.clone() })
 	}
 
@@ -90,10 +90,12 @@ impl<T: Config> ChannelReader for Context<T> {
 		port_id: &PortId,
 		channel_id: &ChannelId,
 	) -> Result<Sequence, PacketError> {
-		<NextSequenceSend<T>>::get(port_id, channel_id).ok_or(PacketError::MissingNextSendSeq {
-			port_id: port_id.clone(),
-			channel_id: channel_id.clone(),
-		})
+		Pallet::<T>::get_next_sequence_send(port_id, channel_id).ok_or(
+			PacketError::MissingNextSendSeq {
+				port_id: port_id.clone(),
+				channel_id: channel_id.clone(),
+			},
+		)
 	}
 
 	fn get_next_sequence_recv(
@@ -101,10 +103,12 @@ impl<T: Config> ChannelReader for Context<T> {
 		port_id: &PortId,
 		channel_id: &ChannelId,
 	) -> Result<Sequence, PacketError> {
-		<NextSequenceRecv<T>>::get(port_id, channel_id).ok_or(PacketError::MissingNextRecvSeq {
-			port_id: port_id.clone(),
-			channel_id: channel_id.clone(),
-		})
+		Pallet::<T>::get_next_sequence_recv(port_id, channel_id).ok_or(
+			PacketError::MissingNextRecvSeq {
+				port_id: port_id.clone(),
+				channel_id: channel_id.clone(),
+			},
+		)
 	}
 
 	fn get_next_sequence_ack(
@@ -112,10 +116,12 @@ impl<T: Config> ChannelReader for Context<T> {
 		port_id: &PortId,
 		channel_id: &ChannelId,
 	) -> Result<Sequence, PacketError> {
-		<NextSequenceAck<T>>::get(port_id, channel_id).ok_or(PacketError::MissingNextAckSeq {
-			port_id: port_id.clone(),
-			channel_id: channel_id.clone(),
-		})
+		Pallet::<T>::get_next_sequence_ack(port_id, channel_id).ok_or(
+			PacketError::MissingNextAckSeq {
+				port_id: port_id.clone(),
+				channel_id: channel_id.clone(),
+			},
+		)
 	}
 
 	/// Returns the `PacketCommitment` for the given identifier `(PortId, ChannelId, Sequence)`.
@@ -125,7 +131,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		channel_id: &ChannelId,
 		seq: &Sequence,
 	) -> Result<IbcPacketCommitment, PacketError> {
-		<PacketCommitment<T>>::get((port_id, channel_id, seq))
+		Pallet::<T>::get_packet_commitment((port_id, channel_id, seq))
 			.ok_or(PacketError::PacketCommitmentNotFound { sequence: *seq })
 	}
 
@@ -135,7 +141,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		channel_id: &ChannelId,
 		seq: &Sequence,
 	) -> Result<Receipt, PacketError> {
-		<PacketReceipt<T>>::get((port_id, channel_id, seq))
+		Pallet::<T>::get_packet_receipt((port_id, channel_id, seq))
 			.ok_or(PacketError::PacketReceiptNotFound { sequence: *seq })
 	}
 
@@ -146,7 +152,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		channel_id: &ChannelId,
 		seq: &Sequence,
 	) -> Result<IbcAcknowledgementCommitment, PacketError> {
-		<Acknowledgements<T>>::get((port_id, channel_id, seq))
+		Pallet::<T>::get_packet_acknowledgement((port_id, channel_id, seq))
 			.ok_or(PacketError::PacketAcknowledgementNotFound { sequence: *seq })
 	}
 
@@ -184,7 +190,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		client_id: &ClientId,
 		height: &Height,
 	) -> Result<Timestamp, ChannelError> {
-		let time = <ClientProcessedTimes<T>>::get(client_id, height).ok_or(
+		let time = Pallet::<T>::client_update_time(client_id, height).ok_or(
 			ChannelError::ProcessedTimeNotFound { client_id: client_id.clone(), height: *height },
 		)?;
 
@@ -197,7 +203,7 @@ impl<T: Config> ChannelReader for Context<T> {
 		client_id: &ClientId,
 		height: &Height,
 	) -> Result<Height, ChannelError> {
-		<ClientProcessedHeights<T>>::get(client_id, height).ok_or(
+		Pallet::<T>::client_update_height(client_id, height).ok_or(
 			ChannelError::ProcessedHeightNotFound { client_id: client_id.clone(), height: *height },
 		)
 	}

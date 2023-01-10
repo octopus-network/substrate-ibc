@@ -30,7 +30,7 @@ use sp_std::boxed::Box;
 
 impl<T: Config> ConnectionReader for Context<T> {
 	fn connection_end(&self, conn_id: &ConnectionId) -> Result<ConnectionEnd, ConnectionError> {
-		<Connections<T>>::get(conn_id)
+		Pallet::<T>::connection_end(conn_id)
 			.ok_or(ConnectionError::ConnectionMismatch { connection_id: conn_id.clone() })
 	}
 

@@ -102,11 +102,13 @@ pub mod pallet {
 	pub struct Pallet<T>(_);
 
 	#[pallet::storage]
+	#[pallet::getter(fn client_state)]
 	/// Key: client_id
 	/// value: ClientState
 	pub type ClientStates<T: Config> = StorageMap<_, Blake2_128Concat, ClientId, Vec<u8>>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn client_update_time)]
 	/// key1: client_id
 	/// key2: height
 	/// value: timestamp
@@ -114,6 +116,7 @@ pub mod pallet {
 		StorageDoubleMap<_, Blake2_128Concat, ClientId, Blake2_128Concat, Height, u64>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn client_update_height)]
 	/// key1: client_id
 	/// key2: height
 	/// value: host_height
@@ -121,6 +124,7 @@ pub mod pallet {
 		StorageDoubleMap<_, Blake2_128Concat, ClientId, Blake2_128Concat, Height, Height>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn consensus_state)]
 	/// key1: client_id
 	/// key2: height
 	/// value: ConsensusState
@@ -128,19 +132,23 @@ pub mod pallet {
 		StorageDoubleMap<_, Blake2_128Concat, ClientId, Blake2_128Concat, Height, Vec<u8>>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn connection_end)]
 	pub type Connections<T: Config> = StorageMap<_, Blake2_128Concat, ConnectionId, ConnectionEnd>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn channel_end)]
 	pub type Channels<T: Config> =
 		StorageDoubleMap<_, Blake2_128Concat, PortId, Blake2_128Concat, ChannelId, ChannelEnd>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn connection_channels)]
 	/// key: connection_id
 	/// value: Vec<(port_id, channel_id)>
 	pub type ChannelsConnection<T: Config> =
 		StorageMap<_, Blake2_128Concat, ConnectionId, Vec<(PortId, ChannelId)>>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn get_next_sequence_send)]
 	/// Key1: port_id
 	/// key2: channel_id
 	/// value: sequence
@@ -148,6 +156,7 @@ pub mod pallet {
 		StorageDoubleMap<_, Blake2_128Concat, PortId, Blake2_128Concat, ChannelId, Sequence>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn get_next_sequence_recv)]
 	/// key1: port_id
 	/// key2: channel_id
 	/// value: sequence
@@ -155,6 +164,7 @@ pub mod pallet {
 		StorageDoubleMap<_, Blake2_128Concat, PortId, Blake2_128Concat, ChannelId, Sequence>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn get_next_sequence_ack)]
 	/// key1: port_id
 	/// key2: channel_id
 	/// value: sequence
@@ -162,6 +172,7 @@ pub mod pallet {
 		StorageDoubleMap<_, Blake2_128Concat, PortId, Blake2_128Concat, ChannelId, Sequence>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn get_packet_acknowledgement)]
 	/// key1: port_id
 	/// key2: channel_id
 	/// key3: sequence
@@ -177,6 +188,7 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn client_type)]
 	/// key: client_id
 	/// value: ClientType
 	pub type Clients<T: Config> = StorageMap<_, Blake2_128Concat, ClientId, ClientType>;
@@ -197,12 +209,13 @@ pub mod pallet {
 	pub type ChannelCounter<T: Config> = StorageValue<_, u64, ValueQuery>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn connection_client)]
 	/// key: ClientId
 	/// value: ConnectionId
 	pub type ConnectionClient<T: Config> = StorageMap<_, Blake2_128Concat, ClientId, ConnectionId>;
 
 	#[pallet::storage]
-	/// ReceiptsPath(port_id, channel_id, sequence) => receipt
+	#[pallet::getter(fn get_packet_receipt)]
 	/// key1: port_id
 	/// key2: channel_id
 	/// key3: sequence
@@ -218,6 +231,7 @@ pub mod pallet {
 	>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn get_packet_commitment)]
 	/// key1: port_id
 	/// key2: channel_id
 	/// key3: sequence
