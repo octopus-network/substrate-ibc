@@ -33,7 +33,7 @@ primitive-types = { version = "0.12.0", default-features = false, features = ["s
 # octopus ibc-rs
 ibc = { version = "0.25.0", default-features = false, features = ["parity-scale-codec"]}
 # octopus ibc-proto-rs
-ibc-proto = { version = "0.24.0", default-features = false, features = ["parity-scale-codec"] }
+ibc-proto = { version = "0.24.1", default-features = false, features = ["parity-scale-codec"] }
 pallet-ibc = { version = "4.0.0-dev", default-features = false, path = "../../" }
 
 [dev-dependencies]
