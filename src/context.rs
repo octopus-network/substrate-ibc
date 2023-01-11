@@ -2,10 +2,7 @@ use crate::Config;
 use alloc::{borrow::ToOwned, string::String, sync::Arc};
 use sp_std::marker::PhantomData;
 
-use ibc::{
-	applications::transfer::MODULE_ID_STR,
-	core::ics26_routing::context::{Module, ModuleId, RouterBuilder},
-};
+use ibc::core::ics26_routing::context::{Module, ModuleId, RouterBuilder};
 
 /// A struct capturing all the functional dependencies (i.e., context)
 /// which the ICS26 module requires to be able to dispatch and process IBC messages.
@@ -73,17 +70,12 @@ impl<T: Config> Context<T> {
 		client_type: Option<ClientType>,
 		consensus_state_height: Option<Height>,
 	) -> Self {
-		use crate::host::TENDERMINT_CLIENT_TYPE;
 		use ibc::{
-			core::{
-				ics02_client::{client_state::ClientState, consensus_state::ConsensusState},
-				ics24_host::identifier::ChainId,
-			},
+			core::ics02_client::{client_state::ClientState, consensus_state::ConsensusState},
 			mock::{
 				client_state::MOCK_CLIENT_TYPE, consensus_state::MockConsensusState,
 				header::MockHeader,
 			},
-			timestamp::Timestamp,
 		};
 
 		let cs_height = consensus_state_height.unwrap_or(client_state_height);

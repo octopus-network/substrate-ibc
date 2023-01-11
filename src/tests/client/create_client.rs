@@ -1,6 +1,6 @@
 use crate::{
 	mock::{new_test_ext, System, Test},
-	tests::common::{get_dummy_account_id, get_dummy_bech32_account, get_dummy_proof},
+	tests::common::get_dummy_account_id,
 	Context,
 };
 use ibc::{

@@ -17,6 +17,7 @@ pub mod test_util {
 		connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry,
 	};
 
+	#[allow(deprecated)]
 	/// Returns a dummy `RawMsgConnectionOpenTry` with parametrized heights. The parameter
 	/// `proof_height` represents the height, on the source chain, at which this chain produced the
 	/// proof. Parameter `consensus_height` represents the height of destination chain which a

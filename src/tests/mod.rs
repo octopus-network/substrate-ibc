@@ -6,7 +6,6 @@ pub mod connection;
 
 #[cfg(test)]
 mod tests {
-	use super::*;
 	use crate::{mock::*, Context};
 	use core::str::FromStr;
 

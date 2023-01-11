@@ -1,7 +1,4 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-#![allow(unreachable_patterns)]
-#![allow(unused_imports)]
-#![allow(deprecated)]
 
 //! # Overview
 //!
@@ -21,7 +18,6 @@ pub use alloc::{
 	string::{String, ToString},
 };
 use frame_system::ensure_signed;
-use ibc::core::ics24_host::identifier::ChannelId as IbcChannelId;
 use sp_std::{fmt::Debug, vec, vec::Vec};
 pub mod channel;
 pub mod client;
@@ -59,20 +55,17 @@ pub mod pallet {
 			ics02_client::{client_type::ClientType, height::Height},
 			ics03_connection::connection::ConnectionEnd,
 			ics04_channel::{
-				channel::{ChannelEnd, Order},
+				channel::ChannelEnd,
 				commitment::{
 					AcknowledgementCommitment as IbcAcknowledgementCommitment,
 					PacketCommitment as IbcPacketCommitment,
 				},
 				packet::{Receipt, Sequence},
-				timeout::TimeoutHeight,
-				Version as ChannelVersion,
 			},
 			ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
 			ics26_routing::handler::MsgReceipt,
 		},
 		events::IbcEvent,
-		timestamp::Timestamp,
 	};
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.

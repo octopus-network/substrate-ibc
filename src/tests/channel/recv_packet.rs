@@ -29,7 +29,7 @@ mod tests {
 	use super::test_util::get_dummy_raw_msg_recv_packet;
 	use crate::{
 		mock::{new_test_ext, System, Test as PalletIbcTest},
-		tests::common::{get_dummy_account_id, get_dummy_bech32_account, get_dummy_proof},
+		tests::common::get_dummy_account_id,
 		Context,
 	};
 	use ibc::{

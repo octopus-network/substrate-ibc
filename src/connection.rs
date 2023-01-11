@@ -17,15 +17,11 @@ use ibc::{
 			error::ConnectionError,
 		},
 		ics23_commitment::commitment::CommitmentPrefix,
-		ics24_host::{
-			identifier::{ClientId, ConnectionId},
-			path::{ClientConnectionsPath, ConnectionsPath},
-		},
+		ics24_host::identifier::{ClientId, ConnectionId},
 	},
 	Height,
 };
-use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
-use sp_core::Get;
+use ibc_proto::google::protobuf::Any;
 use sp_std::boxed::Box;
 
 impl<T: Config> ConnectionReader for Context<T> {

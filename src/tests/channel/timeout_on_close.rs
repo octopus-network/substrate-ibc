@@ -49,7 +49,7 @@ mod tests {
 				Version,
 			},
 			ics23_commitment::commitment::CommitmentPrefix,
-			ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
+			ics24_host::identifier::{ClientId, ConnectionId},
 		},
 		events::IbcEvent,
 		timestamp::ZERO_DURATION,

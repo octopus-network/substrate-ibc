@@ -9,7 +9,6 @@ pub use alloc::{
 use sp_std::{boxed::Box, vec::Vec};
 
 use crate::host::MOCK_CLIENT_TYPE;
-use frame_support::traits::UnixTime;
 use ibc::{
 	clients::ics07_tendermint::{
 		client_state::ClientState as Ics07ClientState,
@@ -23,14 +22,9 @@ use ibc::{
 			context::{ClientKeeper, ClientReader},
 			error::ClientError,
 		},
-		ics24_host::{
-			identifier::ClientId,
-			path::{ClientConsensusStatePath, ClientStatePath, ClientTypePath},
-		},
+		ics24_host::identifier::ClientId,
 	},
-	mock::{
-		client_state::MockClientState, consensus_state::MockConsensusState, header::MockHeader,
-	},
+	mock::{client_state::MockClientState, consensus_state::MockConsensusState},
 	timestamp::Timestamp,
 	Height,
 };
@@ -216,6 +210,7 @@ impl<T: Config> ClientReader for Context<T> {
 	fn host_timestamp(&self) -> Result<Timestamp, ClientError> {
 		#[cfg(not(test))]
 		{
+			use frame_support::traits::UnixTime;
 			let nanoseconds = <T as Config>::TimeProvider::now().as_nanos();
 			return Ok(Timestamp::from_nanoseconds(nanoseconds as u64).unwrap())
 		}
@@ -235,6 +230,7 @@ impl<T: Config> ClientReader for Context<T> {
 		}
 		#[cfg(test)]
 		{
+			use ibc::mock::header::MockHeader;
 			let mock_header =
 				MockHeader { height: self.host_height()?, timestamp: Default::default() };
 			Ok(Box::new(MockConsensusState::new(mock_header)))
@@ -248,6 +244,7 @@ impl<T: Config> ClientReader for Context<T> {
 		}
 		#[cfg(test)]
 		{
+			use ibc::mock::header::MockHeader;
 			let mock_header =
 				MockHeader { height: self.host_height()?, timestamp: Default::default() };
 			Ok(Box::new(MockConsensusState::new(mock_header)))

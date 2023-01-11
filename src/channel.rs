@@ -1,14 +1,13 @@
 use crate::{
-	context::Context, Acknowledgements, ChannelCounter, Channels, ChannelsConnection,
-	ClientProcessedHeights, ClientProcessedTimes, Config, IbcChannelId, NextSequenceAck,
-	NextSequenceRecv, NextSequenceSend, PacketCommitment, PacketReceipt, Pallet, Store,
+	context::Context, Acknowledgements, ChannelCounter, Channels, ChannelsConnection, Config,
+	NextSequenceAck, NextSequenceRecv, NextSequenceSend, PacketCommitment, PacketReceipt, Pallet,
 	REVISION_NUMBER,
 };
 pub use alloc::{
 	format,
 	string::{String, ToString},
 };
-use core::{str::FromStr, time::Duration};
+use core::time::Duration;
 use ibc::{
 	core::{
 		ics02_client::{
@@ -27,19 +26,11 @@ use ibc::{
 			error::{ChannelError, PacketError},
 			packet::{Receipt, Sequence},
 		},
-		ics24_host::{
-			identifier::{ChannelId, ClientId, ConnectionId, PortId},
-			path::{
-				AcksPath, ChannelEndsPath, CommitmentsPath, ConnectionsPath, ReceiptsPath,
-				SeqAcksPath, SeqRecvsPath, SeqSendsPath,
-			},
-			Path,
-		},
+		ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
 	},
 	timestamp::Timestamp,
 	Height,
 };
-use ibc_proto::protobuf::Protobuf;
 use sp_core::Get;
 use sp_std::{boxed::Box, vec, vec::Vec};
 

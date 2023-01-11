@@ -35,12 +35,10 @@ mod tests {
 	};
 	use ibc::{
 		core::{
-			ics02_client::error as ics02_error,
 			ics03_connection::{
 				connection::{
 					ConnectionEnd, Counterparty as ConnectionCounterparty, State as ConnectionState,
 				},
-				error as ics03_error,
 				version::get_compatible_versions,
 			},
 			ics04_channel::{
