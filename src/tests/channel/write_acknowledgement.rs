@@ -50,8 +50,8 @@ fn write_ack_packet_processing() {
         State::Open,
         Order::default(),
         Counterparty::new(
-            packet.source_port.clone(),
-            Some(packet.source_channel.clone()),
+            packet.port_on_a.clone(),
+            Some(packet.chan_on_a.clone()),
         ),
         vec![ConnectionId::default()],
         Version::ics20(),
@@ -85,8 +85,8 @@ fn write_ack_packet_processing() {
                 .with_client(&ClientId::default(), client_height)
                 .with_connection(ConnectionId::default(), connection_end.clone())
                 .with_channel(
-                    packet.destination_port.clone(),
-                    packet.destination_channel.clone(),
+                    packet.port_on_b.clone(),
+                    packet.chan_on_b.clone(),
                     dest_channel_end.clone(),
                 ),
             packet: packet.clone(),

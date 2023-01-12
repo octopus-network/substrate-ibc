@@ -178,26 +178,25 @@ impl<T: Config> WeightInfo<T> for () {
 			WeightRouter::<T>::get_weight(&msg_channel_open_init.port_id_on_a)
 				.unwrap_or_else(|| Box::new(()));
 		let cb_weight = cb.on_chan_open_init();
-		let lc_verification_weight =
-			match msg_channel_open_init.chan_end_on_a.connection_hops.get(0) {
-				Some(connection_id) => {
-					let ctx = Context::<T>::new();
-					let connection_end = ctx.connection_end(connection_id).unwrap_or_default();
-					let client_id = connection_end.client_id();
-					let client_type = client_id
-						.as_str()
-						.rsplit_once('-')
-						.map(|(client_type_str, ..)| client_type_str);
-					match client_type {
-						Some(ty) if ty.contains("mock") => {
-							let mock_client = MockClientWeightInfo::<T>::new();
-							mock_client.channel_open_init_mock()
-						},
-						_ => Weight::default(),
-					}
-				},
-				None => Weight::default(),
-			};
+		let lc_verification_weight = match msg_channel_open_init.connection_hops_on_a.get(0) {
+			Some(connection_id) => {
+				let ctx = Context::<T>::new();
+				let connection_end = ctx.connection_end(connection_id).unwrap_or_default();
+				let client_id = connection_end.client_id();
+				let client_type = client_id
+					.as_str()
+					.rsplit_once('-')
+					.map(|(client_type_str, ..)| client_type_str);
+				match client_type {
+					Some(ty) if ty.contains("mock") => {
+						let mock_client = MockClientWeightInfo::<T>::new();
+						mock_client.channel_open_init_mock()
+					},
+					_ => Weight::default(),
+				}
+			},
+			None => Weight::default(),
+		};
 
 		cb_weight.saturating_add(lc_verification_weight)
 	}
@@ -206,8 +205,7 @@ impl<T: Config> WeightInfo<T> for () {
 		let cb = WeightRouter::<T>::get_weight(&msg_channel_open_try.port_id_on_b)
 			.unwrap_or_else(|| Box::new(()));
 		let cb_weight = cb.on_chan_open_try();
-		let lc_verification_weight = match msg_channel_open_try.chan_end_on_b.connection_hops.get(0)
-		{
+		let lc_verification_weight = match msg_channel_open_try.connection_hops_on_b.get(0) {
 			Some(connection_id) => {
 				let ctx = Context::<T>::new();
 				let connection_end = ctx.connection_end(connection_id).unwrap_or_default();
@@ -346,12 +344,12 @@ impl<T: Config> WeightInfo<T> for () {
 	}
 
 	fn recv_packet(msg_recv_packet: MsgRecvPacket) -> Weight {
-		let cb = WeightRouter::<T>::get_weight(&msg_recv_packet.packet.destination_port)
+		let cb = WeightRouter::<T>::get_weight(&msg_recv_packet.packet.port_on_b)
 			.unwrap_or_else(|| Box::new(()));
 		let cb_weight = cb.on_recv_packet(&msg_recv_packet.packet);
 		let lc_verification_weight = match channel_client::<T>(
-			&msg_recv_packet.packet.destination_channel,
-			&msg_recv_packet.packet.destination_port,
+			&msg_recv_packet.packet.chan_on_b,
+			&msg_recv_packet.packet.port_on_b,
 		) {
 			Ok(client_id) => {
 				let client_type = client_id
@@ -372,13 +370,13 @@ impl<T: Config> WeightInfo<T> for () {
 	}
 
 	fn ack_packet(msg_ack_packet: MsgAcknowledgement) -> Weight {
-		let cb = WeightRouter::<T>::get_weight(&msg_ack_packet.packet.destination_port)
+		let cb = WeightRouter::<T>::get_weight(&msg_ack_packet.packet.port_on_b)
 			.unwrap_or_else(|| Box::new(()));
 		let cb_weight =
 			cb.on_acknowledgement_packet(&msg_ack_packet.packet, &msg_ack_packet.acknowledgement);
 		let lc_verification_weight = match channel_client::<T>(
-			&msg_ack_packet.packet.destination_channel,
-			&msg_ack_packet.packet.destination_port,
+			&msg_ack_packet.packet.chan_on_b,
+			&msg_ack_packet.packet.port_on_b,
 		) {
 			Ok(client_id) => {
 				let client_type = client_id
@@ -399,12 +397,12 @@ impl<T: Config> WeightInfo<T> for () {
 	}
 
 	fn timeout_packet(msg_timeout_packet: MsgTimeout) -> Weight {
-		let cb = WeightRouter::<T>::get_weight(&msg_timeout_packet.packet.destination_port)
+		let cb = WeightRouter::<T>::get_weight(&msg_timeout_packet.packet.port_on_b)
 			.unwrap_or_else(|| Box::new(()));
 		let cb_weight = cb.on_timeout_packet(&msg_timeout_packet.packet);
 		let lc_verification_weight = match channel_client::<T>(
-			&msg_timeout_packet.packet.destination_channel,
-			&msg_timeout_packet.packet.destination_port,
+			&msg_timeout_packet.packet.chan_on_b,
+			&msg_timeout_packet.packet.port_on_b,
 		) {
 			Ok(client_id) => {
 				let client_type = client_id
@@ -425,12 +423,12 @@ impl<T: Config> WeightInfo<T> for () {
 	}
 
 	fn timeout_on_close_packet(msg_timout_onclose_packet: MsgTimeoutOnClose) -> Weight {
-		let cb = WeightRouter::<T>::get_weight(&msg_timout_onclose_packet.packet.destination_port)
+		let cb = WeightRouter::<T>::get_weight(&msg_timout_onclose_packet.packet.port_on_b)
 			.unwrap_or_else(|| Box::new(()));
 		let cb_weight = cb.on_timeout_packet(&msg_timout_onclose_packet.packet);
 		let lc_verification_weight = match channel_client::<T>(
-			&msg_timout_onclose_packet.packet.destination_channel,
-			&msg_timout_onclose_packet.packet.destination_port,
+			&msg_timout_onclose_packet.packet.chan_on_b,
+			&msg_timout_onclose_packet.packet.port_on_b,
 		) {
 			Ok(client_id) => {
 				let client_type = client_id
@@ -488,41 +486,35 @@ pub(crate) fn deliver<T: Config + Send + Sync>(
 			// Add benchmarked weight for that message type
 			// Add benchmarked weight for module callback
 			let temp = match msg {
-				MsgEnvelope::ClientMsg(msgs) => match msgs {
+				MsgEnvelope::Client(msgs) => match msgs {
 					ClientMsg::CreateClient(msg) => <T as Config>::WeightInfo::create_client(msg),
 					ClientMsg::UpdateClient(msg) => <T as Config>::WeightInfo::update_client(msg),
 					ClientMsg::UpgradeClient(msg) => <T as Config>::WeightInfo::upgrade_client(msg),
 					ClientMsg::Misbehaviour(msg) => <T as Config>::WeightInfo::misbehaviour(msg),
 				},
-				MsgEnvelope::ConnectionMsg(msgs) => match msgs {
-					ConnectionMsg::ConnectionOpenInit(msg) =>
-						<T as Config>::WeightInfo::conn_open_init(msg),
-					ConnectionMsg::ConnectionOpenTry(msg) =>
-						<T as Config>::WeightInfo::conn_try_open(msg),
-					ConnectionMsg::ConnectionOpenAck(msg) =>
-						<T as Config>::WeightInfo::conn_open_ack(msg),
-					ConnectionMsg::ConnectionOpenConfirm(msg) =>
+				MsgEnvelope::Connection(msgs) => match msgs {
+					ConnectionMsg::OpenInit(msg) => <T as Config>::WeightInfo::conn_open_init(msg),
+					ConnectionMsg::OpenTry(msg) => <T as Config>::WeightInfo::conn_try_open(msg),
+					ConnectionMsg::OpenAck(msg) => <T as Config>::WeightInfo::conn_open_ack(msg),
+					ConnectionMsg::OpenConfirm(msg) =>
 						<T as Config>::WeightInfo::conn_open_confirm(msg),
 				},
-				MsgEnvelope::ChannelMsg(msgs) => match msgs {
-					ChannelMsg::ChannelOpenInit(msg) =>
-						<T as Config>::WeightInfo::channel_open_init(msg),
-					ChannelMsg::ChannelOpenTry(msg) =>
-						<T as Config>::WeightInfo::channel_open_try(msg),
-					ChannelMsg::ChannelOpenAck(msg) =>
-						<T as Config>::WeightInfo::channel_open_ack(msg),
-					ChannelMsg::ChannelOpenConfirm(msg) =>
+				MsgEnvelope::Channel(msgs) => match msgs {
+					ChannelMsg::OpenInit(msg) => <T as Config>::WeightInfo::channel_open_init(msg),
+					ChannelMsg::OpenTry(msg) => <T as Config>::WeightInfo::channel_open_try(msg),
+					ChannelMsg::OpenAck(msg) => <T as Config>::WeightInfo::channel_open_ack(msg),
+					ChannelMsg::OpenConfirm(msg) =>
 						<T as Config>::WeightInfo::channel_open_confirm(msg),
-					ChannelMsg::ChannelCloseInit(msg) =>
+					ChannelMsg::CloseInit(msg) =>
 						<T as Config>::WeightInfo::channel_close_init(msg),
-					ChannelMsg::ChannelCloseConfirm(msg) =>
+					ChannelMsg::CloseConfirm(msg) =>
 						<T as Config>::WeightInfo::channel_close_confirm(msg),
 				},
-				MsgEnvelope::PacketMsg(msg) => match msg {
-					PacketMsg::RecvPacket(msg) => <T as Config>::WeightInfo::recv_packet(msg),
-					PacketMsg::AckPacket(msg) => <T as Config>::WeightInfo::ack_packet(msg),
-					PacketMsg::TimeoutPacket(msg) => <T as Config>::WeightInfo::timeout_packet(msg),
-					PacketMsg::TimeoutOnClosePacket(msg) =>
+				MsgEnvelope::Packet(msg) => match msg {
+					PacketMsg::Recv(msg) => <T as Config>::WeightInfo::recv_packet(msg),
+					PacketMsg::Ack(msg) => <T as Config>::WeightInfo::ack_packet(msg),
+					PacketMsg::Timeout(msg) => <T as Config>::WeightInfo::timeout_packet(msg),
+					PacketMsg::TimeoutOnClose(msg) =>
 						<T as Config>::WeightInfo::timeout_on_close_packet(msg),
 				},
 			};

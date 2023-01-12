@@ -52,15 +52,15 @@ pub mod test_util {
 	) -> MsgTransfer<PrefixedCoin> {
 		let address: Signer = get_dummy_substrate_account().as_str().parse().unwrap();
 		MsgTransfer {
-			source_port: PortId::transfer(),
-			source_channel: ChannelId::default(),
-			token: BaseCoin { denom: "DEMO".parse().unwrap(), amount: U256::from(10).into() }
+			port_on_a: PortId::default(),
+			chan_on_a: ChannelId::default(),
+			token: BaseCoin { denom: "uatom".parse().unwrap(), amount: U256::from(10).into() }
 				.into(),
 			sender: address.clone(),
 			receiver: address,
-			timeout_timestamp: timeout_timestamp
+			timeout_timestamp_on_b: timeout_timestamp
 				.unwrap_or_else(|| Timestamp::now().add(Duration::from_secs(10)).unwrap()),
-			timeout_height,
+			timeout_height_on_b: timeout_height,
 		}
 	}
 
@@ -79,13 +79,13 @@ pub mod test_util {
 
 		Packet {
 			sequence,
-			source_port: msg.source_port,
-			source_channel: msg.source_channel,
-			destination_port: PortId::transfer(),
-			destination_channel: ChannelId::default(),
+			port_on_a: msg.port_on_a,
+			chan_on_a: msg.chan_on_a,
+			port_on_b: PortId::default(),
+			chan_on_b: ChannelId::default(),
 			data,
-			timeout_height: msg.timeout_height,
-			timeout_timestamp: msg.timeout_timestamp,
+			timeout_height_on_b: msg.timeout_height_on_b,
+			timeout_timestamp_on_b: msg.timeout_timestamp_on_b,
 		}
 	}
 }

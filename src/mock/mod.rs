@@ -1,7 +1,5 @@
 use super::*;
 
-mod relayer;
-
 use crate as pallet_ibc;
 pub use frame_support::{
 	construct_runtime, parameter_types,
