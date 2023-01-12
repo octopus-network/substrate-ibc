@@ -60,12 +60,11 @@ pub fn create_mock_update_client(client_id: ClientId, height: Height) -> Vec<u8>
 		height,
 		timestamp: Timestamp::from_nanoseconds(TIMESTAMP.saturating_mul(1000)).unwrap(),
 	};
-
-	let msg = MsgUpdateClient::new(
+	let msg = MsgUpdateClient {
 		client_id,
-		mock_header.into(),
-		crate::tests::common::get_dummy_account_id(),
-	)
+		header: mock_header.into(),
+		signer: crate::tests::common::get_dummy_account_id(),
+	}
 	.encode_vec()
 	.unwrap();
 

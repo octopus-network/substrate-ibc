@@ -17,6 +17,7 @@ pub mod test_util {
 	}
 }
 
+#[cfg(test)]
 mod tests {
 
 	use super::test_util::get_dummy_raw_msg_chan_open_confirm;

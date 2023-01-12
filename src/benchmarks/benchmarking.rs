@@ -3,7 +3,7 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 use crate::*;
-use ibc_support::Any;
+use ibc_proto::google::protobuf::Any;
 
 use ibc::mock::client_state as mock_client_state;
 
@@ -17,7 +17,7 @@ use ibc::core::{
 		context::ClientKeeper,
 		height::Height,
 		msgs::{
-			create_client::{MsgCreateClient, TYPE_URL},
+			create_client::{MsgCreateClient, TYPE_URL as CREATE_CLIENT_TYPE_URL},
 			update_client::TYPE_URL as UPDATE_CLIENT_TYPE_URL,
 		},
 	},
@@ -84,9 +84,9 @@ benchmarks! {
 			mock_client_state.into(),
 			mock_cs_state.into(),
 			crate::tests::common::get_dummy_account_id(),
-		).unwrap().encode_vec().unwrap();
+		).encode_vec().unwrap();
 
-		let msg = Any { type_url: TYPE_URL.to_string().as_bytes().to_vec(), value: msg };
+		let msg = Any { type_url: CREATE_CLIENT_TYPE_URL.to_string(), value: msg };
 		let caller: T::AccountId = whitelisted_caller();
 	}: deliver(RawOrigin::Signed(caller), vec![msg])
 	verify {
@@ -111,7 +111,7 @@ benchmarks! {
 		let new_height = Height::new(0, 2).unwrap();
 		let value = super::utils::create_mock_update_client(client_id.clone(), new_height);
 
-		let msg = Any { type_url: UPDATE_CLIENT_TYPE_URL.to_string().as_bytes().to_vec(), value };
+		let msg = Any { type_url: UPDATE_CLIENT_TYPE_URL.to_string(), value };
 		let caller: T::AccountId = whitelisted_caller();
 	}: deliver(RawOrigin::Signed(caller), vec![msg])
 	verify {
@@ -136,7 +136,7 @@ benchmarks! {
 		let new_height = Height::new(0, 2).unwrap();
 		let value = super::utils::create_mock_upgrade_client(client_id.clone(), new_height);
 
-		let msg = Any { type_url: UPDATE_CLIENT_TYPE_URL.to_string().as_bytes().to_vec(), value };
+		let msg = Any { type_url: UPDATE_CLIENT_TYPE_URL.to_string(), value };
 		let caller: T::AccountId = whitelisted_caller();
 	}: deliver(RawOrigin::Signed(caller), vec![msg])
 	verify {
@@ -175,7 +175,7 @@ benchmarks! {
 		}.encode_vec().unwrap();
 
 		let msg = Any {
-			type_url: conn_open_init_mod::TYPE_URL.as_bytes().to_vec(),
+			type_url: conn_open_init_mod::TYPE_URL.to_string(),
 			value
 		};
 		let caller: T::AccountId = whitelisted_caller();
@@ -215,7 +215,7 @@ benchmarks! {
 		// Update consensus state with the new root that we'll enable proofs to be correctly verified
 		ctx.store_consensus_state(client_id, Height::new(0, 2).unwrap(), Box::new(cs_state)).unwrap();
 		let caller: T::AccountId = whitelisted_caller();
-		let msg = Any { type_url: CONN_TRY_OPEN_TYPE_URL.as_bytes().to_vec(), value };
+		let msg = Any { type_url: CONN_TRY_OPEN_TYPE_URL.to_string(), value };
 	}: deliver(RawOrigin::Signed(caller), vec![msg])
 	verify {
 
@@ -248,8 +248,8 @@ benchmarks! {
 		let connection_counterparty = Counterparty::new(counterparty_client_id, Some(ConnectionId::new(1)), commitment_prefix);
 		let connection_end = ConnectionEnd::new(State::Init, client_id.clone(), connection_counterparty, vec![ConnVersion::default()], delay_period);
 
-		ctx.store_connection(connection_id.clone(), &connection_end).unwrap();
-		ctx.store_connection_to_client(connection_id, &client_id).unwrap();
+		ctx.store_connection(connection_id.clone(), connection_end).unwrap();
+		ctx.store_connection_to_client(connection_id, client_id.clone()).unwrap();
 
 		let new_height = Height::new(0, 2).unwrap();
 		let value = super::utils::create_mock_update_client(client_id.clone(), new_height);
@@ -259,7 +259,7 @@ benchmarks! {
 		let (cs_state, value) = super::utils::create_conn_open_ack::<T>(new_height, Height::new(0, 3).unwrap());
 		ctx.store_consensus_state(client_id, Height::new(0, 2).unwrap(), Box::new(cs_state)).unwrap();
 		let caller: T::AccountId = whitelisted_caller();
-		let msg = Any { type_url: CONN_OPEN_ACK_TYPE_URL.as_bytes().to_vec(), value };
+		let msg = Any { type_url: CONN_OPEN_ACK_TYPE_URL.to_string(), value };
 	}: deliver(RawOrigin::Signed(caller), vec![msg])
 	verify {
 
@@ -292,8 +292,8 @@ benchmarks! {
 		let connection_counterparty = Counterparty::new(counterparty_client_id, Some(ConnectionId::new(1)), commitment_prefix);
 		let connection_end = ConnectionEnd::new(State::TryOpen, client_id.clone(), connection_counterparty, vec![ConnVersion::default()], delay_period);
 
-		ctx.store_connection(connection_id.clone(), &connection_end).unwrap();
-		ctx.store_connection_to_client(connection_id, &client_id).unwrap();
+		ctx.store_connection(connection_id.clone(), connection_end).unwrap();
+		ctx.store_connection_to_client(connection_id, client_id.clone()).unwrap();
 
 		// We update the light client state so it can have the required client and consensus states required to process
 		// the proofs that will be submitted
@@ -306,7 +306,7 @@ benchmarks! {
 		// Update consensus state with the new root that we'll enable proofs to be correctly verified
 		ctx.store_consensus_state(client_id, Height::new(0, 2).unwrap(), Box::new(cs_state)).unwrap();
 		let caller: T::AccountId = whitelisted_caller();
-		let msg = Any { type_url: CONN_OPEN_CONFIRM_TYPE_URL.as_bytes().to_vec(), value };
+		let msg = Any { type_url: CONN_OPEN_CONFIRM_TYPE_URL.to_string(), value };
 	}: deliver(RawOrigin::Signed(caller), vec![msg])
 	verify {
 	}
@@ -337,8 +337,8 @@ benchmarks! {
 		let connection_counterparty = Counterparty::new(counterparty_client_id, Some(ConnectionId::new(1)), commitment_prefix);
 		let connection_end = ConnectionEnd::new(State::Open, client_id.clone(), connection_counterparty, vec![ConnVersion::default()], delay_period);
 
-		ctx.store_connection(connection_id.clone(), &connection_end).unwrap();
-		ctx.store_connection_to_client(connection_id, &client_id).unwrap();
+		ctx.store_connection(connection_id.clone(), connection_end).unwrap();
+		ctx.store_connection_to_client(connection_id, client_id.clone()).unwrap();
 
 		let port_id = PortId::default();
 		let counterparty_channel = ibc::core::ics04_channel::channel::Counterparty::new(port_id.clone(), None);
@@ -352,12 +352,15 @@ benchmarks! {
 
 		let value = MsgChannelOpenInit {
 			port_id_on_a: port_id.clone(),
-			chan_end_on_a: channel_end,
-			signer: crate::tests::common::get_dummy_account_id()
+			connection_hops_on_a: vec![ConnectionId::new(0)],
+			port_id_on_b: port_id,
+			ordering: ibc::core::ics04_channel::channel::Order::Ordered,
+			signer: crate::tests::common::get_dummy_account_id(),
+			version_proposal: ibc::core::ics04_channel::Version::default()
 		}.encode_vec().unwrap();
 
 		let caller: T::AccountId = whitelisted_caller();
-		let msg = Any { type_url: CHAN_OPEN_TYPE_URL.as_bytes().to_vec(), value };
+		let msg = Any { type_url: CHAN_OPEN_TYPE_URL.to_string(), value };
 	}: deliver(RawOrigin::Signed(caller), vec![msg])
 	verify {
 	}
@@ -386,8 +389,8 @@ benchmarks! {
 		let connection_counterparty = Counterparty::new(counterparty_client_id, Some(ConnectionId::new(1)), commitment_prefix);
 		let connection_end = ConnectionEnd::new(State::Open, client_id.clone(), connection_counterparty, vec![ConnVersion::default()], delay_period);
 
-		ctx.store_connection(connection_id.clone(), &connection_end).unwrap();
-		ctx.store_connection_to_client(connection_id, &client_id).unwrap();
+		ctx.store_connection(connection_id.clone(), connection_end).unwrap();
+		ctx.store_connection_to_client(connection_id, client_id.clone()).unwrap();
 
 		// We update the light client state so it can have the required client and consensus states required to process
 		// the proofs that will be submitted
@@ -402,7 +405,7 @@ benchmarks! {
 		ctx.store_consensus_state(client_id, Height::new(0, 2).unwrap(), Box::new(cs_state)).unwrap();
 
 		let msg = Any {
-			type_url: CHAN_OPEN_TRY_TYPE_URL.as_bytes().to_vec(),
+			type_url: CHAN_OPEN_TRY_TYPE_URL.to_string(),
 			value
 		};
 		let caller: T::AccountId = whitelisted_caller();
@@ -434,8 +437,8 @@ benchmarks! {
 		let connection_counterparty = Counterparty::new(counterparty_client_id, Some(ConnectionId::new(1)), commitment_prefix);
 		let connection_end = ConnectionEnd::new(State::Open, client_id.clone(), connection_counterparty, vec![ConnVersion::default()], delay_period);
 
-		ctx.store_connection(connection_id.clone(), &connection_end).unwrap();
-		ctx.store_connection_to_client(connection_id, &client_id).unwrap();
+		ctx.store_connection(connection_id.clone(), connection_end).unwrap();
+		ctx.store_connection_to_client(connection_id, client_id.clone()).unwrap();
 		let new_height = Height::new(0, 2).unwrap();
 		let value = super::utils::create_mock_update_client(client_id.clone(), new_height);
 		let msg = ibc_proto::google::protobuf::Any  { type_url: UPDATE_CLIENT_TYPE_URL.to_string(), value };
@@ -453,9 +456,12 @@ benchmarks! {
 		);
 
 		let value = MsgChannelOpenInit {
-			port_id_on_a: port_id,
-			chan_end_on_a: channel_end,
+			port_id_on_a: port_id.clone(),
+			connection_hops_on_a: vec![ConnectionId::new(0)],
+			port_id_on_b: port_id,
+			ordering: ibc::core::ics04_channel::channel::Order::Ordered,
 			signer: crate::tests::common::get_dummy_account_id(),
+			version_proposal: ibc::core::ics04_channel::Version::default()
 		}.encode_vec().unwrap();
 
 		let msg = ibc_proto::google::protobuf::Any  { type_url: CHAN_OPEN_TYPE_URL.to_string(), value };
@@ -466,7 +472,7 @@ benchmarks! {
 
 		ctx.store_consensus_state(client_id, Height::new(0, 2).unwrap(), Box::new(cs_state)).unwrap();
 		let msg = Any {
-			type_url: CHAN_OPEN_ACK_TYPE_URL.as_bytes().to_vec(),
+			type_url: CHAN_OPEN_ACK_TYPE_URL.to_string(),
 			value
 		};
 		let caller: T::AccountId = whitelisted_caller();
@@ -499,8 +505,8 @@ benchmarks! {
 		let connection_counterparty = Counterparty::new(counterparty_client_id, Some(ConnectionId::new(1)), commitment_prefix);
 		let connection_end = ConnectionEnd::new(State::Open, client_id.clone(), connection_counterparty, vec![ConnVersion::default()], delay_period);
 
-		ctx.store_connection(connection_id.clone(), &connection_end).unwrap();
-		ctx.store_connection_to_client(connection_id, &client_id).unwrap();
+		ctx.store_connection(connection_id.clone(), connection_end).unwrap();
+		ctx.store_connection_to_client(connection_id, client_id.clone()).unwrap();
 
 		let new_height = Height::new(0, 2).unwrap();
 		let value = super::utils::create_mock_update_client(client_id.clone(), new_height);
@@ -525,7 +531,7 @@ benchmarks! {
 		let (cs_state, value) = super::utils::create_chan_open_confirm(new_height);
 		ctx.store_consensus_state(client_id, Height::new(0, 2).unwrap(), Box::new(cs_state)).unwrap();
 		let msg = Any {
-			type_url: CHAN_OPEN_CONFIRM_TYPE_URL.as_bytes().to_vec(),
+			type_url: CHAN_OPEN_CONFIRM_TYPE_URL.to_string(),
 			value
 		};
 		let caller: T::AccountId = whitelisted_caller();
@@ -558,8 +564,8 @@ benchmarks! {
 		let connection_counterparty = Counterparty::new(counterparty_client_id, Some(ConnectionId::new(1)), commitment_prefix);
 		let connection_end = ConnectionEnd::new(State::Open, client_id.clone(), connection_counterparty, vec![ConnVersion::default()], delay_period);
 
-		ctx.store_connection(connection_id.clone(), &connection_end).unwrap();
-		ctx.store_connection_to_client(connection_id, &client_id).unwrap();
+		ctx.store_connection(connection_id.clone(), connection_end).unwrap();
+		ctx.store_connection_to_client(connection_id, client_id.clone()).unwrap();
 
 		let new_height = Height::new(0, 2).unwrap();
 		let value = super::utils::create_mock_update_client(client_id.clone(), new_height);
@@ -585,7 +591,7 @@ benchmarks! {
 		let (_, value) = super::utils::create_chan_close_init(new_height);
 
 		let msg = Any {
-			type_url: CHAN_CLOSE_INIT_TYPE_URL.as_bytes().to_vec(),
+			type_url: CHAN_CLOSE_INIT_TYPE_URL.to_string(),
 			value
 		};
 		let caller: T::AccountId = whitelisted_caller();
@@ -618,8 +624,8 @@ benchmarks! {
 		let connection_counterparty = Counterparty::new(counterparty_client_id, Some(ConnectionId::new(1)), commitment_prefix);
 		let connection_end = ConnectionEnd::new(State::Open, client_id.clone(), connection_counterparty, vec![ConnVersion::default()], delay_period);
 
-		ctx.store_connection(connection_id.clone(), &connection_end).unwrap();
-		ctx.store_connection_to_client(connection_id, &client_id).unwrap();
+		ctx.store_connection(connection_id.clone(), connection_end).unwrap();
+		ctx.store_connection_to_client(connection_id, client_id.clone()).unwrap();
 
 		let new_height = Height::new(0, 2).unwrap();
 		let value = super::utils::create_mock_update_client(client_id.clone(), new_height);
@@ -644,7 +650,7 @@ benchmarks! {
 		let (cs_state, value) = super::utils::create_chan_close_confirm(new_height);
 		ctx.store_consensus_state(client_id, Height::new(0, 2).unwrap(), Box::new(cs_state)).unwrap();
 		let msg = Any {
-			type_url: CHAN_CLOSE_CONFIRM_TYPE_URL.as_bytes().to_vec(),
+			type_url: CHAN_CLOSE_CONFIRM_TYPE_URL.to_string(),
 			value
 		};
 		let caller: T::AccountId = whitelisted_caller();
@@ -677,8 +683,8 @@ benchmarks! {
 		let connection_counterparty = Counterparty::new(counterparty_client_id, Some(ConnectionId::new(1)), commitment_prefix);
 		let connection_end = ConnectionEnd::new(State::Open, client_id.clone(), connection_counterparty, vec![ConnVersion::default()], delay_period);
 
-		ctx.store_connection(connection_id.clone(), &connection_end).unwrap();
-		ctx.store_connection_to_client(connection_id, &client_id).unwrap();
+		ctx.store_connection(connection_id.clone(), connection_end).unwrap();
+		ctx.store_connection_to_client(connection_id, client_id.clone()).unwrap();
 
 		let new_height = Height::new(0, 2).unwrap();
 		let value = super::utils::create_mock_update_client(client_id.clone(), new_height);
@@ -703,7 +709,7 @@ benchmarks! {
 		let (cs_state, value) = super::utils::create_recv_packet(new_height);
 		ctx.store_consensus_state(client_id, Height::new(0, 2).unwrap(), Box::new(cs_state)).unwrap();
 		let msg = Any {
-			type_url: RECV_PACKET_TYPE_URL.as_bytes().to_vec(),
+			type_url: RECV_PACKET_TYPE_URL.to_string(),
 			value
 		};
 		let caller: T::AccountId = whitelisted_caller();
@@ -735,8 +741,8 @@ benchmarks! {
 		let connection_counterparty = Counterparty::new(counterparty_client_id, Some(ConnectionId::new(1)), commitment_prefix);
 		let connection_end = ConnectionEnd::new(State::Open, client_id.clone(), connection_counterparty, vec![ConnVersion::default()], delay_period);
 
-		ctx.store_connection(connection_id.clone(), &connection_end).unwrap();
-		ctx.store_connection_to_client(connection_id, &client_id).unwrap();
+		ctx.store_connection(connection_id.clone(), connection_end).unwrap();
+		ctx.store_connection_to_client(connection_id, client_id.clone()).unwrap();
 
 		let new_height = Height::new(0, 2).unwrap();
 		let value = super::utils::create_mock_update_client(client_id.clone(), new_height);
@@ -762,7 +768,7 @@ benchmarks! {
 		let (cs_state, value) = super::utils::create_ack_packet(new_height);
 		ctx.store_consensus_state(client_id, Height::new(0, 2).unwrap(), Box::new(cs_state)).unwrap();
 		let msg = Any {
-			type_url: ACK_PACKET_TYPE_URL.as_bytes().to_vec(),
+			type_url: ACK_PACKET_TYPE_URL.to_string(),
 			value
 		};
 		let caller: T::AccountId = whitelisted_caller();
@@ -793,8 +799,8 @@ benchmarks! {
 		let delay_period = core::time::Duration::from_nanos(0);
 		let connection_counterparty = Counterparty::new(counterparty_client_id, Some(ConnectionId::new(1)), commitment_prefix);
 		let connection_end = ConnectionEnd::new(State::Open, client_id.clone(), connection_counterparty, vec![ConnVersion::default()], delay_period);
-		ctx.store_connection(connection_id.clone(), &connection_end).unwrap();
-		ctx.store_connection_to_client(connection_id, &client_id).unwrap();
+		ctx.store_connection(connection_id.clone(), connection_end).unwrap();
+		ctx.store_connection_to_client(connection_id, client_id.clone()).unwrap();
 
 
 		let new_height = Height::new(0, 2).unwrap();
@@ -822,7 +828,7 @@ benchmarks! {
 
 		ctx.store_consensus_state(client_id, Height::new(0, 2).unwrap(), Box::new(cs_state)).unwrap();
 		let msg = Any {
-			type_url: TIMEOUT_TYPE_URL.as_bytes().to_vec(),
+			type_url: TIMEOUT_TYPE_URL.to_string(),
 			value
 		};
 		let caller: T::AccountId = whitelisted_caller();
