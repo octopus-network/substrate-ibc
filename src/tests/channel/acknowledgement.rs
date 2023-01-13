@@ -100,7 +100,7 @@ mod tests {
             Some(packet.chan_on_b.clone()),
         ),
         vec![ConnectionId::default()],
-        Version::ics20(),
+        Version::new("ics20-1".to_string()),
     );
 
     let connection_end = ConnectionEnd::new(

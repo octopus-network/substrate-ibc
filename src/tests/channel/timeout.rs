@@ -99,7 +99,7 @@ mod tess {
         Order::default(),
         Counterparty::new(packet.port_on_b.clone(), Some(packet.chan_on_b.clone())),
         vec![ConnectionId::default()],
-        Version::ics20(),
+        Version::new("ics20-1".to_string()),
     );
 
     let mut source_ordered_channel_end = chan_end_on_a.clone();
