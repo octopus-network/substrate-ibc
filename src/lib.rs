@@ -323,7 +323,9 @@ pub mod pallet {
 			log::trace!(target: "pallet_ibc", "[pallet_ibc_deliver]: errors: {:?}", errors);
 
 			Self::deposit_event(Event::IbcEvents { events });
-			Self::deposit_event(errors.into());
+			if !errors.is_empty() {
+				Self::deposit_event(errors.into());
+			}
 
 			Ok(().into())
 		}
