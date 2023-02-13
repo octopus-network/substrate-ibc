@@ -7,12 +7,12 @@ use ibc::{
 			channel::{Counterparty, Order},
 			error::{ChannelError, PacketError},
 			handler::ModuleExtras,
-			msgs::acknowledgement::Acknowledgement as GenericAcknowledgement,
+			msgs::acknowledgement::Acknowledgement,
 			packet::Packet,
 			Version,
 		},
 		ics24_host::identifier::{ChannelId, ConnectionId, PortId},
-		ics26_routing::context::{Module, ModuleOutputBuilder, OnRecvPacketAck},
+		ics26_routing::context::{Module, ModuleOutputBuilder},
 	},
 	signer::Signer,
 };
@@ -106,11 +106,11 @@ impl<T: Config> Module for IbcTransferModule<T> {
 	}
 
 	fn on_recv_packet(
-		&self,
+		&mut self,
 		output: &mut ModuleOutputBuilder,
 		packet: &Packet,
 		relayer: &Signer,
-	) -> OnRecvPacketAck {
+	) -> Acknowledgement {
 		ibc::applications::transfer::context::on_recv_packet(self, output, packet, relayer)
 	}
 
@@ -118,7 +118,7 @@ impl<T: Config> Module for IbcTransferModule<T> {
 		&mut self,
 		output: &mut ModuleOutputBuilder,
 		packet: &Packet,
-		acknowledgement: &GenericAcknowledgement,
+		acknowledgement: &Acknowledgement,
 		relayer: &Signer,
 	) -> Result<(), PacketError> {
 		ibc::applications::transfer::context::on_acknowledgement_packet(

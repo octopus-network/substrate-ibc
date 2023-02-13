@@ -33,8 +33,8 @@ sp-std = { version = "5.0.0", default-features = false, git = "https://github.co
 sp-tracing = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.37" }
 
 ## for ibc protocl
-ibc = { version = "0.27.0", default-features = false, features = ["parity-scale-codec", "mocks-no-std"]}
-ibc-proto = { version = "0.24.1", default-features = false, features = ["parity-scale-codec"] }
+ibc = { version = "0.28.0", default-features = false, features = ["parity-scale-codec", "mocks-no-std"]}
+ibc-proto = { version = "0.25.0", default-features = false, features = ["parity-scale-codec"] }
 log = { version = "0.4.0", default-features = false }
 serde = { version = "1.0", default-features = false }
 serde_json = { version = "1.0", default-features = false }
@@ -44,10 +44,8 @@ pallet-timestamp = { version = "4.0.0-dev", default-features = false,  git = "ht
 pallet-balances = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.37", optional = true }
 
 [dev-dependencies]
-# local crates
 chrono = "0.4.19"
 frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.37" }
-# thrid party crates
 hex = '0.4.0'
 pallet-assets = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.37" }
 pallet-babe = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.37" }
@@ -56,7 +54,6 @@ pallet-timestamp = { version = "4.0.0-dev", git = "https://github.com/paritytech
 serde = "1.0"
 sha2 = '0.10.2'
 sp-core = { version = "7.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.37" }
-# substrate crates
 sp-io = { version = "7.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.37" }
 sp-keyring = { version = "7.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.37" }
 sp-runtime = { version = "7.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.37" }

@@ -12,13 +12,16 @@ pub use frame_support::{
 	},
 	StorageValue,
 };
+use sp_io::storage;
 use frame_system as system;
 use frame_system::EnsureRoot;
+use pallet_assets::AssetsCallback;
 use sp_runtime::{
 	generic,
 	traits::{AccountIdLookup, BlakeTwo256, IdentifyAccount, Verify},
 	MultiSignature,
 };
+use codec::Encode;
 
 pub type Signature = MultiSignature;
 pub(crate) type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
@@ -123,6 +126,18 @@ parameter_types! {
 	pub const MetadataDepositPerByte: Balance = 1 * DOLLARS;
 }
 
+pub struct AssetsCallbackHandle;
+impl AssetsCallback<AssetId, AccountId> for AssetsCallbackHandle {
+	fn created(_id: &AssetId, _owner: &AccountId) {
+		storage::set(b"asset_created", &().encode());
+	}
+
+	fn destroyed(_id: &AssetId) {
+		storage::set(b"asset_destroyed", &().encode());
+	}
+}
+
+
 impl pallet_assets::Config<pallet_assets::Instance1> for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type Balance = AssetBalance;
@@ -141,6 +156,7 @@ impl pallet_assets::Config<pallet_assets::Instance1> for Test {
 	type Extra = ();
 	type RemoveItemsLimit = ConstU32<5>;
 	type WeightInfo = pallet_assets::weights::SubstrateWeight<Test>;
+	type CallbackHandle = AssetsCallbackHandle;
 }
 
 parameter_types! {
