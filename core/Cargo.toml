@@ -28,8 +28,8 @@ sp-std = { version = "5.0.0", default-features = false, git = "https://github.co
 sp-tracing = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38" }
 
 ## for ibc protocl
-ibc = { version = "0.28.0", default-features = false, features = ["parity-scale-codec", "mocks-no-std"]}
-ibc-proto = { version = "0.25.0", default-features = false, features = ["parity-scale-codec"] }
+ibc = { version = "0.29.0", default-features = false, features = ["parity-scale-codec", "mocks-no-std"]}
+ibc-proto = { version = "0.26.0", default-features = false, features = ["parity-scale-codec"] }
 log = { version = "0.4.0", default-features = false }
 serde = { version = "1.0", default-features = false }
 serde_json = { version = "1.0", default-features = false }

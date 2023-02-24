@@ -176,7 +176,8 @@ pub mod pallet {
 			messages: Vec<ibc_proto::google::protobuf::Any>,
 		) -> DispatchResultWithPostInfo {
 			let _sender = ensure_signed(origin)?;
-			let mut ctx = IbcTransferModule(PhantomData::<T>);
+			let ibc_core_context = pallet_ibc::context::Context::<T>::new();
+			let mut ctx = IbcTransferModule::new(ibc_core_context);
 
 			log::trace!(
 				target: LOG_TARGET,

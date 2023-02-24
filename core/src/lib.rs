@@ -1,4 +1,10 @@
 #![cfg_attr(not(feature = "std"), no_std)]
+// todo need remove below allow
+#![allow(unused_imports)]
+#![allow(unreachable_patterns)]
+#![allow(unused_variables)]
+#![allow(non_snake_case)]
+#![allow(unused_mut)]
 
 //! # Overview
 //!
@@ -19,13 +25,9 @@ pub use alloc::{
 };
 use frame_system::ensure_signed;
 use sp_std::{fmt::Debug, vec, vec::Vec};
-pub mod channel;
-pub mod client;
-pub mod connection;
 pub mod context;
 pub mod errors;
 pub mod host;
-pub mod port;
 pub mod routing;
 pub mod utils;
 
@@ -63,7 +65,7 @@ pub mod pallet {
 				packet::{Receipt, Sequence},
 			},
 			ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
-			ics26_routing::handler::MsgReceipt,
+			ics26_routing::{error::RouterError, msgs::MsgEnvelope},
 		},
 		events::IbcEvent,
 	};
@@ -85,7 +87,7 @@ pub mod pallet {
 
 		type ExpectedBlockTime: Get<u64>;
 
-		/// benchmarking weight info
+		// benchmarking weight info
 		type WeightInfo: WeightInfo<Self>;
 	}
 
@@ -298,8 +300,8 @@ pub mod pallet {
 		///
 		/// The relevant events are emitted when successful.
 		#[pallet::call_index(0)]
-		#[pallet::weight(crate::weights::deliver::<T>(messages))]
-		pub fn deliver(
+		#[pallet::weight(crate::weights::dispatch::<T>(messages))]
+		pub fn dispatch(
 			origin: OriginFor<T>,
 			messages: Vec<ibc_proto::google::protobuf::Any>,
 		) -> DispatchResultWithPostInfo {
@@ -308,11 +310,13 @@ pub mod pallet {
 
 			let (events, logs, errors) = messages.into_iter().fold(
 				(vec![], vec![], vec![]),
-				|(mut events, mut logs, mut errors), msg| {
-					match ibc::core::ics26_routing::handler::deliver(&mut ctx, msg) {
-						Ok(MsgReceipt { events: temp_events, log: temp_logs }) => {
-							events.extend(temp_events);
-							logs.extend(temp_logs);
+				|(mut events, mut logs, mut errors): (Vec<IbcEvent>, Vec<T>, Vec<RouterError>),
+				 msg| {
+					let envelope: MsgEnvelope = msg.try_into().unwrap();
+					match ibc::core::handler::dispatch(&mut ctx, envelope) {
+						Ok(()) => {
+							// events.extend(temp_events);
+							// logs.extend(temp_logs);
 						},
 						Err(e) => errors.push(e),
 					}

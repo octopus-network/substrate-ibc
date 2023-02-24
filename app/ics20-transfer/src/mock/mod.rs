@@ -1,5 +1,6 @@
 use super::*;
 use crate as pallet_ics20_transfer;
+use codec::Encode;
 pub use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{
@@ -12,16 +13,15 @@ pub use frame_support::{
 	},
 	StorageValue,
 };
-use sp_io::storage;
 use frame_system as system;
 use frame_system::EnsureRoot;
 use pallet_assets::AssetsCallback;
+use sp_io::storage;
 use sp_runtime::{
 	generic,
 	traits::{AccountIdLookup, BlakeTwo256, IdentifyAccount, Verify},
 	MultiSignature,
 };
-use codec::Encode;
 
 pub type Signature = MultiSignature;
 pub(crate) type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
@@ -136,7 +136,6 @@ impl AssetsCallback<AssetId, AccountId> for AssetsCallbackHandle {
 		storage::set(b"asset_destroyed", &().encode());
 	}
 }
-
 
 impl pallet_assets::Config<pallet_assets::Instance1> for Test {
 	type RuntimeEvent = RuntimeEvent;
