@@ -2,6 +2,7 @@ use core::time::Duration;
 
 use crate::{PacketCommitment as PalletPacketCommitment, *};
 use alloc::{borrow::ToOwned, string::String, sync::Arc};
+use codec::Encode;
 use frame_support::traits::Get;
 use ibc::{
 	clients::ics07_tendermint::{
@@ -705,13 +706,36 @@ impl<T: Config> ExecutionContext for Context<T> {
 	}
 
 	fn emit_ibc_event(&mut self, event: IbcEvent) {
-		// self.events.push(event);
-		todo!()
+		let mut key = b"pallet-ibc:ibc-event".to_vec();
+		let mut value = sp_io::hashing::sha2_256(&event.encode()).to_vec();
+		let _ = key.append(&mut value);
+
+		// store ibc event
+		sp_io::offchain_index::set(&key, event.encode().as_slice());
+
+		// store ibc event key
+		let _ = IbcEventKey::<T>::try_mutate::<_, (), _>(|val| {
+			val.push(key);
+			Ok(())
+		});
+
+		log::trace!("emit ibc event: {:?}", event);
 	}
 
 	fn log_message(&mut self, message: String) {
-		// self.logs.push(message);
-		todo!()
+		let mut key = b"pallet-ibc:ibc-log".to_vec();
+		let mut value = sp_io::hashing::sha2_256(&message.as_ref()).to_vec();
+		let _ = key.append(&mut value);
+
+		// store ibc log
+		sp_io::offchain_index::set(&key, message.as_ref());
+
+		// store ibc log key
+		let _ = IbcLogKey::<T>::try_mutate::<_, (), _>(|val| {
+			val.push(key);
+			Ok(())
+		});
+		log::trace!("emit ibc event: {:?}", message);
 	}
 }
 
