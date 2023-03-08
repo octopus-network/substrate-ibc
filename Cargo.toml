@@ -1,6 +1,6 @@
 [workspace]
 members = [
-  "app/ics20-transfer",
+  "app/transfer",
   "ibc-support",
   "core",
 ]
