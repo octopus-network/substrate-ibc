@@ -13,22 +13,20 @@ mod tests {
 	use ibc::core::{
 		ics02_client::{
 			client_type::ClientType,
-			context::{ClientKeeper, ClientReader},
 			error::ClientError,
 		},
 		ics03_connection::{
 			connection::ConnectionEnd,
-			context::{ConnectionKeeper, ConnectionReader},
 			error::ConnectionError,
 		},
 		ics04_channel::{
 			channel::ChannelEnd,
-			context::{ChannelKeeper, ChannelReader},
 			error::{ChannelError, PacketError},
 			packet::Sequence,
 		},
 		ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
 	};
+	use ibc::core::ValidationContext;
 
 	// test store and read client-type
 	#[test]

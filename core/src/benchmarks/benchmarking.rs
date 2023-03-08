@@ -53,6 +53,7 @@ use ibc::core::{
 use ibc_proto::protobuf::Protobuf;
 use scale_info::prelude::string::ToString;
 use sp_std::vec;
+use ibc::core::{ExecutionContext,ValidationContext};
 
 use super::utils::TIMESTAMP;
 
@@ -800,8 +801,9 @@ benchmarks! {
 		let connection_counterparty = Counterparty::new(counterparty_client_id, Some(ConnectionId::new(1)), commitment_prefix);
 		let connection_end = ConnectionEnd::new(State::Open, client_id.clone(), connection_counterparty, vec![ConnVersion::default()], delay_period);
 		ctx.store_connection(connection_id.clone(), connection_end).unwrap();
-		ctx.store_connection_to_client(connection_id, client_id.clone()).unwrap();
-
+		
+		let client_connection_path = ClientConnectionPath(client_id.clone());
+		ctx.store_connection_to_client(&client_connection_path, connection_id).unwrap();
 
 		let new_height = Height::new(0, 2).unwrap();
 		let value = super::utils::create_mock_update_client(client_id.clone(), new_height);
@@ -819,14 +821,22 @@ benchmarks! {
 			ibc::core::ics04_channel::Version::default()
 		);
 
-		ctx.store_channel(port_id.clone(), ChannelId::new(0), channel_end).unwrap();
-		ctx.store_connection_channels(ConnectionId::new(0), port_id.clone(), ChannelId::default()).unwrap();
-		ctx.store_next_sequence_recv(port_id.clone(), ChannelId::new(0), 1u64.into()).unwrap();
-		ctx.store_next_sequence_send(port_id.clone(), ChannelId::new(0), 1u64.into()).unwrap();
+		let channel_end_path = ChannelEndPath(port_id.clone(), ChannelId::new(0));
+		ctx.store_channel(&channel_end_path, channel_end).unwrap();
+		
+		let seq_rev_path = SeqRecvPath(port_id.clone(), ChannelId::new(0));
+		ctx.store_next_sequence_recv(&seq_rev_path, 1u64.into()).unwrap();
+
+		let seq_send_path = SeqSendPath(port_id.clone(), ChannelId::new(0));
+		ctx.store_next_sequence_send(&seq_send_path, 1u64.into()).unwrap();
 
 		let (cs_state, value) = super::utils::create_timeout_packet(new_height);
-
-		ctx.store_consensus_state(client_id, Height::new(0, 2).unwrap(), Box::new(cs_state)).unwrap();
+		let consensus_state_path = ClientConsensusStatePath {
+			client_id,
+    		epoch:0,
+    		height:2,
+		};
+		ctx.store_consensus_state(consensus_state_path, Box::new(cs_state)).unwrap();
 		let msg = Any {
 			type_url: TIMEOUT_TYPE_URL.to_string(),
 			value
