@@ -15,12 +15,12 @@ targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
 # substate crates
-codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive"] }
+codec = { package = "parity-scale-codec", version = "3.2.2", default-features = false, features = ["derive"] }
 frame-benchmarking = { version = "4.0.0-dev", default-features = false, optional = true, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.39" }
 frame-support = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.39" }
 frame-system = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.39" }
 ibc-support = { version = "0.1.0", default-features = false, path = "../ibc-support" }
-scale-info = { version = "2.1.2", default-features = false, features = ["derive"] }
+scale-info = { version = "2.1.1", default-features = false, features = ["derive"] }
 sp-core = { version = "7.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.39" }
 sp-io = { version = "7.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.39" }
 sp-runtime = { version = "7.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.39" }
@@ -28,7 +28,7 @@ sp-std = { version = "5.0.0", default-features = false, git = "https://github.co
 sp-tracing = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.39" }
 
 ## for ibc protocl
-ibc = { version = "0.31.0", default-features = false, features = ["parity-scale-codec", "mocks-no-std"]}
+ibc = { version = "0.31.0", default-features = false, features = ["parity-scale-codec", "mocks-no-std", "serde"]}
 ibc-proto = { version = "0.26.0", default-features = false, features = ["parity-scale-codec"] }
 log = { version = "0.4.0", default-features = false }
 serde = { version = "1.0", default-features = false }
@@ -62,7 +62,7 @@ std = [
   "codec/std",
   "log/std",
   "scale-info/std",
-  "frame-benchmarking/std",
+  "frame-benchmarking?/std",
   "frame-support/std",
   "frame-system/std",
   "sp-core/std",
@@ -74,6 +74,8 @@ std = [
   "ibc-proto/std",
   "serde_json/std",
   "serde/std",
+  "pallet-timestamp?/std",
+  "pallet-balances?/std",
 ]
 runtime-benchmarks = [
   "frame-benchmarking/runtime-benchmarks",
