@@ -1,4 +1,4 @@
-use crate::{ics20_callback::IbcTransferModule, *};
+use crate::{callback::IbcTransferModule, *};
 use ibc::{
 	core::{
 		ics02_client::{client_state::ClientState, consensus_state::ConsensusState},
