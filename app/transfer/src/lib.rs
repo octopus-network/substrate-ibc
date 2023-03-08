@@ -43,8 +43,6 @@ pub mod pallet {
 	use ibc::{
 		applications::transfer::msgs::transfer::MsgTransfer,
 		core::ics04_channel::events::SendPacket,
-		events::IbcEvent,
-		handler::{HandlerOutput, HandlerOutputBuilder},
 		signer::Signer,
 	};
 	use ibc_support::AssetIdAndNameProvider;
@@ -186,12 +184,10 @@ pub mod pallet {
 			);
 
 			for message in messages {
-				let mut handle_out = HandlerOutputBuilder::new();
 				let msg_transfer = MsgTransfer::try_from(message)
 					.map_err(|_| Error::<T>::ParserMsgTransferError)?;
 				let result = ibc::applications::transfer::relay::send_transfer::send_transfer(
 					&mut ctx,
-					&mut handle_out,
 					msg_transfer,
 				);
 				match result {
@@ -202,23 +198,8 @@ pub mod pallet {
 						log::trace!(target: LOG_TARGET, "raw_transfer Error : {:?} ", error);
 					},
 				}
-
-				let HandlerOutput::<()> { result: _, log, events } = handle_out.with_result(());
-
-				log::trace!(target: LOG_TARGET, "raw_transfer log : {:?} ", log);
-
-				// deposit events about send packet event and ics20 transfer event
-				for event in events {
-					log::trace!(target: LOG_TARGET, "raw_transfer event : {:?} ", event);
-					match event {
-						IbcEvent::SendPacket(ref send_packet) => {
-							Self::deposit_event(Event::SendPacket(send_packet.clone()));
-						},
-						_ => {
-							Self::deposit_event(Event::UnsupportedEvent);
-						},
-					}
-				}
+				
+				// evemt and log will be emit on ibc-core
 			}
 
 			Ok(().into())

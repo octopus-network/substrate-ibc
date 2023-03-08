@@ -10,7 +10,7 @@ use ibc::{
 			},
 			packet::{Receipt, Sequence},
 		},
-		ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
+		ics24_host::identifier::{ClientId, ConnectionId, PortId},
 		ExecutionContext, ValidationContext,
 	},
 	timestamp::Timestamp,
@@ -85,7 +85,7 @@ impl<T: Config> ValidationContext for IbcTransferModule<T> {
 	fn validate_self_client(
 		&self,
 		client_state_of_host_on_counterparty: ibc_proto::google::protobuf::Any,
-	) -> Result<(), ibc::core::ics03_connection::error::ConnectionError> {
+	) -> Result<(), ibc::core::ContextError> {
 		ValidationContext::validate_self_client(
 			&self.ibc_core_context,
 			client_state_of_host_on_counterparty,
@@ -105,13 +105,6 @@ impl<T: Config> ValidationContext for IbcTransferModule<T> {
 		channel_end_path: &ibc::core::ics24_host::path::ChannelEndPath,
 	) -> Result<ChannelEnd, ibc::core::ContextError> {
 		ValidationContext::channel_end(&self.ibc_core_context, channel_end_path)
-	}
-
-	fn connection_channels(
-		&self,
-		cid: &ConnectionId,
-	) -> Result<Vec<(PortId, ChannelId)>, ibc::core::ContextError> {
-		ValidationContext::connection_channels(&self.ibc_core_context, cid)
 	}
 
 	fn get_next_sequence_send(

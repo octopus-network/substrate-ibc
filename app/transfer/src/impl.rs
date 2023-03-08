@@ -7,7 +7,7 @@ use frame_support::traits::{
 };
 use ibc::{
 	applications::transfer::{
-		context::{BankKeeper, TokenTransferContext, TokenTransferReader},
+		context::{TokenTransferExecutionContext, TokenTransferValidationContext},
 		error::TokenTransferError,
 		PrefixedCoin, PORT_ID_STR,
 	},
@@ -24,8 +24,8 @@ use sp_runtime::{
 };
 use sp_std::str::FromStr;
 
-impl<T: Config> BankKeeper for IbcTransferModule<T> {
-	type AccountId = <Self as TokenTransferContext>::AccountId;
+impl<T: Config> TokenTransferExecutionContext for IbcTransferModule<T> {
+	// type AccountId = <Self as TokenTransferContext>::AccountId;
 
 	fn send_coins(
 		&mut self,
@@ -173,8 +173,8 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 	}
 }
 
-impl<T: Config> TokenTransferReader for IbcTransferModule<T> {
-	type AccountId = <Self as TokenTransferContext>::AccountId;
+impl<T: Config> TokenTransferValidationContext for IbcTransferModule<T> {
+	type AccountId = <T as Config>::AccountIdConversion;
 
 	fn get_port(&self) -> Result<PortId, TokenTransferError> {
 		PortId::from_str(PORT_ID_STR).map_err(|e| TokenTransferError::InvalidPortId {
@@ -202,10 +202,6 @@ impl<T: Config> TokenTransferReader for IbcTransferModule<T> {
 		// TODO(davirain), need according channelEnd def
 		true
 	}
-}
-
-impl<T: Config> TokenTransferContext for IbcTransferModule<T> {
-	type AccountId = <T as Config>::AccountIdConversion;
 }
 
 /// Alias to 512-bit hash when used in the context of a transaction signature on the chain.

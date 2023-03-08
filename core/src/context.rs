@@ -26,7 +26,7 @@ use ibc::{
 			ClientStatePath, ClientTypePath, CommitmentPath, ConnectionPath, ReceiptPath,
 			SeqAckPath, SeqRecvPath, SeqSendPath,
 		},
-		ics26_routing::context::{Module, ModuleId, RouterBuilder},
+		ics26_routing::context::{Module, ModuleId},
 		ContextError,
 		ExecutionContext,
 		ValidationContext,
@@ -317,7 +317,7 @@ impl<T: Config> ValidationContext for Context<T> {
 	fn validate_self_client(
 		&self,
 		client_state_of_host_on_counterparty: Any,
-	) -> Result<(), ConnectionError> {
+	) -> Result<(), ContextError> {
 		// let mock_client_state = MockClientState::try_from(client_state_of_host_on_counterparty)
 		// 	.map_err(|_| ConnectionError::InvalidClientState {
 		// 		reason: "client must be a mock client".to_string(),
@@ -352,13 +352,6 @@ impl<T: Config> ValidationContext for Context<T> {
 			}
 			.into(),
 		)
-	}
-
-	fn connection_channels(
-		&self,
-		cid: &ConnectionId,
-	) -> Result<Vec<(PortId, ChannelId)>, ContextError> {
-		Pallet::<T>::connection_channels(cid).ok_or(ChannelError::MissingChannel.into())
 	}
 
 	fn get_next_sequence_send(
