@@ -6,20 +6,13 @@ use alloc::boxed::Box;
 use core::marker::PhantomData;
 use frame_support::pallet_prelude::Weight;
 use ibc::core::{
-	ics02_client::{
-		context::ClientReader,
-		msgs::{
-			create_client::MsgCreateClient, misbehaviour::MsgSubmitMisbehaviour,
-			update_client::MsgUpdateClient, upgrade_client::MsgUpgradeClient, ClientMsg,
-		},
+	ics02_client::msgs::{
+		create_client::MsgCreateClient, misbehaviour::MsgSubmitMisbehaviour,
+		update_client::MsgUpdateClient, upgrade_client::MsgUpgradeClient, ClientMsg,
 	},
-	ics03_connection::{
-		context::ConnectionReader,
-		msgs::{
-			conn_open_ack::MsgConnectionOpenAck, conn_open_confirm::MsgConnectionOpenConfirm,
-			conn_open_init::MsgConnectionOpenInit, conn_open_try::MsgConnectionOpenTry,
-			ConnectionMsg,
-		},
+	ics03_connection::msgs::{
+		conn_open_ack::MsgConnectionOpenAck, conn_open_confirm::MsgConnectionOpenConfirm,
+		conn_open_init::MsgConnectionOpenInit, conn_open_try::MsgConnectionOpenTry, ConnectionMsg,
 	},
 	ics04_channel::msgs::{
 		acknowledgement::MsgAcknowledgement, chan_close_confirm::MsgChannelCloseConfirm,
@@ -30,6 +23,7 @@ use ibc::core::{
 	},
 	ics24_host::identifier::{ChannelId, ClientId, PortId},
 	ics26_routing::msgs::MsgEnvelope,
+	ValidationContext,
 };
 use ibc_support::CallbackWeight;
 
@@ -61,7 +55,7 @@ impl<T: Config> WeightInfo<T> for () {
 	fn create_client(msg_create_client: MsgCreateClient) -> Weight {
 		let context = Context::<T>::new();
 		if let Ok(decode_client_state) =
-			ClientReader::decode_client_state(&context, msg_create_client.client_state)
+			ValidationContext::decode_client_state(&context, msg_create_client.client_state)
 		{
 			match decode_client_state.client_type().as_str() {
 				MOCK_CLIENT_TYPE => {
@@ -97,7 +91,7 @@ impl<T: Config> WeightInfo<T> for () {
 	fn upgrade_client(msg_upgrade_client: MsgUpgradeClient) -> Weight {
 		let context = Context::<T>::new();
 		if let Ok(decode_client_state) =
-			ClientReader::decode_client_state(&context, msg_upgrade_client.client_state)
+			ValidationContext::decode_client_state(&context, msg_upgrade_client.client_state)
 		{
 			match decode_client_state.client_type().as_str() {
 				MOCK_CLIENT_TYPE => {
@@ -474,7 +468,7 @@ pub fn channel_client<T: Config>(
 	Err(Error::<T>::Other)
 }
 
-pub(crate) fn deliver<T: Config + Send + Sync>(
+pub(crate) fn dispatch<T: Config + Send + Sync>(
 	msgs: &[ibc_proto::google::protobuf::Any],
 ) -> Weight {
 	msgs.into_iter()

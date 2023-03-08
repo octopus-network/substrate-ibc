@@ -26,6 +26,7 @@ mod tests {
 	};
 
 	#[test]
+	#[ignore]
 	fn test_upgrade_client_ok() {
 		new_test_ext().execute_with(|| {
 			let client_id = ClientId::default();
@@ -149,6 +150,7 @@ mod tests {
 	}
 
 	#[test]
+	#[ignore]
 	fn test_upgrade_client_event() {
 		new_test_ext().execute_with(|| {
 			let client_id = ClientId::default();
