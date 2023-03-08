@@ -21,7 +21,6 @@ use ibc::{
 			packet::Receipt,
 		},
 		ics23_commitment::commitment::CommitmentPrefix,
-		// ics23_commitment::commitment::CommitmentPath,
 		ics24_host::path::{
 			AckPath, ChannelEndPath, ClientConnectionPath, ClientConsensusStatePath,
 			ClientStatePath, ClientTypePath, CommitmentPath, ConnectionPath, ReceiptPath,
@@ -264,13 +263,6 @@ impl<T: Config> ValidationContext for Context<T> {
 	}
 
 	fn host_timestamp(&self) -> Result<Timestamp, ContextError> {
-		// Ok(self
-		// 	.history
-		// 	.last()
-		// 	.expect("history cannot be empty")
-		// 	.timestamp()
-		// 	.add(self.block_time)
-		// 	.unwrap())
 		#[cfg(not(test))]
 		{
 			use frame_support::traits::UnixTime;
@@ -287,12 +279,6 @@ impl<T: Config> ValidationContext for Context<T> {
 		&self,
 		height: &Height,
 	) -> Result<Box<dyn ConsensusState>, ContextError> {
-		// match self.host_block(height) {
-		// 	Some(block_ref) => Ok(block_ref.clone().into()),
-		// 	None => Err(ClientError::MissingLocalConsensusState { height: *height }),
-		// }
-		// .map_err(ConnectionError::Client)
-		// .map_err(ContextError::ConnectionError)
 		#[cfg(not(test))]
 		{
 			Err(ClientError::ImplementationSpecific.into())
