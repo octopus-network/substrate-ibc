@@ -22,21 +22,21 @@ use sp_std::{
 	vec,
 };
 
-#[derive(Default)]
-pub struct SubstrateRouterBuilder(Router);
+// #[derive(Default)]
+// pub struct SubstrateRouterBuilder(Router);
 
-impl SubstrateRouterBuilder {
-	pub fn add_route(mut self, module_id: ModuleId, module: impl Module) -> Result<Self, String> {
-		match self.0 .0.insert(module_id, Arc::new(module)) {
-			None => Ok(self),
-			Some(_) => Err("Duplicate module_id".to_owned()),
-		}
-	}
+// impl SubstrateRouterBuilder {
+// 	pub fn add_route(mut self, module_id: ModuleId, module: impl Module) -> Result<Self, String> {
+// 		match self.0.0.insert(module_id, Arc::new(module)) {
+// 			None => Ok(self),
+// 			Some(_) => Err("Duplicate module_id".to_owned()),
+// 		}
+// 	}
 
-	pub fn build(self) -> Router {
-		self.0
-	}
-}
+// 	pub fn build(self) -> Router {
+// 		self.0
+// 	}
+// }
 
 #[derive(Default, Clone)]
 pub struct Router(pub BTreeMap<ModuleId, Arc<dyn Module>>);
@@ -57,7 +57,14 @@ impl<T: Config> ibc::core::context::Router for Context<T> {
 		self.router.0.get(module_id).map(Arc::as_ref)
 	}
 	fn get_route_mut(&mut self, module_id: &ModuleId) -> Option<&mut dyn Module> {
-		self.router.0.get_mut(module_id).and_then(Arc::get_mut)
+		// self.router.0.get_mut(module_id).and_then(Arc::get_mut)
+		match self.router.0.get_mut(module_id) {
+			Some(arc_mod) => match Arc::get_mut(arc_mod) {
+				Some(m) => Some(m),
+				None => None,
+			},
+			None => None,
+		}
 	}
 
 	fn has_route(&self, module_id: &ModuleId) -> bool {

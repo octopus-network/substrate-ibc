@@ -212,8 +212,6 @@ mod tests {
 		let mut sequence_vec = vec![];
 		let mut ack_vec = vec![];
 
-		let mut value_vec = vec![];
-
 		let mut context: Context<Test> = Context::new();
 
 		for index in 0..range.len() {
@@ -224,8 +222,6 @@ mod tests {
 			let sequence = Sequence::from(index as u64);
 			sequence_vec.push(sequence);
 			ack_vec.push(AcknowledgementCommitment::from(vec![index as u8]));
-
-			value_vec.push(ValidationContext::hash(&context, &vec![index as u8]));
 		}
 
 		new_test_ext().execute_with(|| {

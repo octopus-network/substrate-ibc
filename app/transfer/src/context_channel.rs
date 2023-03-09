@@ -16,7 +16,7 @@ use ibc::{
 	timestamp::Timestamp,
 	Height,
 };
-use sp_std::{boxed::Box, time::Duration, vec::Vec};
+use sp_std::{boxed::Box, time::Duration};
 
 impl<T: Config> ValidationContext for IbcTransferModule<T> {
 	fn client_state(
@@ -147,10 +147,6 @@ impl<T: Config> ValidationContext for IbcTransferModule<T> {
 		ack_path: &ibc::core::ics24_host::path::AckPath,
 	) -> Result<IbcAcknowledgementCommitment, ibc::core::ContextError> {
 		ValidationContext::get_packet_acknowledgement(&self.ibc_core_context, ack_path)
-	}
-
-	fn hash(&self, value: &[u8]) -> Vec<u8> {
-		ValidationContext::hash(&self.ibc_core_context, value)
 	}
 
 	fn client_update_time(

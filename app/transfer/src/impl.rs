@@ -27,7 +27,7 @@ use sp_std::str::FromStr;
 impl<T: Config> TokenTransferExecutionContext for IbcTransferModule<T> {
 	// type AccountId = <Self as TokenTransferContext>::AccountId;
 
-	fn send_coins(
+	fn send_coins_execute(
 		&mut self,
 		from: &Self::AccountId,
 		to: &Self::AccountId,
@@ -102,7 +102,7 @@ impl<T: Config> TokenTransferExecutionContext for IbcTransferModule<T> {
 		Ok(())
 	}
 
-	fn mint_coins(
+	fn mint_coins_execute(
 		&mut self,
 		account: &Self::AccountId,
 		amt: &PrefixedCoin,
@@ -137,7 +137,7 @@ impl<T: Config> TokenTransferExecutionContext for IbcTransferModule<T> {
 		Ok(())
 	}
 
-	fn burn_coins(
+	fn burn_coins_execute(
 		&mut self,
 		account: &Self::AccountId,
 		amt: &PrefixedCoin,
@@ -201,6 +201,34 @@ impl<T: Config> TokenTransferValidationContext for IbcTransferModule<T> {
 	fn is_receive_enabled(&self) -> bool {
 		// TODO(davirain), need according channelEnd def
 		true
+	}
+
+	// todo
+	fn send_coins_validate(
+		&self,
+		_from_account: &Self::AccountId,
+		_to_account: &Self::AccountId,
+		_coin: &PrefixedCoin,
+	) -> Result<(), TokenTransferError> {
+		Ok(())
+	}
+
+	// todo
+	fn mint_coins_validate(
+		&self,
+		_account: &Self::AccountId,
+		_coin: &PrefixedCoin,
+	) -> Result<(), TokenTransferError> {
+		Ok(())
+	}
+
+	// todo
+	fn burn_coins_validate(
+		&self,
+		_account: &Self::AccountId,
+		_coin: &PrefixedCoin,
+	) -> Result<(), TokenTransferError> {
+		Ok(())
 	}
 }
 

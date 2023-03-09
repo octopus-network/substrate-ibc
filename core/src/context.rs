@@ -37,7 +37,7 @@ use sp_std::{boxed::Box, marker::PhantomData};
 
 /// A struct capturing all the functional dependencies (i.e., context)
 /// which the ICS26 module requires to be able to dispatch and process IBC messages.
-use crate::routing::{Router, SubstrateRouterBuilder};
+use crate::routing::Router;
 use ibc::{
 	core::{
 		ics02_client::client_type::ClientType,
@@ -57,12 +57,14 @@ pub struct Context<T> {
 
 impl<T: Config> Context<T> {
 	pub fn new() -> Self {
-		let r = SubstrateRouterBuilder::default().build();
-
-		Self { _pd: PhantomData::default(), router: r }
+		Self { _pd: PhantomData::default(), router: Router::default() }
 	}
 
-	pub fn add_route(&mut self, module_id: ModuleId, module: impl Module) -> Result<(), String> {
+	pub fn add_route(
+		&mut self,
+		module_id: ModuleId,
+		module: impl Module + 'static,
+	) -> Result<(), String> {
 		match self.router.0.insert(module_id, Arc::new(module)) {
 			None => Ok(()),
 			Some(_) => Err("Duplicate module_id".to_owned()),
@@ -414,10 +416,6 @@ impl<T: Config> ValidationContext for Context<T> {
 
 		Pallet::<T>::get_packet_acknowledgement((port_id, channel_id, seq))
 			.ok_or(PacketError::PacketAcknowledgementNotFound { sequence: *seq }.into())
-	}
-
-	fn hash(&self, value: &[u8]) -> Vec<u8> {
-		sp_io::hashing::sha2_256(value).to_vec()
 	}
 
 	fn client_update_time(
