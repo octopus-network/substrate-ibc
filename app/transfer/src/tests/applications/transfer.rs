@@ -1,24 +1,3 @@
-pub mod test {
-	use crate::{callback::IbcTransferModule, mock::Test as PalletIbcTest};
-	use ibc::{
-		applications::transfer::{
-			error::TokenTransferError, msgs::transfer::MsgTransfer,
-			relay::send_transfer::send_transfer, PrefixedCoin,
-		},
-		core::ics04_channel::error::ChannelError,
-		// handler::HandlerOutputBuilder,
-	};
-
-	// #[allow(dead_code)]
-	// pub fn deliver(
-	// 	ctx: &mut IbcTransferModule<PalletIbcTest>,
-	// 	output: &mut HandlerOutputBuilder<()>,
-	// 	msg: MsgTransfer<PrefixedCoin>,
-	// ) -> Result<(), ChannelError> {
-	// 	send_transfer(ctx, output, msg)
-	// 		.map_err(|e: TokenTransferError| ChannelError::AppModule { description: e.to_string() })
-	// }
-}
 pub mod test_util {
 	use core::{ops::Add, time::Duration};
 

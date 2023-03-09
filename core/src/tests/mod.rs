@@ -11,22 +11,22 @@ mod tests {
 
 	use crate::host::TENDERMINT_CLIENT_TYPE;
 	use ibc::core::{
-		ics02_client::{
-			client_type::ClientType,
-			error::ClientError,
-		},
-		ics03_connection::{
-			connection::ConnectionEnd,
-			error::ConnectionError,
-		},
+		ics02_client::{client_type::ClientType, error::ClientError},
+		ics03_connection::{connection::ConnectionEnd, error::ConnectionError},
 		ics04_channel::{
 			channel::ChannelEnd,
 			error::{ChannelError, PacketError},
 			packet::Sequence,
 		},
-		ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
+		ics24_host::{
+			identifier::{ChannelId, ClientId, ConnectionId, PortId},
+			path::{
+				AckPath, ChannelEndPath, ClientConnectionPath, ClientTypePath, CommitmentPath,
+				ConnectionPath, SeqAckPath, SeqRecvPath, SeqSendPath,
+			},
+		},
+		ContextError, ExecutionContext, ValidationContext,
 	};
-	use ibc::core::ValidationContext;
 
 	// test store and read client-type
 	#[test]
@@ -35,11 +35,9 @@ mod tests {
 		let client_id = ClientId::new(client_type.clone(), 0).unwrap();
 
 		let mut context: Context<Test> = Context::new();
-
+		let client_type_path = ClientTypePath(client_id.clone());
 		new_test_ext().execute_with(|| {
-			assert!(context.store_client_type(client_id.clone(), client_type.clone()).is_ok());
-			let ret = context.client_type(&client_id).unwrap();
-			assert_eq!(ret, client_type);
+			assert!(context.store_client_type(client_type_path, client_type.clone()).is_ok());
 		})
 	}
 
@@ -51,12 +49,8 @@ mod tests {
 		let mut context: Context<Test> = Context::new();
 
 		new_test_ext().execute_with(|| {
-			assert!(context.store_client_type(client_id.clone(), client_type).is_ok());
-			let ret = context.client_type(&client_id_failed).unwrap_err().to_string();
-			assert_eq!(
-				ret,
-				ClientError::ClientNotFound { client_id: client_id_failed }.to_string()
-			);
+			let client_type_path = ClientTypePath(client_id.clone());
+			assert!(context.store_client_type(client_type_path, client_type).is_ok());
 		})
 	}
 
@@ -84,14 +78,12 @@ mod tests {
 
 		new_test_ext().execute_with(|| {
 			for index in 0..range.len() {
-				assert!(context
-					.store_packet_commitment(
-						port_id_vec[index].clone(),
-						channel_id_vec[index].clone(),
-						sequence_vec[index],
-						com.clone(),
-					)
-					.is_ok());
+				let commitment_path = CommitmentPath {
+					port_id: port_id_vec[index].clone(),
+					channel_id: channel_id_vec[index].clone(),
+					sequence: sequence_vec[index],
+				};
+				assert!(context.store_packet_commitment(&commitment_path, com.clone(),).is_ok());
 			}
 		})
 	}
@@ -117,30 +109,33 @@ mod tests {
 
 		let mut context: Context<Test> = Context::new();
 		new_test_ext().execute_with(|| {
+			let connection_path = ConnectionPath(connection_id0.clone());
 			assert_eq!(
-				ConnectionKeeper::store_connection(
+				ExecutionContext::store_connection(
 					&mut context,
-					connection_id0.clone(),
+					&connection_path,
 					input.get(&connection_id0.clone()).unwrap().clone()
 				)
 				.is_ok(),
 				true
 			);
-			let ret = ConnectionReader::connection_end(&mut context, &connection_id0).unwrap();
+			let ret = ValidationContext::connection_end(&mut context, &connection_id0).unwrap();
 			assert_eq!(ret, *input.get(&connection_id0.clone()).unwrap());
+			let connection_path = ConnectionPath(connection_id1.clone());
 			assert_eq!(
-				ConnectionKeeper::store_connection(
+				ExecutionContext::store_connection(
 					&mut context,
-					connection_id1.clone(),
+					&connection_path,
 					input.get(&connection_id1.clone()).unwrap().clone()
 				)
 				.is_ok(),
 				true
 			);
+			let connection_path = ConnectionPath(connection_id2.clone());
 			assert_eq!(
-				ConnectionKeeper::store_connection(
+				ExecutionContext::store_connection(
 					&mut context,
-					connection_id2.clone(),
+					&connection_path,
 					input.get(&connection_id2.clone()).unwrap().clone()
 				)
 				.is_ok(),
@@ -154,10 +149,16 @@ mod tests {
 		let connection_id = ConnectionId::new(0);
 		let context: Context<Test> = Context::new();
 		new_test_ext().execute_with(|| {
-			let ret = ConnectionReader::connection_end(&context, &connection_id)
+			let ret = ValidationContext::connection_end(&context, &connection_id)
 				.unwrap_err()
 				.to_string();
-			assert_eq!(ret, ConnectionError::ConnectionMismatch { connection_id }.to_string());
+			assert_eq!(
+				ret,
+				ContextError::ConnectionError(ConnectionError::ConnectionMismatch {
+					connection_id
+				})
+				.to_string()
+			);
 		})
 	}
 
@@ -167,8 +168,11 @@ mod tests {
 		let connection_id = ConnectionId::new(0);
 		let mut context: Context<Test> = Context::new();
 
+		let client_connection_path = ClientConnectionPath(client_id);
 		new_test_ext().execute_with(|| {
-			assert!(context.store_connection_to_client(connection_id, client_id).is_ok());
+			assert!(context
+				.store_connection_to_client(&client_connection_path, connection_id)
+				.is_ok());
 		})
 	}
 
@@ -184,23 +188,17 @@ mod tests {
 		let mut context: Context<Test> = Context::new();
 
 		new_test_ext().execute_with(|| {
-			assert!(context
-				.store_packet_acknowledgement(
-					port_id.clone(),
-					channel_id.clone(),
-					sequence,
-					ack.clone()
-				)
-				.is_ok());
-			assert!(context
-				.delete_packet_acknowledgement(&port_id, &channel_id, &sequence)
-				.is_ok());
-			let result = context
-				.get_packet_acknowledgement(&port_id, &channel_id, &sequence)
-				.unwrap_err()
-				.to_string();
+			let ack_path =
+				AckPath { port_id: port_id.clone(), channel_id: channel_id.clone(), sequence };
+			assert!(context.store_packet_acknowledgement(&ack_path, ack.clone()).is_ok());
+			assert!(context.delete_packet_acknowledgement(&ack_path).is_ok());
+			let result = context.get_packet_acknowledgement(&ack_path).unwrap_err().to_string();
 
-			assert_eq!(result, PacketError::PacketAcknowledgementNotFound { sequence }.to_string());
+			assert_eq!(
+				result,
+				ContextError::PacketError(PacketError::PacketAcknowledgementNotFound { sequence })
+					.to_string()
+			);
 		})
 	}
 
@@ -227,42 +225,20 @@ mod tests {
 			sequence_vec.push(sequence);
 			ack_vec.push(AcknowledgementCommitment::from(vec![index as u8]));
 
-			value_vec.push(ChannelReader::hash(&context, &vec![index as u8]));
+			value_vec.push(ValidationContext::hash(&context, &vec![index as u8]));
 		}
 
 		new_test_ext().execute_with(|| {
 			for index in 0..range.len() {
+				let ack_path = AckPath {
+					port_id: port_id_vec[index].clone(),
+					channel_id: channel_id_vec[index].clone(),
+					sequence: sequence_vec[index],
+				};
 				assert!(context
-					.store_packet_acknowledgement(
-						port_id_vec[index].clone(),
-						channel_id_vec[index].clone(),
-						sequence_vec[index],
-						ack_vec[index].clone()
-					)
+					.store_packet_acknowledgement(&ack_path, ack_vec[index].clone())
 					.is_ok());
 			}
-		})
-	}
-
-	#[test]
-	fn test_store_connection_channles_ok() {
-		let connection_id = ConnectionId::new(0);
-		let port_id = PortId::default();
-		let channel_id = ChannelId::default();
-
-		let mut context: Context<Test> = Context::new();
-		new_test_ext().execute_with(|| {
-			assert!(context
-				.store_connection_channels(
-					connection_id.clone(),
-					port_id.clone(),
-					channel_id.clone()
-				)
-				.is_ok());
-			let result = context.connection_channels(&connection_id).unwrap();
-			assert_eq!(result.len(), 1);
-			assert_eq!(result[0].0, port_id);
-			assert_eq!(result[0].1, channel_id);
 		})
 	}
 
@@ -274,31 +250,10 @@ mod tests {
 		let mut context: Context<Test> = Context::new();
 
 		new_test_ext().execute_with(|| {
-			assert!(context
-				.store_next_sequence_send(port_id.clone(), channel_id.clone(), sequence_id)
-				.is_ok());
-			let result = context.get_next_sequence_send(&port_id, &channel_id).unwrap();
+			let seq_send_path = SeqSendPath(port_id.clone(), channel_id.clone());
+			assert!(context.store_next_sequence_send(&seq_send_path, sequence_id).is_ok());
+			let result = context.get_next_sequence_send(&seq_send_path).unwrap();
 			assert_eq!(result, sequence_id);
-		})
-	}
-
-	#[test]
-	fn test_read_conection_channels_failed_by_suppley_error_conneciton_id() {
-		let connection_id = ConnectionId::new(0);
-		let connection_id_failed = ConnectionId::new(1);
-		let port_id = PortId::default();
-		let channel_id = ChannelId::default();
-
-		let mut context: Context<Test> = Context::new();
-		new_test_ext().execute_with(|| {
-			assert!(context.store_connection_channels(connection_id, port_id, channel_id).is_ok());
-			let result =
-				context.connection_channels(&connection_id_failed).unwrap_err().to_string();
-			assert_eq!(
-				result,
-				ChannelError::ConnectionNotOpen { connection_id: connection_id_failed.clone() }
-					.to_string()
-			);
 		})
 	}
 
@@ -311,10 +266,9 @@ mod tests {
 		let mut context: Context<Test> = Context::new();
 
 		new_test_ext().execute_with(|| {
-			assert!(context
-				.store_channel(port_id.clone(), channel_id.clone(), channel_end.clone())
-				.is_ok());
-			let result = context.channel_end(&port_id, &channel_id).unwrap();
+			let channel_end_path = ChannelEndPath(port_id.clone(), channel_id.clone());
+			assert!(context.store_channel(&channel_end_path, channel_end.clone()).is_ok());
+			let result = context.channel_end(&channel_end_path).unwrap();
 			assert_eq!(result, channel_end);
 		})
 	}
@@ -327,9 +281,13 @@ mod tests {
 		let context: Context<Test> = Context::new();
 
 		new_test_ext().execute_with(|| {
-			let result =
-				context.get_next_sequence_send(&port_id, &channel_id).unwrap_err().to_string();
-			assert_eq!(result, PacketError::MissingNextSendSeq { port_id, channel_id }.to_string());
+			let seq_send = SeqSendPath(port_id.clone(), channel_id.clone());
+			let result = context.get_next_sequence_send(&seq_send).unwrap_err().to_string();
+			assert_eq!(
+				result,
+				ContextError::PacketError(PacketError::MissingNextSendSeq { port_id, channel_id })
+					.to_string()
+			);
 		})
 	}
 
@@ -341,10 +299,9 @@ mod tests {
 		let mut context: Context<Test> = Context::new();
 
 		new_test_ext().execute_with(|| {
-			assert!(context
-				.store_next_sequence_recv(port_id.clone(), channel_id.clone(), sequence_id)
-				.is_ok());
-			let result = context.get_next_sequence_recv(&port_id, &channel_id).unwrap();
+			let seq_recv = SeqRecvPath(port_id.clone(), channel_id.clone());
+			assert!(context.store_next_sequence_recv(&seq_recv, sequence_id).is_ok());
+			let result = context.get_next_sequence_recv(&seq_recv).unwrap();
 			assert_eq!(result, sequence_id);
 		})
 	}
@@ -362,34 +319,38 @@ mod tests {
 		let mut context: Context<Test> = Context::new();
 
 		new_test_ext().execute_with(|| {
-			assert!(context
-				.store_channel(port_id.clone(), channel_id.clone(), channel_end.clone())
-				.is_ok());
-			let result = context.channel_end(&port_id_1, &channel_id).unwrap_err().to_string();
+			let channel_end_path = ChannelEndPath(port_id.clone(), channel_id.clone());
+
+			assert!(context.store_channel(&channel_end_path, channel_end.clone()).is_ok());
+			let channel_end_path = ChannelEndPath(port_id_1.clone(), channel_id_1.clone());
+			let result = context.channel_end(&channel_end_path).unwrap_err().to_string();
 			assert_eq!(
 				result,
-				ChannelError::ChannelNotFound {
+				ContextError::ChannelError(ChannelError::ChannelNotFound {
 					port_id: port_id_1.clone(),
 					channel_id: channel_id.clone()
-				}
+				})
 				.to_string()
 			);
-			let result = context.channel_end(&port_id, &channel_id_1).unwrap_err().to_string();
+			let channel_end_path = ChannelEndPath(port_id_1.clone(), channel_id_1.clone());
+			let result = context.channel_end(&channel_end_path).unwrap_err().to_string();
 			assert_eq!(
 				result,
-				ChannelError::ChannelNotFound {
+				ContextError::ChannelError(ChannelError::ChannelNotFound {
 					port_id: port_id.clone(),
 					channel_id: channel_id_1.clone()
-				}
+				})
 				.to_string()
 			);
-			let result = context.channel_end(&port_id_1, &channel_id_1).unwrap_err().to_string();
+
+			let channel_end_path = ChannelEndPath(port_id_1.clone(), channel_id_1.clone());
+			let result = context.channel_end(&channel_end_path).unwrap_err().to_string();
 			assert_eq!(
 				result,
-				ChannelError::ChannelNotFound {
+				ContextError::ChannelError(ChannelError::ChannelNotFound {
 					port_id: port_id_1.clone(),
 					channel_id: channel_id_1.clone()
-				}
+				})
 				.to_string()
 			);
 		})
@@ -413,12 +374,10 @@ mod tests {
 		let mut context: Context<Test> = Context::new();
 		new_test_ext().execute_with(|| {
 			for index in 0..range.len() {
+				let channel_end_path =
+					ChannelEndPath(port_id_vec[index].clone(), channel_id_vec[index].clone());
 				assert!(context
-					.store_channel(
-						port_id_vec[index].clone(),
-						channel_id_vec[index].clone(),
-						channel_end_vec[index].clone()
-					)
+					.store_channel(&channel_end_path, channel_end_vec[index].clone())
 					.is_ok());
 			}
 		})
@@ -430,10 +389,14 @@ mod tests {
 		let channel_id = ChannelId::new(0);
 		let context: Context<Test> = Context::new();
 
+		let seq_recv_path = SeqRecvPath(port_id.clone(), channel_id.clone());
 		new_test_ext().execute_with(|| {
-			let result =
-				context.get_next_sequence_recv(&port_id, &channel_id).unwrap_err().to_string();
-			assert_eq!(result, PacketError::MissingNextRecvSeq { port_id, channel_id }.to_string());
+			let result = context.get_next_sequence_recv(&seq_recv_path).unwrap_err().to_string();
+			assert_eq!(
+				result,
+				ContextError::PacketError(PacketError::MissingNextRecvSeq { port_id, channel_id })
+					.to_string()
+			);
 		})
 	}
 
@@ -444,11 +407,10 @@ mod tests {
 		let channel_id = ChannelId::new(0);
 		let mut context: Context<Test> = Context::new();
 
+		let seq_ack_path = SeqAckPath(port_id, channel_id);
 		new_test_ext().execute_with(|| {
-			assert!(context
-				.store_next_sequence_ack(port_id.clone(), channel_id.clone(), sequence_id)
-				.is_ok());
-			let result = context.get_next_sequence_ack(&port_id, &channel_id).unwrap();
+			assert!(context.store_next_sequence_ack(&seq_ack_path, sequence_id).is_ok());
+			let result = context.get_next_sequence_ack(&seq_ack_path).unwrap();
 			assert_eq!(result, sequence_id);
 		})
 	}
@@ -459,10 +421,14 @@ mod tests {
 		let channel_id = ChannelId::new(0);
 		let context: Context<Test> = Context::new();
 
+		let seq_ack_path = SeqAckPath(port_id.clone(), channel_id.clone());
 		new_test_ext().execute_with(|| {
-			let result =
-				context.get_next_sequence_ack(&port_id, &channel_id).unwrap_err().to_string();
-			assert_eq!(result, PacketError::MissingNextAckSeq { port_id, channel_id }.to_string());
+			let result = context.get_next_sequence_ack(&seq_ack_path).unwrap_err().to_string();
+			assert_eq!(
+				result,
+				ContextError::PacketError(PacketError::MissingNextAckSeq { port_id, channel_id })
+					.to_string()
+			);
 		})
 	}
 }

@@ -42,8 +42,7 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use ibc::{
 		applications::transfer::msgs::transfer::MsgTransfer,
-		core::ics04_channel::events::SendPacket,
-		signer::Signer,
+		core::ics04_channel::events::SendPacket, signer::Signer,
 	};
 	use ibc_support::AssetIdAndNameProvider;
 	use sp_runtime::traits::IdentifyAccount;
@@ -198,7 +197,7 @@ pub mod pallet {
 						log::trace!(target: LOG_TARGET, "raw_transfer Error : {:?} ", error);
 					},
 				}
-				
+
 				// evemt and log will be emit on ibc-core
 			}
 

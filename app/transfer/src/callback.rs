@@ -121,8 +121,8 @@ impl<T: Config> Module for IbcTransferModule<T> {
 		_channel_id: &ChannelId,
 		_counterparty_version: &Version,
 	) -> Result<ModuleExtras, ChannelError> {
-        Ok(ModuleExtras::empty())
-    }
+		Ok(ModuleExtras::empty())
+	}
 
 	fn on_chan_open_confirm_validate(
 		&self,
@@ -175,7 +175,11 @@ impl<T: Config> Module for IbcTransferModule<T> {
 		Ok(ModuleExtras::empty())
 	}
 
-	fn on_recv_packet_execute(&mut self, packet: &Packet, _relayer: &Signer) -> (ModuleExtras, Acknowledgement)  {
+	fn on_recv_packet_execute(
+		&mut self,
+		packet: &Packet,
+		_relayer: &Signer,
+	) -> (ModuleExtras, Acknowledgement) {
 		ibc::applications::transfer::context::on_recv_packet_execute(self, packet)
 	}
 
