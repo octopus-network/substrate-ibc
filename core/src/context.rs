@@ -85,7 +85,7 @@ impl<T: Config> ValidationContext for Context<T> {
 			ClientError::ClientNotFound { client_id: client_id.clone() }.into(),
 		)?;
 		match <Pallet<T>>::client_type(client_id)
-			.ok_or(ClientError::Other { description: format!("Cannt get Client type") })?
+			.ok_or(ClientError::Other { description: "Cannt get Client type".to_string() })?
 			.as_str()
 		{
 			TENDERMINT_CLIENT_TYPE => {
@@ -133,7 +133,7 @@ impl<T: Config> ValidationContext for Context<T> {
 		let data = Pallet::<T>::consensus_state(client_id.clone(), height)
 			.ok_or(ClientError::ConsensusStateNotFound { client_id: client_id.clone(), height })?;
 		match <Pallet<T>>::client_type(client_id)
-			.ok_or(ClientError::Other { description: format!("Cannt get Client type") })?
+			.ok_or(ClientError::Other { description: "Cannt get Client type".to_string() })?
 			.as_str()
 		{
 			TENDERMINT_CLIENT_TYPE => {
@@ -181,7 +181,7 @@ impl<T: Config> ValidationContext for Context<T> {
 					},
 				)?;
 				match <Pallet<T>>::client_type(client_id)
-					.ok_or(ClientError::Other { description: format!("Cannt get Client type") })?
+					.ok_or(ClientError::Other { description: "Cannt get Client type".to_string() })?
 					.as_str()
 				{
 					TENDERMINT_CLIENT_TYPE => {
@@ -229,7 +229,7 @@ impl<T: Config> ValidationContext for Context<T> {
 					},
 				)?;
 				match <Pallet<T>>::client_type(client_id)
-					.ok_or(ClientError::Other { description: format!("Cannt get Client type") })?
+					.ok_or(ClientError::Other { description: "Cannt get Client type".to_string() })?
 					.as_str()
 				{
 					TENDERMINT_CLIENT_TYPE => {
