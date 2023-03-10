@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ibc = { version = "0.31.0", default-features = false, features = ["parity-scale-codec", "serde"],  git = "https://github.com/cosmos/ibc-rs.git"}
+ibc = { version = "0.32.0", default-features = false, features = ["parity-scale-codec", "serde"],  git = "https://github.com/cosmos/ibc-rs.git"}
 
 # substrate crates
 codec = { package = "parity-scale-codec", version = "3", default-features = false, features = ["derive"] }

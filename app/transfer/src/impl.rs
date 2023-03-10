@@ -183,26 +183,6 @@ impl<T: Config> TokenTransferValidationContext for IbcTransferModule<T> {
 		})
 	}
 
-	fn get_channel_escrow_address(
-		&self,
-		port_id: &PortId,
-		channel_id: &ChannelId,
-	) -> Result<Self::AccountId, TokenTransferError> {
-		get_channel_escrow_address(port_id, channel_id)?
-			.try_into()
-			.map_err(|_| TokenTransferError::ParseAccountFailure)
-	}
-
-	fn is_send_enabled(&self) -> bool {
-		// TODO(davirain), need according channelEnd def
-		true
-	}
-
-	fn is_receive_enabled(&self) -> bool {
-		// TODO(davirain), need according channelEnd def
-		true
-	}
-
 	// todo
 	fn send_coins_validate(
 		&self,
@@ -228,6 +208,24 @@ impl<T: Config> TokenTransferValidationContext for IbcTransferModule<T> {
 		_account: &Self::AccountId,
 		_coin: &PrefixedCoin,
 	) -> Result<(), TokenTransferError> {
+		Ok(())
+	}
+
+	fn get_escrow_account(
+		&self,
+		port_id: &PortId,
+		channel_id: &ChannelId,
+	) -> Result<Self::AccountId, TokenTransferError> {
+		get_channel_escrow_address(port_id, channel_id)?
+			.try_into()
+			.map_err(|_| TokenTransferError::ParseAccountFailure)
+	}
+
+	fn can_send_coins(&self) -> Result<(), TokenTransferError> {
+		Ok(())
+	}
+
+	fn can_receive_coins(&self) -> Result<(), TokenTransferError> {
 		Ok(())
 	}
 }

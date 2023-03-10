@@ -338,12 +338,12 @@ impl<T: Config> WeightInfo<T> for () {
 	}
 
 	fn recv_packet(msg_recv_packet: MsgRecvPacket) -> Weight {
-		let cb = WeightRouter::<T>::get_weight(&msg_recv_packet.packet.port_on_b)
+		let cb = WeightRouter::<T>::get_weight(&msg_recv_packet.packet.port_id_on_b)
 			.unwrap_or_else(|| Box::new(()));
 		let cb_weight = cb.on_recv_packet(&msg_recv_packet.packet);
 		let lc_verification_weight = match channel_client::<T>(
-			&msg_recv_packet.packet.chan_on_b,
-			&msg_recv_packet.packet.port_on_b,
+			&msg_recv_packet.packet.chan_id_on_b,
+			&msg_recv_packet.packet.port_id_on_b,
 		) {
 			Ok(client_id) => {
 				let client_type = client_id
@@ -364,13 +364,13 @@ impl<T: Config> WeightInfo<T> for () {
 	}
 
 	fn ack_packet(msg_ack_packet: MsgAcknowledgement) -> Weight {
-		let cb = WeightRouter::<T>::get_weight(&msg_ack_packet.packet.port_on_b)
+		let cb = WeightRouter::<T>::get_weight(&msg_ack_packet.packet.port_id_on_b)
 			.unwrap_or_else(|| Box::new(()));
 		let cb_weight =
 			cb.on_acknowledgement_packet(&msg_ack_packet.packet, &msg_ack_packet.acknowledgement);
 		let lc_verification_weight = match channel_client::<T>(
-			&msg_ack_packet.packet.chan_on_b,
-			&msg_ack_packet.packet.port_on_b,
+			&msg_ack_packet.packet.chan_id_on_b,
+			&msg_ack_packet.packet.port_id_on_b,
 		) {
 			Ok(client_id) => {
 				let client_type = client_id
@@ -391,12 +391,12 @@ impl<T: Config> WeightInfo<T> for () {
 	}
 
 	fn timeout_packet(msg_timeout_packet: MsgTimeout) -> Weight {
-		let cb = WeightRouter::<T>::get_weight(&msg_timeout_packet.packet.port_on_b)
+		let cb = WeightRouter::<T>::get_weight(&msg_timeout_packet.packet.port_id_on_b)
 			.unwrap_or_else(|| Box::new(()));
 		let cb_weight = cb.on_timeout_packet(&msg_timeout_packet.packet);
 		let lc_verification_weight = match channel_client::<T>(
-			&msg_timeout_packet.packet.chan_on_b,
-			&msg_timeout_packet.packet.port_on_b,
+			&msg_timeout_packet.packet.chan_id_on_b,
+			&msg_timeout_packet.packet.port_id_on_b,
 		) {
 			Ok(client_id) => {
 				let client_type = client_id
@@ -417,12 +417,12 @@ impl<T: Config> WeightInfo<T> for () {
 	}
 
 	fn timeout_on_close_packet(msg_timout_onclose_packet: MsgTimeoutOnClose) -> Weight {
-		let cb = WeightRouter::<T>::get_weight(&msg_timout_onclose_packet.packet.port_on_b)
+		let cb = WeightRouter::<T>::get_weight(&msg_timout_onclose_packet.packet.port_id_on_b)
 			.unwrap_or_else(|| Box::new(()));
 		let cb_weight = cb.on_timeout_packet(&msg_timout_onclose_packet.packet);
 		let lc_verification_weight = match channel_client::<T>(
-			&msg_timout_onclose_packet.packet.chan_on_b,
-			&msg_timout_onclose_packet.packet.port_on_b,
+			&msg_timout_onclose_packet.packet.chan_id_on_b,
+			&msg_timout_onclose_packet.packet.port_id_on_b,
 		) {
 			Ok(client_id) => {
 				let client_type = client_id
