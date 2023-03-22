@@ -1,4 +1,6 @@
-use crate::ibc::{
+extern crate ibc;
+use crate::{context::Context, Config};
+use ibc::{
 	applications::transfer::{
 		MODULE_ID_STR as TRANSFER_MODULE_ID, PORT_ID_STR as TRANSFER_PORT_ID,
 	},
@@ -8,7 +10,6 @@ use crate::ibc::{
 		ics26_routing::context::ModuleId,
 	},
 };
-use crate::{context::Context, Config};
 use sp_std::str::FromStr;
 
 impl<T: Config> PortReader for Context<T> {
