@@ -4,7 +4,7 @@ use crate::{host::MOCK_CLIENT_TYPE, weights::mock_client_weight::MockClientWeigh
 use alloc::boxed::Box;
 use core::marker::PhantomData;
 use frame_support::pallet_prelude::Weight;
-use crate::ibc::core::{
+use ibc::core::{
 	ics02_client::{
 		context::ClientReader,
 		msgs::{
@@ -31,7 +31,7 @@ use crate::ibc::core::{
 	ics26_routing::msgs::MsgEnvelope,
 };
 
-use crate::ibc::applications::transfer::PORT_ID_STR;
+use ibc::applications::transfer::PORT_ID_STR;
 use ibc_support::CallbackWeight;
 
 pub trait WeightInfo<T> {
