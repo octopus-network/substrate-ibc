@@ -319,9 +319,9 @@ pub mod pallet {
 					(events, logs, errors)
 				},
 			);
-			println!("🙅🙅 deliver ----> events: {:?}", events);
-			println!("🙅🙅 🔥 🔥deliver ----> logs: {:?}", logs);
-			println!("🙅🙅 ❌❌ deliver ----> errors: {:?}", errors);
+			log::info!("🙅🙅 deliver ----> events: {:?}", events);
+			log::info!("🙅🙅 🔥 🔥deliver ----> logs: {:?}", logs);
+			log::info!("🙅🙅 ❌❌ deliver ----> errors: {:?}", errors);
 
 			log::trace!(target: "pallet_ibc", "[pallet_ibc_deliver]: logs: {:?}", logs);
 			log::trace!(target: "pallet_ibc", "[pallet_ibc_deliver]: errors: {:?}", errors);
