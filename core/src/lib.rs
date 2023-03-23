@@ -5,7 +5,7 @@
 //! The goal of this pallet is to allow the blockchains built on Substrate to gain the ability to
 //! interact with other chains in a trustees way via IBC protocol
 //!
-//! The pallet implements the chain specific logic of [ICS spec](https://github.com/cosmos/ibc/tree/ee71d0640c23ec4e05e924f52f557b5e06c1d82f),  
+//! The pallet implements the chain specific logic of [ICS spec](https://github.com/cosmos/ibc/tree/ee71d0640c23ec4e05e924f52f557b5e06c1d82f),
 //! and is integrated with [ibc-rs](https://github.com/informalsystems/ibc-rs),
 //! which implements the generic cross-chain logic in [ICS spec](https://github.com/cosmos/ibc/tree/ee71d0640c23ec4e05e924f52f557b5e06c1d82f).
 extern crate alloc;
@@ -319,6 +319,10 @@ pub mod pallet {
 					(events, logs, errors)
 				},
 			);
+			println!("🙅🙅 deliver ----> events: {:?}", events);
+			println!("🙅🙅 🔥 🔥deliver ----> logs: {:?}", logs);
+			println!("🙅🙅 ❌❌ deliver ----> errors: {:?}", errors);
+
 			log::trace!(target: "pallet_ibc", "[pallet_ibc_deliver]: logs: {:?}", logs);
 			log::trace!(target: "pallet_ibc", "[pallet_ibc_deliver]: errors: {:?}", errors);
 
