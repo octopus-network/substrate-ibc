@@ -305,6 +305,10 @@ pub mod pallet {
 		) -> DispatchResultWithPostInfo {
 			ensure_signed(origin)?;
 			let mut ctx = Context::<T>::new();
+			log::info!(
+				"☀️ ibc messages type: {:?}",
+				messages.iter().map(|v| &v.type_url).collect::<Vec<_>>()
+			);
 
 			let (events, logs, errors) = messages.into_iter().fold(
 				(vec![], vec![], vec![]),
