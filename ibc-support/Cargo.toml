@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ibc = { version = "0.28.0", default-features = false, features = ["parity-scale-codec"]}
+ibc = { version = "0.28.0", default-features = false, features = ["parity-scale-codec"], git = "https://github.com/octopus-network/ibc-rs.git", branch = "fix-0.28-davi"}
 ibc-proto = { version = "0.25.0", default-features = false }
 
 # substrate crates

@@ -27,7 +27,7 @@ sp-runtime = { version = "7.0.0", default-features = false, git = "https://githu
 sp-std = { version = "5.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.39" }
 primitive-types = { version = "0.12.0", default-features = false, features = ["serde_no_std"] }
 
-ibc = { version = "0.28.0", default-features = false, features = ["parity-scale-codec", "serde"]}
+ibc = { version = "0.28.0", default-features = false, features = ["parity-scale-codec", "serde"], git = "https://github.com/octopus-network/ibc-rs.git", branch = "fix-0.28-davi" }
 ibc-proto = { version = "0.25.0", default-features = false, features = ["parity-scale-codec"] }
 pallet-ibc = { version = "4.0.0-dev", default-features = false, path = "../../core" }
 
