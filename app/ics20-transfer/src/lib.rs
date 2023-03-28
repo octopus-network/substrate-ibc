@@ -8,9 +8,9 @@ use frame_support::traits::Currency;
 /// <https://docs.substrate.io/reference/frame-pallets/>
 pub use pallet::*;
 
-pub mod ics20_callback;
-pub mod ics20_context_channel;
-pub mod ics20_impl;
+pub mod callback;
+pub mod context_channel;
+pub mod r#impl;
 pub mod utils;
 
 #[cfg(test)]
@@ -29,7 +29,7 @@ type BalanceOf<T> =
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use crate::{ics20_callback::IbcTransferModule, LOG_TARGET};
+	use crate::{callback::IbcTransferModule, LOG_TARGET};
 	use alloc::string::String;
 	use frame_support::{
 		pallet_prelude::*,
@@ -52,7 +52,6 @@ pub mod pallet {
 	use sp_std::{fmt::Debug, vec::Vec};
 
 	#[pallet::pallet]
-	#[pallet::generate_store(pub(super) trait Store)]
 	#[pallet::without_storage_info]
 	pub struct Pallet<T>(_);
 
