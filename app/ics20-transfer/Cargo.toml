@@ -15,9 +15,9 @@ targets = ["x86_64-unknown-linux-gnu"]
 [dependencies]
 # substrate crates
 codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive"] }
-frame-benchmarking = { version = "4.0.0-dev", default-features = false, optional = true, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.40" }
-frame-support = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.40" }
-frame-system = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.40" }
+frame-benchmarking = { default-features = false, optional = true, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.40" }
+frame-support = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.40" }
+frame-system = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.40" }
 hex = { version = "0.4.0", default-features = false }
 ibc-support = { version = "0.1.0", default-features = false, path = "../../support" }
 log = { version = "0.4", default-features = false }
@@ -29,17 +29,17 @@ primitive-types = { version = "0.12.0", default-features = false, features = ["s
 
 ibc = { version = "0.28.0", default-features = false, features = ["parity-scale-codec", "serde"] }
 ibc-proto = { version = "0.25.0", default-features = false, features = ["parity-scale-codec"] }
-pallet-ibc = { version = "4.0.0-dev", default-features = false, path = "../../core" }
+pallet-ibc = { default-features = false, path = "../../core" }
 
 [dev-dependencies]
 chrono = "0.4.19"
 frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.40" }
 hex = '0.4.0'
-pallet-assets = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.40" }
-pallet-babe = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.40" }
-pallet-balances = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.40" }
-pallet-ibc = { version = "4.0.0-dev", path = "../../core" }
-pallet-timestamp = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.40" }
+pallet-assets = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.40" }
+pallet-babe = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.40" }
+pallet-balances = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.40" }
+pallet-ibc = { path = "../../core" }
+pallet-timestamp = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.40" }
 serde = "1.0.142"
 serde_json = { version = "1.0" }
 sha2 = '0.10.2'

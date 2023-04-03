@@ -30,7 +30,7 @@ type BalanceOf<T> =
 pub mod pallet {
 	use super::*;
 	use crate::{callback::IbcTransferModule, LOG_TARGET};
-	use alloc::string::String;
+	// use alloc::string::String;
 	use frame_support::{
 		pallet_prelude::*,
 		traits::{
