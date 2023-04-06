@@ -126,11 +126,8 @@ impl<T: Config> ClientReader for Context<T> {
 		// Search for previous state.
 		for h in heights {
 			if h > *height {
-				let data = <ConsensusStates<T>>::get(client_id, height).ok_or(
-					ClientError::ConsensusStateNotFound {
-						client_id: client_id.clone(),
-						height: *height,
-					},
+				let data = <ConsensusStates<T>>::get(client_id, h).ok_or(
+					ClientError::ConsensusStateNotFound { client_id: client_id.clone(), height: h },
 				)?;
 				match self.client_type(client_id)?.as_str() {
 					TENDERMINT_CLIENT_TYPE => {
@@ -171,11 +168,8 @@ impl<T: Config> ClientReader for Context<T> {
 		// Search for previous state.
 		for h in heights {
 			if h < *height {
-				let data = <ConsensusStates<T>>::get(client_id, height).ok_or(
-					ClientError::ConsensusStateNotFound {
-						client_id: client_id.clone(),
-						height: *height,
-					},
+				let data = <ConsensusStates<T>>::get(client_id, h).ok_or(
+					ClientError::ConsensusStateNotFound { client_id: client_id.clone(), height: h },
 				)?;
 				match self.client_type(client_id)?.as_str() {
 					TENDERMINT_CLIENT_TYPE => {
