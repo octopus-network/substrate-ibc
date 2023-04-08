@@ -297,7 +297,7 @@ pub mod pallet {
 		///
 		/// The relevant events are emitted when successful.
 		#[pallet::call_index(0)]
-		#[pallet::weight(crate::weights::deliver::<T>(messages))]
+		#[pallet::weight(0)]
 		pub fn deliver(
 			origin: OriginFor<T>,
 			messages: Vec<ibc_proto::google::protobuf::Any>,
