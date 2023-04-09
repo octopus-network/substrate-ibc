@@ -88,6 +88,8 @@ pub mod pallet {
 
 		type ChainVersion: Get<u64>;
 
+		type IbcModule: AddModule;
+
 		/// benchmarking weight info
 		type WeightInfo: WeightInfo<Self>;
 	}
@@ -287,8 +289,6 @@ pub mod pallet {
 	/// Dispatch able functions must be annotated with a weight and must return a DispatchResult.
 	#[pallet::call]
 	impl<T: Config> Pallet<T>
-	where
-		T: AddModule,
 	{
 		/// This function acts as an entry for most of the IBC request.
 		/// I.e., create clients, update clients, handshakes to create channels, ...etc

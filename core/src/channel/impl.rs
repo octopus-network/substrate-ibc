@@ -23,15 +23,12 @@ use ibc::{
 	timestamp::Timestamp,
 	Height,
 };
-use ibc_support::{
-	module::AddModule,
-	r#trait::{ChannelKeeperInterface, ChannelReaderInterface},
-};
+use ibc_support::r#trait::{ChannelKeeperInterface, ChannelReaderInterface};
 use sp_core::Get;
 use sp_std::{boxed::Box, vec::Vec};
 
 /// A context supplying all the necessary read-only dependencies for processing any `ChannelMsg`.
-impl<T: Config + AddModule> ChannelReaderInterface for Context<T> {
+impl<T: Config> ChannelReaderInterface for Context<T> {
 	/// Returns the ChannelEnd for the given `port_id` and `chan_id`.
 	fn channel_end(port_id: &PortId, channel_id: &ChannelId) -> Result<ChannelEnd, ChannelError> {
 		Pallet::<T>::channel_end(port_id, channel_id).ok_or(ChannelError::ChannelNotFound {

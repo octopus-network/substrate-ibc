@@ -3,7 +3,6 @@
 extern crate alloc;
 
 use frame_support::traits::Currency;
-use ibc_support::module::AddModule;
 /// Edit this file to define custom logic or remove it if it is not needed.
 /// Learn more about FRAME and the core library of Substrate FRAME pallets:
 /// <https://docs.substrate.io/reference/frame-pallets/>
@@ -164,10 +163,7 @@ pub mod pallet {
 	// These functions materialize as "extrinsics", which are often compared to transactions.
 	// Dispatchable functions must be annotated with a weight and must return a DispatchResult.
 	#[pallet::call]
-	impl<T: Config> Pallet<T>
-	where
-		T: AddModule,
-	{
+	impl<T: Config> Pallet<T> {
 		/// ICS20 fungible token transfer.
 		/// Handling transfer request as sending chain or receiving chain.
 		///

@@ -6,9 +6,15 @@ use sp_std::{
 	sync::Arc,
 	vec,
 };
+
 pub trait AddModule {
+	fn add_module(router: Router) -> Router;
+}
+
+pub struct DefaultRouter;
+
+impl AddModule for DefaultRouter {
 	fn add_module(router: Router) -> Router {
-		// default do nothing
 		router
 	}
 }

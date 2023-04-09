@@ -13,6 +13,7 @@ pub use frame_support::{
 	StorageValue,
 };
 use frame_system as system;
+use ibc_support::module::DefaultRouter;
 use sp_runtime::{
 	generic,
 	traits::{AccountIdLookup, BlakeTwo256, IdentifyAccount, Verify},
@@ -149,6 +150,7 @@ impl pallet::Config for Test {
 	type ExpectedBlockTime = ExpectedBlockTime;
 	const IBC_COMMITMENT_PREFIX: &'static [u8] = b"Ibc";
 	type ChainVersion = ChainVersion;
+	type IbcModule = DefaultRouter;
 	type WeightInfo = ();
 }
 

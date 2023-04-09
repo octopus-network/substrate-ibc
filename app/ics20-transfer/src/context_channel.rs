@@ -17,13 +17,10 @@ use ibc::{
 	timestamp::Timestamp,
 	Height,
 };
-use ibc_support::{
-	module::AddModule,
-	r#trait::{ChannelKeeperInterface, ChannelReaderInterface},
-};
+use ibc_support::r#trait::{ChannelKeeperInterface, ChannelReaderInterface};
 use sp_std::{boxed::Box, time::Duration, vec::Vec};
 
-impl<T: Config + AddModule> ChannelReader for IbcTransferModule<T> {
+impl<T: Config> ChannelReader for IbcTransferModule<T> {
 	fn channel_end(
 		&self,
 		port_id: &PortId,
@@ -162,7 +159,7 @@ impl<T: Config + AddModule> ChannelReader for IbcTransferModule<T> {
 	}
 }
 
-impl<T: Config + AddModule> ChannelKeeper for IbcTransferModule<T> {
+impl<T: Config> ChannelKeeper for IbcTransferModule<T> {
 	fn store_packet_commitment(
 		&mut self,
 		port_id: PortId,

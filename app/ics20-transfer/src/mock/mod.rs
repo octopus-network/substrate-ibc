@@ -210,17 +210,18 @@ pub const SLOT_DURATION: Moment = MILLISECS_PER_BLOCK;
 
 use ibc::applications::transfer::MODULE_ID_STR;
 
-impl ibc_support::module::AddModule for Test {
+pub struct IbcModule;
+
+impl ibc_support::module::AddModule for IbcModule {
 	fn add_module(router: Router) -> Router {
-		if let Ok(ret) = router.clone().add_route(
+		match router.clone().add_route(
 			MODULE_ID_STR.parse().expect("never failed"),
 			pallet_ics20_transfer::callback::IbcTransferModule::<Test>(
 				std::marker::PhantomData::<Test>,
 			),
 		) {
-			ret
-		} else {
-			router
+			Ok(ret) => ret,
+			Err(e) => panic!("add module failed by {}", e),
 		}
 	}
 }
@@ -251,6 +252,7 @@ impl pallet_ibc::Config for Test {
 	type ExpectedBlockTime = ExpectedBlockTime;
 	const IBC_COMMITMENT_PREFIX: &'static [u8] = b"Ibc";
 	type ChainVersion = ChainVersion;
+	type IbcModule = IbcModule;
 	type WeightInfo = ();
 }
 

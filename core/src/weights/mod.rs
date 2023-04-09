@@ -31,7 +31,7 @@ use ibc::core::{
 	ics24_host::identifier::{ChannelId, ClientId, PortId},
 	ics26_routing::msgs::MsgEnvelope,
 };
-use ibc_support::{module::AddModule, CallbackWeight};
+use ibc_support::CallbackWeight;
 
 pub trait WeightInfo<T> {
 	fn create_client(msg_create_client: MsgCreateClient) -> Weight;
@@ -57,7 +57,7 @@ pub trait WeightInfo<T> {
 	fn timeout_on_close_packet(msg_timout_onclose_packet: MsgTimeoutOnClose) -> Weight;
 }
 
-impl<T: Config + AddModule> WeightInfo<T> for () {
+impl<T: Config> WeightInfo<T> for () {
 	fn create_client(msg_create_client: MsgCreateClient) -> Weight {
 		let context = Context::<T>::new();
 		if let Ok(decode_client_state) =
