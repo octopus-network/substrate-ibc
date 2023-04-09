@@ -210,14 +210,16 @@ pub const SLOT_DURATION: Moment = MILLISECS_PER_BLOCK;
 
 impl pallet_ibc::context::AddModule for Test {
 	fn add_module(mut router: Router) -> Router {
-		let _ = context.add_route(
+		if let Ok(ret) = router.clone().add_route(
 			"pallet_ibc_ics20".parse().expect("never failed"),
 			pallet_ics20_transfer::callback::IbcTransferModule::<Test>(
 				std::marker::PhantomData::<Test>,
 			),
-		);
-
-		router
+		) {
+			ret
+		} else {
+			router
+		}
 	}
 }
 

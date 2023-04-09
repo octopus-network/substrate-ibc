@@ -136,6 +136,12 @@ parameter_types! {
 	pub const ExpectedBlockTime: u64 = 6;
 }
 
+impl pallet_ibc::context::AddModule for Test {
+	fn add_module(mut router: pallet_ibc::routing::Router) -> pallet_ibc::routing::Router {
+		router
+	}
+}
+
 impl pallet::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type TimeProvider = pallet_timestamp::Pallet<Test>;
