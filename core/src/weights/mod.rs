@@ -1,9 +1,7 @@
 mod mock_client_weight;
 
 use super::*;
-use crate::{
-	context::AddModule, host::MOCK_CLIENT_TYPE, weights::mock_client_weight::MockClientWeightInfo,
-};
+use crate::{host::MOCK_CLIENT_TYPE, weights::mock_client_weight::MockClientWeightInfo};
 use alloc::boxed::Box;
 use core::marker::PhantomData;
 use frame_support::pallet_prelude::Weight;
@@ -59,7 +57,7 @@ pub trait WeightInfo<T> {
 	fn timeout_on_close_packet(msg_timout_onclose_packet: MsgTimeoutOnClose) -> Weight;
 }
 
-impl<T: Config + AddModule> WeightInfo<T> for () {
+impl<T: Config> WeightInfo<T> for () {
 	fn create_client(msg_create_client: MsgCreateClient) -> Weight {
 		let context = Context::<T>::new();
 		if let Ok(decode_client_state) =

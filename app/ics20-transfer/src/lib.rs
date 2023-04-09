@@ -2,7 +2,6 @@
 
 extern crate alloc;
 
-use pallet_ibc::context::AddModule;
 use frame_support::traits::Currency;
 /// Edit this file to define custom logic or remove it if it is not needed.
 /// Learn more about FRAME and the core library of Substrate FRAME pallets:
@@ -58,7 +57,7 @@ pub mod pallet {
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
-	pub trait Config: frame_system::Config + Sync + Send + Debug + pallet_ibc::Config {
+	pub trait Config: frame_system::Config + Sync + Send + Debug {
 		/// The aggregated event type of the runtime.
 		type RuntimeEvent: Parameter
 			+ Member
@@ -88,6 +87,9 @@ pub mod pallet {
 			+ Clone
 			+ PartialEq
 			+ Debug;
+
+		type IbcContext: ibc_support::r#trait::ChannelKeeperInterface
+			+ ibc_support::r#trait::ChannelReaderInterface;
 
 		// The native token name
 		const NATIVE_TOKEN_NAME: &'static [u8];
@@ -161,10 +163,7 @@ pub mod pallet {
 	// These functions materialize as "extrinsics", which are often compared to transactions.
 	// Dispatchable functions must be annotated with a weight and must return a DispatchResult.
 	#[pallet::call]
-	impl<T: Config> Pallet<T>
-	where
-		T: AddModule,
-	{
+	impl<T: Config> Pallet<T> {
 		/// ICS20 fungible token transfer.
 		/// Handling transfer request as sending chain or receiving chain.
 		///

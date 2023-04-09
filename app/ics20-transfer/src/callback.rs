@@ -16,13 +16,13 @@ use ibc::{
 	},
 	signer::Signer,
 };
-use pallet_ibc::context::AddModule;
+
 use sp_std::marker::PhantomData;
 
 #[derive(Debug, Encode, Decode)]
 pub struct IbcTransferModule<T>(pub PhantomData<T>);
 
-impl<T: Config + AddModule> Module for IbcTransferModule<T> {
+impl<T: Config> Module for IbcTransferModule<T> {
 	fn on_chan_open_init(
 		&mut self,
 		order: Order,

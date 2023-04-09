@@ -15,8 +15,8 @@ pub use frame_support::{
 };
 use frame_system as system;
 use frame_system::EnsureRoot;
+use ibc_support::module::Router;
 use pallet_assets::AssetsCallback;
-use pallet_ibc::routing::Router;
 use sp_io::storage;
 use sp_runtime::{
 	generic,
@@ -210,17 +210,18 @@ pub const SLOT_DURATION: Moment = MILLISECS_PER_BLOCK;
 
 use ibc::applications::transfer::MODULE_ID_STR;
 
-impl pallet_ibc::context::AddModule for Test {
-	fn add_module(mut router: Router) -> Router {
-		if let Ok(ret) = router.clone().add_route(
+pub struct IbcModule;
+
+impl ibc_support::module::AddModule for IbcModule {
+	fn add_module(router: Router) -> Router {
+		match router.clone().add_route(
 			MODULE_ID_STR.parse().expect("never failed"),
 			pallet_ics20_transfer::callback::IbcTransferModule::<Test>(
 				std::marker::PhantomData::<Test>,
 			),
 		) {
-			ret
-		} else {
-			router
+			Ok(ret) => ret,
+			Err(e) => panic!("add module failed by {}", e),
 		}
 	}
 }
@@ -232,6 +233,7 @@ impl pallet_ics20_transfer::Config for Test {
 	type AssetBalance = AssetBalance;
 	type Fungibles = Assets;
 	type AssetIdByName = Ics20Transfer;
+	type IbcContext = pallet_ibc::context::Context<Test>;
 	type AccountIdConversion = pallet_ics20_transfer::r#impl::IbcAccount;
 	const NATIVE_TOKEN_NAME: &'static [u8] = b"DEMO";
 }
@@ -241,6 +243,7 @@ pub type AssetId = u32;
 
 parameter_types! {
 	pub const ExpectedBlockTime: u64 = 6;
+	pub const ChainVersion: u64 = 0;
 }
 
 impl pallet_ibc::Config for Test {
@@ -248,6 +251,8 @@ impl pallet_ibc::Config for Test {
 	type TimeProvider = pallet_timestamp::Pallet<Test>;
 	type ExpectedBlockTime = ExpectedBlockTime;
 	const IBC_COMMITMENT_PREFIX: &'static [u8] = b"Ibc";
+	type ChainVersion = ChainVersion;
+	type IbcModule = IbcModule;
 	type WeightInfo = ();
 }
 
