@@ -208,10 +208,12 @@ pub const MILLISECS_PER_BLOCK: Moment = 6000;
 //       Attempting to do so will brick block production.
 pub const SLOT_DURATION: Moment = MILLISECS_PER_BLOCK;
 
+use ibc::applications::transfer::MODULE_ID_STR;
+
 impl pallet_ibc::context::AddModule for Test {
 	fn add_module(mut router: Router) -> Router {
 		if let Ok(ret) = router.clone().add_route(
-			"pallet_ibc_ics20".parse().expect("never failed"),
+			MODULE_ID_STR.parse().expect("never failed"),
 			pallet_ics20_transfer::callback::IbcTransferModule::<Test>(
 				std::marker::PhantomData::<Test>,
 			),
