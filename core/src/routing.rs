@@ -4,7 +4,7 @@ pub use alloc::{
 	string::{String, ToString},
 };
 use ibc::core::ics26_routing::context::{Module, ModuleId, RouterBuilder, RouterContext};
-use ibc_support::module::{AddModule, Router};
+use ibc_support::module::Router;
 use sp_std::{borrow::ToOwned, sync::Arc};
 
 #[derive(Default)]
@@ -25,7 +25,7 @@ impl RouterBuilder for SubstrateRouterBuilder {
 	}
 }
 
-impl<T: Config + AddModule> RouterContext for Context<T> {
+impl<T: Config> RouterContext for Context<T> {
 	type Router = Router;
 
 	fn router(&self) -> &Self::Router {

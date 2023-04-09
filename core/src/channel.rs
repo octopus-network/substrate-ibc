@@ -1,8 +1,4 @@
-use crate::{
-	Context,
-	Config,
-};
-use ibc_support::module::AddModule;
+use crate::{Config, Context};
 pub use alloc::{
 	format,
 	string::{String, ToString},
@@ -31,7 +27,7 @@ use ibc_support::r#trait::{ChannelKeeperInterface, ChannelReaderInterface};
 use sp_std::{boxed::Box, vec::Vec};
 pub mod r#impl;
 
-impl<T: Config + AddModule> ChannelReader for Context<T> {
+impl<T: Config> ChannelReader for Context<T> {
 	fn channel_end(
 		&self,
 		port_id: &PortId,
