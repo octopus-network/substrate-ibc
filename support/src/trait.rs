@@ -41,7 +41,6 @@ pub trait ChannelReaderInterface {
 	) -> Result<Sequence, PacketError>;
 
 	fn get_next_sequence_recv(
-		&self,
 		port_id: &PortId,
 		channel_id: &ChannelId,
 	) -> Result<Sequence, PacketError>;

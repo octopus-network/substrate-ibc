@@ -1,8 +1,8 @@
 use crate::{
-	context::{AddModule, Context},
-	Acknowledgements, ChannelCounter, Channels, ChannelsConnection, Config, NextSequenceAck,
-	NextSequenceRecv, NextSequenceSend, PacketCommitment, PacketReceipt, Pallet, REVISION_NUMBER,
+	Context,
+	Config,
 };
+use ibc_support::module::AddModule;
 pub use alloc::{
 	format,
 	string::{String, ToString},
@@ -10,12 +10,8 @@ pub use alloc::{
 use core::time::Duration;
 use ibc::{
 	core::{
-		ics02_client::{
-			client_state::ClientState, consensus_state::ConsensusState, context::ClientReader,
-		},
-		ics03_connection::{
-			connection::ConnectionEnd, context::ConnectionReader, error::ConnectionError,
-		},
+		ics02_client::{client_state::ClientState, consensus_state::ConsensusState},
+		ics03_connection::connection::ConnectionEnd,
 		ics04_channel::{
 			channel::ChannelEnd,
 			commitment::{
@@ -31,8 +27,8 @@ use ibc::{
 	timestamp::Timestamp,
 	Height,
 };
-use sp_core::Get;
-use sp_std::{boxed::Box, vec, vec::Vec};
+use ibc_support::r#trait::{ChannelKeeperInterface, ChannelReaderInterface};
+use sp_std::{boxed::Box, vec::Vec};
 pub mod r#impl;
 
 impl<T: Config + AddModule> ChannelReader for Context<T> {
@@ -41,15 +37,11 @@ impl<T: Config + AddModule> ChannelReader for Context<T> {
 		port_id: &PortId,
 		channel_id: &ChannelId,
 	) -> Result<ChannelEnd, ChannelError> {
-		Pallet::<T>::channel_end(port_id, channel_id).ok_or(ChannelError::ChannelNotFound {
-			port_id: port_id.clone(),
-			channel_id: channel_id.clone(),
-		})
+		<Context<T> as ChannelReaderInterface>::channel_end(port_id, channel_id)
 	}
 
 	fn connection_end(&self, connection_id: &ConnectionId) -> Result<ConnectionEnd, ChannelError> {
-		let context = Context::<T>::new();
-		ConnectionReader::connection_end(&context, connection_id).map_err(ChannelError::Connection)
+		<Context<T> as ChannelReaderInterface>::connection_end(connection_id)
 	}
 
 	/// Returns the `ChannelsConnection` for the given identifier `conn_id`.
@@ -57,14 +49,11 @@ impl<T: Config + AddModule> ChannelReader for Context<T> {
 		&self,
 		conn_id: &ConnectionId,
 	) -> Result<Vec<(PortId, ChannelId)>, ChannelError> {
-		Pallet::<T>::connection_channels(&conn_id)
-			.ok_or(ChannelError::ConnectionNotOpen { connection_id: conn_id.clone() })
+		<Context<T> as ChannelReaderInterface>::connection_channels(conn_id)
 	}
 
 	fn client_state(&self, client_id: &ClientId) -> Result<Box<dyn ClientState>, ChannelError> {
-		let context = Context::<T>::new();
-		ClientReader::client_state(&context, client_id)
-			.map_err(|e| ChannelError::Connection(ConnectionError::Client(e)))
+		<Context<T> as ChannelReaderInterface>::client_state(client_id)
 	}
 
 	fn client_consensus_state(
@@ -72,9 +61,7 @@ impl<T: Config + AddModule> ChannelReader for Context<T> {
 		client_id: &ClientId,
 		height: &Height,
 	) -> Result<Box<dyn ConsensusState>, ChannelError> {
-		let context = Context::<T>::new();
-		ClientReader::consensus_state(&context, client_id, height)
-			.map_err(|e| ChannelError::Connection(ConnectionError::Client(e)))
+		<Context<T> as ChannelReaderInterface>::client_consensus_state(client_id, height)
 	}
 
 	fn get_next_sequence_send(
@@ -82,12 +69,7 @@ impl<T: Config + AddModule> ChannelReader for Context<T> {
 		port_id: &PortId,
 		channel_id: &ChannelId,
 	) -> Result<Sequence, PacketError> {
-		Pallet::<T>::get_next_sequence_send(port_id, channel_id).ok_or(
-			PacketError::MissingNextSendSeq {
-				port_id: port_id.clone(),
-				channel_id: channel_id.clone(),
-			},
-		)
+		<Context<T> as ChannelReaderInterface>::get_next_sequence_ack(port_id, channel_id)
 	}
 
 	fn get_next_sequence_recv(
@@ -95,12 +77,7 @@ impl<T: Config + AddModule> ChannelReader for Context<T> {
 		port_id: &PortId,
 		channel_id: &ChannelId,
 	) -> Result<Sequence, PacketError> {
-		Pallet::<T>::get_next_sequence_recv(port_id, channel_id).ok_or(
-			PacketError::MissingNextRecvSeq {
-				port_id: port_id.clone(),
-				channel_id: channel_id.clone(),
-			},
-		)
+		<Context<T> as ChannelReaderInterface>::get_next_sequence_recv(port_id, channel_id)
 	}
 
 	fn get_next_sequence_ack(
@@ -108,12 +85,7 @@ impl<T: Config + AddModule> ChannelReader for Context<T> {
 		port_id: &PortId,
 		channel_id: &ChannelId,
 	) -> Result<Sequence, PacketError> {
-		Pallet::<T>::get_next_sequence_ack(port_id, channel_id).ok_or(
-			PacketError::MissingNextAckSeq {
-				port_id: port_id.clone(),
-				channel_id: channel_id.clone(),
-			},
-		)
+		<Context<T> as ChannelReaderInterface>::get_next_sequence_ack(port_id, channel_id)
 	}
 
 	/// Returns the `PacketCommitment` for the given identifier `(PortId, ChannelId, Sequence)`.
@@ -123,8 +95,7 @@ impl<T: Config + AddModule> ChannelReader for Context<T> {
 		channel_id: &ChannelId,
 		seq: &Sequence,
 	) -> Result<IbcPacketCommitment, PacketError> {
-		Pallet::<T>::get_packet_commitment((port_id, channel_id, seq))
-			.ok_or(PacketError::PacketCommitmentNotFound { sequence: *seq })
+		<Context<T> as ChannelReaderInterface>::get_packet_commitment(port_id, channel_id, seq)
 	}
 
 	fn get_packet_receipt(
@@ -133,8 +104,7 @@ impl<T: Config + AddModule> ChannelReader for Context<T> {
 		channel_id: &ChannelId,
 		seq: &Sequence,
 	) -> Result<Receipt, PacketError> {
-		Pallet::<T>::get_packet_receipt((port_id, channel_id, seq))
-			.ok_or(PacketError::PacketReceiptNotFound { sequence: *seq })
+		<Context<T> as ChannelReaderInterface>::get_packet_receipt(port_id, channel_id, seq)
 	}
 
 	/// Returns the `Acknowledgements` for the given identifier `(PortId, ChannelId, Sequence)`.
@@ -144,21 +114,17 @@ impl<T: Config + AddModule> ChannelReader for Context<T> {
 		channel_id: &ChannelId,
 		seq: &Sequence,
 	) -> Result<IbcAcknowledgementCommitment, PacketError> {
-		Pallet::<T>::get_packet_acknowledgement((port_id, channel_id, seq))
-			.ok_or(PacketError::PacketAcknowledgementNotFound { sequence: *seq })
+		<Context<T> as ChannelReaderInterface>::get_packet_acknowledgement(port_id, channel_id, seq)
 	}
 
 	/// A hashing function for packet commitments
 	fn hash(&self, value: &[u8]) -> Vec<u8> {
-		sp_io::hashing::sha2_256(value).to_vec()
+		<Context<T> as ChannelReaderInterface>::hash(value)
 	}
 
 	/// Returns the current height of the local chain.
 	fn host_height(&self) -> Result<Height, ChannelError> {
-		let block_number = format!("{:?}", <frame_system::Pallet<T>>::block_number());
-		let current_height: u64 = block_number.parse().unwrap_or_default();
-		Height::new(REVISION_NUMBER, current_height)
-			.map_err(|e| ChannelError::Connection(ConnectionError::Client(e)))
+		<Context<T> as ChannelReaderInterface>::host_height()
 	}
 
 	/// Returns the `AnyConsensusState` for the given identifier `height`.
@@ -166,14 +132,11 @@ impl<T: Config + AddModule> ChannelReader for Context<T> {
 		&self,
 		height: &Height,
 	) -> Result<Box<dyn ConsensusState>, ChannelError> {
-		let context = Context::<T>::new();
-		ConnectionReader::host_consensus_state(&context, height).map_err(ChannelError::Connection)
+		<Context<T> as ChannelReaderInterface>::host_consensus_state(height)
 	}
 
 	fn pending_host_consensus_state(&self) -> Result<Box<dyn ConsensusState>, ChannelError> {
-		let context = Context::<T>::new();
-		ClientReader::pending_host_consensus_state(&context)
-			.map_err(|e| ChannelError::Connection(ConnectionError::Client(e)))
+		<Context<T> as ChannelReaderInterface>::pending_host_consensus_state()
 	}
 
 	/// Returns the `ClientProcessedTimes` for the given identifier `client_id` & `height`.
@@ -182,12 +145,7 @@ impl<T: Config + AddModule> ChannelReader for Context<T> {
 		client_id: &ClientId,
 		height: &Height,
 	) -> Result<Timestamp, ChannelError> {
-		let time = Pallet::<T>::client_update_time(client_id, height).ok_or(
-			ChannelError::ProcessedTimeNotFound { client_id: client_id.clone(), height: *height },
-		)?;
-
-		Timestamp::from_nanoseconds(time)
-			.map_err(|e| ChannelError::Other { description: e.to_string() })
+		<Context<T> as ChannelReaderInterface>::client_update_time(client_id, height)
 	}
 
 	fn client_update_height(
@@ -195,20 +153,18 @@ impl<T: Config + AddModule> ChannelReader for Context<T> {
 		client_id: &ClientId,
 		height: &Height,
 	) -> Result<Height, ChannelError> {
-		Pallet::<T>::client_update_height(client_id, height).ok_or(
-			ChannelError::ProcessedHeightNotFound { client_id: client_id.clone(), height: *height },
-		)
+		<Context<T> as ChannelReaderInterface>::client_update_height(client_id, height)
 	}
 
 	/// Returns a counter on the number of channel ids have been created thus far.
 	/// The value of this counter should increase only via method
 	/// `ChannelKeeper::increase_channel_counter`.
 	fn channel_counter(&self) -> Result<u64, ChannelError> {
-		Ok(Pallet::<T>::channel_cnt())
+		<Context<T> as ChannelReaderInterface>::channel_counter()
 	}
 
 	fn max_expected_time_per_block(&self) -> Duration {
-		Duration::from_secs(T::ExpectedBlockTime::get())
+		<Context<T> as ChannelReaderInterface>::max_expected_time_per_block()
 	}
 }
 
@@ -220,9 +176,9 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		seq: Sequence,
 		commitment: IbcPacketCommitment,
 	) -> Result<(), PacketError> {
-		<PacketCommitment<T>>::insert((port_id, channel_id, seq), commitment);
-
-		Ok(())
+		<Context<T> as ChannelKeeperInterface>::store_packet_commitment(
+			port_id, channel_id, seq, commitment,
+		)
 	}
 
 	fn delete_packet_commitment(
@@ -231,9 +187,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		channel_id: &ChannelId,
 		seq: &Sequence,
 	) -> Result<(), PacketError> {
-		<PacketCommitment<T>>::remove((port_id, channel_id, seq));
-
-		Ok(())
+		<Context<T> as ChannelKeeperInterface>::delete_packet_commitment(port_id, channel_id, seq)
 	}
 
 	fn store_packet_receipt(
@@ -243,9 +197,9 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		seq: Sequence,
 		receipt: Receipt,
 	) -> Result<(), PacketError> {
-		<PacketReceipt<T>>::insert((port_id, channel_id, seq), receipt);
-
-		Ok(())
+		<Context<T> as ChannelKeeperInterface>::store_packet_receipt(
+			port_id, channel_id, seq, receipt,
+		)
 	}
 
 	fn store_packet_acknowledgement(
@@ -255,9 +209,12 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		seq: Sequence,
 		ack_commitment: IbcAcknowledgementCommitment,
 	) -> Result<(), PacketError> {
-		<Acknowledgements<T>>::insert((port_id, channel_id, seq), ack_commitment);
-
-		Ok(())
+		<Context<T> as ChannelKeeperInterface>::store_packet_acknowledgement(
+			port_id,
+			channel_id,
+			seq,
+			ack_commitment,
+		)
 	}
 
 	fn delete_packet_acknowledgement(
@@ -266,9 +223,9 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		channel_id: &ChannelId,
 		seq: &Sequence,
 	) -> Result<(), PacketError> {
-		<Acknowledgements<T>>::remove((port_id, channel_id, seq));
-
-		Ok(())
+		<Context<T> as ChannelKeeperInterface>::delete_packet_acknowledgement(
+			port_id, channel_id, seq,
+		)
 	}
 
 	fn store_connection_channels(
@@ -277,22 +234,9 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		port_id: PortId,
 		channel_id: ChannelId,
 	) -> Result<(), ChannelError> {
-		if <ChannelsConnection<T>>::contains_key(&conn_id) {
-			let _ =
-				<ChannelsConnection<T>>::try_mutate(&conn_id, |val| -> Result<(), ChannelError> {
-					if let Some(value) = val {
-						value.push((port_id, channel_id));
-					}
-					Ok(())
-				})
-				.map_err(|e| ChannelError::Other {
-					description: format!("store connection channels failed: {:?}", e),
-				});
-		} else {
-			<ChannelsConnection<T>>::insert(conn_id, vec![(port_id, channel_id)]);
-		}
-
-		Ok(())
+		<Context<T> as ChannelKeeperInterface>::store_connection_channels(
+			conn_id, port_id, channel_id,
+		)
 	}
 
 	/// Stores the given channel_end at a path associated with the port_id and channel_id.
@@ -302,9 +246,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		channel_id: ChannelId,
 		channel_end: ChannelEnd,
 	) -> Result<(), ChannelError> {
-		<Channels<T>>::insert(port_id, channel_id, channel_end);
-
-		Ok(())
+		<Context<T> as ChannelKeeperInterface>::store_channel(port_id, channel_id, channel_end)
 	}
 
 	fn store_next_sequence_send(
@@ -313,9 +255,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		channel_id: ChannelId,
 		seq: Sequence,
 	) -> Result<(), PacketError> {
-		<NextSequenceSend<T>>::insert(port_id, channel_id, seq);
-
-		Ok(())
+		<Context<T> as ChannelKeeperInterface>::store_next_sequence_send(port_id, channel_id, seq)
 	}
 
 	fn store_next_sequence_recv(
@@ -324,9 +264,7 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		channel_id: ChannelId,
 		seq: Sequence,
 	) -> Result<(), PacketError> {
-		<NextSequenceRecv<T>>::insert(port_id, channel_id, seq);
-
-		Ok(())
+		<Context<T> as ChannelKeeperInterface>::store_next_sequence_recv(port_id, channel_id, seq)
 	}
 
 	fn store_next_sequence_ack(
@@ -335,338 +273,13 @@ impl<T: Config> ChannelKeeper for Context<T> {
 		channel_id: ChannelId,
 		seq: Sequence,
 	) -> Result<(), PacketError> {
-		<NextSequenceAck<T>>::insert(port_id, channel_id, seq);
-
-		Ok(())
+		<Context<T> as ChannelKeeperInterface>::store_next_sequence_ack(port_id, channel_id, seq)
 	}
 
 	/// Called upon channel identifier creation (Init or Try message processing).
 	/// Increases the counter which keeps track of how many channels have been created.
 	/// Should never fail.
 	fn increase_channel_counter(&mut self) {
-		let _ = ChannelCounter::<T>::try_mutate::<_, (), _>(|val| {
-			*val = val.saturating_add(1);
-			Ok(())
-		});
+		<Context<T> as ChannelKeeperInterface>::increase_channel_counter()
 	}
 }
-
-// pub trait ChannerReaderInterface {
-
-// }
-
-// impl<T: Config + AddModule> ChannelReader for Context<T> {
-// 	fn channel_end(
-// 		&self,
-// 		port_id: &PortId,
-// 		channel_id: &ChannelId,
-// 	) -> Result<ChannelEnd, ChannelError> {
-// 		Pallet::<T>::channel_end(port_id, channel_id).ok_or(ChannelError::ChannelNotFound {
-// 			port_id: port_id.clone(),
-// 			channel_id: channel_id.clone(),
-// 		})
-// 	}
-
-// 	fn connection_end(&self, connection_id: &ConnectionId) -> Result<ConnectionEnd, ChannelError> {
-// 		let context = Context::<T>::new();
-// 		ConnectionReader::connection_end(&context, connection_id).map_err(ChannelError::Connection)
-// 	}
-
-// 	/// Returns the `ChannelsConnection` for the given identifier `conn_id`.
-// 	fn connection_channels(
-// 		&self,
-// 		conn_id: &ConnectionId,
-// 	) -> Result<Vec<(PortId, ChannelId)>, ChannelError> {
-// 		Pallet::<T>::connection_channels(&conn_id)
-// 			.ok_or(ChannelError::ConnectionNotOpen { connection_id: conn_id.clone() })
-// 	}
-
-// 	fn client_state(&self, client_id: &ClientId) -> Result<Box<dyn ClientState>, ChannelError> {
-// 		let context = Context::<T>::new();
-// 		ClientReader::client_state(&context, client_id)
-// 			.map_err(|e| ChannelError::Connection(ConnectionError::Client(e)))
-// 	}
-
-// 	fn client_consensus_state(
-// 		&self,
-// 		client_id: &ClientId,
-// 		height: &Height,
-// 	) -> Result<Box<dyn ConsensusState>, ChannelError> {
-// 		let context = Context::<T>::new();
-// 		ClientReader::consensus_state(&context, client_id, height)
-// 			.map_err(|e| ChannelError::Connection(ConnectionError::Client(e)))
-// 	}
-
-// 	fn get_next_sequence_send(
-// 		&self,
-// 		port_id: &PortId,
-// 		channel_id: &ChannelId,
-// 	) -> Result<Sequence, PacketError> {
-// 		Pallet::<T>::get_next_sequence_send(port_id, channel_id).ok_or(
-// 			PacketError::MissingNextSendSeq {
-// 				port_id: port_id.clone(),
-// 				channel_id: channel_id.clone(),
-// 			},
-// 		)
-// 	}
-
-// 	fn get_next_sequence_recv(
-// 		&self,
-// 		port_id: &PortId,
-// 		channel_id: &ChannelId,
-// 	) -> Result<Sequence, PacketError> {
-// 		Pallet::<T>::get_next_sequence_recv(port_id, channel_id).ok_or(
-// 			PacketError::MissingNextRecvSeq {
-// 				port_id: port_id.clone(),
-// 				channel_id: channel_id.clone(),
-// 			},
-// 		)
-// 	}
-
-// 	fn get_next_sequence_ack(
-// 		&self,
-// 		port_id: &PortId,
-// 		channel_id: &ChannelId,
-// 	) -> Result<Sequence, PacketError> {
-// 		Pallet::<T>::get_next_sequence_ack(port_id, channel_id).ok_or(
-// 			PacketError::MissingNextAckSeq {
-// 				port_id: port_id.clone(),
-// 				channel_id: channel_id.clone(),
-// 			},
-// 		)
-// 	}
-
-// 	/// Returns the `PacketCommitment` for the given identifier `(PortId, ChannelId, Sequence)`.
-// 	fn get_packet_commitment(
-// 		&self,
-// 		port_id: &PortId,
-// 		channel_id: &ChannelId,
-// 		seq: &Sequence,
-// 	) -> Result<IbcPacketCommitment, PacketError> {
-// 		Pallet::<T>::get_packet_commitment((port_id, channel_id, seq))
-// 			.ok_or(PacketError::PacketCommitmentNotFound { sequence: *seq })
-// 	}
-
-// 	fn get_packet_receipt(
-// 		&self,
-// 		port_id: &PortId,
-// 		channel_id: &ChannelId,
-// 		seq: &Sequence,
-// 	) -> Result<Receipt, PacketError> {
-// 		Pallet::<T>::get_packet_receipt((port_id, channel_id, seq))
-// 			.ok_or(PacketError::PacketReceiptNotFound { sequence: *seq })
-// 	}
-
-// 	/// Returns the `Acknowledgements` for the given identifier `(PortId, ChannelId, Sequence)`.
-// 	fn get_packet_acknowledgement(
-// 		&self,
-// 		port_id: &PortId,
-// 		channel_id: &ChannelId,
-// 		seq: &Sequence,
-// 	) -> Result<IbcAcknowledgementCommitment, PacketError> {
-// 		Pallet::<T>::get_packet_acknowledgement((port_id, channel_id, seq))
-// 			.ok_or(PacketError::PacketAcknowledgementNotFound { sequence: *seq })
-// 	}
-
-// 	/// A hashing function for packet commitments
-// 	fn hash(&self, value: &[u8]) -> Vec<u8> {
-// 		sp_io::hashing::sha2_256(value).to_vec()
-// 	}
-
-// 	/// Returns the current height of the local chain.
-// 	fn host_height(&self) -> Result<Height, ChannelError> {
-// 		let block_number = format!("{:?}", <frame_system::Pallet<T>>::block_number());
-// 		let current_height: u64 = block_number.parse().unwrap_or_default();
-// 		Height::new(REVISION_NUMBER, current_height)
-// 			.map_err(|e| ChannelError::Connection(ConnectionError::Client(e)))
-// 	}
-
-// 	/// Returns the `AnyConsensusState` for the given identifier `height`.
-// 	fn host_consensus_state(
-// 		&self,
-// 		height: &Height,
-// 	) -> Result<Box<dyn ConsensusState>, ChannelError> {
-// 		let context = Context::<T>::new();
-// 		ConnectionReader::host_consensus_state(&context, height).map_err(ChannelError::Connection)
-// 	}
-
-// 	fn pending_host_consensus_state(&self) -> Result<Box<dyn ConsensusState>, ChannelError> {
-// 		let context = Context::<T>::new();
-// 		ClientReader::pending_host_consensus_state(&context)
-// 			.map_err(|e| ChannelError::Connection(ConnectionError::Client(e)))
-// 	}
-
-// 	/// Returns the `ClientProcessedTimes` for the given identifier `client_id` & `height`.
-// 	fn client_update_time(
-// 		&self,
-// 		client_id: &ClientId,
-// 		height: &Height,
-// 	) -> Result<Timestamp, ChannelError> {
-// 		let time = Pallet::<T>::client_update_time(client_id, height).ok_or(
-// 			ChannelError::ProcessedTimeNotFound { client_id: client_id.clone(), height: *height },
-// 		)?;
-
-// 		Timestamp::from_nanoseconds(time)
-// 			.map_err(|e| ChannelError::Other { description: e.to_string() })
-// 	}
-
-// 	fn client_update_height(
-// 		&self,
-// 		client_id: &ClientId,
-// 		height: &Height,
-// 	) -> Result<Height, ChannelError> {
-// 		Pallet::<T>::client_update_height(client_id, height).ok_or(
-// 			ChannelError::ProcessedHeightNotFound { client_id: client_id.clone(), height: *height },
-// 		)
-// 	}
-
-// 	/// Returns a counter on the number of channel ids have been created thus far.
-// 	/// The value of this counter should increase only via method
-// 	/// `ChannelKeeper::increase_channel_counter`.
-// 	fn channel_counter(&self) -> Result<u64, ChannelError> {
-// 		Ok(Pallet::<T>::channel_cnt())
-// 	}
-
-// 	fn max_expected_time_per_block(&self) -> Duration {
-// 		Duration::from_secs(T::ExpectedBlockTime::get())
-// 	}
-// }
-
-// impl<T: Config> ChannelKeeper for Context<T> {
-// 	fn store_packet_commitment(
-// 		&mut self,
-// 		port_id: PortId,
-// 		channel_id: ChannelId,
-// 		seq: Sequence,
-// 		commitment: IbcPacketCommitment,
-// 	) -> Result<(), PacketError> {
-// 		<PacketCommitment<T>>::insert((port_id, channel_id, seq), commitment);
-
-// 		Ok(())
-// 	}
-
-// 	fn delete_packet_commitment(
-// 		&mut self,
-// 		port_id: &PortId,
-// 		channel_id: &ChannelId,
-// 		seq: &Sequence,
-// 	) -> Result<(), PacketError> {
-// 		<PacketCommitment<T>>::remove((port_id, channel_id, seq));
-
-// 		Ok(())
-// 	}
-
-// 	fn store_packet_receipt(
-// 		&mut self,
-// 		port_id: PortId,
-// 		channel_id: ChannelId,
-// 		seq: Sequence,
-// 		receipt: Receipt,
-// 	) -> Result<(), PacketError> {
-// 		<PacketReceipt<T>>::insert((port_id, channel_id, seq), receipt);
-
-// 		Ok(())
-// 	}
-
-// 	fn store_packet_acknowledgement(
-// 		&mut self,
-// 		port_id: PortId,
-// 		channel_id: ChannelId,
-// 		seq: Sequence,
-// 		ack_commitment: IbcAcknowledgementCommitment,
-// 	) -> Result<(), PacketError> {
-// 		<Acknowledgements<T>>::insert((port_id, channel_id, seq), ack_commitment);
-
-// 		Ok(())
-// 	}
-
-// 	fn delete_packet_acknowledgement(
-// 		&mut self,
-// 		port_id: &PortId,
-// 		channel_id: &ChannelId,
-// 		seq: &Sequence,
-// 	) -> Result<(), PacketError> {
-// 		<Acknowledgements<T>>::remove((port_id, channel_id, seq));
-
-// 		Ok(())
-// 	}
-
-// 	fn store_connection_channels(
-// 		&mut self,
-// 		conn_id: ConnectionId,
-// 		port_id: PortId,
-// 		channel_id: ChannelId,
-// 	) -> Result<(), ChannelError> {
-// 		if <ChannelsConnection<T>>::contains_key(&conn_id) {
-// 			let _ =
-// 				<ChannelsConnection<T>>::try_mutate(&conn_id, |val| -> Result<(), ChannelError> {
-// 					if let Some(value) = val {
-// 						value.push((port_id, channel_id));
-// 					}
-// 					Ok(())
-// 				})
-// 				.map_err(|e| ChannelError::Other {
-// 					description: format!("store connection channels failed: {:?}", e),
-// 				});
-// 		} else {
-// 			<ChannelsConnection<T>>::insert(conn_id, vec![(port_id, channel_id)]);
-// 		}
-
-// 		Ok(())
-// 	}
-
-// 	/// Stores the given channel_end at a path associated with the port_id and channel_id.
-// 	fn store_channel(
-// 		&mut self,
-// 		port_id: PortId,
-// 		channel_id: ChannelId,
-// 		channel_end: ChannelEnd,
-// 	) -> Result<(), ChannelError> {
-// 		<Channels<T>>::insert(port_id, channel_id, channel_end);
-
-// 		Ok(())
-// 	}
-
-// 	fn store_next_sequence_send(
-// 		&mut self,
-// 		port_id: PortId,
-// 		channel_id: ChannelId,
-// 		seq: Sequence,
-// 	) -> Result<(), PacketError> {
-// 		<NextSequenceSend<T>>::insert(port_id, channel_id, seq);
-
-// 		Ok(())
-// 	}
-
-// 	fn store_next_sequence_recv(
-// 		&mut self,
-// 		port_id: PortId,
-// 		channel_id: ChannelId,
-// 		seq: Sequence,
-// 	) -> Result<(), PacketError> {
-// 		<NextSequenceRecv<T>>::insert(port_id, channel_id, seq);
-
-// 		Ok(())
-// 	}
-
-// 	fn store_next_sequence_ack(
-// 		&mut self,
-// 		port_id: PortId,
-// 		channel_id: ChannelId,
-// 		seq: Sequence,
-// 	) -> Result<(), PacketError> {
-// 		<NextSequenceAck<T>>::insert(port_id, channel_id, seq);
-
-// 		Ok(())
-// 	}
-
-// 	/// Called upon channel identifier creation (Init or Try message processing).
-// 	/// Increases the counter which keeps track of how many channels have been created.
-// 	/// Should never fail.
-// 	fn increase_channel_counter(&mut self) {
-// 		let _ = ChannelCounter::<T>::try_mutate::<_, (), _>(|val| {
-// 			*val = val.saturating_add(1);
-// 			Ok(())
-// 		});
-// 	}
-// }

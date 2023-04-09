@@ -30,7 +30,7 @@ pub mod routing;
 pub mod utils;
 
 pub use crate::context::Context;
-use context::AddModule;
+use ibc_support::module::AddModule;
 
 pub const LOG_TARGET: &str = "runtime::pallet-ibc";
 pub const REVISION_NUMBER: u64 = 0;
@@ -85,6 +85,8 @@ pub mod pallet {
 		const IBC_COMMITMENT_PREFIX: &'static [u8];
 
 		type ExpectedBlockTime: Get<u64>;
+
+		type ChainVersion: Get<u64>;
 
 		/// benchmarking weight info
 		type WeightInfo: WeightInfo<Self>;
@@ -285,7 +287,8 @@ pub mod pallet {
 	/// Dispatch able functions must be annotated with a weight and must return a DispatchResult.
 	#[pallet::call]
 	impl<T: Config> Pallet<T>
-	   where T: AddModule
+	where
+		T: AddModule,
 	{
 		/// This function acts as an entry for most of the IBC request.
 		/// I.e., create clients, update clients, handshakes to create channels, ...etc

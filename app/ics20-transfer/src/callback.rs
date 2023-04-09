@@ -16,7 +16,7 @@ use ibc::{
 	},
 	signer::Signer,
 };
-use pallet_ibc::context::AddModule;
+use ibc_support::module::AddModule;
 use sp_std::marker::PhantomData;
 
 #[derive(Debug, Encode, Decode)]

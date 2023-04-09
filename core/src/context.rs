@@ -6,7 +6,7 @@ use ibc::core::ics26_routing::context::{Module, ModuleId, RouterBuilder};
 
 /// A struct capturing all the functional dependencies (i.e., context)
 /// which the ICS26 module requires to be able to dispatch and process IBC messages.
-use crate::routing::{Router, SubstrateRouterBuilder};
+use crate::routing::SubstrateRouterBuilder;
 #[cfg(test)]
 use ibc::{
 	core::ics04_channel::commitment::PacketCommitment,
@@ -20,18 +20,12 @@ use ibc::{
 	mock::client_state::{client_type as mock_client_type, MockClientState},
 	Height,
 };
+use ibc_support::module::{AddModule, Router};
 
 #[derive(Clone, Debug)]
 pub struct Context<T: Config> {
 	pub _pd: PhantomData<T>,
 	pub router: Router,
-}
-
-pub trait AddModule {
-	fn add_module(mut router: Router) -> Router {
-		// default do nothing
-		router
-	}
 }
 
 impl<T: Config + AddModule> Context<T> {
