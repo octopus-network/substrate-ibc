@@ -4,26 +4,23 @@ name: Check Set-Up & Build
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
-    branches: [ main, dev]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
+env:
+  CARGO_TERM_COLOR: always
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  check:
+  build:
     # The type of runner that the job will run on
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
-
-      - name: Set-Up
-        run: sudo apt install -y git clang curl libssl-dev llvm libudev-dev
+      - uses: actions/checkout@v3
 
       - name: Install Rustup
         run: |
@@ -53,3 +50,6 @@ jobs:
       - name: Check Build for Benchmarking
         run: |
           cargo check --features=runtime-benchmarks --release
+
+      # - name: Check no_std support
+      #   run: cargo check --no-default-features --target=wasm32-unknown-unknown
