@@ -16,6 +16,7 @@ use ibc::{
 };
 use ibc_support::AssetIdAndNameProvider;
 use log::error;
+use pallet_ibc::context::AddModule;
 use primitive_types::U256;
 use scale_info::TypeInfo;
 use sp_runtime::{
@@ -24,7 +25,7 @@ use sp_runtime::{
 };
 use sp_std::str::FromStr;
 
-impl<T: Config> BankKeeper for IbcTransferModule<T> {
+impl<T: Config + AddModule> BankKeeper for IbcTransferModule<T> {
 	type AccountId = <Self as TokenTransferContext>::AccountId;
 
 	fn send_coins(
@@ -173,7 +174,7 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 	}
 }
 
-impl<T: Config> TokenTransferReader for IbcTransferModule<T> {
+impl<T: Config + AddModule> TokenTransferReader for IbcTransferModule<T> {
 	type AccountId = <Self as TokenTransferContext>::AccountId;
 
 	fn get_port(&self) -> Result<PortId, TokenTransferError> {
@@ -204,7 +205,7 @@ impl<T: Config> TokenTransferReader for IbcTransferModule<T> {
 	}
 }
 
-impl<T: Config> TokenTransferContext for IbcTransferModule<T> {
+impl<T: Config + AddModule> TokenTransferContext for IbcTransferModule<T> {
 	type AccountId = <T as Config>::AccountIdConversion;
 }
 

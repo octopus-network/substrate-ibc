@@ -1,7 +1,7 @@
 use crate::{
-	context::Context, Acknowledgements, ChannelCounter, Channels, ChannelsConnection, Config,
-	NextSequenceAck, NextSequenceRecv, NextSequenceSend, PacketCommitment, PacketReceipt, Pallet,
-	REVISION_NUMBER,
+	context::{AddModule, Context},
+	Acknowledgements, ChannelCounter, Channels, ChannelsConnection, Config, NextSequenceAck,
+	NextSequenceRecv, NextSequenceSend, PacketCommitment, PacketReceipt, Pallet, REVISION_NUMBER,
 };
 pub use alloc::{
 	format,
@@ -34,7 +34,7 @@ use ibc::{
 use sp_core::Get;
 use sp_std::{boxed::Box, vec, vec::Vec};
 
-impl<T: Config> ChannelReader for Context<T> {
+impl<T: Config + AddModule> ChannelReader for Context<T> {
 	fn channel_end(
 		&self,
 		port_id: &PortId,

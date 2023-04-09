@@ -27,10 +27,17 @@ pub struct Context<T: Config> {
 	pub router: Router,
 }
 
-impl<T: Config> Context<T> {
+pub trait AddModule {
+	fn add_module(mut router: Router) -> Router {
+		// default do nothing
+		router
+	}
+}
+
+impl<T: Config + AddModule> Context<T> {
 	pub fn new() -> Self {
 		let r = SubstrateRouterBuilder::default().build();
-
+		let r = T::add_module(r);
 		Self { _pd: PhantomData::default(), router: r }
 	}
 
@@ -42,7 +49,7 @@ impl<T: Config> Context<T> {
 	}
 }
 
-impl<T: Config> Default for Context<T> {
+impl<T: Config + AddModule> Default for Context<T> {
 	fn default() -> Self {
 		Self::new()
 	}

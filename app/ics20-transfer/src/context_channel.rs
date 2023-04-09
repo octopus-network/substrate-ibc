@@ -17,9 +17,10 @@ use ibc::{
 	timestamp::Timestamp,
 	Height,
 };
+use pallet_ibc::context::AddModule;
 use sp_std::{boxed::Box, time::Duration, vec::Vec};
 
-impl<T: Config> ChannelReader for IbcTransferModule<T> {
+impl<T: Config + AddModule> ChannelReader for IbcTransferModule<T> {
 	fn channel_end(
 		&self,
 		port_id: &PortId,
@@ -195,7 +196,7 @@ impl<T: Config> ChannelReader for IbcTransferModule<T> {
 	}
 }
 
-impl<T: Config> ChannelKeeper for IbcTransferModule<T> {
+impl<T: Config + AddModule> ChannelKeeper for IbcTransferModule<T> {
 	fn store_packet_commitment(
 		&mut self,
 		port_id: PortId,

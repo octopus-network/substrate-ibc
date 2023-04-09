@@ -16,6 +16,7 @@ pub use frame_support::{
 use frame_system as system;
 use frame_system::EnsureRoot;
 use pallet_assets::AssetsCallback;
+use pallet_ibc::routing::Router;
 use sp_io::storage;
 use sp_runtime::{
 	generic,
@@ -206,6 +207,19 @@ pub const MILLISECS_PER_BLOCK: Moment = 6000;
 // NOTE: Currently it is not possible to change the slot duration after the chain has started.
 //       Attempting to do so will brick block production.
 pub const SLOT_DURATION: Moment = MILLISECS_PER_BLOCK;
+
+impl pallet_ibc::context::AddModule for Test {
+	fn add_module(mut router: Router) -> Router {
+		let _ = context.add_route(
+			"pallet_ibc_ics20".parse().expect("never failed"),
+			pallet_ics20_transfer::callback::IbcTransferModule::<Test>(
+				std::marker::PhantomData::<Test>,
+			),
+		);
+
+		router
+	}
+}
 
 impl pallet_ics20_transfer::Config for Test {
 	type RuntimeEvent = RuntimeEvent;

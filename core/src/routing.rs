@@ -1,4 +1,7 @@
-use crate::{context::Context, Config};
+use crate::{
+	context::{AddModule, Context},
+	Config,
+};
 pub use alloc::{
 	format,
 	string::{String, ToString},
@@ -33,6 +36,15 @@ impl RouterBuilder for SubstrateRouterBuilder {
 #[derive(Default, Clone)]
 pub struct Router(pub BTreeMap<ModuleId, Arc<dyn Module>>);
 
+impl Router {
+	pub fn add_route(mut self, module_id: ModuleId, module: impl Module) -> Result<Self, String> {
+		match self.0.insert(module_id, Arc::new(module)) {
+			None => Ok(self),
+			Some(_) => Err("Duplicate module_id".to_owned()),
+		}
+	}
+}
+
 impl Debug for Router {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		let keys = self
@@ -54,7 +66,7 @@ impl ibc::core::ics26_routing::context::Router for Router {
 	}
 }
 
-impl<T: Config> RouterContext for Context<T> {
+impl<T: Config + AddModule> RouterContext for Context<T> {
 	type Router = Router;
 
 	fn router(&self) -> &Self::Router {
