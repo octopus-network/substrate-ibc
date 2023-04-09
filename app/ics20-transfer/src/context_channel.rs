@@ -27,6 +27,7 @@ impl<T: Config + AddModule> ChannelReader for IbcTransferModule<T> {
 		channel_id: &ChannelId,
 	) -> Result<ChannelEnd, ChannelError> {
 		ChannelReader::channel_end(&pallet_ibc::context::Context::<T>::new(), port_id, channel_id)
+		// <T::IbcContext as ChannelReader>::channel_end(&T::IbcContext, port_id, channel_id)
 	}
 
 	fn connection_end(&self, connection_id: &ConnectionId) -> Result<ConnectionEnd, ChannelError> {

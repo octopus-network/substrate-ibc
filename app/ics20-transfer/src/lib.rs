@@ -2,12 +2,12 @@
 
 extern crate alloc;
 
-use pallet_ibc::context::AddModule;
 use frame_support::traits::Currency;
 /// Edit this file to define custom logic or remove it if it is not needed.
 /// Learn more about FRAME and the core library of Substrate FRAME pallets:
 /// <https://docs.substrate.io/reference/frame-pallets/>
 pub use pallet::*;
+use pallet_ibc::context::AddModule;
 
 pub mod callback;
 pub mod context_channel;
@@ -88,6 +88,9 @@ pub mod pallet {
 			+ Clone
 			+ PartialEq
 			+ Debug;
+
+		// type IbcContext: ibc::core::ics04_channel::context::ChannelKeeper
+		// 	+ ibc::core::ics04_channel::context::ChannelReader;
 
 		// The native token name
 		const NATIVE_TOKEN_NAME: &'static [u8];
