@@ -3,11 +3,7 @@ use crate::{
 	NextSequenceAck, NextSequenceRecv, NextSequenceSend, PacketCommitment as PacketCommitStore,
 	PacketReceipt, Pallet,
 };
-use alloc::{
-	format,
-	string::{String, ToString},
-	vec,
-};
+use alloc::{format, string::ToString, vec};
 use core::time::Duration;
 use ibc::{
 	core::{
@@ -28,7 +24,7 @@ use ibc::{
 	timestamp::Timestamp,
 	Height,
 };
-use ibc_support::r#trait::{ChannelKeeperInterface, ChannelReaderInterface};
+use ibc_support::traits::{ChannelKeeperInterface, ChannelReaderInterface};
 use sp_core::Get;
 use sp_std::{boxed::Box, vec::Vec};
 

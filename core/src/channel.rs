@@ -23,9 +23,9 @@ use ibc::{
 	timestamp::Timestamp,
 	Height,
 };
-use ibc_support::r#trait::{ChannelKeeperInterface, ChannelReaderInterface};
+use ibc_support::traits::{ChannelKeeperInterface, ChannelReaderInterface};
 use sp_std::{boxed::Box, vec::Vec};
-pub mod r#impl;
+pub mod impls;
 
 impl<T: Config> ChannelReader for Context<T> {
 	fn channel_end(

@@ -234,7 +234,7 @@ impl pallet_ics20_transfer::Config for Test {
 	type Fungibles = Assets;
 	type AssetIdByName = Ics20Transfer;
 	type IbcContext = pallet_ibc::context::Context<Test>;
-	type AccountIdConversion = pallet_ics20_transfer::r#impl::IbcAccount;
+	type AccountIdConversion = pallet_ics20_transfer::impls::IbcAccount;
 	const NATIVE_TOKEN_NAME: &'static [u8] = b"DEMO";
 }
 

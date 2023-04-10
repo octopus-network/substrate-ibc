@@ -2,7 +2,7 @@
 
 use sp_std::vec::Vec;
 
-pub mod r#trait;
+pub mod traits;
 pub mod weights;
 pub use weights::*;
 pub mod module;

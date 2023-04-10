@@ -10,7 +10,7 @@ pub use pallet::*;
 
 pub mod callback;
 pub mod context_channel;
-pub mod r#impl;
+pub mod impls;
 pub mod utils;
 
 #[cfg(test)]
@@ -88,8 +88,8 @@ pub mod pallet {
 			+ PartialEq
 			+ Debug;
 
-		type IbcContext: ibc_support::r#trait::ChannelKeeperInterface
-			+ ibc_support::r#trait::ChannelReaderInterface;
+		type IbcContext: ibc_support::traits::ChannelKeeperInterface
+			+ ibc_support::traits::ChannelReaderInterface;
 
 		// The native token name
 		const NATIVE_TOKEN_NAME: &'static [u8];
