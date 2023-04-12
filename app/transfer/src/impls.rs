@@ -14,7 +14,7 @@ use ibc::{
 	core::ics24_host::identifier::{ChannelId, PortId},
 	signer::Signer,
 };
-use ibc_support::{AssetIdAndNameProvider};
+use ibc_support::AssetIdAndNameProvider;
 use log::error;
 use primitive_types::U256;
 use scale_info::TypeInfo;
@@ -54,7 +54,10 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 					AllowDeath,
 				)
 				.map_err(|error| {
-					error!("❌ [send_coins] : Error: ({:?})", error);
+					error!(
+						"❌ [send_coins] : Error: ({:?}), from: {:?}, to: {:?}",
+						error, from, to
+					);
 					TokenTransferError::InvalidToken
 				})?;
 
@@ -93,7 +96,7 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 					},
 					Err(_error) => {
 						error!("❌ [send_coins]: denom: ({:?})", denom);
-						return Err(TokenTransferError::InvalidToken)
+						return Err(TokenTransferError::InvalidToken);
 					},
 				}
 			},
@@ -131,7 +134,7 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 			},
 			Err(_error) => {
 				error!("❌ [mint_coins]: denom: ({:?})", denom);
-				return Err(TokenTransferError::InvalidToken)
+				return Err(TokenTransferError::InvalidToken);
 			},
 		}
 		Ok(())
@@ -166,7 +169,7 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 			},
 			Err(_error) => {
 				error!("❌ [burn_coins]: denom: ({:?})", denom);
-				return Err(TokenTransferError::InvalidToken)
+				return Err(TokenTransferError::InvalidToken);
 			},
 		}
 		Ok(())
