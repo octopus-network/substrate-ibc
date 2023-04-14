@@ -52,20 +52,20 @@ sp-version = { version = "5.0.0", git = "https://github.com/paritytech/substrate
 [features]
 default = ["std"]
 std = [
-  "hex/std",
   "codec/std",
-  "log/std",
-  "frame-benchmarking/std",
+  "frame-benchmarking?/std",
   "frame-support/std",
   "frame-system/std",
-  "scale-info/std",
-  "ibc/std",
-  "ibc-proto/std",
+  "hex/std",
   "ibc-support/std",
-  "sp-runtime/std",
+  "log/std",
+  "scale-info/std",
   "sp-io/std",
+  "sp-runtime/std",
   "sp-std/std",
   "primitive-types/std",
+  "ibc/std",
+  "ibc-proto/std",
 ]
 runtime-benchmarks = ["frame-benchmarking/runtime-benchmarks"]
 try-runtime = ["frame-support/try-runtime"]
