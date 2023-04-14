@@ -1,8 +1,8 @@
 mod mock_client_weight;
 
 use super::*;
-use crate::ibc::applications::transfer::PORT_ID_STR;
-use crate::ibc::core::{
+use ibc::applications::transfer::PORT_ID_STR;
+use ibc::core::{
 	ics02_client::{
 		context::ClientReader,
 		msgs::{

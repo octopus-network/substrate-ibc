@@ -1,5 +1,5 @@
 use crate::{context::Context, Config};
-use crate::ibc::{
+use ibc::{
 	applications::transfer::{
 		MODULE_ID_STR as TRANSFER_MODULE_ID, PORT_ID_STR as TRANSFER_PORT_ID,
 	},
