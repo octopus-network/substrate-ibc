@@ -9,6 +9,9 @@ edition = "2021"
 ibc = { version = "0.28.0", default-features = false, features = ["parity-scale-codec"]}
 ibc-proto = { version = "0.25.0", default-features = false }
 
+serde = { version = "1.0", default-features = false }
+serde_json = { version = "1.0", default-features = false }
+
 # substrate crates
 codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive"] }
 scale-info = { version = "2.1.2", default-features = false, features = ["derive"] }
@@ -16,6 +19,8 @@ sp-runtime = {  default-features = false, git = "https://github.com/paritytech/s
 sp-std = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.37" }
 frame-benchmarking = {  default-features = false, optional = true, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.37" }
 frame-support = {  default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.37" }
+
+# getrandom = { version = "0.2", features = ["js"] }
 
 [features]
 default = ['std']
@@ -28,6 +33,8 @@ std = [
   "sp-std/std",
   "frame-support/std",
   "frame-benchmarking?/std",
+  "serde_json/std",
+  "serde/std",
 ]
 runtime-benchmarks = [
     "frame-benchmarking/runtime-benchmarks",
