@@ -4,3 +4,6 @@ members = [
   "support",
   "core",
 ]
+
+[patch.crates-io]
+ibc = { git = "https://github.com/octopus-network/ibc-rs.git", branch = "v0.28.0-codec-borsh-serde" }

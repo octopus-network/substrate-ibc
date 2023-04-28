@@ -64,6 +64,11 @@ pub mod pallet {
 				packet::{Receipt, Sequence},
 			},
 			ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
+			ics24_host::path::{
+				AcksPath, ChannelEndsPath, ClientConsensusStatePath,
+				ClientStatePath, ClientTypePath, CommitmentsPath,
+				ConnectionsPath, ReceiptsPath, SeqAcksPath, SeqRecvsPath, SeqSendsPath,
+			},
 			ics26_routing::handler::MsgReceipt,
 		},
 		events::IbcEvent,
@@ -100,9 +105,9 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn client_state)]
-	/// Key: client_id
+	/// Key: ClientStatePath
 	/// value: ClientState
-	pub type ClientStates<T: Config> = StorageMap<_, Blake2_128Concat, ClientId, Vec<u8>>;
+	pub type ClientStates<T: Config> = StorageMap<_, Blake2_128Concat, ClientStatePath, Vec<u8>>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn client_update_time)]
@@ -122,20 +127,23 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn consensus_state)]
-	/// key1: client_id
-	/// key2: height
+	/// key: ClientConsensusStatePath
 	/// value: ConsensusState
 	pub type ConsensusStates<T: Config> =
-		StorageDoubleMap<_, Blake2_128Concat, ClientId, Blake2_128Concat, Height, Vec<u8>>;
+		StorageMap<_, Blake2_128Concat, ClientConsensusStatePath, Vec<u8>>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn connection_end)]
-	pub type Connections<T: Config> = StorageMap<_, Blake2_128Concat, ConnectionId, ConnectionEnd>;
+	/// key: ConnectionsPath
+	/// value: ConnectionEnd
+	pub type Connections<T: Config> =
+		StorageMap<_, Blake2_128Concat, ConnectionsPath, ConnectionEnd>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn channel_end)]
-	pub type Channels<T: Config> =
-		StorageDoubleMap<_, Blake2_128Concat, PortId, Blake2_128Concat, ChannelId, ChannelEnd>;
+	/// key: CHannelEndsPath
+	/// value: ChannelEnd
+	pub type Channels<T: Config> = StorageMap<_, Blake2_128Concat, ChannelEndsPath, ChannelEnd>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn connection_channels)]
@@ -146,49 +154,34 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn get_next_sequence_send)]
-	/// Key1: port_id
-	/// key2: channel_id
+	/// Key: SeqSendsPath
 	/// value: sequence
-	pub type NextSequenceSend<T: Config> =
-		StorageDoubleMap<_, Blake2_128Concat, PortId, Blake2_128Concat, ChannelId, Sequence>;
+	pub type NextSequenceSend<T: Config> = StorageMap<_, Blake2_128Concat, SeqSendsPath, Sequence>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn get_next_sequence_recv)]
-	/// key1: port_id
-	/// key2: channel_id
+	/// key: SeqRecvsPath
 	/// value: sequence
-	pub type NextSequenceRecv<T: Config> =
-		StorageDoubleMap<_, Blake2_128Concat, PortId, Blake2_128Concat, ChannelId, Sequence>;
+	pub type NextSequenceRecv<T: Config> = StorageMap<_, Blake2_128Concat, SeqRecvsPath, Sequence>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn get_next_sequence_ack)]
-	/// key1: port_id
-	/// key2: channel_id
+	/// key: SeqAcksPath
 	/// value: sequence
-	pub type NextSequenceAck<T: Config> =
-		StorageDoubleMap<_, Blake2_128Concat, PortId, Blake2_128Concat, ChannelId, Sequence>;
+	pub type NextSequenceAck<T: Config> = StorageMap<_, Blake2_128Concat, SeqAcksPath, Sequence>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn get_packet_acknowledgement)]
-	/// key1: port_id
-	/// key2: channel_id
-	/// key3: sequence
+	/// key: AcksPath
 	/// value: hash of acknowledgement
-	pub type Acknowledgements<T: Config> = StorageNMap<
-		_,
-		(
-			NMapKey<Blake2_128Concat, PortId>,
-			NMapKey<Blake2_128Concat, ChannelId>,
-			NMapKey<Blake2_128Concat, Sequence>,
-		),
-		IbcAcknowledgementCommitment,
-	>;
+	pub type Acknowledgements<T: Config> =
+		StorageMap<_, Blake2_128Concat, AcksPath, IbcAcknowledgementCommitment>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn client_type)]
-	/// key: client_id
+	/// key: ClientTypePath
 	/// value: ClientType
-	pub type Clients<T: Config> = StorageMap<_, Blake2_128Concat, ClientId, ClientType>;
+	pub type Clients<T: Config> = StorageMap<_, Blake2_128Concat, ClientTypePath, ClientType>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn client_cnt)]
@@ -213,35 +206,16 @@ pub mod pallet {
 
 	#[pallet::storage]
 	#[pallet::getter(fn get_packet_receipt)]
-	/// key1: port_id
-	/// key2: channel_id
-	/// key3: sequence
+	/// key: ReceiptsPath
 	/// value: receipt
-	pub type PacketReceipt<T: Config> = StorageNMap<
-		_,
-		(
-			NMapKey<Blake2_128Concat, PortId>,
-			NMapKey<Blake2_128Concat, ChannelId>,
-			NMapKey<Blake2_128Concat, Sequence>,
-		),
-		Receipt,
-	>;
+	pub type PacketReceipt<T: Config> = StorageMap<_, Blake2_128Concat, ReceiptsPath, Receipt>;
 
 	#[pallet::storage]
 	#[pallet::getter(fn get_packet_commitment)]
-	/// key1: port_id
-	/// key2: channel_id
-	/// key3: sequence
+	/// key: CommitmentsPath
 	/// value: hash of (timestamp, height, packet)
-	pub type PacketCommitment<T: Config> = StorageNMap<
-		_,
-		(
-			NMapKey<Blake2_128Concat, PortId>,
-			NMapKey<Blake2_128Concat, ChannelId>,
-			NMapKey<Blake2_128Concat, Sequence>,
-		),
-		IbcPacketCommitment,
-	>;
+	pub type PacketCommitment<T: Config> =
+		StorageMap<_, Blake2_128Concat, CommitmentsPath, IbcPacketCommitment>;
 
 	#[pallet::storage]
 	/// Previous host block height
@@ -288,8 +262,7 @@ pub mod pallet {
 	/// These functions materialize as "extrinsic", which are often compared to transactions.
 	/// Dispatch able functions must be annotated with a weight and must return a DispatchResult.
 	#[pallet::call]
-	impl<T: Config> Pallet<T>
-	{
+	impl<T: Config> Pallet<T> {
 		/// This function acts as an entry for most of the IBC request.
 		/// I.e., create clients, update clients, handshakes to create channels, ...etc
 		///

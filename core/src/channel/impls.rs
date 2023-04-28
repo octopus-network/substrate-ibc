@@ -5,6 +5,10 @@ use crate::{
 };
 use alloc::{format, string::ToString, vec};
 use core::time::Duration;
+use ibc::core::ics24_host::path::{
+	AcksPath, ChannelEndsPath, CommitmentsPath, ReceiptsPath, SeqAcksPath, SeqRecvsPath,
+	SeqSendsPath,
+};
 use ibc::{
 	core::{
 		ics02_client::{
@@ -27,15 +31,16 @@ use ibc::{
 use ibc_support::traits::{ChannelKeeperInterface, ChannelReaderInterface};
 use sp_core::Get;
 use sp_std::{boxed::Box, vec::Vec};
-
 /// A context supplying all the necessary read-only dependencies for processing any `ChannelMsg`.
 impl<T: Config> ChannelReaderInterface for Context<T> {
 	/// Returns the ChannelEnd for the given `port_id` and `chan_id`.
 	fn channel_end(port_id: &PortId, channel_id: &ChannelId) -> Result<ChannelEnd, ChannelError> {
-		Pallet::<T>::channel_end(port_id, channel_id).ok_or(ChannelError::ChannelNotFound {
-			port_id: port_id.clone(),
-			channel_id: channel_id.clone(),
-		})
+		Pallet::<T>::channel_end(ChannelEndsPath(port_id.clone(), channel_id.clone())).ok_or(
+			ChannelError::ChannelNotFound {
+				port_id: port_id.clone(),
+				channel_id: channel_id.clone(),
+			},
+		)
 	}
 
 	/// Returns the ConnectionState for the given identifier `connection_id`.
@@ -70,31 +75,29 @@ impl<T: Config> ChannelReaderInterface for Context<T> {
 		port_id: &PortId,
 		channel_id: &ChannelId,
 	) -> Result<Sequence, PacketError> {
-		Pallet::<T>::get_next_sequence_send(port_id, channel_id).ok_or(
-			PacketError::MissingNextSendSeq {
+		Pallet::<T>::get_next_sequence_send(SeqSendsPath(port_id.clone(), channel_id.clone()))
+			.ok_or(PacketError::MissingNextSendSeq {
 				port_id: port_id.clone(),
 				channel_id: channel_id.clone(),
-			},
-		)
+			})
 	}
 
 	fn get_next_sequence_recv(
 		port_id: &PortId,
 		channel_id: &ChannelId,
 	) -> Result<Sequence, PacketError> {
-		Pallet::<T>::get_next_sequence_recv(port_id, channel_id).ok_or(
-			PacketError::MissingNextRecvSeq {
+		Pallet::<T>::get_next_sequence_recv(SeqRecvsPath(port_id.clone(), channel_id.clone()))
+			.ok_or(PacketError::MissingNextRecvSeq {
 				port_id: port_id.clone(),
 				channel_id: channel_id.clone(),
-			},
-		)
+			})
 	}
 
 	fn get_next_sequence_ack(
 		port_id: &PortId,
 		channel_id: &ChannelId,
 	) -> Result<Sequence, PacketError> {
-		Pallet::<T>::get_next_sequence_ack(port_id, channel_id).ok_or(
+		Pallet::<T>::get_next_sequence_ack(SeqAcksPath(port_id.clone(), channel_id.clone())).ok_or(
 			PacketError::MissingNextAckSeq {
 				port_id: port_id.clone(),
 				channel_id: channel_id.clone(),
@@ -107,8 +110,12 @@ impl<T: Config> ChannelReaderInterface for Context<T> {
 		channel_id: &ChannelId,
 		sequence: &Sequence,
 	) -> Result<PacketCommitment, PacketError> {
-		Pallet::<T>::get_packet_commitment((port_id, channel_id, sequence))
-			.ok_or(PacketError::PacketCommitmentNotFound { sequence: *sequence })
+		Pallet::<T>::get_packet_commitment(CommitmentsPath {
+			port_id: port_id.clone(),
+			channel_id: channel_id.clone(),
+			sequence: sequence.clone(),
+		})
+		.ok_or(PacketError::PacketCommitmentNotFound { sequence: *sequence })
 	}
 
 	fn get_packet_receipt(
@@ -116,8 +123,12 @@ impl<T: Config> ChannelReaderInterface for Context<T> {
 		channel_id: &ChannelId,
 		sequence: &Sequence,
 	) -> Result<Receipt, PacketError> {
-		Pallet::<T>::get_packet_receipt((port_id, channel_id, sequence))
-			.ok_or(PacketError::PacketReceiptNotFound { sequence: *sequence })
+		Pallet::<T>::get_packet_receipt(ReceiptsPath {
+			port_id: port_id.clone(),
+			channel_id: channel_id.clone(),
+			sequence: sequence.clone(),
+		})
+		.ok_or(PacketError::PacketReceiptNotFound { sequence: *sequence })
 	}
 
 	fn get_packet_acknowledgement(
@@ -125,8 +136,12 @@ impl<T: Config> ChannelReaderInterface for Context<T> {
 		channel_id: &ChannelId,
 		sequence: &Sequence,
 	) -> Result<AcknowledgementCommitment, PacketError> {
-		Pallet::<T>::get_packet_acknowledgement((port_id, channel_id, sequence))
-			.ok_or(PacketError::PacketAcknowledgementNotFound { sequence: *sequence })
+		Pallet::<T>::get_packet_acknowledgement(AcksPath {
+			port_id: port_id.clone(),
+			channel_id: channel_id.clone(),
+			sequence: sequence.clone(),
+		})
+		.ok_or(PacketError::PacketAcknowledgementNotFound { sequence: *sequence })
 	}
 
 	/// A hashing function for packet commitments
@@ -199,7 +214,10 @@ impl<T: Config> ChannelKeeperInterface for Context<T> {
 		sequence: Sequence,
 		commitment: PacketCommitment,
 	) -> Result<(), PacketError> {
-		<PacketCommitStore<T>>::insert((port_id, channel_id, sequence), commitment);
+		<PacketCommitStore<T>>::insert(
+			CommitmentsPath { port_id, channel_id, sequence },
+			commitment,
+		);
 
 		Ok(())
 	}
@@ -209,7 +227,11 @@ impl<T: Config> ChannelKeeperInterface for Context<T> {
 		channel_id: &ChannelId,
 		seq: &Sequence,
 	) -> Result<(), PacketError> {
-		<PacketCommitStore<T>>::remove((port_id, channel_id, seq));
+		<PacketCommitStore<T>>::remove(CommitmentsPath {
+			port_id: port_id.clone(),
+			channel_id: channel_id.clone(),
+			sequence: seq.clone(),
+		});
 
 		Ok(())
 	}
@@ -220,7 +242,7 @@ impl<T: Config> ChannelKeeperInterface for Context<T> {
 		sequence: Sequence,
 		receipt: Receipt,
 	) -> Result<(), PacketError> {
-		<PacketReceipt<T>>::insert((port_id, channel_id, sequence), receipt);
+		<PacketReceipt<T>>::insert(ReceiptsPath { port_id, channel_id, sequence }, receipt);
 
 		Ok(())
 	}
@@ -231,7 +253,7 @@ impl<T: Config> ChannelKeeperInterface for Context<T> {
 		sequence: Sequence,
 		ack_commitment: AcknowledgementCommitment,
 	) -> Result<(), PacketError> {
-		<Acknowledgements<T>>::insert((port_id, channel_id, sequence), ack_commitment);
+		<Acknowledgements<T>>::insert(AcksPath { port_id, channel_id, sequence }, ack_commitment);
 
 		Ok(())
 	}
@@ -241,7 +263,11 @@ impl<T: Config> ChannelKeeperInterface for Context<T> {
 		channel_id: &ChannelId,
 		sequence: &Sequence,
 	) -> Result<(), PacketError> {
-		<Acknowledgements<T>>::remove((port_id, channel_id, sequence));
+		<Acknowledgements<T>>::remove(AcksPath {
+			port_id: port_id.clone(),
+			channel_id: channel_id.clone(),
+			sequence: sequence.clone(),
+		});
 
 		Ok(())
 	}
@@ -275,7 +301,7 @@ impl<T: Config> ChannelKeeperInterface for Context<T> {
 		channel_id: ChannelId,
 		channel_end: ChannelEnd,
 	) -> Result<(), ChannelError> {
-		<Channels<T>>::insert(port_id, channel_id, channel_end);
+		<Channels<T>>::insert(ChannelEndsPath(port_id, channel_id), channel_end);
 
 		Ok(())
 	}
@@ -285,7 +311,7 @@ impl<T: Config> ChannelKeeperInterface for Context<T> {
 		channel_id: ChannelId,
 		seq: Sequence,
 	) -> Result<(), PacketError> {
-		<NextSequenceSend<T>>::insert(port_id, channel_id, seq);
+		<NextSequenceSend<T>>::insert(SeqSendsPath(port_id, channel_id), seq);
 
 		Ok(())
 	}
@@ -295,7 +321,7 @@ impl<T: Config> ChannelKeeperInterface for Context<T> {
 		channel_id: ChannelId,
 		seq: Sequence,
 	) -> Result<(), PacketError> {
-		<NextSequenceRecv<T>>::insert(port_id, channel_id, seq);
+		<NextSequenceRecv<T>>::insert(SeqRecvsPath(port_id, channel_id), seq);
 
 		Ok(())
 	}
@@ -305,7 +331,7 @@ impl<T: Config> ChannelKeeperInterface for Context<T> {
 		channel_id: ChannelId,
 		seq: Sequence,
 	) -> Result<(), PacketError> {
-		<NextSequenceAck<T>>::insert(port_id, channel_id, seq);
+		<NextSequenceAck<T>>::insert(SeqAcksPath(port_id, channel_id), seq);
 
 		Ok(())
 	}
