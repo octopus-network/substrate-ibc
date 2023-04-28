@@ -29,16 +29,14 @@ primitive-types = { version = "0.12.0", default-features = false, features = ["s
 
 ibc = { version = "0.28.0", default-features = false, features = ["parity-scale-codec", "serde"] }
 ibc-proto = { version = "0.25.0", default-features = false, features = ["parity-scale-codec"] }
-pallet-ibc = {  default-features = false, path = "../../core" }
 
 [dev-dependencies]
 chrono = "0.4.19"
-frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.40" }
+frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38" }
 hex = '0.4.0'
 pallet-assets = {  git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38" }
 pallet-babe = {  git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38" }
 pallet-balances = {  git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38" }
-pallet-ibc = {  path = "../../core" }
 pallet-timestamp = {  git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38" }
 serde = "1.0.142"
 serde_json = { version = "1.0" }

@@ -29,7 +29,7 @@ type BalanceOf<T> =
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use crate::{ics20_callback::IbcTransferModule, LOG_TARGET};
+	use crate::{callback::IbcTransferModule, LOG_TARGET};
 	use frame_support::{
 		pallet_prelude::*,
 		traits::{
