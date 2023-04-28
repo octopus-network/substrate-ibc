@@ -158,11 +158,12 @@ impl<T: Config> WeightInfo<T> for () {
 	}
 
 	fn conn_open_confirm(msg_conn_open_confirm: MsgConnectionOpenConfirm) -> Weight {
+		use ibc::core::ics24_host::path::ClientTypePath;
 		let connection_id = msg_conn_open_confirm.conn_id_on_b;
 		let ctx = Context::<T>::new();
 		let connection_end = ctx.connection_end(&connection_id).unwrap_or_default();
 		let client_id = connection_end.client_id();
-		let client_type = <Clients<T>>::get(client_id)
+		let client_type = <Clients<T>>::get(ClientTypePath(client_id.clone()))
 			.expect(&format!("cannt find client type by {}", client_id));
 		match client_type.as_str() {
 			MOCK_CLIENT_TYPE => {
@@ -467,7 +468,7 @@ pub fn channel_client<T: Config>(
 			if let Some((client_id, ..)) = ConnectionClient::<T>::iter()
 				.find(|(.., connection_ids)| connection_ids == &connection_id)
 			{
-				return Ok(client_id)
+				return Ok(client_id);
 			}
 		}
 	}
@@ -496,26 +497,31 @@ pub(crate) fn deliver<T: Config + Send + Sync>(
 					ConnectionMsg::OpenInit(msg) => <T as Config>::WeightInfo::conn_open_init(msg),
 					ConnectionMsg::OpenTry(msg) => <T as Config>::WeightInfo::conn_try_open(msg),
 					ConnectionMsg::OpenAck(msg) => <T as Config>::WeightInfo::conn_open_ack(msg),
-					ConnectionMsg::OpenConfirm(msg) =>
-						<T as Config>::WeightInfo::conn_open_confirm(msg),
+					ConnectionMsg::OpenConfirm(msg) => {
+						<T as Config>::WeightInfo::conn_open_confirm(msg)
+					},
 				},
 				MsgEnvelope::Channel(msgs) => match msgs {
 					ChannelMsg::OpenInit(msg) => <T as Config>::WeightInfo::channel_open_init(msg),
 					ChannelMsg::OpenTry(msg) => <T as Config>::WeightInfo::channel_open_try(msg),
 					ChannelMsg::OpenAck(msg) => <T as Config>::WeightInfo::channel_open_ack(msg),
-					ChannelMsg::OpenConfirm(msg) =>
-						<T as Config>::WeightInfo::channel_open_confirm(msg),
-					ChannelMsg::CloseInit(msg) =>
-						<T as Config>::WeightInfo::channel_close_init(msg),
-					ChannelMsg::CloseConfirm(msg) =>
-						<T as Config>::WeightInfo::channel_close_confirm(msg),
+					ChannelMsg::OpenConfirm(msg) => {
+						<T as Config>::WeightInfo::channel_open_confirm(msg)
+					},
+					ChannelMsg::CloseInit(msg) => {
+						<T as Config>::WeightInfo::channel_close_init(msg)
+					},
+					ChannelMsg::CloseConfirm(msg) => {
+						<T as Config>::WeightInfo::channel_close_confirm(msg)
+					},
 				},
 				MsgEnvelope::Packet(msg) => match msg {
 					PacketMsg::Recv(msg) => <T as Config>::WeightInfo::recv_packet(msg),
 					PacketMsg::Ack(msg) => <T as Config>::WeightInfo::ack_packet(msg),
 					PacketMsg::Timeout(msg) => <T as Config>::WeightInfo::timeout_packet(msg),
-					PacketMsg::TimeoutOnClose(msg) =>
-						<T as Config>::WeightInfo::timeout_on_close_packet(msg),
+					PacketMsg::TimeoutOnClose(msg) => {
+						<T as Config>::WeightInfo::timeout_on_close_packet(msg)
+					},
 				},
 			};
 			acc.saturating_add(temp)

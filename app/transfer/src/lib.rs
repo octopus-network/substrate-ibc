@@ -10,7 +10,7 @@ pub use pallet::*;
 
 pub mod callback;
 pub mod context_channel;
-pub mod r#impl;
+pub mod impls;
 pub mod utils;
 
 #[cfg(test)]
@@ -57,7 +57,7 @@ pub mod pallet {
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
-	pub trait Config: frame_system::Config + Sync + Send + Debug + pallet_ibc::Config {
+	pub trait Config: frame_system::Config + Sync + Send + Debug {
 		/// The aggregated event type of the runtime.
 		type RuntimeEvent: Parameter
 			+ Member
@@ -87,6 +87,9 @@ pub mod pallet {
 			+ Clone
 			+ PartialEq
 			+ Debug;
+
+		type IbcContext: ibc_support::traits::ChannelKeeperInterface
+			+ ibc_support::traits::ChannelReaderInterface;
 
 		// The native token name
 		const NATIVE_TOKEN_NAME: &'static [u8];

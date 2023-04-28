@@ -2,8 +2,10 @@
 
 use sp_std::vec::Vec;
 
+pub mod traits;
 pub mod weights;
 pub use weights::*;
+pub mod module;
 
 /// A trait handling asset ID and name
 pub trait AssetIdAndNameProvider<AssetId> {

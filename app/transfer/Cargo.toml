@@ -29,7 +29,6 @@ primitive-types = { version = "0.12.0", default-features = false, features = ["s
 
 ibc = { version = "0.28.0", default-features = false, features = ["parity-scale-codec", "serde"] }
 ibc-proto = { version = "0.25.0", default-features = false, features = ["parity-scale-codec"] }
-pallet-ibc = { default-features = false, path = "../../core" }
 
 [dev-dependencies]
 chrono = "0.4.19"
@@ -53,20 +52,20 @@ sp-version = { version = "5.0.0", git = "https://github.com/paritytech/substrate
 [features]
 default = ["std"]
 std = [
-  "hex/std",
   "codec/std",
-  "log/std",
-  "frame-benchmarking/std",
+  "frame-benchmarking?/std",
   "frame-support/std",
   "frame-system/std",
-  "scale-info/std",
-  "ibc/std",
-  "ibc-proto/std",
+  "hex/std",
   "ibc-support/std",
-  "sp-runtime/std",
+  "log/std",
+  "scale-info/std",
   "sp-io/std",
+  "sp-runtime/std",
   "sp-std/std",
   "primitive-types/std",
+  "ibc/std",
+  "ibc-proto/std",
 ]
 runtime-benchmarks = ["frame-benchmarking/runtime-benchmarks"]
 try-runtime = ["frame-support/try-runtime"]
