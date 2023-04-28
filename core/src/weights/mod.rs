@@ -159,11 +159,12 @@ impl<T: Config> WeightInfo<T> for () {
 	}
 
 	fn conn_open_confirm(msg_conn_open_confirm: MsgConnectionOpenConfirm) -> Weight {
+		use ibc::core::ics24_host::path::ClientTypePath;
 		let connection_id = msg_conn_open_confirm.conn_id_on_b;
 		let ctx = Context::<T>::new();
 		let connection_end = ctx.connection_end(&connection_id).unwrap_or_default();
 		let client_id = connection_end.client_id();
-		let client_type = <Clients<T>>::get(client_id)
+		let client_type = <Clients<T>>::get(ClientTypePath(client_id.clone()))
 			.expect(&format!("cannt find client type by {}", client_id));
 		match client_type.as_str() {
 			MOCK_CLIENT_TYPE => {

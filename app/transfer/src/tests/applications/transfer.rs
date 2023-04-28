@@ -1,5 +1,5 @@
 pub mod test {
-	use crate::{ics20_callback::IbcTransferModule, mock::Test as PalletIbcTest};
+	use crate::{callback::IbcTransferModule, mock::Test as PalletIbcTest};
 	use ibc::{
 		applications::transfer::{
 			error::TokenTransferError, msgs::transfer::MsgTransfer,
