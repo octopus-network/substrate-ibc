@@ -33,6 +33,9 @@ pallet-ibc = {  default-features = false, path = "../../core" }
 serde = { version = "1.0", default-features = false }
 serde_json = { version = "1.0", default-features = false }
 
+[target.wasm32-unknown-unknown.dependencies]
+getrandom = { version = "0.2", features = ["js"] }
+
 [dev-dependencies]
 chrono = "0.4.19"
 frame-support = {default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.37" }
