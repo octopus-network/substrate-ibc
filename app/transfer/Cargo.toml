@@ -29,9 +29,7 @@ primitive-types = { version = "0.12.0", default-features = false, features = ["s
 
 ibc = { version = "0.28.0", default-features = false, features = ["parity-scale-codec", "serde"] }
 ibc-proto = { version = "0.25.0", default-features = false, features = ["parity-scale-codec"] }
-pallet-ibc = {  default-features = false, path = "../../core" }
-serde = { version = "1.0", default-features = false }
-serde_json = { version = "1.0", default-features = false }
+
 
 # [target.wasm32-unknown-unknown.dependencies]
 # getrandom = { version = "0.2", features = ["js"] }
