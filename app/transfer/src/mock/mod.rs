@@ -1,5 +1,6 @@
 use super::*;
 use crate as pallet_ics20_transfer;
+use codec::Encode;
 pub use frame_support::{
 	construct_runtime, parameter_types,
 	traits::{
@@ -12,16 +13,16 @@ pub use frame_support::{
 	},
 	StorageValue,
 };
-use sp_io::storage;
 use frame_system as system;
 use frame_system::EnsureRoot;
+use ibc_support::module::Router;
 use pallet_assets::AssetsCallback;
+use sp_io::storage;
 use sp_runtime::{
 	generic,
 	traits::{AccountIdLookup, BlakeTwo256, IdentifyAccount, Verify},
 	MultiSignature,
 };
-use codec::Encode;
 
 pub type Signature = MultiSignature;
 pub(crate) type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::AccountId;
@@ -128,15 +129,16 @@ parameter_types! {
 
 pub struct AssetsCallbackHandle;
 impl AssetsCallback<AssetId, AccountId> for AssetsCallbackHandle {
-	fn created(_id: &AssetId, _owner: &AccountId) {
+	fn created(_id: &AssetId, _owner: &AccountId) -> Result<(), ()> {
 		storage::set(b"asset_created", &().encode());
+		Ok(())
 	}
 
-	fn destroyed(_id: &AssetId) {
+	fn destroyed(_id: &AssetId) -> Result<(), ()> {
 		storage::set(b"asset_destroyed", &().encode());
+		Ok(())
 	}
 }
-
 
 impl pallet_assets::Config<pallet_assets::Instance1> for Test {
 	type RuntimeEvent = RuntimeEvent;
@@ -206,6 +208,24 @@ pub const MILLISECS_PER_BLOCK: Moment = 6000;
 //       Attempting to do so will brick block production.
 pub const SLOT_DURATION: Moment = MILLISECS_PER_BLOCK;
 
+use ibc::applications::transfer::MODULE_ID_STR;
+
+pub struct IbcModule;
+
+impl ibc_support::module::AddModule for IbcModule {
+	fn add_module(router: Router) -> Router {
+		match router.clone().add_route(
+			MODULE_ID_STR.parse().expect("never failed"),
+			pallet_ics20_transfer::callback::IbcTransferModule::<Test>(
+				std::marker::PhantomData::<Test>,
+			),
+		) {
+			Ok(ret) => ret,
+			Err(e) => panic!("add module failed by {}", e),
+		}
+	}
+}
+
 impl pallet_ics20_transfer::Config for Test {
 	type RuntimeEvent = RuntimeEvent;
 	type Currency = Balances;
@@ -213,7 +233,8 @@ impl pallet_ics20_transfer::Config for Test {
 	type AssetBalance = AssetBalance;
 	type Fungibles = Assets;
 	type AssetIdByName = Ics20Transfer;
-	type AccountIdConversion = pallet_ics20_transfer::ics20_impl::IbcAccount;
+	type IbcContext = pallet_ibc::context::Context<Test>;
+	type AccountIdConversion = pallet_ics20_transfer::impls::IbcAccount;
 	const NATIVE_TOKEN_NAME: &'static [u8] = b"DEMO";
 }
 
@@ -222,6 +243,7 @@ pub type AssetId = u32;
 
 parameter_types! {
 	pub const ExpectedBlockTime: u64 = 6;
+	pub const ChainVersion: u64 = 0;
 }
 
 impl pallet_ibc::Config for Test {
@@ -229,6 +251,8 @@ impl pallet_ibc::Config for Test {
 	type TimeProvider = pallet_timestamp::Pallet<Test>;
 	type ExpectedBlockTime = ExpectedBlockTime;
 	const IBC_COMMITMENT_PREFIX: &'static [u8] = b"Ibc";
+	type ChainVersion = ChainVersion;
+	type IbcModule = IbcModule;
 	type WeightInfo = ();
 }
 

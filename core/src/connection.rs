@@ -1,11 +1,12 @@
 use crate::{
-	context::Context, Config, ConnectionClient, ConnectionCounter, Connections, OldHeight, Pallet,
+	context::Context, Config, ConnectionClient, ConnectionCounter, Connections, OldHeight,
 	REVISION_NUMBER,
 };
 pub use alloc::{
 	format,
 	string::{String, ToString},
 };
+use ibc::core::ics24_host::path::ConnectionsPath;
 use ibc::{
 	core::{
 		ics02_client::{
@@ -23,10 +24,9 @@ use ibc::{
 };
 use ibc_proto::google::protobuf::Any;
 use sp_std::boxed::Box;
-
 impl<T: Config> ConnectionReader for Context<T> {
 	fn connection_end(&self, conn_id: &ConnectionId) -> Result<ConnectionEnd, ConnectionError> {
-		Pallet::<T>::connection_end(conn_id)
+		<Connections<T>>::get(ConnectionsPath(conn_id.clone()))
 			.ok_or(ConnectionError::ConnectionMismatch { connection_id: conn_id.clone() })
 	}
 
@@ -74,7 +74,7 @@ impl<T: Config> ConnectionReader for Context<T> {
 	}
 
 	fn connection_counter(&self) -> Result<u64, ConnectionError> {
-		Ok(Pallet::<T>::connection_cnt())
+		Ok(<ConnectionCounter<T>>::get())
 	}
 
 	fn validate_self_client(&self, _counterparty_client_state: Any) -> Result<(), ConnectionError> {
@@ -88,7 +88,7 @@ impl<T: Config> ConnectionKeeper for Context<T> {
 		connection_id: ConnectionId,
 		connection_end: ConnectionEnd,
 	) -> Result<(), ConnectionError> {
-		<Connections<T>>::insert(connection_id, connection_end);
+		<Connections<T>>::insert(ConnectionsPath(connection_id), connection_end);
 
 		Ok(())
 	}

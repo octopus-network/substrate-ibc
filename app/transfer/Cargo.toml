@@ -19,7 +19,7 @@ frame-benchmarking = {  default-features = false, optional = true, git = "https:
 frame-support = {  default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.37" }
 frame-system = {  default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.37" }
 hex = { version = "0.4.0", default-features = false }
-ibc-support = { version = "0.1.0", default-features = false, path = "../../ibc-support" }
+ibc-support = { version = "0.1.0", default-features = false, path = "../../support" }
 log = { version = "0.4", default-features = false }
 scale-info = { version = "2.1.1", default-features = false, features = ["derive"] }
 sp-io = {  default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.37" }
@@ -27,14 +27,14 @@ sp-runtime = {  default-features = false, git = "https://github.com/paritytech/s
 sp-std = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.37" }
 primitive-types = { version = "0.12.0", default-features = false, features = ["serde_no_std"] }
 
-ibc = { version = "0.28.0", default-features = false, features = ["parity-scale-codec", "serde"]}
+ibc = { version = "0.28.0", default-features = false, features = ["parity-scale-codec", "serde"] }
 ibc-proto = { version = "0.25.0", default-features = false, features = ["parity-scale-codec"] }
 pallet-ibc = {  default-features = false, path = "../../core" }
 serde = { version = "1.0", default-features = false }
 serde_json = { version = "1.0", default-features = false }
 
-[target.wasm32-unknown-unknown.dependencies]
-getrandom = { version = "0.2", features = ["js"] }
+# [target.wasm32-unknown-unknown.dependencies]
+# getrandom = { version = "0.2", features = ["js"] }
 
 [dev-dependencies]
 chrono = "0.4.19"
@@ -61,22 +61,20 @@ sp-version = {default-features = false, git = "https://github.com/paritytech/sub
 [features]
 default = ["std"]
 std = [
-  "hex/std",
   "codec/std",
-  "log/std",
-  "frame-benchmarking/std",
+  "frame-benchmarking?/std",
   "frame-support/std",
   "frame-system/std",
-  "scale-info/std",
-  "ibc/std",
-  "ibc-proto/std",
+  "hex/std",
   "ibc-support/std",
-  "sp-runtime/std",
+  "log/std",
+  "scale-info/std",
   "sp-io/std",
+  "sp-runtime/std",
   "sp-std/std",
   "primitive-types/std",
-  "serde_json/std",
-  "serde/std",
+  "ibc/std",
+  "ibc-proto/std",
 ]
 runtime-benchmarks = ["frame-benchmarking/runtime-benchmarks"]
 try-runtime = ["frame-support/try-runtime"]

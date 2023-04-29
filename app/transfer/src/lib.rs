@@ -8,9 +8,9 @@ use frame_support::traits::Currency;
 /// <https://docs.substrate.io/reference/frame-pallets/>
 pub use pallet::*;
 
-pub mod ics20_callback;
-pub mod ics20_context_channel;
-pub mod ics20_impl;
+pub mod callback;
+pub mod context_channel;
+pub mod impls;
 pub mod utils;
 
 #[cfg(test)]
@@ -29,8 +29,8 @@ type BalanceOf<T> =
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use crate::{ics20_callback::IbcTransferModule, LOG_TARGET};
-	// pub use alloc::string::String;
+	use crate::{callback::IbcTransferModule, LOG_TARGET};
+	use alloc::string::String;
 	use frame_support::{
 		pallet_prelude::*,
 		traits::{
@@ -52,13 +52,12 @@ pub mod pallet {
 	use sp_std::{fmt::Debug, vec::Vec};
 
 	#[pallet::pallet]
-	#[pallet::generate_store(pub(super) trait Store)]
 	#[pallet::without_storage_info]
 	pub struct Pallet<T>(_);
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
-	pub trait Config: frame_system::Config + Sync + Send + Debug + pallet_ibc::Config {
+	pub trait Config: frame_system::Config + Sync + Send + Debug {
 		/// The aggregated event type of the runtime.
 		type RuntimeEvent: Parameter
 			+ Member
@@ -88,6 +87,9 @@ pub mod pallet {
 			+ Clone
 			+ PartialEq
 			+ Debug;
+
+		type IbcContext: ibc_support::traits::ChannelKeeperInterface
+			+ ibc_support::traits::ChannelReaderInterface;
 
 		// The native token name
 		const NATIVE_TOKEN_NAME: &'static [u8];

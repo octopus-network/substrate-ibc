@@ -1,4 +1,4 @@
-use crate::{ics20_callback::IbcTransferModule, utils::get_channel_escrow_address, *};
+use crate::{callback::IbcTransferModule, utils::get_channel_escrow_address, *};
 use alloc::string::ToString;
 use codec::{Decode, Encode};
 use frame_support::traits::{
@@ -54,7 +54,10 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 					AllowDeath,
 				)
 				.map_err(|error| {
-					error!("❌ [send_coins] : Error: ({:?})", error);
+					error!(
+						"❌ [send_coins] : Error: ({:?}), from: {:?}, to: {:?}",
+						error, from, to
+					);
 					TokenTransferError::InvalidToken
 				})?;
 
@@ -93,7 +96,7 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 					},
 					Err(_error) => {
 						error!("❌ [send_coins]: denom: ({:?})", denom);
-						return Err(TokenTransferError::InvalidToken)
+						return Err(TokenTransferError::InvalidToken);
 					},
 				}
 			},
@@ -131,7 +134,7 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 			},
 			Err(_error) => {
 				error!("❌ [mint_coins]: denom: ({:?})", denom);
-				return Err(TokenTransferError::InvalidToken)
+				return Err(TokenTransferError::InvalidToken);
 			},
 		}
 		Ok(())
@@ -166,7 +169,7 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 			},
 			Err(_error) => {
 				error!("❌ [burn_coins]: denom: ({:?})", denom);
-				return Err(TokenTransferError::InvalidToken)
+				return Err(TokenTransferError::InvalidToken);
 			},
 		}
 		Ok(())
