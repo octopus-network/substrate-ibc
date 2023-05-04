@@ -476,6 +476,7 @@ pub fn channel_client<T: Config>(
 	Err(Error::<T>::Other)
 }
 
+#[allow(dead_code)]
 pub(crate) fn deliver<T: Config + Send + Sync>(
 	msgs: &[ibc_proto::google::protobuf::Any],
 ) -> Weight {
