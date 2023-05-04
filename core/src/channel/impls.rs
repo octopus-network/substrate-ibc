@@ -1,7 +1,7 @@
 use crate::{
-	context::Context, Acknowledgements, ChannelCounter, Channels, ChannelsConnection, Config,
-	NextSequenceAck, NextSequenceRecv, NextSequenceSend, PacketCommitment as PacketCommitStore,
-	PacketReceipt, Pallet,
+	context::Context, Acknowledgements, ChannelCounter, Channels, ChannelsConnection,
+	ClientProcessedHeights, ClientProcessedTimes, Config, NextSequenceAck, NextSequenceRecv,
+	NextSequenceSend, PacketCommitment as PacketCommitStore, PacketReceipt,
 };
 use alloc::{format, string::ToString, vec};
 use core::time::Duration;
@@ -35,7 +35,7 @@ use sp_std::{boxed::Box, vec::Vec};
 impl<T: Config> ChannelReaderInterface for Context<T> {
 	/// Returns the ChannelEnd for the given `port_id` and `chan_id`.
 	fn channel_end(port_id: &PortId, channel_id: &ChannelId) -> Result<ChannelEnd, ChannelError> {
-		Pallet::<T>::channel_end(ChannelEndsPath(port_id.clone(), channel_id.clone())).ok_or(
+		<Channels<T>>::get(ChannelEndsPath(port_id.clone(), channel_id.clone())).ok_or(
 			ChannelError::ChannelNotFound {
 				port_id: port_id.clone(),
 				channel_id: channel_id.clone(),
@@ -50,7 +50,7 @@ impl<T: Config> ChannelReaderInterface for Context<T> {
 	}
 
 	fn connection_channels(cid: &ConnectionId) -> Result<Vec<(PortId, ChannelId)>, ChannelError> {
-		Pallet::<T>::connection_channels(&cid)
+		<ChannelsConnection<T>>::get(&cid)
 			.ok_or(ChannelError::ConnectionNotOpen { connection_id: cid.clone() })
 	}
 
@@ -75,29 +75,31 @@ impl<T: Config> ChannelReaderInterface for Context<T> {
 		port_id: &PortId,
 		channel_id: &ChannelId,
 	) -> Result<Sequence, PacketError> {
-		Pallet::<T>::get_next_sequence_send(SeqSendsPath(port_id.clone(), channel_id.clone()))
-			.ok_or(PacketError::MissingNextSendSeq {
+		<NextSequenceSend<T>>::get(SeqSendsPath(port_id.clone(), channel_id.clone())).ok_or(
+			PacketError::MissingNextSendSeq {
 				port_id: port_id.clone(),
 				channel_id: channel_id.clone(),
-			})
+			},
+		)
 	}
 
 	fn get_next_sequence_recv(
 		port_id: &PortId,
 		channel_id: &ChannelId,
 	) -> Result<Sequence, PacketError> {
-		Pallet::<T>::get_next_sequence_recv(SeqRecvsPath(port_id.clone(), channel_id.clone()))
-			.ok_or(PacketError::MissingNextRecvSeq {
+		<NextSequenceRecv<T>>::get(SeqRecvsPath(port_id.clone(), channel_id.clone())).ok_or(
+			PacketError::MissingNextRecvSeq {
 				port_id: port_id.clone(),
 				channel_id: channel_id.clone(),
-			})
+			},
+		)
 	}
 
 	fn get_next_sequence_ack(
 		port_id: &PortId,
 		channel_id: &ChannelId,
 	) -> Result<Sequence, PacketError> {
-		Pallet::<T>::get_next_sequence_ack(SeqAcksPath(port_id.clone(), channel_id.clone())).ok_or(
+		<NextSequenceAck<T>>::get(SeqAcksPath(port_id.clone(), channel_id.clone())).ok_or(
 			PacketError::MissingNextAckSeq {
 				port_id: port_id.clone(),
 				channel_id: channel_id.clone(),
@@ -110,7 +112,7 @@ impl<T: Config> ChannelReaderInterface for Context<T> {
 		channel_id: &ChannelId,
 		sequence: &Sequence,
 	) -> Result<PacketCommitment, PacketError> {
-		Pallet::<T>::get_packet_commitment(CommitmentsPath {
+		<PacketCommitStore<T>>::get(CommitmentsPath {
 			port_id: port_id.clone(),
 			channel_id: channel_id.clone(),
 			sequence: sequence.clone(),
@@ -123,7 +125,7 @@ impl<T: Config> ChannelReaderInterface for Context<T> {
 		channel_id: &ChannelId,
 		sequence: &Sequence,
 	) -> Result<Receipt, PacketError> {
-		Pallet::<T>::get_packet_receipt(ReceiptsPath {
+		<PacketReceipt<T>>::get(ReceiptsPath {
 			port_id: port_id.clone(),
 			channel_id: channel_id.clone(),
 			sequence: sequence.clone(),
@@ -136,7 +138,7 @@ impl<T: Config> ChannelReaderInterface for Context<T> {
 		channel_id: &ChannelId,
 		sequence: &Sequence,
 	) -> Result<AcknowledgementCommitment, PacketError> {
-		Pallet::<T>::get_packet_acknowledgement(AcksPath {
+		<Acknowledgements<T>>::get(AcksPath {
 			port_id: port_id.clone(),
 			channel_id: channel_id.clone(),
 			sequence: sequence.clone(),
@@ -176,7 +178,7 @@ impl<T: Config> ChannelReaderInterface for Context<T> {
 		client_id: &ClientId,
 		height: &Height,
 	) -> Result<Timestamp, ChannelError> {
-		let time = Pallet::<T>::client_update_time(client_id, height).ok_or(
+		let time = <ClientProcessedTimes<T>>::get(client_id, height).ok_or(
 			ChannelError::ProcessedTimeNotFound { client_id: client_id.clone(), height: *height },
 		)?;
 
@@ -187,7 +189,7 @@ impl<T: Config> ChannelReaderInterface for Context<T> {
 	/// Returns the height when the client state for the given [`ClientId`] was updated with a
 	/// header for the given [`Height`]
 	fn client_update_height(client_id: &ClientId, height: &Height) -> Result<Height, ChannelError> {
-		Pallet::<T>::client_update_height(client_id, height).ok_or(
+		<ClientProcessedHeights<T>>::get(client_id, height).ok_or(
 			ChannelError::ProcessedHeightNotFound { client_id: client_id.clone(), height: *height },
 		)
 	}
@@ -196,7 +198,7 @@ impl<T: Config> ChannelReaderInterface for Context<T> {
 	/// The value of this counter should increase only via method
 	/// `ChannelKeeper::increase_channel_counter`.
 	fn channel_counter() -> Result<u64, ChannelError> {
-		Ok(Pallet::<T>::channel_cnt())
+		Ok(<ChannelCounter<T>>::get())
 	}
 
 	/// Returns the maximum expected time per block
