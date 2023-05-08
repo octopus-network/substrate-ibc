@@ -28,7 +28,7 @@ sp-std = { default-features = false, git = "https://github.com/paritytech/substr
 primitive-types = { version = "0.12.0", default-features = false, features = ["serde_no_std"] }
 
 ibc = { version = "0.28.0", default-features = false, features = ["parity-scale-codec", "serde"], git = "https://github.com/octopus-network/ibc-rs.git", branch = "v0.28.0-codec-borsh-serde"}
-ibc-proto = { version = "0.25.0", default-features = false, features = ["parity-scale-codec"] }
+ibc-proto = { version = "0.25.0", default-features = false, features = ["parity-scale-codec"], git = "https://github.com/octopus-network/ibc-proto-rs", branch = "ibc" }
 
 [dev-dependencies]
 chrono = "0.4.19"
