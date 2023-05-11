@@ -12,10 +12,10 @@ ibc-proto = { version = "0.25.0", default-features = false, git = "https://githu
 # substrate crates
 codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive"] }
 scale-info = { version = "2.1.2", default-features = false, features = ["derive"] }
-sp-runtime = { version = "7.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.40" }
-sp-std = { version = "5.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.40" }
-frame-benchmarking = { default-features = false, optional = true, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.40" }
-frame-support = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.40" }
+sp-runtime = { version = "7.0.0", default-features = false, git = "https://github.com/octopus-network/substrate.git", branch = "polkadot-v0.9.40-rc" }
+sp-std = { version = "5.0.0", default-features = false, git = "https://github.com/octopus-network/substrate.git", branch = "polkadot-v0.9.40-rc" }
+frame-benchmarking = { default-features = false, optional = true, git = "https://github.com/octopus-network/substrate.git", branch = "polkadot-v0.9.40-rc" }
+frame-support = { default-features = false, git = "https://github.com/octopus-network/substrate.git", branch = "polkadot-v0.9.40-rc" }
 
 [features]
 default = ['std']
