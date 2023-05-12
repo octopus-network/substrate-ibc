@@ -6,7 +6,6 @@ pub use alloc::{
 	format,
 	string::{String, ToString},
 };
-use ibc::core::ics24_host::path::ConnectionsPath;
 use ibc::{
 	core::{
 		ics02_client::{
@@ -18,7 +17,10 @@ use ibc::{
 			error::ConnectionError,
 		},
 		ics23_commitment::commitment::CommitmentPrefix,
-		ics24_host::identifier::{ClientId, ConnectionId},
+		ics24_host::{
+			identifier::{ClientId, ConnectionId},
+			path::ConnectionsPath,
+		},
 	},
 	Height,
 };

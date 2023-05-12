@@ -63,11 +63,13 @@ pub mod pallet {
 				},
 				packet::{Receipt, Sequence},
 			},
-			ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
-			ics24_host::path::{
-				AcksPath, ChannelEndsPath, ClientConsensusStatePath, ClientStatePath,
-				ClientTypePath, CommitmentsPath, ConnectionsPath, ReceiptsPath, SeqAcksPath,
-				SeqRecvsPath, SeqSendsPath,
+			ics24_host::{
+				identifier::{ChannelId, ClientId, ConnectionId, PortId},
+				path::{
+					AcksPath, ChannelEndsPath, ClientConsensusStatePath, ClientStatePath,
+					ClientTypePath, CommitmentsPath, ConnectionsPath, ReceiptsPath, SeqAcksPath,
+					SeqRecvsPath, SeqSendsPath,
+				},
 			},
 			ics26_routing::handler::MsgReceipt,
 		},
