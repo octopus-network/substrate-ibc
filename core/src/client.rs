@@ -9,7 +9,6 @@ pub use alloc::{
 use sp_std::{boxed::Box, vec::Vec};
 
 use crate::host::MOCK_CLIENT_TYPE;
-use ibc::core::ics24_host::path::{ClientConsensusStatePath, ClientStatePath, ClientTypePath};
 use ibc::{
 	clients::ics07_tendermint::{
 		client_state::ClientState as Ics07ClientState,
@@ -23,7 +22,10 @@ use ibc::{
 			context::{ClientKeeper, ClientReader},
 			error::ClientError,
 		},
-		ics24_host::identifier::ClientId,
+		ics24_host::{
+			identifier::ClientId,
+			path::{ClientConsensusStatePath, ClientStatePath, ClientTypePath},
+		},
 	},
 	mock::{client_state::MockClientState, consensus_state::MockConsensusState},
 	timestamp::Timestamp,
@@ -38,11 +40,10 @@ impl<T: Config> ClientReader for Context<T> {
 		match data.as_str() {
 			TENDERMINT_CLIENT_TYPE => Ok(ClientType::new(TENDERMINT_CLIENT_TYPE.into())),
 			MOCK_CLIENT_TYPE => Ok(ClientType::new(MOCK_CLIENT_TYPE.into())),
-			unimplemented => {
+			unimplemented =>
 				return Err(ClientError::UnknownClientStateType {
 					client_state_type: unimplemented.to_string(),
-				})
-			},
+				}),
 		}
 	}
 
@@ -73,11 +74,11 @@ impl<T: Config> ClientReader for Context<T> {
 
 	fn decode_client_state(&self, client_state: Any) -> Result<Box<dyn ClientState>, ClientError> {
 		if let Ok(client_state) = Ics07ClientState::try_from(client_state.clone()) {
-			return Ok(client_state.into_box());
+			return Ok(client_state.into_box())
 		}
 		#[cfg(test)]
 		if let Ok(client_state) = MockClientState::try_from(client_state.clone()) {
-			return Ok(client_state.into_box());
+			return Ok(client_state.into_box())
 		}
 		Err(ClientError::UnknownClientStateType { client_state_type: client_state.type_url })
 	}
@@ -149,14 +150,14 @@ impl<T: Config> ClientReader for Context<T> {
 							.map_err(|e| ClientError::Other {
 								description: format!("Decode Ics07ConsensusState failed: {:?}", e),
 							})?;
-						return Ok(Some(Box::new(result)));
+						return Ok(Some(Box::new(result)))
 					},
 					MOCK_CLIENT_TYPE => {
 						let result: MockConsensusState = Protobuf::<Any>::decode_vec(&data)
 							.map_err(|e| ClientError::Other {
 								description: format!("Decode MockConsensusState failed: {:?}", e),
 							})?;
-						return Ok(Some(Box::new(result)));
+						return Ok(Some(Box::new(result)))
 					},
 					_ => {},
 				}
@@ -199,14 +200,14 @@ impl<T: Config> ClientReader for Context<T> {
 						.map_err(|e| ClientError::Other {
 							description: format!("Decode Ics07ConsensusState failed: {:?}", e),
 						})?;
-						return Ok(Some(Box::new(result)));
+						return Ok(Some(Box::new(result)))
 					},
 					MOCK_CLIENT_TYPE => {
 						let result: MockConsensusState = Protobuf::<Any>::decode_vec(&data)
 							.map_err(|e| ClientError::Other {
 								description: format!("Decode MockConsensusState failed: {:?}", e),
 							})?;
-						return Ok(Some(Box::new(result)));
+						return Ok(Some(Box::new(result)))
 					},
 					_ => {},
 				}
@@ -226,7 +227,7 @@ impl<T: Config> ClientReader for Context<T> {
 		{
 			use frame_support::traits::UnixTime;
 			let nanoseconds = <T as Config>::TimeProvider::now().as_nanos();
-			return Ok(Timestamp::from_nanoseconds(nanoseconds as u64).unwrap());
+			return Ok(Timestamp::from_nanoseconds(nanoseconds as u64).unwrap())
 		}
 		#[cfg(test)]
 		{
