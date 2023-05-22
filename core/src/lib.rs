@@ -202,6 +202,11 @@ pub mod pallet {
 		StorageMap<_, Blake2_128Concat, CommitmentsPath, IbcPacketCommitment>;
 
 	#[pallet::storage]
+	/// key: height
+	/// value: Ibc event height
+	pub type IbcEventStore<T: Config> = StorageMap<_, Blake2_128Concat, u64, IbcEvent>;
+
+	#[pallet::storage]
 	/// Previous host block height
 	pub type OldHeight<T: Config> = StorageValue<_, u64, ValueQuery>;
 
@@ -292,6 +297,9 @@ pub mod pallet {
 			log::trace!(target: "pallet_ibc", "[pallet_ibc_deliver]: logs: {:?}", logs);
 			log::trace!(target: "pallet_ibc", "[pallet_ibc_deliver]: errors: {:?}", errors);
 
+			for event in events.clone() {
+				<IbcEventStore<T>>::insert(crate::utils::host_height::<T>(), event);
+			}
 			Self::deposit_event(Event::IbcEvents { events });
 			if !errors.is_empty() {
 				Self::deposit_event(errors.into());
