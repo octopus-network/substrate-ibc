@@ -5,10 +5,6 @@ use crate::{
 };
 use alloc::{format, string::ToString, vec};
 use core::time::Duration;
-use ibc::core::ics24_host::path::{
-	AcksPath, ChannelEndsPath, CommitmentsPath, ReceiptsPath, SeqAcksPath, SeqRecvsPath,
-	SeqSendsPath,
-};
 use ibc::{
 	core::{
 		ics02_client::{
@@ -23,7 +19,13 @@ use ibc::{
 			error::{ChannelError, PacketError},
 			packet::{Receipt, Sequence},
 		},
-		ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
+		ics24_host::{
+			identifier::{ChannelId, ClientId, ConnectionId, PortId},
+			path::{
+				AcksPath, ChannelEndsPath, CommitmentsPath, ReceiptsPath, SeqAcksPath,
+				SeqRecvsPath, SeqSendsPath,
+			},
+		},
 	},
 	timestamp::Timestamp,
 	Height,
