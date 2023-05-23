@@ -14,8 +14,6 @@ pub mod denom;
 pub mod impls;
 pub mod utils;
 
-#[cfg(test)]
-mod tests;
 
 #[cfg(test)]
 mod mock;

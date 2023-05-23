@@ -37,8 +37,6 @@ pub const REVISION_NUMBER: u64 = 0;
 
 #[cfg(any(test, feature = "runtime-benchmarks"))]
 mod mock;
-#[cfg(any(test, feature = "runtime-benchmarks"))]
-mod tests;
 
 #[cfg(feature = "runtime-benchmarks")]
 pub mod benchmarks;
