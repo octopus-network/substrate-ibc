@@ -112,6 +112,13 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 	) -> Result<(), TokenTransferError> {
 		let amount = U256::from(amt.amount).low_u128().into();
 		let denom = amt.denom.base_denom.as_str();
+		let denom_trace_hash =
+			crate::utils::derive_ibc_denom_with_path(&format!("{}", amt.denom.trace_path.clone()))?
+				.as_bytes()
+				.to_vec();
+		let denom_trace = crate::denom::PrefixedDenom::from(amt.denom.clone());
+		// insert denom trace hash, and demo_trace
+		<DenomTrace<T>>::insert(denom_trace_hash, denom_trace);
 		// look cross chain asset have register in host chain
 		match T::AssetIdByName::try_get_asset_id(denom) {
 			Ok(token_id) => {
