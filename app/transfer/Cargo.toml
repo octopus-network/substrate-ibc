@@ -3,10 +3,9 @@ name = "pallet-ics20-transfer"
 version = "4.0.0-dev"
 authors = ["Octopus Network <hi@oct.network>"]
 edition = "2021"
-homepage = "https://github.com/octopus-network"
 license = "Unlicense"
 publish = false
-repository = "https://github.com/octopus-network/substrate-ibc"
+repository = "https://github.com/DaviRain-Su/substrate-ibc.git"
 description = "FRAME pallet ibc protocol ics20 token transfer"
 
 [package.metadata.docs.rs]

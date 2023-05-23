@@ -6,7 +6,7 @@ edition = '2021'
 homepage = "https://oct.network"
 license = "Apache-2.0"
 readme = "README.md"
-repository = "https://github.com/octopus-network/substrate-ibc/"
+repository = "https://github.com/DaviRain-Su/substrate-ibc.git"
 description = "An IBC implementation on Substrate."
 
 
