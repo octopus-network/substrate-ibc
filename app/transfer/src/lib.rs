@@ -10,6 +10,7 @@ pub use pallet::*;
 
 pub mod callback;
 pub mod context_channel;
+pub mod denom;
 pub mod impls;
 pub mod utils;
 
@@ -101,6 +102,11 @@ pub mod pallet {
 	/// (asset name) => asset id
 	pub type AssetIdByName<T: Config> =
 		StorageMap<_, Twox64Concat, AssetName, T::AssetId, ValueQuery>;
+
+	#[pallet::storage]
+	// key: denom trace hash
+	// value: denom trace
+	pub type DenomTrace<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, denom::PrefixedDenom>;
 
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config> {
