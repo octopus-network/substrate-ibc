@@ -151,7 +151,6 @@ impl pallet::Config for Test {
 	const IBC_COMMITMENT_PREFIX: &'static [u8] = b"Ibc";
 	type ChainVersion = ChainVersion;
 	type IbcModule = DefaultRouter;
-	type WeightInfo = ();
 }
 
 #[allow(dead_code)]

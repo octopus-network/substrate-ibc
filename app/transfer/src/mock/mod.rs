@@ -253,7 +253,6 @@ impl pallet_ibc::Config for Test {
 	const IBC_COMMITMENT_PREFIX: &'static [u8] = b"Ibc";
 	type ChainVersion = ChainVersion;
 	type IbcModule = IbcModule;
-	type WeightInfo = ();
 }
 
 #[allow(dead_code)]

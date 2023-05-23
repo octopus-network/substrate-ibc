@@ -35,7 +35,7 @@ pub mod pallet {
 	use frame_support::{
 		pallet_prelude::*,
 		traits::{
-			fungibles::{Mutate, Transfer},
+			fungibles::Mutate,
 			tokens::{AssetId, Balance as AssetBalance},
 			Currency,
 		},
@@ -76,8 +76,11 @@ pub mod pallet {
 		type AssetBalance: AssetBalance + From<u128> + Into<u128>;
 
 		/// Expose customizable associated type of asset transfer, lock and unlock
-		type Fungibles: Transfer<Self::AccountId, AssetId = Self::AssetId, Balance = Self::AssetBalance>
-			+ Mutate<Self::AccountId, AssetId = Self::AssetId, Balance = Self::AssetBalance>;
+		type Fungibles: Mutate<
+			Self::AccountId,
+			AssetId = Self::AssetId,
+			Balance = Self::AssetBalance,
+		>;
 
 		/// Map of cross-chain asset ID & name
 		type AssetIdByName: AssetIdAndNameProvider<Self::AssetId>;

@@ -42,9 +42,6 @@ mod tests;
 
 #[cfg(feature = "runtime-benchmarks")]
 pub mod benchmarks;
-mod weights;
-
-pub use weights::WeightInfo;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -96,9 +93,6 @@ pub mod pallet {
 		type ChainVersion: Get<u64>;
 
 		type IbcModule: AddModule;
-
-		/// benchmarking weight info
-		type WeightInfo: WeightInfo<Self>;
 	}
 
 	#[pallet::pallet]

@@ -2,7 +2,8 @@ use crate::{callback::IbcTransferModule, utils::get_channel_escrow_address, *};
 use alloc::string::ToString;
 use codec::{Decode, Encode};
 use frame_support::traits::{
-	fungibles::{Mutate, Transfer},
+	fungibles::Mutate,
+	tokens::{Fortitude, Precision, Preservation},
 	ExistenceRequirement::AllowDeath,
 };
 use ibc::{
@@ -75,12 +76,12 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 				// look cross chain asset have register in host chain
 				match T::AssetIdByName::try_get_asset_id(denom) {
 					Ok(token_id) => {
-						<T::Fungibles as Transfer<T::AccountId>>::transfer(
+						<T::Fungibles as Mutate<T::AccountId>>::transfer(
 							token_id,
 							&from.clone().into_account(),
 							&to.clone().into_account(),
 							amount,
-							true,
+							Preservation::Preserve,
 						)
 						.map_err(|error| {
 							error!("❌ [send_coins] : Error: ({:?})", error);
@@ -123,7 +124,7 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 		match T::AssetIdByName::try_get_asset_id(denom) {
 			Ok(token_id) => {
 				<T::Fungibles as Mutate<T::AccountId>>::mint_into(
-					token_id,
+					token_id.clone(),
 					&account.clone().into_account(),
 					amount,
 				)
@@ -158,9 +159,11 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 		match T::AssetIdByName::try_get_asset_id(denom) {
 			Ok(token_id) => {
 				<T::Fungibles as Mutate<T::AccountId>>::burn_from(
-					token_id,
+					token_id.clone(),
 					&account.clone().into_account(),
 					amount,
+					Precision::BestEffort,
+					Fortitude::Force,
 				)
 				.map_err(|error| {
 					error!("❌ [burn_coins] : Error: ({:?})", error);
