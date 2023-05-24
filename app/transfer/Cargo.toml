@@ -1,10 +1,9 @@
 [package]
-name = "pallet-ics20-transfer"
+name = "pallet-ics20"
 version = "4.0.0-dev"
 authors = ["davirain.yin@gmail.com"]
 edition = "2021"
 license = "Apache-2.0"
-publish = false
 repository = "https://github.com/DaviRain-Su/substrate-ibc.git"
 description = "FRAME pallet ibc protocol ics20 token transfer"
 
@@ -12,39 +11,41 @@ description = "FRAME pallet ibc protocol ics20 token transfer"
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
+hex = { version = "0.4.0", default-features = false }
+log = { version = "0.4", default-features = false }
+scale-info = { version = "2.1.1", default-features = false, features = ["derive"] }
+primitive-types = { version = "0.12.0", default-features = false, features = ["serde_no_std"] }
+sha2 = { version = "0.10.2", default-features = false }
+subtle-encoding = { version = "0.5", default-features = false }
+
 # substrate crates
 codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive"] }
 frame-benchmarking = { version = "4.0.0-dev", default-features = false, optional = true, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 frame-support = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 frame-system = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
-hex = { version = "0.4.0", default-features = false }
-pallet-ibc-utils = { version = "0.1.0", default-features = false, path = "../../utils" }
-log = { version = "0.4", default-features = false }
-scale-info = { version = "2.1.1", default-features = false, features = ["derive"] }
 sp-io = { version = "7.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 sp-runtime = { version = "7.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 sp-std = { version = "5.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 pallet-timestamp = { version = "4.0.0-dev", default-features = false,  git = "https://github.com/paritytech/substrate.git", branch = "master" }
-primitive-types = { version = "0.12.0", default-features = false, features = ["serde_no_std"] }
-sha2 = { version = "0.10.2", default-features = false }
-subtle-encoding = { version = "0.5", default-features = false }
 
+# ibc
 ibc = { version = "0.41.0", default-features = false, features = ["parity-scale-codec", "serde"] }
 ibc-proto = { version = "0.30.0", default-features = false, features = ["parity-scale-codec"] }
 pallet-ibc = { version = "4.0.0-dev", default-features = false, path = "../../core" }
+pallet-ibc-utils = { version = "0.1.0", default-features = false, path = "../../utils" }
 
 [dev-dependencies]
 chrono = "0.4.19"
-frame-support = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "master" }
 hex = '0.4.0'
-pallet-assets = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "master" }
-pallet-babe = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "master" }
-pallet-balances = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "master" }
-pallet-ibc = { version = "4.0.0-dev", path = "../../core" }
-pallet-timestamp = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "master" }
 serde = "1.0.142"
 serde_json = { version = "1.0" }
 sha2 = '0.10.2'
+pallet-ibc = { version = "4.0.0-dev", path = "../../core" }
+frame-support = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "master" }
+pallet-assets = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "master" }
+pallet-babe = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "master" }
+pallet-balances = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "master" }
+pallet-timestamp = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "master" }
 sp-core = { version = "7.0.0", git = "https://github.com/paritytech/substrate.git", branch = "master" }
 sp-io = { version = "7.0.0", git = "https://github.com/paritytech/substrate.git", branch = "master" }
 sp-keyring = { version = "7.0.0", git = "https://github.com/paritytech/substrate.git", branch = "master" }

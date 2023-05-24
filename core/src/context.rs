@@ -1,6 +1,5 @@
 use crate::{host::TENDERMINT_CLIENT_TYPE, Config, PacketCommitment as PacketCommitStore, *};
 use alloc::{borrow::ToOwned, string::String, sync::Arc};
-use codec::Decode;
 use core::time::Duration;
 use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
 use sp_core::{Encode, Get};

@@ -13,14 +13,17 @@ description = "An IBC implementation on Substrate."
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
+log = { version = "0.4.0", default-features = false }
+serde = { version = "1.0", default-features = false }
+serde_json = { version = "1.0", default-features = false }
+
 # substate crates
+scale-info = { version = "2.1.2", default-features = false, features = ["derive"] }
 codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive"] }
 frame-benchmarking = { version = "4.0.0-dev", default-features = false, optional = true, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 frame-support = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 frame-system = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 pallet-timestamp = { version = "4.0.0-dev", default-features = false,  git = "https://github.com/paritytech/substrate.git", branch = "master" }
-pallet-ibc-utils = { version = "0.1.0", default-features = false, path = "../utils" }
-scale-info = { version = "2.1.2", default-features = false, features = ["derive"] }
 sp-core = { version = "7.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 sp-io = { version = "7.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 sp-runtime = { version = "7.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
@@ -30,20 +33,18 @@ sp-tracing = { version = "6.0.0", default-features = false, git = "https://githu
 ## for ibc protocl
 ibc = { version = "0.41.0", default-features = false, features = ["parity-scale-codec", "mocks-no-std", "serde"] }
 ibc-proto = { version = "0.30.0", default-features = false, features = ["parity-scale-codec"]  }
-log = { version = "0.4.0", default-features = false }
-serde = { version = "1.0", default-features = false }
-serde_json = { version = "1.0", default-features = false }
+pallet-ibc-utils = { version = "0.1.0", default-features = false, path = "../utils" }
 
 [dev-dependencies]
 chrono = "0.4.19"
+hex = "0.4.0"
+serde = "1.0"
+sha2 = '0.10.2'
 frame-support = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "master" }
-hex = '0.4.0'
 pallet-assets = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "master" }
 pallet-babe = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "master" }
 pallet-balances = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "master" }
 pallet-timestamp = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "master" }
-serde = "1.0"
-sha2 = '0.10.2'
 sp-core = { version = "7.0.0", git = "https://github.com/paritytech/substrate.git", branch = "master" }
 sp-io = { version = "7.0.0", git = "https://github.com/paritytech/substrate.git", branch = "master" }
 sp-keyring = { version = "7.0.0", git = "https://github.com/paritytech/substrate.git", branch = "master" }
