@@ -27,7 +27,11 @@ use ibc_support::traits::{ChannelKeeperInterface, ChannelReaderInterface};
 use sp_std::{boxed::Box, vec::Vec};
 pub mod impls;
 
-impl<T: Config> ChannelReader for Context<T> {
+impl<T: Config> ChannelReader for Context<T>
+where
+	u64: From<<T as pallet_timestamp::Config>::Moment>
+		+ From<<T as frame_system::Config>::BlockNumber>,
+{
 	fn channel_end(
 		&self,
 		port_id: &PortId,
