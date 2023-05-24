@@ -34,7 +34,11 @@ use ibc_support::traits::{ChannelKeeperInterface, ChannelReaderInterface};
 use sp_core::Get;
 use sp_std::{boxed::Box, vec::Vec};
 /// A context supplying all the necessary read-only dependencies for processing any `ChannelMsg`.
-impl<T: Config> ChannelReaderInterface for Context<T> {
+impl<T: Config> ChannelReaderInterface for Context<T>
+where
+	u64: From<<T as pallet_timestamp::Config>::Moment>
+		+ From<<T as frame_system::Config>::BlockNumber>,
+{
 	/// Returns the ChannelEnd for the given `port_id` and `chan_id`.
 	fn channel_end(port_id: &PortId, channel_id: &ChannelId) -> Result<ChannelEnd, ChannelError> {
 		<Channels<T>>::get(ChannelEndsPath(port_id.clone(), channel_id.clone())).ok_or(
@@ -155,9 +159,8 @@ impl<T: Config> ChannelReaderInterface for Context<T> {
 
 	/// Returns the current height of the local chain.
 	fn host_height() -> Result<Height, ChannelError> {
-		let block_number = format!("{:?}", <frame_system::Pallet<T>>::block_number());
-		let current_height: u64 = block_number.parse().unwrap_or_default();
-		Height::new(T::ChainVersion::get(), current_height)
+		let block_height = <frame_system::Pallet<T>>::block_number();
+		Height::new(T::ChainVersion::get(), block_height.into())
 			.map_err(|e| ChannelError::Connection(ConnectionError::Client(e)))
 	}
 
