@@ -1,7 +1,7 @@
 use ibc::{
 	applications::transfer::{error::TokenTransferError, VERSION},
 	core::ics24_host::identifier::{ChannelId as IbcChannelId, PortId},
-	signer::Signer,
+	Signer,
 };
 use scale_info::prelude::format;
 use sha2::{Digest, Sha256};
@@ -23,17 +23,8 @@ pub fn get_channel_escrow_address(
 	let hash = sp_io::hashing::sha2_256(&data).to_vec();
 	let mut hex_string = hex::encode_upper(hash);
 	hex_string.insert_str(0, "0x");
-	hex_string.parse::<Signer>().map_err(TokenTransferError::Signer)
+	Ok(Signer::from(hex_string))
 }
-
-// pub fn derive_ibc_denom(
-// 	port_id: &PortId,
-// 	channel_id: &IbcChannelId,
-// 	denom: &str,
-// ) -> Result<String, TokenTransferError> {
-// 	let transfer_path = format!("{}/{}/{}", port_id, channel_id, denom);
-// 	derive_ibc_denom_with_path(&transfer_path)
-// }
 
 /// Derive the transferred token denomination using
 /// <https://github.com/cosmos/ibc-go/blob/main/docs/architecture/adr-001-coin-source-tracing.md>

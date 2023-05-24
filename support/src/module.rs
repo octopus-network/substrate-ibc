@@ -1,7 +1,15 @@
-use ibc::core::ics26_routing::context::{Module, ModuleId};
+use ibc::{
+	applications::transfer::{
+		MODULE_ID_STR as TRANSFER_MODULE_ID, PORT_ID_STR as TRANSFER_PORT_ID,
+	},
+	core::{
+		ics24_host::identifier::PortId,
+		router::{Module, ModuleId},
+	},
+};
 use scale_info::prelude::{format, string::String};
 use sp_std::{
-	borrow::{Borrow, ToOwned},
+	borrow::ToOwned,
 	collections::btree_map::BTreeMap,
 	fmt::{self, Debug},
 	sync::Arc,
@@ -21,11 +29,21 @@ impl AddModule for DefaultRouter {
 }
 
 #[derive(Default, Clone)]
-pub struct Router(pub BTreeMap<ModuleId, Arc<dyn Module>>);
+pub struct Router {
+	pub router: BTreeMap<ModuleId, Arc<dyn Module>>,
+}
 
 impl Router {
-	pub fn add_route(mut self, module_id: ModuleId, module: impl Module) -> Result<Self, String> {
-		match self.0.insert(module_id, Arc::new(module)) {
+	pub fn new() -> Self {
+		Self { router: BTreeMap::new() }
+	}
+
+	pub fn add_route(
+		mut self,
+		module_id: ModuleId,
+		module: impl Module + 'static,
+	) -> Result<Self, String> {
+		match self.router.insert(module_id, Arc::new(module)) {
 			None => Ok(self),
 			Some(_) => Err("Duplicate module_id".to_owned()),
 		}
@@ -35,7 +53,7 @@ impl Router {
 impl Debug for Router {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		let keys = self
-			.0
+			.router
 			.iter()
 			.fold(vec![], |acc, (key, _)| [acc, vec![format!("{}", key)]].concat());
 
@@ -43,12 +61,39 @@ impl Debug for Router {
 	}
 }
 
-impl ibc::core::ics26_routing::context::Router for Router {
-	fn get_route_mut(&mut self, module_id: &impl Borrow<ModuleId>) -> Option<&mut dyn Module> {
-		self.0.get_mut(module_id.borrow()).and_then(Arc::get_mut)
+impl ibc::core::router::Router for Router {
+	/// Returns a reference to a `Module` registered against the specified `ModuleId`
+	fn get_route(&self, module_id: &ModuleId) -> Option<&dyn Module> {
+		self.router.get(module_id).map(Arc::as_ref)
 	}
 
-	fn has_route(&self, module_id: &impl Borrow<ModuleId>) -> bool {
-		self.0.get(module_id.borrow()).is_some()
+	/// Returns a mutable reference to a `Module` registered against the specified `ModuleId`
+	fn get_route_mut(&mut self, module_id: &ModuleId) -> Option<&mut dyn Module> {
+		// NOTE: The following:
+
+		// self.router.get_mut(module_id).and_then(Arc::get_mut)
+
+		// doesn't work due to a compiler bug. So we expand it out manually.
+
+		match self.router.get_mut(module_id) {
+			Some(arc_mod) => match Arc::get_mut(arc_mod) {
+				Some(m) => Some(m),
+				None => None,
+			},
+			None => None,
+		}
+	}
+
+	/// Returns true if the `Router` has a `Module` registered against the specified `ModuleId`
+	fn has_route(&self, module_id: &ModuleId) -> bool {
+		self.router.get(module_id).is_some()
+	}
+
+	/// Return the module_id associated with a given port_id
+	fn lookup_module_by_port(&self, port_id: &PortId) -> Option<ModuleId> {
+		match port_id.as_str() {
+			TRANSFER_PORT_ID => Some(ModuleId::new(TRANSFER_MODULE_ID.to_string())),
+			_ => None,
+		}
 	}
 }

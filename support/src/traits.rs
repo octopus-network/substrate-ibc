@@ -10,8 +10,8 @@ use ibc::{
 			packet::{Receipt, Sequence},
 		},
 		ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
+		timestamp::Timestamp,
 	},
-	timestamp::Timestamp,
 	Height,
 };
 use sp_std::{boxed::Box, vec::Vec};

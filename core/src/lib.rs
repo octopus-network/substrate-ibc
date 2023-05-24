@@ -19,14 +19,9 @@ pub use alloc::{
 };
 use frame_system::ensure_signed;
 use sp_std::{fmt::Debug, vec, vec::Vec};
-pub mod channel;
-pub mod client;
-pub mod connection;
 pub mod context;
 pub mod errors;
 pub mod host;
-pub mod port;
-pub mod routing;
 pub mod utils;
 
 pub use crate::context::Context;
@@ -35,40 +30,33 @@ use ibc_support::module::AddModule;
 pub const LOG_TARGET: &str = "runtime::pallet-ibc";
 pub const REVISION_NUMBER: u64 = 0;
 
-#[cfg(any(test, feature = "runtime-benchmarks"))]
+#[cfg(any(test))]
 mod mock;
-
-#[cfg(feature = "runtime-benchmarks")]
-pub mod benchmarks;
 
 #[frame_support::pallet]
 pub mod pallet {
 	use super::{errors, *};
 	use frame_support::{pallet_prelude::*, traits::UnixTime};
 	use frame_system::pallet_prelude::*;
-	use ibc::{
-		core::{
-			ics02_client::{client_type::ClientType, height::Height},
-			ics03_connection::connection::ConnectionEnd,
-			ics04_channel::{
-				channel::ChannelEnd,
-				commitment::{
-					AcknowledgementCommitment as IbcAcknowledgementCommitment,
-					PacketCommitment as IbcPacketCommitment,
-				},
-				packet::{Receipt, Sequence},
-			},
-			ics24_host::{
-				identifier::{ChannelId, ClientId, ConnectionId, PortId},
-				path::{
-					AcksPath, ChannelEndsPath, ClientConsensusStatePath, ClientStatePath,
-					ClientTypePath, CommitmentsPath, ConnectionsPath, ReceiptsPath, SeqAcksPath,
-					SeqRecvsPath, SeqSendsPath,
-				},
-			},
-			ics26_routing::handler::MsgReceipt,
-		},
+	use ibc::core::{
 		events::IbcEvent,
+		ics02_client::{client_type::ClientType, height::Height},
+		ics03_connection::connection::ConnectionEnd,
+		ics04_channel::{
+			channel::ChannelEnd,
+			commitment::{
+				AcknowledgementCommitment as IbcAcknowledgementCommitment,
+				PacketCommitment as IbcPacketCommitment,
+			},
+			packet::{Receipt, Sequence},
+		},
+		ics24_host::{
+			identifier::{ChannelId, ClientId, ConnectionId, PortId},
+			path::{
+				AckPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath, CommitmentPath,
+				ConnectionPath, ReceiptPath, SeqAckPath, SeqRecvPath, SeqSendPath,
+			},
+		},
 	};
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
@@ -126,12 +114,12 @@ pub mod pallet {
 	/// key: ConnectionsPath
 	/// value: ConnectionEnd
 	pub type Connections<T: Config> =
-		StorageMap<_, Blake2_128Concat, ConnectionsPath, ConnectionEnd>;
+		StorageMap<_, Blake2_128Concat, ConnectionPath, ConnectionEnd>;
 
 	#[pallet::storage]
 	/// key: CHannelEndsPath
 	/// value: ChannelEnd
-	pub type Channels<T: Config> = StorageMap<_, Blake2_128Concat, ChannelEndsPath, ChannelEnd>;
+	pub type Channels<T: Config> = StorageMap<_, Blake2_128Concat, ChannelEndPath, ChannelEnd>;
 
 	#[pallet::storage]
 	/// key: connection_id
@@ -142,28 +130,28 @@ pub mod pallet {
 	#[pallet::storage]
 	/// Key: SeqSendsPath
 	/// value: sequence
-	pub type NextSequenceSend<T: Config> = StorageMap<_, Blake2_128Concat, SeqSendsPath, Sequence>;
+	pub type NextSequenceSend<T: Config> = StorageMap<_, Blake2_128Concat, SeqSendPath, Sequence>;
 
 	#[pallet::storage]
 	/// key: SeqRecvsPath
 	/// value: sequence
-	pub type NextSequenceRecv<T: Config> = StorageMap<_, Blake2_128Concat, SeqRecvsPath, Sequence>;
+	pub type NextSequenceRecv<T: Config> = StorageMap<_, Blake2_128Concat, SeqRecvPath, Sequence>;
 
 	#[pallet::storage]
 	/// key: SeqAcksPath
 	/// value: sequence
-	pub type NextSequenceAck<T: Config> = StorageMap<_, Blake2_128Concat, SeqAcksPath, Sequence>;
+	pub type NextSequenceAck<T: Config> = StorageMap<_, Blake2_128Concat, SeqAckPath, Sequence>;
 
 	#[pallet::storage]
 	/// key: AcksPath
 	/// value: hash of acknowledgement
 	pub type Acknowledgements<T: Config> =
-		StorageMap<_, Blake2_128Concat, AcksPath, IbcAcknowledgementCommitment>;
+		StorageMap<_, Blake2_128Concat, AckPath, IbcAcknowledgementCommitment>;
 
 	#[pallet::storage]
 	/// key: ClientTypePath
 	/// value: ClientType
-	pub type Clients<T: Config> = StorageMap<_, Blake2_128Concat, ClientTypePath, ClientType>;
+	pub type Clients<T: Config> = StorageMap<_, Blake2_128Concat, ClientStatePath, ClientType>;
 
 	#[pallet::storage]
 	/// client counter
@@ -185,13 +173,13 @@ pub mod pallet {
 	#[pallet::storage]
 	/// key: ReceiptsPath
 	/// value: receipt
-	pub type PacketReceipt<T: Config> = StorageMap<_, Blake2_128Concat, ReceiptsPath, Receipt>;
+	pub type PacketReceipt<T: Config> = StorageMap<_, Blake2_128Concat, ReceiptPath, Receipt>;
 
 	#[pallet::storage]
 	/// key: CommitmentsPath
 	/// value: hash of (timestamp, height, packet)
 	pub type PacketCommitment<T: Config> =
-		StorageMap<_, Blake2_128Concat, CommitmentsPath, IbcPacketCommitment>;
+		StorageMap<_, Blake2_128Concat, CommitmentPath, IbcPacketCommitment>;
 
 	#[pallet::storage]
 	/// key: height
@@ -263,39 +251,39 @@ pub mod pallet {
 			messages: Vec<ibc_proto::google::protobuf::Any>,
 		) -> DispatchResultWithPostInfo {
 			ensure_signed(origin)?;
-			let mut ctx = Context::<T>::new();
-			log::info!(
-				"☀️ ibc messages type: {:?}",
-				messages.iter().map(|v| &v.type_url).collect::<Vec<_>>()
-			);
+			// let mut ctx = Context::<T>::new();
+			// log::info!(
+			// 	"☀️ ibc messages type: {:?}",
+			// 	messages.iter().map(|v| &v.type_url).collect::<Vec<_>>()
+			// );
 
-			let (events, logs, errors) = messages.into_iter().fold(
-				(vec![], vec![], vec![]),
-				|(mut events, mut logs, mut errors), msg| {
-					match ibc::core::ics26_routing::handler::deliver(&mut ctx, msg) {
-						Ok(MsgReceipt { events: temp_events, log: temp_logs }) => {
-							events.extend(temp_events);
-							logs.extend(temp_logs);
-						},
-						Err(e) => errors.push(e),
-					}
-					(events, logs, errors)
-				},
-			);
-			log::info!("🙅🙅 deliver ----> events: {:?}", events);
-			log::info!("🙅🙅 🔥 🔥deliver ----> logs: {:?}", logs);
-			log::info!("🙅🙅 ❌❌ deliver ----> errors: {:?}", errors);
+			// let (events, logs, errors) = messages.into_iter().fold(
+			// 	(vec![], vec![], vec![]),
+			// 	|(mut events, mut logs, mut errors), msg| {
+			// 		match ibc::core::dispatch(&mut ctx, msg) {
+			// 			Ok(MsgReceipt { events: temp_events, log: temp_logs }) => {
+			// 				events.extend(temp_events);
+			// 				logs.extend(temp_logs);
+			// 			},
+			// 			Err(e) => errors.push(e),
+			// 		}
+			// 		(events, logs, errors)
+			// 	},
+			// );
+			// log::info!("🙅🙅 deliver ----> events: {:?}", events);
+			// log::info!("🙅🙅 🔥 🔥deliver ----> logs: {:?}", logs);
+			// log::info!("🙅🙅 ❌❌ deliver ----> errors: {:?}", errors);
 
-			log::trace!(target: "pallet_ibc", "[pallet_ibc_deliver]: logs: {:?}", logs);
-			log::trace!(target: "pallet_ibc", "[pallet_ibc_deliver]: errors: {:?}", errors);
+			// log::trace!(target: "pallet_ibc", "[pallet_ibc_deliver]: logs: {:?}", logs);
+			// log::trace!(target: "pallet_ibc", "[pallet_ibc_deliver]: errors: {:?}", errors);
 
-			for event in events.clone() {
-				<IbcEventStore<T>>::insert(crate::utils::host_height::<T>(), event);
-			}
-			Self::deposit_event(Event::IbcEvents { events });
-			if !errors.is_empty() {
-				Self::deposit_event(errors.into());
-			}
+			// for event in events.clone() {
+			// 	<IbcEventStore<T>>::insert(crate::utils::host_height::<T>(), event);
+			// }
+			// Self::deposit_event(Event::IbcEvents { events });
+			// if !errors.is_empty() {
+			// 	Self::deposit_event(errors.into());
+			// }
 
 			Ok(().into())
 		}
