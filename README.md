@@ -1,4 +1,4 @@
-# Substrate IBC Pallet (work in progress)
+# Substrate IBC Pallet
 
 [![crates.io](https://img.shields.io/crates/v/pallet-ibc.svg)](https://crates.io/crates/pallet-ibc)
 [![Released API docs](https://docs.rs/pallet-ibc/badge.svg)](https://docs.rs/pallet-ibc)
