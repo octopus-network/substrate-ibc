@@ -6,12 +6,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ibc = { version = "0.41.0", default-features = false, features = ["parity-scale-codec", "serde"],  git = "https://github.com/cosmos/ibc-rs.git"}
+ibc = { version = "0.41.0", default-features = false, features = ["parity-scale-codec", "serde"] }
 
 # substrate crates
 codec = { package = "parity-scale-codec", version = "3", default-features = false, features = ["derive"] }
-sp-std = { version = "5.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.39" }
-frame-support = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.39" }
+sp-std = { version = "5.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
+frame-support = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 
 [features]
 default = ['std']

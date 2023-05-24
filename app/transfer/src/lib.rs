@@ -34,7 +34,7 @@ pub mod pallet {
 	use frame_support::{
 		pallet_prelude::*,
 		traits::{
-			fungibles::{Mutate, Transfer},
+			fungibles::Mutate,
 			tokens::{AssetId, Balance as AssetBalance},
 			Currency,
 		},
@@ -73,8 +73,11 @@ pub mod pallet {
 		type AssetBalance: AssetBalance + From<u128> + Into<u128>;
 
 		/// Expose customizable associated type of asset transfer, lock and unlock
-		type Fungibles: Transfer<Self::AccountId, AssetId = Self::AssetId, Balance = Self::AssetBalance>
-			+ Mutate<Self::AccountId, AssetId = Self::AssetId, Balance = Self::AssetBalance>;
+		type Fungibles: Mutate<
+			Self::AccountId,
+			AssetId = Self::AssetId,
+			Balance = Self::AssetBalance,
+		>;
 
 		/// Map of cross-chain asset ID & name
 		type AssetIdByName: AssetIdAndNameProvider<Self::AssetId>;
@@ -185,8 +188,7 @@ pub mod pallet {
 			for message in messages {
 				let msg_transfer = MsgTransfer::try_from(message)
 					.map_err(|_| Error::<T>::ParserMsgTransferError)?;
-				let result = ibc::applications::transfer::
-					send_transfer(&mut ctx, msg_transfer);
+				let result = ibc::applications::transfer::send_transfer(&mut ctx, msg_transfer);
 				match result {
 					Ok(_value) => {
 						log::trace!(target: LOG_TARGET, "raw_transfer Successful!");
