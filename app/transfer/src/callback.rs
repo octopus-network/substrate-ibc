@@ -1,5 +1,5 @@
 use crate::Config;
-use codec::{Decode, Encode};
+use alloc::string::ToString;
 use ibc::{
 	core::{
 		ics04_channel::{
@@ -13,47 +13,81 @@ use ibc::{
 	},
 	Signer,
 };
-
 use sp_std::marker::PhantomData;
 
-#[derive(Debug, Encode, Decode)]
-pub struct IbcTransferModule<T>(pub PhantomData<T>);
+#[derive(Debug)]
+pub struct IbcTransferModule<T: pallet_ibc::Config> {
+	pub ibc_core_context: pallet_ibc::context::Context<T>,
+	pub phatom_data: PhantomData<T>,
+}
 
-impl<T: Config> Module for IbcTransferModule<T> {
+impl<T: Config> IbcTransferModule<T> {
+	pub fn new(ibc_core_context: pallet_ibc::context::Context<T>) -> Self {
+		Self { ibc_core_context, phatom_data: PhantomData::default() }
+	}
+}
+
+impl<T: Config> Module for IbcTransferModule<T>
+where
+	u64: From<<T as pallet_timestamp::Config>::Moment>
+		+ From<<T as frame_system::Config>::BlockNumber>,
+{
 	fn on_chan_open_init_validate(
 		&self,
-		_order: Order,
-		_connection_hops: &[ConnectionId],
-		_port_id: &PortId,
-		_channel_id: &ChannelId,
-		_counterparty: &Counterparty,
-		_version: &Version,
+		order: Order,
+		connection_hops: &[ConnectionId],
+		port_id: &PortId,
+		channel_id: &ChannelId,
+		counterparty: &Counterparty,
+		version: &Version,
 	) -> Result<Version, ChannelError> {
-		todo!()
+		ibc::applications::transfer::context::on_chan_open_init_validate(
+			self,
+			order,
+			connection_hops,
+			port_id,
+			channel_id,
+			counterparty,
+			version,
+		)
+		.map_err(|e| ChannelError::AppModule { description: e.to_string() })?;
+
+		Ok(version.clone())
 	}
 
 	fn on_chan_open_init_execute(
 		&mut self,
 		_order: Order,
 		_connection_hops: &[ConnectionId],
-		_port_id: &PortId,
+		_ort_id: &PortId,
 		_channel_id: &ChannelId,
 		_counterparty: &Counterparty,
-		_version: &Version,
+		version: &Version,
 	) -> Result<(ModuleExtras, Version), ChannelError> {
-		todo!()
+		Ok((ModuleExtras::empty(), version.clone()))
 	}
 
 	fn on_chan_open_try_validate(
 		&self,
-		_order: Order,
-		_connection_hops: &[ConnectionId],
-		_port_id: &PortId,
-		_channel_id: &ChannelId,
-		_counterparty: &Counterparty,
-		_counterparty_version: &Version,
+		order: Order,
+		connection_hops: &[ConnectionId],
+		port_id: &PortId,
+		channel_id: &ChannelId,
+		counterparty: &Counterparty,
+		counterparty_version: &Version,
 	) -> Result<Version, ChannelError> {
-		todo!()
+		ibc::applications::transfer::context::on_chan_open_try_validate(
+			self,
+			order,
+			connection_hops,
+			port_id,
+			channel_id,
+			counterparty,
+			counterparty_version,
+		)
+		.map_err(|e| ChannelError::AppModule { description: e.to_string() })?;
+
+		Ok(counterparty_version.clone())
 	}
 
 	fn on_chan_open_try_execute(
@@ -63,18 +97,24 @@ impl<T: Config> Module for IbcTransferModule<T> {
 		_port_id: &PortId,
 		_channel_id: &ChannelId,
 		_counterparty: &Counterparty,
-		_counterparty_version: &Version,
+		counterparty_version: &Version,
 	) -> Result<(ModuleExtras, Version), ChannelError> {
-		todo!()
+		Ok((ModuleExtras::empty(), counterparty_version.clone()))
 	}
 
 	fn on_chan_open_ack_validate(
 		&self,
-		_port_id: &PortId,
-		_channel_id: &ChannelId,
-		_counterparty_version: &Version,
+		port_id: &PortId,
+		channel_id: &ChannelId,
+		counterparty_version: &Version,
 	) -> Result<(), ChannelError> {
-		Ok(())
+		ibc::applications::transfer::context::on_chan_open_ack_validate(
+			self,
+			port_id,
+			channel_id,
+			counterparty_version,
+		)
+		.map_err(|e| ChannelError::AppModule { description: e.to_string() })
 	}
 
 	fn on_chan_open_ack_execute(
@@ -88,10 +128,13 @@ impl<T: Config> Module for IbcTransferModule<T> {
 
 	fn on_chan_open_confirm_validate(
 		&self,
-		_port_id: &PortId,
-		_channel_id: &ChannelId,
+		port_id: &PortId,
+		channel_id: &ChannelId,
 	) -> Result<(), ChannelError> {
-		Ok(())
+		ibc::applications::transfer::context::on_chan_open_confirm_validate(
+			self, port_id, channel_id,
+		)
+		.map_err(|e| ChannelError::AppModule { description: e.to_string() })
 	}
 
 	fn on_chan_open_confirm_execute(
@@ -134,26 +177,27 @@ impl<T: Config> Module for IbcTransferModule<T> {
 		Ok(ModuleExtras::empty())
 	}
 
-	// Note: no `on_recv_packet_validate()`
-	// the `onRecvPacket` callback always succeeds
-	// if any error occurs, than an "error acknowledgement"
-	// must be returned
-
 	fn on_recv_packet_execute(
 		&mut self,
-		_packet: &Packet,
+		packet: &Packet,
 		_relayer: &Signer,
 	) -> (ModuleExtras, Acknowledgement) {
-		todo!()
+		ibc::applications::transfer::context::on_recv_packet_execute(self, packet)
 	}
 
 	fn on_acknowledgement_packet_validate(
 		&self,
-		_packet: &Packet,
-		_acknowledgement: &Acknowledgement,
-		_relayer: &Signer,
+		packet: &Packet,
+		acknowledgement: &Acknowledgement,
+		relayer: &Signer,
 	) -> Result<(), PacketError> {
-		todo!()
+		ibc::applications::transfer::context::on_acknowledgement_packet_validate(
+			self,
+			packet,
+			acknowledgement,
+			relayer,
+		)
+		.map_err(|e| PacketError::AppModule { description: e.to_string() })
 	}
 
 	fn on_acknowledgement_packet_execute(
@@ -162,144 +206,23 @@ impl<T: Config> Module for IbcTransferModule<T> {
 		_acknowledgement: &Acknowledgement,
 		_relayer: &Signer,
 	) -> (ModuleExtras, Result<(), PacketError>) {
-		todo!()
+		(ModuleExtras::empty(), Ok(()))
 	}
-
-	/// Note: `MsgTimeout` and `MsgTimeoutOnClose` use the same callback
 
 	fn on_timeout_packet_validate(
 		&self,
-		_packet: &Packet,
-		_relayer: &Signer,
+		packet: &Packet,
+		relayer: &Signer,
 	) -> Result<(), PacketError> {
-		todo!()
+		ibc::applications::transfer::context::on_timeout_packet_validate(self, packet, relayer)
+			.map_err(|e| PacketError::AppModule { description: e.to_string() })
 	}
-
-	/// Note: `MsgTimeout` and `MsgTimeoutOnClose` use the same callback
 
 	fn on_timeout_packet_execute(
 		&mut self,
 		_packet: &Packet,
 		_relayer: &Signer,
 	) -> (ModuleExtras, Result<(), PacketError>) {
-		todo!()
+		(ModuleExtras::empty(), Ok(()))
 	}
-	// fn on_chan_open_init(
-	// 	&mut self,
-	// 	order: Order,
-	// 	connection_hops: &[ConnectionId],
-	// 	port_id: &PortId,
-	// 	channel_id: &ChannelId,
-	// 	counterparty: &Counterparty,
-	// 	version: &Version,
-	// ) -> Result<(ModuleExtras, Version), ChannelError> {
-	// 	ibc::applications::transfer::context::on_chan_open_init(
-	// 		self,
-	// 		order,
-	// 		connection_hops,
-	// 		port_id,
-	// 		channel_id,
-	// 		counterparty,
-	// 		version,
-	// 	)
-	// 	.map_err(|e| ChannelError::AppModule { description: e.to_string() })
-	// }
-
-	// fn on_chan_open_try(
-	// 	&mut self,
-	// 	order: Order,
-	// 	connection_hops: &[ConnectionId],
-	// 	port_id: &PortId,
-	// 	channel_id: &ChannelId,
-	// 	counterparty: &Counterparty,
-	// 	counterparty_version: &Version,
-	// ) -> Result<(ModuleExtras, Version), ChannelError> {
-	// 	ibc::applications::transfer::context::on_chan_open_try(
-	// 		self,
-	// 		order,
-	// 		connection_hops,
-	// 		port_id,
-	// 		channel_id,
-	// 		counterparty,
-	// 		counterparty_version,
-	// 	)
-	// 	.map_err(|e| ChannelError::AppModule { description: e.to_string() })
-	// }
-
-	// fn on_chan_open_ack(
-	// 	&mut self,
-	// 	port_id: &PortId,
-	// 	channel_id: &ChannelId,
-	// 	counterparty_version: &Version,
-	// ) -> Result<ModuleExtras, ChannelError> {
-	// 	ibc::applications::transfer::context::on_chan_open_ack(
-	// 		self,
-	// 		port_id,
-	// 		channel_id,
-	// 		counterparty_version,
-	// 	)
-	// 	.map_err(|e| ChannelError::AppModule { description: e.to_string() })
-	// }
-
-	// fn on_chan_open_confirm(
-	// 	&mut self,
-	// 	port_id: &PortId,
-	// 	channel_id: &ChannelId,
-	// ) -> Result<ModuleExtras, ChannelError> {
-	// 	ibc::applications::transfer::context::on_chan_open_confirm(self, port_id, channel_id)
-	// 		.map_err(|e| ChannelError::AppModule { description: e.to_string() })
-	// }
-
-	// fn on_chan_close_init(
-	// 	&mut self,
-	// 	_port_id: &PortId,
-	// 	_channel_id: &ChannelId,
-	// ) -> Result<ModuleExtras, ChannelError> {
-	// 	Ok(ModuleExtras::empty())
-	// }
-
-	// fn on_chan_close_confirm(
-	// 	&mut self,
-	// 	port_id: &PortId,
-	// 	channel_id: &ChannelId,
-	// ) -> Result<ModuleExtras, ChannelError> {
-	// 	ibc::applications::transfer::context::on_chan_close_confirm(self, port_id, channel_id)
-	// 		.map_err(|e| ChannelError::AppModule { description: e.to_string() })
-	// }
-
-	// fn on_recv_packet(
-	// 	&mut self,
-	// 	output: &mut ModuleOutputBuilder,
-	// 	packet: &Packet,
-	// 	relayer: &Signer,
-	// ) -> Acknowledgement {
-	// 	ibc::applications::transfer::context::on_recv_packet(self, output, packet, relayer)
-	// }
-
-	// fn on_acknowledgement_packet(
-	// 	&mut self,
-	// 	output: &mut ModuleOutputBuilder,
-	// 	packet: &Packet,
-	// 	acknowledgement: &Acknowledgement,
-	// 	relayer: &Signer,
-	// ) -> Result<(), PacketError> {
-	// 	ibc::applications::transfer::context::on_acknowledgement_packet(
-	// 		self,
-	// 		output,
-	// 		packet,
-	// 		acknowledgement,
-	// 		relayer,
-	// 	)
-	// 	.map_err(|e| PacketError::AppModule { description: e.to_string() })
-	// }
-
-	// fn on_timeout_packet(
-	// 	&mut self,
-	// 	output: &mut ModuleOutputBuilder,
-	// 	packet: &Packet,
-	// 	relayer: &Signer,
-	// ) -> Result<(), PacketError> {
-	// 	ibc::applications::transfer::context::on_timeout_packet(self, output, packet, relayer)
-	// 		.map_err(|e| PacketError::AppModule { description: e.to_string() })
-	// }
 }

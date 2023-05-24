@@ -10,10 +10,8 @@ pub use pallet::*;
 
 pub mod callback;
 pub mod context_channel;
-pub mod denom;
 pub mod impls;
 pub mod utils;
-
 
 use ibc_support::AssetIdAndNameProvider;
 use sp_std::vec::Vec;
@@ -25,7 +23,7 @@ type BalanceOf<T> =
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	// use crate::{callback::IbcTransferModule, LOG_TARGET};
+	use crate::{callback::IbcTransferModule, LOG_TARGET};
 	use alloc::string::String;
 	use frame_support::{
 		pallet_prelude::*,
@@ -37,22 +35,21 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use ibc::{
-		// applications::transfer::msgs::transfer::MsgTransfer,
-		// core::{events::IbcEvent},
-		core::ics04_channel::events::SendPacket,
-		Signer,
+		applications::transfer::msgs::transfer::MsgTransfer,
+		core::ics04_channel::events::SendPacket, Signer,
 	};
 	use ibc_support::AssetIdAndNameProvider;
 	use sp_runtime::traits::IdentifyAccount;
 	use sp_std::{fmt::Debug, vec::Vec};
 
 	#[pallet::pallet]
+	#[pallet::generate_store(pub(super) trait Store)]
 	#[pallet::without_storage_info]
 	pub struct Pallet<T>(_);
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
-	pub trait Config: frame_system::Config + Sync + Send + Debug {
+	pub trait Config: frame_system::Config + pallet_ibc::Config + Sync + Send + Debug {
 		/// The aggregated event type of the runtime.
 		type RuntimeEvent: Parameter
 			+ Member
@@ -86,9 +83,6 @@ pub mod pallet {
 			+ PartialEq
 			+ Debug;
 
-		type IbcContext: ibc_support::traits::ChannelKeeperInterface
-			+ ibc_support::traits::ChannelReaderInterface;
-
 		// The native token name
 		const NATIVE_TOKEN_NAME: &'static [u8];
 	}
@@ -99,11 +93,6 @@ pub mod pallet {
 	/// (asset name) => asset id
 	pub type AssetIdByName<T: Config> =
 		StorageMap<_, Twox64Concat, AssetName, T::AssetId, ValueQuery>;
-
-	#[pallet::storage]
-	// key: denom trace hash
-	// value: denom trace
-	pub type DenomTrace<T: Config> = StorageMap<_, Blake2_128Concat, Vec<u8>, denom::PrefixedDenom>;
 
 	#[pallet::genesis_config]
 	pub struct GenesisConfig<T: Config> {
@@ -166,7 +155,11 @@ pub mod pallet {
 	// These functions materialize as "extrinsics", which are often compared to transactions.
 	// Dispatchable functions must be annotated with a weight and must return a DispatchResult.
 	#[pallet::call]
-	impl<T: Config> Pallet<T> {
+	impl<T: Config> Pallet<T>
+	where
+		u64: From<<T as pallet_timestamp::Config>::Moment>
+			+ From<<T as frame_system::Config>::BlockNumber>,
+	{
 		/// ICS20 fungible token transfer.
 		/// Handling transfer request as sending chain or receiving chain.
 		///
@@ -178,52 +171,33 @@ pub mod pallet {
 		#[pallet::weight(0)]
 		pub fn raw_transfer(
 			origin: OriginFor<T>,
-			_messages: Vec<ibc_proto::google::protobuf::Any>,
+			messages: Vec<ibc_proto::google::protobuf::Any>,
 		) -> DispatchResultWithPostInfo {
 			let _sender = ensure_signed(origin)?;
-			// let mut ctx = IbcTransferModule(PhantomData::<T>);
+			let ibc_core_context = pallet_ibc::context::Context::<T>::new();
+			let mut ctx = IbcTransferModule::new(ibc_core_context);
 
-			// log::trace!(
-			// 	target: LOG_TARGET,
-			// 	"raw_transfer : {:?} ",
-			// 	messages.iter().map(|message| message.type_url.clone()).collect::<Vec<_>>()
-			// );
+			log::trace!(
+				target: LOG_TARGET,
+				"raw_transfer : {:?} ",
+				messages.iter().map(|message| message.type_url.clone()).collect::<Vec<_>>()
+			);
 
-			// for message in messages {
-			// 	let mut handle_out = HandlerOutputBuilder::new();
-			// 	let msg_transfer = MsgTransfer::try_from(message)
-			// 		.map_err(|_| Error::<T>::ParserMsgTransferError)?;
-			// 	let result = ibc::applications::transfer::relay::send_transfer::send_transfer(
-			// 		&mut ctx,
-			// 		&mut handle_out,
-			// 		msg_transfer,
-			// 	);
-			// 	match result {
-			// 		Ok(_value) => {
-			// 			log::trace!(target: LOG_TARGET, "raw_transfer Successful!");
-			// 		},
-			// 		Err(error) => {
-			// 			log::trace!(target: LOG_TARGET, "raw_transfer Error : {:?} ", error);
-			// 		},
-			// 	}
+			for message in messages {
+				let msg_transfer = MsgTransfer::try_from(message)
+					.map_err(|_| Error::<T>::ParserMsgTransferError)?;
+				let result = ibc::applications::transfer::send_transfer(&mut ctx, msg_transfer);
+				match result {
+					Ok(_value) => {
+						log::trace!(target: LOG_TARGET, "raw_transfer Successful!");
+					},
+					Err(error) => {
+						log::trace!(target: LOG_TARGET, "raw_transfer Error : {:?} ", error);
+					},
+				}
 
-			// 	let HandlerOutput::<()> { result: _, log, events } = handle_out.with_result(());
-
-			// 	log::trace!(target: LOG_TARGET, "raw_transfer log : {:?} ", log);
-
-			// 	// deposit events about send packet event and ics20 transfer event
-			// 	for event in events {
-			// 		log::trace!(target: LOG_TARGET, "raw_transfer event : {:?} ", event);
-			// 		match event {
-			// 			IbcEvent::SendPacket(ref send_packet) => {
-			// 				Self::deposit_event(Event::SendPacket(send_packet.clone()));
-			// 			},
-			// 			_ => {
-			// 				Self::deposit_event(Event::UnsupportedEvent);
-			// 			},
-			// 		}
-			// 	}
-			// }
+				// evemt and log will be emit on ibc-core
+			}
 
 			Ok(().into())
 		}

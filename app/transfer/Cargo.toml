@@ -24,12 +24,14 @@ scale-info = { version = "2.1.1", default-features = false, features = ["derive"
 sp-io = { version = "7.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 sp-runtime = { version = "7.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 sp-std = { version = "5.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
+pallet-timestamp = { version = "4.0.0-dev", default-features = false,  git = "https://github.com/paritytech/substrate.git", branch = "master" }
 primitive-types = { version = "0.12.0", default-features = false, features = ["serde_no_std"] }
 sha2 = { version = "0.10.2", default-features = false }
 subtle-encoding = { version = "0.5", default-features = false }
 
 ibc = { version = "0.41.0", default-features = false, features = ["parity-scale-codec", "serde"] }
 ibc-proto = { version = "0.30.0", default-features = false, features = ["parity-scale-codec"] }
+pallet-ibc = { version = "4.0.0-dev", default-features = false, path = "../../core" }
 
 [dev-dependencies]
 chrono = "0.4.19"
@@ -69,6 +71,7 @@ std = [
   "ibc-proto/std",
   "sha2/std",
   "subtle-encoding/std",
+  "pallet-ibc/std",
 ]
 runtime-benchmarks = ["frame-benchmarking/runtime-benchmarks"]
 try-runtime = ["frame-support/try-runtime"]

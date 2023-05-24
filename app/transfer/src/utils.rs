@@ -1,10 +1,10 @@
+use scale_info::prelude::format;
+
 use ibc::{
 	applications::transfer::{error::TokenTransferError, VERSION},
 	core::ics24_host::identifier::{ChannelId as IbcChannelId, PortId},
 	Signer,
 };
-use scale_info::prelude::format;
-use sha2::{Digest, Sha256};
 
 /// In ICS20 fungible token transfer, get the escrow address by channel ID and port ID
 ///
@@ -24,20 +24,6 @@ pub fn get_channel_escrow_address(
 	let mut hex_string = hex::encode_upper(hash);
 	hex_string.insert_str(0, "0x");
 	Ok(Signer::from(hex_string))
-}
-
-/// Derive the transferred token denomination using
-/// <https://github.com/cosmos/ibc-go/blob/main/docs/architecture/adr-001-coin-source-tracing.md>
-pub fn derive_ibc_denom_with_path(transfer_path: &str) -> Result<String, TokenTransferError> {
-	use subtle_encoding::hex;
-	let mut hasher = Sha256::new();
-	hasher.update(transfer_path.as_bytes());
-
-	let denom_bytes = hasher.finalize();
-	let denom_hex = String::from_utf8(hex::encode_upper(denom_bytes))
-		.map_err(|e| TokenTransferError::UnknownMsgType { msg_type: format!("error: {}", e) })?;
-
-	Ok(format!("ibc/{}", denom_hex))
 }
 
 #[test]
