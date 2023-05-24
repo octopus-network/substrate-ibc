@@ -1,8 +1,10 @@
-use crate::Config;
+use crate::{Config, *};
 use alloc::{borrow::ToOwned, string::String, sync::Arc};
+use core::time::Duration;
+// use ibc::core::ics02_client::;
+use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
 use sp_std::marker::PhantomData;
 
-use core::time::Duration;
 use ibc::{
 	applications::transfer::{
 		MODULE_ID_STR as TRANSFER_MODULE_ID, PORT_ID_STR as TRANSFER_PORT_ID,
@@ -10,7 +12,8 @@ use ibc::{
 	core::{
 		events::IbcEvent,
 		ics02_client::{
-			client_state::ClientState, consensus_state::ConsensusState, error::ClientError,
+		  client_state::ClientState, client_type::ClientType, consensus_state::ConsensusState,
+			error::ClientError,
 		},
 		ics03_connection::{connection::ConnectionEnd, error::ConnectionError},
 		ics04_channel::{
@@ -33,7 +36,6 @@ use ibc::{
 	},
 	Height, Signer,
 };
-use ibc_proto::google::protobuf::Any;
 use ibc_support::module::{AddModule, Router};
 
 #[derive(Clone, Debug)]
@@ -58,6 +60,20 @@ impl<T: Config> Context<T> {
 			None => Ok(()),
 			Some(_) => Err("Duplicate module_id".to_owned()),
 		}
+	}
+
+	fn client_type(&self, client_id: &ClientId) -> Result<ClientType, ClientError> {
+		// let data = <Clients<T>>::get(ClientTypePath(client_id.clone()))
+		// 	.ok_or(ClientError::ClientNotFound { client_id: client_id.clone() })?;
+		// match data.as_str() {
+		// 	TENDERMINT_CLIENT_TYPE => Ok(ClientType::new(TENDERMINT_CLIENT_TYPE.into())),
+		// 	MOCK_CLIENT_TYPE => Ok(ClientType::new(MOCK_CLIENT_TYPE.into())),
+		// 	unimplemented =>
+		// 		return Err(ClientError::UnknownClientStateType {
+		// 			client_state_type: unimplemented.to_string(),
+		// 		}),
+		// }
+		todo!()
 	}
 }
 
@@ -107,7 +123,22 @@ impl<T: Config> ibc::core::router::Router for Context<T> {
 impl<T: Config> ValidationContext for Context<T> {
 	/// Returns the ClientState for the given identifier `client_id`.
 	fn client_state(&self, client_id: &ClientId) -> Result<Box<dyn ClientState>, ContextError> {
-		todo!()
+		let data = <ClientStates<T>>::get(ClientStatePath(client_id.clone())).ok_or(
+			ClientError::Other { description: format!("Client({}) not found!", client_id.clone()) },
+		)?;
+		match self.client_type(client_id)?.as_str() {
+			TENDERMINT_CLIENT_TYPE => {
+				let result: Ics07ClientState =
+					Protobuf::<Any>::decode_vec(&data).map_err(|e| ClientError::Other {
+						description: format!("Decode Ics07ClientState failed: {:?}", e),
+					})?;
+
+				Ok(Box::new(result))
+			},
+			unimplemented => Err(ClientError::UnknownClientStateType {
+				client_state_type: unimplemented.to_string(),
+			}),
+		}
 	}
 
 	/// Tries to decode the given `client_state` into a concrete light client state.
