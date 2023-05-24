@@ -27,7 +27,7 @@ type BalanceOf<T> =
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use crate::{callback::IbcTransferModule, LOG_TARGET};
+	// use crate::{callback::IbcTransferModule, LOG_TARGET};
 	use alloc::string::String;
 	use frame_support::{
 		pallet_prelude::*,
@@ -39,8 +39,9 @@ pub mod pallet {
 	};
 	use frame_system::pallet_prelude::*;
 	use ibc::{
-		applications::transfer::msgs::transfer::MsgTransfer,
-		core::{events::IbcEvent, ics04_channel::events::SendPacket},
+		// applications::transfer::msgs::transfer::MsgTransfer,
+		// core::{events::IbcEvent},
+		core::ics04_channel::events::SendPacket,
 		Signer,
 	};
 	use ibc_support::AssetIdAndNameProvider;
@@ -179,7 +180,7 @@ pub mod pallet {
 		#[pallet::weight(0)]
 		pub fn raw_transfer(
 			origin: OriginFor<T>,
-			messages: Vec<ibc_proto::google::protobuf::Any>,
+			_messages: Vec<ibc_proto::google::protobuf::Any>,
 		) -> DispatchResultWithPostInfo {
 			let _sender = ensure_signed(origin)?;
 			// let mut ctx = IbcTransferModule(PhantomData::<T>);

@@ -22,48 +22,48 @@ pub struct IbcTransferModule<T>(pub PhantomData<T>);
 impl<T: Config> Module for IbcTransferModule<T> {
 	fn on_chan_open_init_validate(
 		&self,
-		order: Order,
-		connection_hops: &[ConnectionId],
-		port_id: &PortId,
-		channel_id: &ChannelId,
-		counterparty: &Counterparty,
-		version: &Version,
+		_order: Order,
+		_connection_hops: &[ConnectionId],
+		_port_id: &PortId,
+		_channel_id: &ChannelId,
+		_counterparty: &Counterparty,
+		_version: &Version,
 	) -> Result<Version, ChannelError> {
 		todo!()
 	}
 
 	fn on_chan_open_init_execute(
 		&mut self,
-		order: Order,
-		connection_hops: &[ConnectionId],
-		port_id: &PortId,
-		channel_id: &ChannelId,
-		counterparty: &Counterparty,
-		version: &Version,
+		_order: Order,
+		_connection_hops: &[ConnectionId],
+		_port_id: &PortId,
+		_channel_id: &ChannelId,
+		_counterparty: &Counterparty,
+		_version: &Version,
 	) -> Result<(ModuleExtras, Version), ChannelError> {
 		todo!()
 	}
 
 	fn on_chan_open_try_validate(
 		&self,
-		order: Order,
-		connection_hops: &[ConnectionId],
-		port_id: &PortId,
-		channel_id: &ChannelId,
-		counterparty: &Counterparty,
-		counterparty_version: &Version,
+		_order: Order,
+		_connection_hops: &[ConnectionId],
+		_port_id: &PortId,
+		_channel_id: &ChannelId,
+		_counterparty: &Counterparty,
+		_counterparty_version: &Version,
 	) -> Result<Version, ChannelError> {
 		todo!()
 	}
 
 	fn on_chan_open_try_execute(
 		&mut self,
-		order: Order,
-		connection_hops: &[ConnectionId],
-		port_id: &PortId,
-		channel_id: &ChannelId,
-		counterparty: &Counterparty,
-		counterparty_version: &Version,
+		_order: Order,
+		_connection_hops: &[ConnectionId],
+		_port_id: &PortId,
+		_channel_id: &ChannelId,
+		_counterparty: &Counterparty,
+		_counterparty_version: &Version,
 	) -> Result<(ModuleExtras, Version), ChannelError> {
 		todo!()
 	}
@@ -141,8 +141,8 @@ impl<T: Config> Module for IbcTransferModule<T> {
 
 	fn on_recv_packet_execute(
 		&mut self,
-		packet: &Packet,
-		relayer: &Signer,
+		_packet: &Packet,
+		_relayer: &Signer,
 	) -> (ModuleExtras, Acknowledgement) {
 		todo!()
 	}
@@ -169,8 +169,8 @@ impl<T: Config> Module for IbcTransferModule<T> {
 
 	fn on_timeout_packet_validate(
 		&self,
-		packet: &Packet,
-		relayer: &Signer,
+		_packet: &Packet,
+		_relayer: &Signer,
 	) -> Result<(), PacketError> {
 		todo!()
 	}
@@ -179,8 +179,8 @@ impl<T: Config> Module for IbcTransferModule<T> {
 
 	fn on_timeout_packet_execute(
 		&mut self,
-		packet: &Packet,
-		relayer: &Signer,
+		_packet: &Packet,
+		_relayer: &Signer,
 	) -> (ModuleExtras, Result<(), PacketError>) {
 		todo!()
 	}
