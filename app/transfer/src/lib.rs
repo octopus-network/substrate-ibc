@@ -13,7 +13,7 @@ pub mod context_channel;
 pub mod impls;
 pub mod utils;
 
-use ibc_support::AssetIdAndNameProvider;
+use pallet_ibc_utils::AssetIdAndNameProvider;
 use sp_std::vec::Vec;
 
 pub const LOG_TARGET: &str = "runtime::pallet-ics20-transfer";
@@ -38,7 +38,7 @@ pub mod pallet {
 		applications::transfer::msgs::transfer::MsgTransfer,
 		core::ics04_channel::events::SendPacket, Signer,
 	};
-	use ibc_support::AssetIdAndNameProvider;
+	use pallet_ibc_utils::AssetIdAndNameProvider;
 	use sp_runtime::traits::IdentifyAccount;
 	use sp_std::{fmt::Debug, vec::Vec};
 

@@ -26,7 +26,7 @@ pub mod host;
 pub mod utils;
 
 pub use crate::context::Context;
-use ibc_support::module::AddModule;
+use pallet_ibc_utils::module::AddModule;
 
 pub const LOG_TARGET: &str = "runtime::pallet-ibc";
 pub const REVISION_NUMBER: u64 = 0;

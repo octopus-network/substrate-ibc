@@ -1,5 +1,5 @@
 [package]
-name = "ibc-support"
+name = "pallet-ibc-utils"
 version = "0.1.0"
 license = "Apache-2.0"
 authors = ["davirain.yin@gmail.com"]

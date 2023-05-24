@@ -42,7 +42,7 @@ use ibc::{
 	},
 	Height, Signer,
 };
-use ibc_support::module::{AddModule, Router};
+use pallet_ibc_utils::module::{AddModule, Router};
 
 #[derive(Clone, Debug)]
 pub struct Context<T: Config> {

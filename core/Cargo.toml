@@ -3,7 +3,6 @@ name = 'pallet-ibc'
 version = "4.0.0-dev"
 authors = ["davirain.yin@gmail.com"]
 edition = '2021'
-homepage = "https://oct.network"
 license = "Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/DaviRain-Su/substrate-ibc.git"
@@ -20,7 +19,7 @@ frame-benchmarking = { version = "4.0.0-dev", default-features = false, optional
 frame-support = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 frame-system = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 pallet-timestamp = { version = "4.0.0-dev", default-features = false,  git = "https://github.com/paritytech/substrate.git", branch = "master" }
-ibc-support = { version = "0.1.0", default-features = false, path = "../support" }
+pallet-ibc-utils = { version = "0.1.0", default-features = false, path = "../utils" }
 scale-info = { version = "2.1.2", default-features = false, features = ["derive"] }
 sp-core = { version = "7.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 sp-io = { version = "7.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
@@ -59,7 +58,7 @@ std = [
   "frame-benchmarking?/std",
   "frame-support/std",
   "frame-system/std",
-  "ibc-support/std",
+  "pallet-ibc-utils/std",
   "scale-info/std",
   "sp-core/std",
   "sp-io/std",

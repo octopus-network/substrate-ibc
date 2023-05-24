@@ -18,7 +18,7 @@ frame-benchmarking = { version = "4.0.0-dev", default-features = false, optional
 frame-support = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 frame-system = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 hex = { version = "0.4.0", default-features = false }
-ibc-support = { version = "0.1.0", default-features = false, path = "../../support" }
+pallet-ibc-utils = { version = "0.1.0", default-features = false, path = "../../utils" }
 log = { version = "0.4", default-features = false }
 scale-info = { version = "2.1.1", default-features = false, features = ["derive"] }
 sp-io = { version = "7.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
@@ -60,7 +60,7 @@ std = [
   "frame-support/std",
   "frame-system/std",
   "hex/std",
-  "ibc-support/std",
+  "pallet-ibc-utils/std",
   "log/std",
   "scale-info/std",
   "sp-io/std",
