@@ -23,6 +23,7 @@ use sp_runtime::{
 	MultiSignature,
 };
 use sp_std::str::FromStr;
+use alloc::format;
 
 impl<T: Config> BankKeeper for IbcTransferModule<T> {
 	type AccountId = <Self as TokenTransferContext>::AccountId;
