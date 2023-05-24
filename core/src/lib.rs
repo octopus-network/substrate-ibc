@@ -30,9 +30,6 @@ use ibc_support::module::AddModule;
 pub const LOG_TARGET: &str = "runtime::pallet-ibc";
 pub const REVISION_NUMBER: u64 = 0;
 
-#[cfg(any(test))]
-mod mock;
-
 #[frame_support::pallet]
 pub mod pallet {
 	use super::{errors, *};

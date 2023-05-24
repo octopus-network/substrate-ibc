@@ -14,8 +14,6 @@ pub mod denom;
 pub mod impls;
 pub mod utils;
 
-#[cfg(test)]
-mod mock;
 
 use ibc_support::AssetIdAndNameProvider;
 use sp_std::vec::Vec;
