@@ -1,4 +1,5 @@
 use alloc::string::String;
+
 use ibc::{
 	applications::transfer::{error::TokenTransferError, VERSION},
 	core::ics24_host::identifier::{ChannelId as IbcChannelId, PortId},
@@ -6,7 +7,6 @@ use ibc::{
 };
 use scale_info::prelude::format;
 use sha2::{Digest, Sha256};
-
 /// In ICS20 fungible token transfer, get the escrow address by channel ID and port ID
 ///
 /// Parameters:

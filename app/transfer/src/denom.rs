@@ -1,6 +1,6 @@
+use alloc::vec::Vec;
 use codec::{Decode, Encode};
 use ibc::applications::transfer::denom::PrefixedDenom as IbcPrefixedDenom;
-
 /// A type that contains the base denomination for ICS20 and the source tracing information path.
 #[derive(Clone, Debug, Decode, Encode, scale_info::TypeInfo)]
 pub struct PrefixedDenom {
