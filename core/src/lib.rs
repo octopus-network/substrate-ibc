@@ -20,16 +20,17 @@ pub use alloc::{
 use frame_system::ensure_signed;
 use sp_core::offchain::StorageKind;
 use sp_std::{fmt::Debug, vec, vec::Vec};
+
 pub mod context;
 pub mod errors;
-pub mod host;
-pub mod utils;
 
 pub use crate::context::Context;
 use pallet_ibc_utils::module::AddModule;
 
+pub const TENDERMINT_CLIENT_TYPE: &'static str = "07-tendermint";
+pub const MOCK_CLIENT_TYPE: &'static str = "9999-mock";
+
 pub const LOG_TARGET: &str = "runtime::pallet-ibc";
-pub const REVISION_NUMBER: u64 = 0;
 
 #[frame_support::pallet]
 pub mod pallet {

@@ -1,4 +1,4 @@
-use crate::{host::TENDERMINT_CLIENT_TYPE, Config, PacketCommitment as PacketCommitStore, *};
+use crate::{Config, PacketCommitment as PacketCommitStore, TENDERMINT_CLIENT_TYPE, *};
 use alloc::{borrow::ToOwned, string::String, sync::Arc};
 use core::time::Duration;
 use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
@@ -294,7 +294,7 @@ where
 	/// Returns the current height of the local chain.
 	fn host_height(&self) -> Result<Height, ContextError> {
 		let block_height = <frame_system::Pallet<T>>::block_number();
-		Height::new(0, block_height.into()).map_err(|e| {
+		Height::new(T::ChainVersion::get(), block_height.into()).map_err(|e| {
 			ClientError::Other { description: format!("contruct Ibc Height error: {}", e) }.into()
 		})
 	}
