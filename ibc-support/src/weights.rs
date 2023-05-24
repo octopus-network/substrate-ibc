@@ -1,6 +1,6 @@
 use frame_support::weights::Weight;
 use ibc::core::{
-	ics04_channel::{msgs::acknowledgement::Acknowledgement, packet::Packet},
+	ics04_channel::packet::{Acknowledgement, Packet},
 	ics24_host::identifier::{ChannelId, PortId},
 };
 

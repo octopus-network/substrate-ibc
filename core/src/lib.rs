@@ -11,7 +11,7 @@
 //! The goal of this pallet is to allow the blockchains built on Substrate to gain the ability to
 //! interact with other chains in a trustees way via IBC protocol
 //!
-//! The pallet implements the chain specific logic of [ICS spec](https://github.com/cosmos/ibc/tree/ee71d0640c23ec4e05e924f52f557b5e06c1d82f),  
+//! The pallet implements the chain specific logic of [ICS spec](https://github.com/cosmos/ibc/tree/ee71d0640c23ec4e05e924f52f557b5e06c1d82f),
 //! and is integrated with [ibc-rs](https://github.com/informalsystems/ibc-rs),
 //! which implements the generic cross-chain logic in [ICS spec](https://github.com/cosmos/ibc/tree/ee71d0640c23ec4e05e924f52f557b5e06c1d82f).
 extern crate alloc;
@@ -53,22 +53,21 @@ pub mod pallet {
 	use super::{errors, *};
 	use frame_support::{pallet_prelude::*, traits::UnixTime};
 	use frame_system::pallet_prelude::*;
-	use ibc::{
-		core::{
-			ics02_client::{client_type::ClientType, height::Height},
-			ics03_connection::connection::ConnectionEnd,
-			ics04_channel::{
-				channel::ChannelEnd,
-				commitment::{
-					AcknowledgementCommitment as IbcAcknowledgementCommitment,
-					PacketCommitment as IbcPacketCommitment,
-				},
-				packet::{Receipt, Sequence},
-			},
-			ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
-			ics26_routing::{error::RouterError, msgs::MsgEnvelope},
-		},
+	use ibc::core::RouterError;
+	use ibc::core::{
 		events::IbcEvent,
+		MsgEnvelope,
+		ics02_client::{client_type::ClientType, height::Height},
+		ics03_connection::connection::ConnectionEnd,
+		ics04_channel::{
+			channel::ChannelEnd,
+			commitment::{
+				AcknowledgementCommitment as IbcAcknowledgementCommitment,
+				PacketCommitment as IbcPacketCommitment,
+			},
+			packet::{Receipt, Sequence},
+		},
+		ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
 	};
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
@@ -341,7 +340,7 @@ pub mod pallet {
 
 			let errors = messages.into_iter().fold(vec![], |mut errors: Vec<RouterError>, msg| {
 				let envelope: MsgEnvelope = msg.try_into().unwrap();
-				match ibc::core::handler::dispatch(&mut ctx, envelope) {
+				match ibc::core::dispatch(&mut ctx, envelope) {
 					Ok(()) => {},
 					Err(e) => errors.push(e),
 				}

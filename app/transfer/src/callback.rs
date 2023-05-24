@@ -5,15 +5,13 @@ use ibc::{
 		ics04_channel::{
 			channel::{Counterparty, Order},
 			error::{ChannelError, PacketError},
-			handler::ModuleExtras,
-			msgs::acknowledgement::Acknowledgement,
-			packet::Packet,
+			packet::{Acknowledgement, Packet},
 			Version,
 		},
 		ics24_host::identifier::{ChannelId, ConnectionId, PortId},
-		ics26_routing::context::Module,
+		router::{Module, ModuleExtras},
 	},
-	signer::Signer,
+	Signer,
 };
 use sp_std::marker::PhantomData;
 

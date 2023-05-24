@@ -42,7 +42,7 @@ pub mod pallet {
 	use frame_system::pallet_prelude::*;
 	use ibc::{
 		applications::transfer::msgs::transfer::MsgTransfer,
-		core::ics04_channel::events::SendPacket, signer::Signer,
+		core::ics04_channel::events::SendPacket, Signer,
 	};
 	use ibc_support::AssetIdAndNameProvider;
 	use sp_runtime::traits::IdentifyAccount;
@@ -185,10 +185,8 @@ pub mod pallet {
 			for message in messages {
 				let msg_transfer = MsgTransfer::try_from(message)
 					.map_err(|_| Error::<T>::ParserMsgTransferError)?;
-				let result = ibc::applications::transfer::relay::send_transfer::send_transfer(
-					&mut ctx,
-					msg_transfer,
-				);
+				let result = ibc::applications::transfer::
+					send_transfer(&mut ctx, msg_transfer);
 				match result {
 					Ok(_value) => {
 						log::trace!(target: LOG_TARGET, "raw_transfer Successful!");

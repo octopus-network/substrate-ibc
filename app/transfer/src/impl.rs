@@ -1,5 +1,4 @@
 use crate::{callback::IbcTransferModule, utils::get_channel_escrow_address, *};
-use alloc::string::ToString;
 use codec::{Decode, Encode};
 use frame_support::traits::{
 	fungibles::{Mutate, Transfer},
@@ -12,7 +11,7 @@ use ibc::{
 		PrefixedCoin, PORT_ID_STR,
 	},
 	core::ics24_host::identifier::{ChannelId, PortId},
-	signer::Signer,
+	Signer,
 };
 use ibc_support::AssetIdAndNameProvider;
 use log::error;
@@ -177,10 +176,7 @@ impl<T: Config> TokenTransferValidationContext for IbcTransferModule<T> {
 	type AccountId = <T as Config>::AccountIdConversion;
 
 	fn get_port(&self) -> Result<PortId, TokenTransferError> {
-		PortId::from_str(PORT_ID_STR).map_err(|e| TokenTransferError::InvalidPortId {
-			context: PORT_ID_STR.to_string(),
-			validation_error: e,
-		})
+		PortId::from_str(PORT_ID_STR).map_err(TokenTransferError::InvalidIdentifier)
 	}
 
 	// todo

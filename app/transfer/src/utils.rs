@@ -3,7 +3,7 @@ use scale_info::prelude::format;
 use ibc::{
 	applications::transfer::{error::TokenTransferError, VERSION},
 	core::ics24_host::identifier::{ChannelId as IbcChannelId, PortId},
-	signer::Signer,
+	Signer,
 };
 
 /// In ICS20 fungible token transfer, get the escrow address by channel ID and port ID
@@ -23,7 +23,7 @@ pub fn get_channel_escrow_address(
 	let hash = sp_io::hashing::sha2_256(&data).to_vec();
 	let mut hex_string = hex::encode_upper(hash);
 	hex_string.insert_str(0, "0x");
-	hex_string.parse::<Signer>().map_err(TokenTransferError::Signer)
+	Ok(Signer::from(hex_string))
 }
 
 #[test]

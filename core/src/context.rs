@@ -10,6 +10,7 @@ use ibc::{
 		consensus_state::ConsensusState as Ics07ConsensusState,
 	},
 	core::{
+		events::IbcEvent,
 		ics02_client::{
 			client_state::ClientState, consensus_state::ConsensusState, error::ClientError,
 		},
@@ -22,15 +23,15 @@ use ibc::{
 		ics23_commitment::commitment::CommitmentPrefix,
 		ics24_host::path::{
 			AckPath, ChannelEndPath, ClientConnectionPath, ClientConsensusStatePath,
-			ClientStatePath, ClientTypePath, CommitmentPath, ConnectionPath, ReceiptPath,
-			SeqAckPath, SeqRecvPath, SeqSendPath,
+			ClientStatePath, CommitmentPath, ConnectionPath, ReceiptPath, SeqAckPath, SeqRecvPath,
+			SeqSendPath,
 		},
-		ics26_routing::context::{Module, ModuleId},
+		router::{Module, ModuleId},
+		timestamp::Timestamp,
 		ContextError, ExecutionContext, ValidationContext,
 	},
-	events::IbcEvent,
 	mock::consensus_state::MockConsensusState,
-	timestamp::Timestamp,
+	Signer,
 };
 use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
 use sp_std::{boxed::Box, marker::PhantomData};
@@ -81,7 +82,10 @@ impl<T: Config> Default for Context<T> {
 impl<T: Config> ValidationContext for Context<T> {
 	fn client_state(&self, client_id: &ClientId) -> Result<Box<dyn ClientState>, ContextError> {
 		let data = Pallet::<T>::client_state(&client_id).ok_or::<ContextError>(
-			ClientError::ClientNotFound { client_id: client_id.clone() }.into(),
+			ClientError::Other {
+				description: format!("client not found: ClientId({})", client_id),
+			}
+			.into(),
 		)?;
 		match <Pallet<T>>::client_type(client_id)
 			.ok_or(ClientError::Other { description: "Cannt get Client type".to_string() })?
@@ -304,18 +308,7 @@ impl<T: Config> ValidationContext for Context<T> {
 		&self,
 		client_state_of_host_on_counterparty: Any,
 	) -> Result<(), ContextError> {
-		// let mock_client_state = MockClientState::try_from(client_state_of_host_on_counterparty)
-		// 	.map_err(|_| ConnectionError::InvalidClientState {
-		// 		reason: "client must be a mock client".to_string(),
-		// 	})?;
-
-		// if mock_client_state.is_frozen() {
-		// 	return Err(ConnectionError::InvalidClientState {
-		// 		reason: "client is frozen".to_string(),
-		// 	})
-		// }
-
-		// CommitmentPrefix::try_from(b"mock".to_vec()).unwrap()
+		// todo(davirian) need Add
 		Ok(())
 	}
 
@@ -449,30 +442,27 @@ impl<T: Config> ValidationContext for Context<T> {
 	fn max_expected_time_per_block(&self) -> Duration {
 		Duration::from_secs(T::ExpectedBlockTime::get())
 	}
+
+	/// Validates the `signer` field of IBC messages, which represents the address
+	/// of the user/relayer that signed the given message.
+	fn validate_message_signer(&self, signer: &Signer) -> Result<(), ContextError> {
+		// todo(davirian) need Add
+		Ok(())
+	}
 }
 
 impl<T: Config> ExecutionContext for Context<T> {
-	fn store_client_type(
-		&mut self,
-		client_type_path: ClientTypePath,
-		client_type: ClientType,
-	) -> Result<(), ContextError> {
-		let client_id = client_type_path.0;
-
-		<Clients<T>>::insert(client_id, client_type);
-
-		Ok(())
-	}
-
 	fn store_client_state(
 		&mut self,
 		client_state_path: ClientStatePath,
 		client_state: Box<dyn ClientState>,
 	) -> Result<(), ContextError> {
+		let client_id = client_state_path.0.clone();
+
+		<Clients<T>>::insert(client_id, client_state.client_type());
+
 		let client_id = client_state_path.0;
-		let data = client_state.encode_vec().map_err(|e| ClientError::Other {
-			description: format!("Encode ClientState Failed: {:?}", e),
-		})?;
+		let data = client_state.encode_vec();
 
 		<ClientStates<T>>::insert(client_id, data);
 		Ok(())
@@ -487,9 +477,7 @@ impl<T: Config> ExecutionContext for Context<T> {
 		let height = Height::new(consensus_state_path.epoch, consensus_state_path.height)
 			.map_err(|e| ClientError::Other { description: format!("{}", e) })?;
 
-		let consensus_state = consensus_state.encode_vec().map_err(|e| ClientError::Other {
-			description: format!("Encode ConsensusStates failed: {:?}", e),
-		})?;
+		let consensus_state = consensus_state.encode_vec();
 
 		<ConsensusStates<T>>::insert(client_id, height, consensus_state);
 

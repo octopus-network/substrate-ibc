@@ -11,9 +11,9 @@ pub mod test_util {
 				timeout::TimeoutHeight,
 			},
 			ics24_host::identifier::{ChannelId, PortId},
+			timestamp::Timestamp,
 		},
-		signer::Signer,
-		timestamp::Timestamp,
+		Signer,
 	};
 	use primitive_types::U256;
 

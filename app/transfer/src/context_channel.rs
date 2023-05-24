@@ -11,10 +11,10 @@ use ibc::{
 			packet::{Receipt, Sequence},
 		},
 		ics24_host::identifier::{ClientId, ConnectionId, PortId},
+		timestamp::Timestamp,
 		ExecutionContext, ValidationContext,
 	},
-	timestamp::Timestamp,
-	Height,
+	Height, Signer,
 };
 use sp_std::{boxed::Box, time::Duration};
 
@@ -172,21 +172,15 @@ impl<T: Config> ValidationContext for IbcTransferModule<T> {
 	fn max_expected_time_per_block(&self) -> Duration {
 		ValidationContext::max_expected_time_per_block(&self.ibc_core_context)
 	}
+
+	/// Validates the `signer` field of IBC messages, which represents the address
+	/// of the user/relayer that signed the given message.
+	fn validate_message_signer(&self, signer: &Signer) -> Result<(), ibc::core::ContextError> {
+		ValidationContext::validate_message_signer(&self.ibc_core_context, signer)
+	}
 }
 
 impl<T: Config> ExecutionContext for IbcTransferModule<T> {
-	fn store_client_type(
-		&mut self,
-		client_type_path: ibc::core::ics24_host::path::ClientTypePath,
-		client_type: ibc::core::ics02_client::client_type::ClientType,
-	) -> Result<(), ibc::core::ContextError> {
-		ExecutionContext::store_client_type(
-			&mut self.ibc_core_context,
-			client_type_path,
-			client_type,
-		)
-	}
-
 	fn store_client_state(
 		&mut self,
 		client_state_path: ibc::core::ics24_host::path::ClientStatePath,
@@ -353,7 +347,7 @@ impl<T: Config> ExecutionContext for IbcTransferModule<T> {
 		ExecutionContext::increase_channel_counter(&mut self.ibc_core_context)
 	}
 
-	fn emit_ibc_event(&mut self, event: ibc::events::IbcEvent) {
+	fn emit_ibc_event(&mut self, event: ibc::core::events::IbcEvent) {
 		ExecutionContext::emit_ibc_event(&mut self.ibc_core_context, event)
 	}
 
@@ -362,29 +356,26 @@ impl<T: Config> ExecutionContext for IbcTransferModule<T> {
 	}
 }
 
-impl<T: Config> ibc::core::context::Router for IbcTransferModule<T> {
+impl<T: Config> ibc::core::router::Router for IbcTransferModule<T> {
 	fn get_route(
 		&self,
-		module_id: &ibc::core::ics26_routing::context::ModuleId,
-	) -> Option<&dyn ibc::core::ics26_routing::context::Module> {
-		ibc::core::context::Router::get_route(&self.ibc_core_context, module_id)
+		module_id: &ibc::core::router::ModuleId,
+	) -> Option<&dyn ibc::core::router::Module> {
+		ibc::core::router::Router::get_route(&self.ibc_core_context, module_id)
 	}
 
 	fn get_route_mut(
 		&mut self,
-		module_id: &ibc::core::ics26_routing::context::ModuleId,
-	) -> Option<&mut dyn ibc::core::ics26_routing::context::Module> {
-		ibc::core::context::Router::get_route_mut(&mut self.ibc_core_context, module_id)
+		module_id: &ibc::core::router::ModuleId,
+	) -> Option<&mut dyn ibc::core::router::Module> {
+		ibc::core::router::Router::get_route_mut(&mut self.ibc_core_context, module_id)
 	}
 
-	fn has_route(&self, module_id: &ibc::core::ics26_routing::context::ModuleId) -> bool {
-		ibc::core::context::Router::has_route(&self.ibc_core_context, module_id)
+	fn has_route(&self, module_id: &ibc::core::router::ModuleId) -> bool {
+		ibc::core::router::Router::has_route(&self.ibc_core_context, module_id)
 	}
 
-	fn lookup_module_by_port(
-		&self,
-		port_id: &PortId,
-	) -> Option<ibc::core::ics26_routing::context::ModuleId> {
-		ibc::core::context::Router::lookup_module_by_port(&self.ibc_core_context, port_id)
+	fn lookup_module_by_port(&self, port_id: &PortId) -> Option<ibc::core::router::ModuleId> {
+		ibc::core::router::Router::lookup_module_by_port(&self.ibc_core_context, port_id)
 	}
 }
