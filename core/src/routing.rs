@@ -25,7 +25,11 @@ impl RouterBuilder for SubstrateRouterBuilder {
 	}
 }
 
-impl<T: Config> RouterContext for Context<T> {
+impl<T: Config> RouterContext for Context<T>
+where
+	u64: From<<T as pallet_timestamp::Config>::Moment>
+		+ From<<T as frame_system::Config>::BlockNumber>,
+{
 	type Router = Router;
 
 	fn router(&self) -> &Self::Router {

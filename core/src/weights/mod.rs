@@ -57,7 +57,11 @@ pub trait WeightInfo<T> {
 	fn timeout_on_close_packet(msg_timout_onclose_packet: MsgTimeoutOnClose) -> Weight;
 }
 
-impl<T: Config> WeightInfo<T> for () {
+impl<T: Config> WeightInfo<T> for ()
+where
+	u64: From<<T as pallet_timestamp::Config>::Moment>
+		+ From<<T as frame_system::Config>::BlockNumber>,
+{
 	fn create_client(msg_create_client: MsgCreateClient) -> Weight {
 		let context = Context::<T>::new();
 		if let Ok(decode_client_state) =

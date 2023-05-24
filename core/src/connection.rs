@@ -1,6 +1,5 @@
 use crate::{
 	context::Context, Config, ConnectionClient, ConnectionCounter, Connections, OldHeight,
-	REVISION_NUMBER,
 };
 pub use alloc::{
 	format,
@@ -25,8 +24,14 @@ use ibc::{
 	Height,
 };
 use ibc_proto::google::protobuf::Any;
+use sp_core::Get;
 use sp_std::boxed::Box;
-impl<T: Config> ConnectionReader for Context<T> {
+
+impl<T: Config> ConnectionReader for Context<T>
+where
+	u64: From<<T as pallet_timestamp::Config>::Moment>
+		+ From<<T as frame_system::Config>::BlockNumber>,
+{
 	fn connection_end(&self, conn_id: &ConnectionId) -> Result<ConnectionEnd, ConnectionError> {
 		<Connections<T>>::get(ConnectionsPath(conn_id.clone()))
 			.ok_or(ConnectionError::ConnectionMismatch { connection_id: conn_id.clone() })
@@ -44,15 +49,14 @@ impl<T: Config> ConnectionReader for Context<T> {
 	}
 
 	fn host_current_height(&self) -> Result<Height, ConnectionError> {
-		let block_number = format!("{:?}", <frame_system::Pallet<T>>::block_number());
-		let current_height: u64 = block_number.parse().unwrap_or_default();
-		<OldHeight<T>>::put(current_height);
-		Height::new(REVISION_NUMBER, current_height).map_err(ConnectionError::Client)
+		let current_height = <frame_system::Pallet<T>>::block_number();
+		<OldHeight<T>>::put(u64::from(current_height));
+		Height::new(T::ChainVersion::get(), current_height.into()).map_err(ConnectionError::Client)
 	}
 
 	fn host_oldest_height(&self) -> Result<Height, ConnectionError> {
 		let height = <OldHeight<T>>::get();
-		Height::new(REVISION_NUMBER, height).map_err(ConnectionError::Client)
+		Height::new(T::ChainVersion::get(), height).map_err(ConnectionError::Client)
 	}
 
 	fn commitment_prefix(&self) -> CommitmentPrefix {
