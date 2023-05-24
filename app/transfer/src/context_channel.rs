@@ -18,7 +18,11 @@ use ibc::{
 };
 use sp_std::{boxed::Box, time::Duration};
 
-impl<T: Config> ValidationContext for IbcTransferModule<T> {
+impl<T: Config> ValidationContext for IbcTransferModule<T>
+where
+	u64: From<<T as pallet_timestamp::Config>::Moment>
+		+ From<<T as frame_system::Config>::BlockNumber>,
+{
 	fn client_state(
 		&self,
 		client_id: &ClientId,
@@ -180,7 +184,11 @@ impl<T: Config> ValidationContext for IbcTransferModule<T> {
 	}
 }
 
-impl<T: Config> ExecutionContext for IbcTransferModule<T> {
+impl<T: Config> ExecutionContext for IbcTransferModule<T>
+where
+	u64: From<<T as pallet_timestamp::Config>::Moment>
+		+ From<<T as frame_system::Config>::BlockNumber>,
+{
 	fn store_client_state(
 		&mut self,
 		client_state_path: ibc::core::ics24_host::path::ClientStatePath,
@@ -356,7 +364,11 @@ impl<T: Config> ExecutionContext for IbcTransferModule<T> {
 	}
 }
 
-impl<T: Config> ibc::core::router::Router for IbcTransferModule<T> {
+impl<T: Config> ibc::core::router::Router for IbcTransferModule<T>
+where
+	u64: From<<T as pallet_timestamp::Config>::Moment>
+		+ From<<T as frame_system::Config>::BlockNumber>,
+{
 	fn get_route(
 		&self,
 		module_id: &ibc::core::router::ModuleId,

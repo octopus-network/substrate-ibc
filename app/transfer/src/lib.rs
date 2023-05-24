@@ -161,7 +161,11 @@ pub mod pallet {
 	// These functions materialize as "extrinsics", which are often compared to transactions.
 	// Dispatchable functions must be annotated with a weight and must return a DispatchResult.
 	#[pallet::call]
-	impl<T: Config> Pallet<T> {
+	impl<T: Config> Pallet<T>
+	where
+		u64: From<<T as pallet_timestamp::Config>::Moment>
+			+ From<<T as frame_system::Config>::BlockNumber>,
+	{
 		/// ICS20 fungible token transfer.
 		/// Handling transfer request as sending chain or receiving chain.
 		///

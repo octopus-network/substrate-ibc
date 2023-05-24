@@ -24,7 +24,11 @@ use sp_runtime::{
 };
 use sp_std::str::FromStr;
 
-impl<T: Config> TokenTransferExecutionContext for IbcTransferModule<T> {
+impl<T: Config> TokenTransferExecutionContext for IbcTransferModule<T>
+where
+	u64: From<<T as pallet_timestamp::Config>::Moment>
+		+ From<<T as frame_system::Config>::BlockNumber>,
+{
 	// type AccountId = <Self as TokenTransferContext>::AccountId;
 
 	fn send_coins_execute(
@@ -175,7 +179,11 @@ impl<T: Config> TokenTransferExecutionContext for IbcTransferModule<T> {
 	}
 }
 
-impl<T: Config> TokenTransferValidationContext for IbcTransferModule<T> {
+impl<T: Config> TokenTransferValidationContext for IbcTransferModule<T>
+where
+	u64: From<<T as pallet_timestamp::Config>::Moment>
+		+ From<<T as frame_system::Config>::BlockNumber>,
+{
 	type AccountId = <T as Config>::AccountIdConversion;
 
 	fn get_port(&self) -> Result<PortId, TokenTransferError> {

@@ -53,10 +53,8 @@ pub mod pallet {
 	use super::{errors, *};
 	use frame_support::{pallet_prelude::*, traits::UnixTime};
 	use frame_system::pallet_prelude::*;
-	use ibc::core::RouterError;
 	use ibc::core::{
 		events::IbcEvent,
-		MsgEnvelope,
 		ics02_client::{client_type::ClientType, height::Height},
 		ics03_connection::connection::ConnectionEnd,
 		ics04_channel::{
@@ -68,11 +66,14 @@ pub mod pallet {
 			packet::{Receipt, Sequence},
 		},
 		ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
+		MsgEnvelope, RouterError,
 	};
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
-	pub trait Config: frame_system::Config + Sync + Send + Debug {
+	pub trait Config:
+		frame_system::Config + pallet_timestamp::Config + Sync + Send + Debug
+	{
 		/// The aggregated event type of the runtime.
 		type RuntimeEvent: Parameter
 			+ Member
@@ -316,7 +317,11 @@ pub mod pallet {
 	/// These functions materialize as "extrinsic", which are often compared to transactions.
 	/// Dispatch able functions must be annotated with a weight and must return a DispatchResult.
 	#[pallet::call]
-	impl<T: Config> Pallet<T> {
+	impl<T: Config> Pallet<T>
+	where
+		u64: From<<T as pallet_timestamp::Config>::Moment>
+			+ From<<T as frame_system::Config>::BlockNumber>,
+	{
 		/// This function acts as an entry for most of the IBC request.
 		/// I.e., create clients, update clients, handshakes to create channels, ...etc
 		///

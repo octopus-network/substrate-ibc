@@ -79,7 +79,11 @@ impl<T: Config> Default for Context<T> {
 	}
 }
 
-impl<T: Config> ValidationContext for Context<T> {
+impl<T: Config> ValidationContext for Context<T>
+where
+	u64: From<<T as pallet_timestamp::Config>::Moment>
+		+ From<<T as frame_system::Config>::BlockNumber>,
+{
 	fn client_state(&self, client_id: &ClientId) -> Result<Box<dyn ClientState>, ContextError> {
 		let data = Pallet::<T>::client_state(&client_id).ok_or::<ContextError>(
 			ClientError::Other {
@@ -259,18 +263,20 @@ impl<T: Config> ValidationContext for Context<T> {
 	}
 
 	fn host_height(&self) -> Result<Height, ContextError> {
-		let block_number = format!("{:?}", <frame_system::Pallet<T>>::block_number());
-		let current_height: u64 = block_number.parse().unwrap_or_default();
-		Height::new(REVISION_NUMBER, current_height)
-			.map_err(|e| ClientError::Other { description: format!("{}", e) }.into())
+		let block_height = <frame_system::Pallet<T>>::block_number();
+		Height::new(REVISION_NUMBER, block_height.into()).map_err(|e| {
+			ClientError::Other { description: format!("contruct Ibc Height error: {}", e) }.into()
+		})
 	}
 
 	fn host_timestamp(&self) -> Result<Timestamp, ContextError> {
 		#[cfg(not(test))]
 		{
-			use frame_support::traits::UnixTime;
-			let nanoseconds = <T as Config>::TimeProvider::now().as_nanos();
-			return Ok(Timestamp::from_nanoseconds(nanoseconds as u64).unwrap())
+			let current_time = <pallet_timestamp::Pallet<T>>::get();
+			Timestamp::from_nanoseconds(current_time.into()).map_err(|e| {
+				ClientError::Other { description: format!("get host time stamp error: {}", e) }
+					.into()
+			})
 		}
 		#[cfg(test)]
 		{
@@ -451,7 +457,11 @@ impl<T: Config> ValidationContext for Context<T> {
 	}
 }
 
-impl<T: Config> ExecutionContext for Context<T> {
+impl<T: Config> ExecutionContext for Context<T>
+where
+	u64: From<<T as pallet_timestamp::Config>::Moment>
+		+ From<<T as frame_system::Config>::BlockNumber>,
+{
 	fn store_client_state(
 		&mut self,
 		client_state_path: ClientStatePath,
