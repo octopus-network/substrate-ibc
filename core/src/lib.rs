@@ -18,6 +18,7 @@ pub use alloc::{
 	string::{String, ToString},
 };
 use frame_system::ensure_signed;
+use sp_core::offchain::StorageKind;
 use sp_std::{fmt::Debug, vec, vec::Vec};
 pub mod context;
 pub mod errors;
@@ -55,6 +56,7 @@ pub mod pallet {
 				SeqRecvPath, SeqSendPath,
 			},
 		},
+		MsgEnvelope, RouterError,
 	};
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
@@ -76,12 +78,13 @@ pub mod pallet {
 
 		type ExpectedBlockTime: Get<u64>;
 
-		type ChainVersion: Get<u64>;
-
 		type IbcModule: AddModule;
+
+		type ChainVersion: Get<u64>;
 	}
 
 	#[pallet::pallet]
+	#[pallet::generate_store(pub(super) trait Store)]
 	#[pallet::without_storage_info]
 	pub struct Pallet<T>(_);
 
@@ -91,6 +94,7 @@ pub mod pallet {
 	pub type ClientStates<T: Config> = StorageMap<_, Blake2_128Concat, ClientStatePath, Vec<u8>>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn client_update_time)]
 	/// key1: client_id
 	/// key2: height
 	/// value: timestamp
@@ -98,6 +102,7 @@ pub mod pallet {
 		StorageDoubleMap<_, Blake2_128Concat, ClientId, Blake2_128Concat, Height, u64>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn client_update_height)]
 	/// key1: client_id
 	/// key2: height
 	/// value: host_height
@@ -122,6 +127,7 @@ pub mod pallet {
 	pub type Channels<T: Config> = StorageMap<_, Blake2_128Concat, ChannelEndPath, ChannelEnd>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn connection_channels)]
 	/// key: connection_id
 	/// value: Vec<(port_id, channel_id)>
 	pub type ChannelsConnection<T: Config> =
@@ -154,18 +160,22 @@ pub mod pallet {
 	pub type ClientTypeById<T: Config> = StorageMap<_, Blake2_128Concat, ClientId, ClientType>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn client_cnt)]
 	/// client counter
 	pub type ClientCounter<T: Config> = StorageValue<_, u64, ValueQuery>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn connection_cnt)]
 	/// connection counter
 	pub type ConnectionCounter<T: Config> = StorageValue<_, u64, ValueQuery>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn channel_cnt)]
 	/// channel counter
 	pub type ChannelCounter<T: Config> = StorageValue<_, u64, ValueQuery>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn connection_client)]
 	/// key: ClientId
 	/// value: ConnectionId
 	pub type ConnectionClient<T: Config> =
@@ -183,13 +193,14 @@ pub mod pallet {
 		StorageMap<_, Blake2_128Concat, CommitmentPath, IbcPacketCommitment>;
 
 	#[pallet::storage]
-	/// key: height
-	/// value: Ibc event height
-	pub type IbcEventStore<T: Config> = StorageMap<_, Blake2_128Concat, u64, IbcEvent>;
-
-	#[pallet::storage]
 	/// Previous host block height
 	pub type OldHeight<T: Config> = StorageValue<_, u64, ValueQuery>;
+
+	#[pallet::storage]
+	pub type IbcEventKey<T: Config> = StorageValue<_, Vec<Vec<u8>>, ValueQuery>;
+
+	#[pallet::storage]
+	pub type IbcLogKey<T: Config> = StorageValue<_, Vec<Vec<u8>>, ValueQuery>;
 
 	/// Substrate IBC event list
 	#[pallet::event]
@@ -228,11 +239,39 @@ pub mod pallet {
 		Other,
 	}
 
+	#[pallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T>
+	where
+		T: Send + Sync,
+	{
+		fn offchain_worker(_n: BlockNumberFor<T>) {
+			// clear ibc event offchain key
+			for key in IbcEventKey::<T>::get() {
+				sp_io::offchain_index::clear(&key);
+			}
+
+			// clear Ibc event key
+			IbcEventKey::<T>::set(vec![]);
+
+			// clean ibc log offchain key
+			for key in IbcLogKey::<T>::get() {
+				sp_io::offchain_index::clear(&key);
+			}
+
+			// clean ibc log key
+			IbcLogKey::<T>::set(vec![]);
+		}
+	}
+
 	/// Dispatchable functions allows users to interact with the pallet and invoke state changes.
 	/// These functions materialize as "extrinsic", which are often compared to transactions.
 	/// Dispatch able functions must be annotated with a weight and must return a DispatchResult.
 	#[pallet::call]
-	impl<T: Config> Pallet<T> {
+	impl<T: Config> Pallet<T>
+	where
+		u64: From<<T as pallet_timestamp::Config>::Moment>
+			+ From<<T as frame_system::Config>::BlockNumber>,
+	{
 		/// This function acts as an entry for most of the IBC request.
 		/// I.e., create clients, update clients, handshakes to create channels, ...etc
 		///
@@ -247,44 +286,47 @@ pub mod pallet {
 		/// The relevant events are emitted when successful.
 		#[pallet::call_index(0)]
 		#[pallet::weight(0)]
-		pub fn deliver(
+		pub fn dispatch(
 			origin: OriginFor<T>,
-			_messages: Vec<ibc_proto::google::protobuf::Any>,
+			messages: Vec<ibc_proto::google::protobuf::Any>,
 		) -> DispatchResultWithPostInfo {
 			ensure_signed(origin)?;
-			// let mut ctx = Context::<T>::new();
-			// log::info!(
-			// 	"☀️ ibc messages type: {:?}",
-			// 	messages.iter().map(|v| &v.type_url).collect::<Vec<_>>()
-			// );
+			let mut ctx = Context::<T>::new();
 
-			// let (events, logs, errors) = messages.into_iter().fold(
-			// 	(vec![], vec![], vec![]),
-			// 	|(mut events, mut logs, mut errors), msg| {
-			// 		match ibc::core::dispatch(&mut ctx, msg) {
-			// 			Ok(MsgReceipt { events: temp_events, log: temp_logs }) => {
-			// 				events.extend(temp_events);
-			// 				logs.extend(temp_logs);
-			// 			},
-			// 			Err(e) => errors.push(e),
-			// 		}
-			// 		(events, logs, errors)
-			// 	},
-			// );
-			// log::info!("🙅🙅 deliver ----> events: {:?}", events);
-			// log::info!("🙅🙅 🔥 🔥deliver ----> logs: {:?}", logs);
-			// log::info!("🙅🙅 ❌❌ deliver ----> errors: {:?}", errors);
+			let errors = messages.into_iter().fold(vec![], |mut errors: Vec<RouterError>, msg| {
+				let envelope: MsgEnvelope = msg.try_into().unwrap();
+				match ibc::core::dispatch(&mut ctx, envelope) {
+					Ok(()) => {},
+					Err(e) => errors.push(e),
+				}
+				errors
+			});
 
-			// log::trace!(target: "pallet_ibc", "[pallet_ibc_deliver]: logs: {:?}", logs);
+			// emit ibc event
+			for key in IbcEventKey::<T>::get() {
+				if let Some(value) =
+					sp_io::offchain::local_storage_get(StorageKind::PERSISTENT, &key)
+				{
+					let ibc_event = IbcEvent::decode(&mut &value[..]).unwrap();
+					Self::deposit_event(Event::IbcEvents { events: vec![ibc_event] });
+				}
+			}
+
+			// emit ibc log
+			for key in IbcLogKey::<T>::get() {
+				if let Some(value) =
+					sp_io::offchain::local_storage_get(StorageKind::PERSISTENT, &key)
+				{
+					let logs = String::decode(&mut &value[..]).unwrap();
+					// Self::deposit_event(Event::IbcEvents { events: vec![ibc_event] });
+					log::trace!(target: "pallet_ibc", "[pallet_ibc_deliver]: logs: {:?}", logs);
+				}
+			}
 			// log::trace!(target: "pallet_ibc", "[pallet_ibc_deliver]: errors: {:?}", errors);
 
-			// for event in events.clone() {
-			// 	<IbcEventStore<T>>::insert(crate::utils::host_height::<T>(), event);
-			// }
-			// Self::deposit_event(Event::IbcEvents { events });
-			// if !errors.is_empty() {
-			// 	Self::deposit_event(errors.into());
-			// }
+			if !errors.is_empty() {
+				Self::deposit_event(errors.into());
+			}
 
 			Ok(().into())
 		}

@@ -3,7 +3,7 @@ use alloc::{borrow::ToOwned, string::String, sync::Arc};
 use codec::Decode;
 use core::time::Duration;
 use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
-use sp_core::Get;
+use sp_core::{Encode, Get};
 use sp_std::marker::PhantomData;
 
 use ibc::{
@@ -687,14 +687,37 @@ where
 	}
 
 	/// Emit the given IBC event
-	fn emit_ibc_event(&mut self, _event: IbcEvent) {
-		// todo(davirian) need Add Used By OCW
-		todo!()
+	fn emit_ibc_event(&mut self, event: IbcEvent) {
+		let mut key = b"pallet-ibc:ibc-event".to_vec();
+		let mut value = sp_io::hashing::sha2_256(&event.encode()).to_vec();
+		let _ = key.append(&mut value);
+
+		// store ibc event
+		sp_io::offchain_index::set(&key, event.encode().as_slice());
+
+		// store ibc event key
+		let _ = IbcEventKey::<T>::try_mutate::<_, (), _>(|val| {
+			val.push(key);
+			Ok(())
+		});
+
+		log::trace!("emit ibc event: {:?}", event);
 	}
 
 	/// Log the given message.
-	fn log_message(&mut self, _message: String) {
-		// todo(davirian) need Add Used By OCW
-		todo!()
+	fn log_message(&mut self, message: String) {
+		let mut key = b"pallet-ibc:ibc-log".to_vec();
+		let mut value = sp_io::hashing::sha2_256(&message.as_ref()).to_vec();
+		let _ = key.append(&mut value);
+
+		// store ibc log
+		sp_io::offchain_index::set(&key, message.as_ref());
+
+		// store ibc log key
+		let _ = IbcLogKey::<T>::try_mutate::<_, (), _>(|val| {
+			val.push(key);
+			Ok(())
+		});
+		log::trace!("emit ibc event: {:?}", message);
 	}
 }
