@@ -4,6 +4,9 @@ use sp_std::marker::PhantomData;
 
 use core::time::Duration;
 use ibc::{
+	applications::transfer::{
+		MODULE_ID_STR as TRANSFER_MODULE_ID, PORT_ID_STR as TRANSFER_PORT_ID,
+	},
 	core::{
 		events::IbcEvent,
 		ics02_client::{
@@ -67,22 +70,37 @@ impl<T: Config> Default for Context<T> {
 impl<T: Config> ibc::core::router::Router for Context<T> {
 	/// Returns a reference to a `Module` registered against the specified `ModuleId`
 	fn get_route(&self, module_id: &ModuleId) -> Option<&dyn Module> {
-		todo!()
+		self.router.router.get(module_id).map(Arc::as_ref)
 	}
 
 	/// Returns a mutable reference to a `Module` registered against the specified `ModuleId`
 	fn get_route_mut(&mut self, module_id: &ModuleId) -> Option<&mut dyn Module> {
-		todo!()
+		// NOTE: The following:
+
+		// self.router.get_mut(module_id).and_then(Arc::get_mut)
+
+		// doesn't work due to a compiler bug. So we expand it out manually.
+
+		match self.router.router.get_mut(module_id) {
+			Some(arc_mod) => match Arc::get_mut(arc_mod) {
+				Some(m) => Some(m),
+				None => None,
+			},
+			None => None,
+		}
 	}
 
 	/// Returns true if the `Router` has a `Module` registered against the specified `ModuleId`
 	fn has_route(&self, module_id: &ModuleId) -> bool {
-		todo!()
+		self.router.router.get(module_id).is_some()
 	}
 
 	/// Return the module_id associated with a given port_id
 	fn lookup_module_by_port(&self, port_id: &PortId) -> Option<ModuleId> {
-		todo!()
+		match port_id.as_str() {
+			TRANSFER_PORT_ID => Some(ModuleId::new(TRANSFER_MODULE_ID.to_string())),
+			_ => None,
+		}
 	}
 }
 
