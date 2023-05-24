@@ -16,6 +16,15 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - name: Install Rustup
+      run: |
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+        source ~/.cargo/env
+        rustup default nightly
+        rustup update nightly
+        rustup update stable
+        rustup target add wasm32-unknown-unknown --toolchain nightly
+
     - name: Check code format
       run: cargo fmt -- --check
     - name: Lint rust sources
