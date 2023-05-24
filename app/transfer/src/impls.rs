@@ -22,6 +22,7 @@ use sp_runtime::{
 	traits::{CheckedConversion, IdentifyAccount, Verify},
 	MultiSignature,
 };
+use alloc::format;
 use sp_std::str::FromStr;
 
 impl<T: Config> BankKeeper for IbcTransferModule<T> {

@@ -1,3 +1,4 @@
+use alloc::vec::Vec;
 use codec::{Decode, Encode};
 use ibc::applications::transfer::denom::PrefixedDenom as IbcPrefixedDenom;
 
