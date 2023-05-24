@@ -1,6 +1,6 @@
 use core::time::Duration;
 
-use crate::{PacketCommitment as PalletPacketCommitment, *};
+use crate::{PacketCommitment as PacketCommitStore, *};
 use alloc::{borrow::ToOwned, string::String, sync::Arc};
 use codec::Encode;
 use frame_support::traits::Get;
@@ -71,6 +71,20 @@ impl<T: Config> Context<T> {
 			Some(_) => Err("Duplicate module_id".to_owned()),
 		}
 	}
+
+	fn client_type(&self, client_id: &ClientId) -> Result<ClientType, ContextError> {
+		let data = <ClientTypeById<T>>::get(client_id.clone()).ok_or(ClientError::Other {
+			description: format!("Client({}) not found!", client_id.clone()),
+		})?;
+		match data.as_str() {
+			TENDERMINT_CLIENT_TYPE => ClientType::new(TENDERMINT_CLIENT_TYPE.into())
+				.map_err(|e| ClientError::Other { description: format!("{}", e) }.into()),
+			unimplemented => Err(ClientError::UnknownClientStateType {
+				client_state_type: unimplemented.to_string(),
+			}
+			.into()),
+		}
+	}
 }
 
 impl<T: Config> Default for Context<T> {
@@ -85,16 +99,10 @@ where
 		+ From<<T as frame_system::Config>::BlockNumber>,
 {
 	fn client_state(&self, client_id: &ClientId) -> Result<Box<dyn ClientState>, ContextError> {
-		let data = Pallet::<T>::client_state(&client_id).ok_or::<ContextError>(
-			ClientError::Other {
-				description: format!("client not found: ClientId({})", client_id),
-			}
-			.into(),
+		let data = <ClientStates<T>>::get(ClientStatePath(client_id.clone())).ok_or(
+			ClientError::Other { description: format!("Client({}) not found!", client_id.clone()) },
 		)?;
-		match <Pallet<T>>::client_type(client_id)
-			.ok_or(ClientError::Other { description: "Cannt get Client type".to_string() })?
-			.as_str()
-		{
+		match self.client_type(&client_id)? {
 			TENDERMINT_CLIENT_TYPE => {
 				let result: Ics07ClientState =
 					Protobuf::<Any>::decode_vec(&data).map_err(|e| ClientError::Other {
@@ -137,12 +145,16 @@ where
 		let height = client_cons_state_path.height;
 		let height = Height::new(epoch, height)
 			.map_err(|e| ClientError::Other { description: format!("{}", e) })?;
-		let data = Pallet::<T>::consensus_state(client_id.clone(), height)
-			.ok_or(ClientError::ConsensusStateNotFound { client_id: client_id.clone(), height })?;
-		match <Pallet<T>>::client_type(client_id)
-			.ok_or(ClientError::Other { description: "Cannt get Client type".to_string() })?
-			.as_str()
-		{
+		let data = <ConsensusStates<T>>::get(client_cons_state_path).ok_or(
+			ClientError::ConsensusStateNotFound {
+				client_id: client_cons_state_path.client_id.clone(),
+				height: Height::new(client_cons_state_path.epoch, client_cons_state_path.height)
+					.map_err(|e| ClientError::Other {
+						description: format!("contruct height error({})", e),
+					})?,
+			},
+		)?;
+		match self.client_type(&client_id)? {
 			TENDERMINT_CLIENT_TYPE => {
 				let result: Ics07ConsensusState =
 					Protobuf::<Any>::decode_vec(&data).map_err(|e| ClientError::Other {
@@ -169,28 +181,28 @@ where
 		client_id: &ClientId,
 		height: &Height,
 	) -> Result<Option<Box<dyn ConsensusState>>, ContextError> {
-		let client_consensus_state_key =
-			<ConsensusStates<T>>::iter_keys().collect::<Vec<(ClientId, Height)>>();
-		let mut heights = client_consensus_state_key
-			.into_iter()
-			.map(|(_, height)| height)
-			.collect::<Vec<Height>>();
+		let mut heights = <ConsensusStates<T>>::iter_keys()
+			.map(|key| {
+				let height = Height::new(key.epoch, key.height);
+				height
+			})
+			.collect::<Result<Vec<Height>, ClientError>>()?;
 
 		heights.sort_by(|a, b| b.cmp(a));
 
 		// Search for previous state.
 		for h in heights {
 			if h > *height {
-				let data = <ConsensusStates<T>>::get(client_id, height).ok_or(
-					ClientError::ConsensusStateNotFound {
-						client_id: client_id.clone(),
-						height: *height,
-					},
-				)?;
-				match <Pallet<T>>::client_type(client_id)
-					.ok_or(ClientError::Other { description: "Cannt get Client type".to_string() })?
-					.as_str()
-				{
+				let data = <ConsensusStates<T>>::get(ClientConsensusStatePath {
+					client_id: client_id.clone(),
+					epoch: h.revision_number(),
+					height: h.revision_height(),
+				})
+				.ok_or(ClientError::ConsensusStateNotFound {
+					client_id: client_id.clone(),
+					height: *height,
+				})?;
+				match self.client_type(client_id)? {
 					TENDERMINT_CLIENT_TYPE => {
 						let result: Ics07ConsensusState = Protobuf::<Any>::decode_vec(&data)
 							.map_err(|e| ClientError::Other {
@@ -217,28 +229,28 @@ where
 		client_id: &ClientId,
 		height: &Height,
 	) -> Result<Option<Box<dyn ConsensusState>>, ContextError> {
-		let client_consensus_state_key =
-			<ConsensusStates<T>>::iter_keys().collect::<Vec<(ClientId, Height)>>();
-		let mut heights = client_consensus_state_key
-			.into_iter()
-			.map(|(_, height)| height)
-			.collect::<Vec<Height>>();
+		let mut heights = <ConsensusStates<T>>::iter_keys()
+			.map(|key| {
+				let height = Height::new(key.epoch, key.height);
+				height
+			})
+			.collect::<Result<Vec<Height>, ClientError>>()?;
 
 		heights.sort_by(|a, b| b.cmp(a));
 
 		// Search for previous state.
 		for h in heights {
 			if h < *height {
-				let data = <ConsensusStates<T>>::get(client_id, height).ok_or(
-					ClientError::ConsensusStateNotFound {
-						client_id: client_id.clone(),
-						height: *height,
-					},
-				)?;
-				match <Pallet<T>>::client_type(client_id)
-					.ok_or(ClientError::Other { description: "Cannt get Client type".to_string() })?
-					.as_str()
-				{
+				let data = <ConsensusStates<T>>::get(ClientConsensusStatePath {
+					client_id: client_id.clone(),
+					epoch: h.revision_number(),
+					height: h.revision_height(),
+				})
+				.ok_or(ClientError::ConsensusStateNotFound {
+					client_id: client_id.clone(),
+					height: *height,
+				})?;
+				match self.client_type(client_id)? {
 					TENDERMINT_CLIENT_TYPE => {
 						let result: Ics07ConsensusState = ibc_proto::protobuf::Protobuf::<
 							ibc_proto::google::protobuf::Any,
@@ -306,8 +318,12 @@ where
 	}
 
 	fn connection_end(&self, cid: &ConnectionId) -> Result<ConnectionEnd, ContextError> {
-		Pallet::<T>::connection_end(cid)
-			.ok_or(ConnectionError::ConnectionNotFound { connection_id: cid.clone() }.into())
+		<Connections<T>>::get(ConnectionPath(cid.clone())).ok_or(
+			ConnectionError::Other {
+				description: format!("Can't get ConnectionEnd by ConnectionId({})", cid),
+			}
+			.into(),
+		)
 	}
 
 	fn validate_self_client(
@@ -327,13 +343,10 @@ where
 	}
 
 	fn channel_end(&self, chan_end_path: &ChannelEndPath) -> Result<ChannelEnd, ContextError> {
-		let port_id = &chan_end_path.0;
-		let channel_id = &chan_end_path.1;
-
-		Pallet::<T>::channel_end(port_id, channel_id).ok_or(
+		<Channels<T>>::get(chan_end_path).ok_or(
 			ChannelError::ChannelNotFound {
-				port_id: port_id.clone(),
-				channel_id: channel_id.clone(),
+				port_id: chan_end_path.0.clone(),
+				channel_id: chan_end_path.1.clone(),
 			}
 			.into(),
 		)
@@ -343,13 +356,10 @@ where
 		&self,
 		seq_send_path: &SeqSendPath,
 	) -> Result<Sequence, ContextError> {
-		let port_id = &seq_send_path.0;
-		let channel_id = &seq_send_path.1;
-
-		Pallet::<T>::get_next_sequence_send(port_id, channel_id).ok_or(
+		<NextSequenceSend<T>>::get(seq_send_path).ok_or(
 			PacketError::MissingNextSendSeq {
-				port_id: port_id.clone(),
-				channel_id: channel_id.clone(),
+				port_id: seq_send_path.0.clone(),
+				channel_id: seq_send_path.1.clone(),
 			}
 			.into(),
 		)
@@ -359,26 +369,20 @@ where
 		&self,
 		seq_recv_path: &SeqRecvPath,
 	) -> Result<Sequence, ContextError> {
-		let port_id = &seq_recv_path.0;
-		let channel_id = &seq_recv_path.1;
-
-		Pallet::<T>::get_next_sequence_recv(port_id, channel_id).ok_or(
+		<NextSequenceRecv<T>>::get(seq_recv_path).ok_or(
 			PacketError::MissingNextRecvSeq {
-				port_id: port_id.clone(),
-				channel_id: channel_id.clone(),
+				port_id: seq_recv_path.0.clone(),
+				channel_id: seq_recv_path.1.clone(),
 			}
 			.into(),
 		)
 	}
 
 	fn get_next_sequence_ack(&self, seq_ack_path: &SeqAckPath) -> Result<Sequence, ContextError> {
-		let port_id = &seq_ack_path.0;
-		let channel_id = &seq_ack_path.1;
-
-		Pallet::<T>::get_next_sequence_ack(port_id, channel_id).ok_or(
+		<NextSequenceAck<T>>::get(seq_ack_path).ok_or(
 			PacketError::MissingNextAckSeq {
-				port_id: port_id.clone(),
-				channel_id: channel_id.clone(),
+				port_id: seq_ack_path.0.clone(),
+				channel_id: seq_ack_path.1.clone(),
 			}
 			.into(),
 		)
@@ -388,33 +392,23 @@ where
 		&self,
 		commitment_path: &CommitmentPath,
 	) -> Result<PacketCommitment, ContextError> {
-		let port_id = &commitment_path.port_id;
-		let channel_id = &commitment_path.channel_id;
-		let seq = &commitment_path.sequence;
-
-		Pallet::<T>::get_packet_commitment((port_id, channel_id, seq))
-			.ok_or(PacketError::PacketCommitmentNotFound { sequence: *seq }.into())
+		<PacketCommitStore<T>>::get(commitment_path).ok_or(
+			PacketError::PacketCommitmentNotFound { sequence: commitment_path.sequence }.into(),
+		)
 	}
 
 	fn get_packet_receipt(&self, receipt_path: &ReceiptPath) -> Result<Receipt, ContextError> {
-		let port_id = &receipt_path.port_id;
-		let channel_id = &receipt_path.channel_id;
-		let seq = &receipt_path.sequence;
-
-		Pallet::<T>::get_packet_receipt((port_id, channel_id, seq))
-			.ok_or(PacketError::PacketReceiptNotFound { sequence: *seq }.into())
+		<PacketReceipt<T>>::get(receipt_path)
+			.ok_or(PacketError::PacketReceiptNotFound { sequence: receipt_path.sequence }.into())
 	}
 
 	fn get_packet_acknowledgement(
 		&self,
 		ack_path: &AckPath,
 	) -> Result<AcknowledgementCommitment, ContextError> {
-		let port_id = &ack_path.port_id;
-		let channel_id = &ack_path.channel_id;
-		let seq = &ack_path.sequence;
-
-		Pallet::<T>::get_packet_acknowledgement((port_id, channel_id, seq))
-			.ok_or(PacketError::PacketAcknowledgementNotFound { sequence: *seq }.into())
+		<Acknowledgements<T>>::get(ack_path).ok_or(
+			PacketError::PacketAcknowledgementNotFound { sequence: ack_path.sequence }.into(),
+		)
 	}
 
 	fn client_update_time(
@@ -467,14 +461,9 @@ where
 		client_state_path: ClientStatePath,
 		client_state: Box<dyn ClientState>,
 	) -> Result<(), ContextError> {
-		let client_id = client_state_path.0.clone();
-
-		<Clients<T>>::insert(client_id, client_state.client_type());
-
-		let client_id = client_state_path.0;
+		<ClientTypeById<T>>::insert(client_state_path.0.clone(), client_state.client_type());
 		let data = client_state.encode_vec();
-
-		<ClientStates<T>>::insert(client_id, data);
+		<ClientStates<T>>::insert(client_state_path, data);
 		Ok(())
 	}
 
@@ -483,13 +472,8 @@ where
 		consensus_state_path: ClientConsensusStatePath,
 		consensus_state: Box<dyn ConsensusState>,
 	) -> Result<(), ContextError> {
-		let client_id = consensus_state_path.client_id.clone();
-		let height = Height::new(consensus_state_path.epoch, consensus_state_path.height)
-			.map_err(|e| ClientError::Other { description: format!("{}", e) })?;
-
 		let consensus_state = consensus_state.encode_vec();
-
-		<ConsensusStates<T>>::insert(client_id, height, consensus_state);
+		<ConsensusStates<T>>::insert(consensus_state_path, consensus_state);
 
 		Ok(())
 	}
@@ -528,9 +512,7 @@ where
 		connection_path: &ConnectionPath,
 		connection_end: ConnectionEnd,
 	) -> Result<(), ContextError> {
-		let connection_id = connection_path.0.clone();
-
-		<Connections<T>>::insert(connection_id, connection_end);
+		<Connections<T>>::insert(connection_path, connection_end);
 
 		Ok(())
 	}
@@ -559,11 +541,7 @@ where
 		commitment_path: &CommitmentPath,
 		commitment: PacketCommitment,
 	) -> Result<(), ContextError> {
-		let port_id = commitment_path.port_id.clone();
-		let channel_id = commitment_path.channel_id.clone();
-		let sequence = commitment_path.sequence.clone();
-
-		<PalletPacketCommitment<T>>::insert((port_id, channel_id, sequence), commitment);
+		<PacketCommitStore<T>>::insert(commitment_path, commitment);
 
 		Ok(())
 	}
@@ -572,11 +550,7 @@ where
 		&mut self,
 		commitment_path: &CommitmentPath,
 	) -> Result<(), ContextError> {
-		let port_id = commitment_path.port_id.clone();
-		let channel_id = commitment_path.channel_id.clone();
-		let sequence = commitment_path.sequence.clone();
-
-		<PalletPacketCommitment<T>>::remove((port_id, channel_id, sequence));
+		<PacketCommitStore<T>>::remove(commitment_path);
 
 		Ok(())
 	}
@@ -586,11 +560,7 @@ where
 		path: &ReceiptPath,
 		receipt: Receipt,
 	) -> Result<(), ContextError> {
-		let port_id = path.port_id.clone();
-		let channel_id = path.channel_id.clone();
-		let sequence = path.sequence.clone();
-
-		<PacketReceipt<T>>::insert((port_id, channel_id, sequence), receipt);
+		<PacketReceipt<T>>::insert(path, receipt);
 
 		Ok(())
 	}
@@ -600,21 +570,13 @@ where
 		ack_path: &AckPath,
 		ack_commitment: AcknowledgementCommitment,
 	) -> Result<(), ContextError> {
-		let port_id = ack_path.port_id.clone();
-		let channel_id = ack_path.channel_id.clone();
-		let seq = ack_path.sequence;
-
-		<Acknowledgements<T>>::insert((port_id, channel_id, seq), ack_commitment);
+		<Acknowledgements<T>>::insert(ack_path, ack_commitment);
 
 		Ok(())
 	}
 
 	fn delete_packet_acknowledgement(&mut self, ack_path: &AckPath) -> Result<(), ContextError> {
-		let port_id = ack_path.port_id.clone();
-		let channel_id = ack_path.channel_id.clone();
-		let sequence = ack_path.sequence;
-
-		<Acknowledgements<T>>::remove((port_id, channel_id, sequence));
+		<Acknowledgements<T>>::remove(ack_path);
 
 		Ok(())
 	}
@@ -624,10 +586,7 @@ where
 		channel_end_path: &ChannelEndPath,
 		channel_end: ChannelEnd,
 	) -> Result<(), ContextError> {
-		let port_id = channel_end_path.0.clone();
-		let channel_id = channel_end_path.1.clone();
-
-		<Channels<T>>::insert(port_id, channel_id, channel_end);
+		<Channels<T>>::insert(channel_end_path, channel_end);
 
 		Ok(())
 	}
@@ -637,10 +596,7 @@ where
 		seq_send_path: &SeqSendPath,
 		seq: Sequence,
 	) -> Result<(), ContextError> {
-		let port_id = seq_send_path.0.clone();
-		let channel_id = seq_send_path.1.clone();
-
-		<NextSequenceSend<T>>::insert(port_id, channel_id, seq);
+		<NextSequenceSend<T>>::insert(seq_send_path, seq);
 
 		Ok(())
 	}
@@ -650,10 +606,7 @@ where
 		seq_recv_path: &SeqRecvPath,
 		seq: Sequence,
 	) -> Result<(), ContextError> {
-		let port_id = seq_recv_path.0.clone();
-		let channel_id = seq_recv_path.1.clone();
-
-		<NextSequenceRecv<T>>::insert(port_id, channel_id, seq);
+		<NextSequenceRecv<T>>::insert(seq_recv_path, seq);
 
 		Ok(())
 	}
@@ -663,10 +616,7 @@ where
 		seq_ack_path: &SeqAckPath,
 		seq: Sequence,
 	) -> Result<(), ContextError> {
-		let port_id = seq_ack_path.0.clone();
-		let channel_id = seq_ack_path.1.clone();
-
-		<NextSequenceAck<T>>::insert(port_id, channel_id, seq);
+		<NextSequenceAck<T>>::insert(seq_ack_path, seq);
 
 		Ok(())
 	}
