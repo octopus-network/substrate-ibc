@@ -146,9 +146,9 @@ pub mod pallet {
 		StorageMap<_, Blake2_128Concat, AckPath, IbcAcknowledgementCommitment>;
 
 	#[pallet::storage]
-	/// key: ClientTypePath
+	/// key: ClientId
 	/// value: ClientType
-	pub type Clients<T: Config> = StorageMap<_, Blake2_128Concat, ClientStatePath, ClientType>;
+	pub type ClientTypeById<T: Config> = StorageMap<_, Blake2_128Concat, ClientId, ClientType>;
 
 	#[pallet::storage]
 	/// client counter

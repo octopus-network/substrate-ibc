@@ -66,17 +66,17 @@ impl<T: Config> Context<T> {
 	}
 
 	fn client_type(&self, client_id: &ClientId) -> Result<ClientType, ClientError> {
-		// let data = <Clients<T>>::get(ClientTypePath(client_id.clone()))
-		// 	.ok_or(ClientError::ClientNotFound { client_id: client_id.clone() })?;
-		// match data.as_str() {
-		// 	TENDERMINT_CLIENT_TYPE => Ok(ClientType::new(TENDERMINT_CLIENT_TYPE.into())),
-		// 	MOCK_CLIENT_TYPE => Ok(ClientType::new(MOCK_CLIENT_TYPE.into())),
-		// 	unimplemented =>
-		// 		return Err(ClientError::UnknownClientStateType {
-		// 			client_state_type: unimplemented.to_string(),
-		// 		}),
-		// }
-		todo!()
+		let data = <ClientTypeById<T>>::get(client_id.clone()).ok_or(ClientError::Other {
+			description: format!("Client({}) not found!", client_id.clone()),
+		})?;
+		match data.as_str() {
+			TENDERMINT_CLIENT_TYPE => ClientType::new(TENDERMINT_CLIENT_TYPE.into())
+				.map_err(|e| ClientError::Other { description: format!("{}", e) }),
+			unimplemented =>
+				return Err(ClientError::UnknownClientStateType {
+					client_state_type: unimplemented.to_string(),
+				}),
+		}
 	}
 }
 
