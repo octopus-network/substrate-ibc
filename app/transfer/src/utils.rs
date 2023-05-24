@@ -1,5 +1,4 @@
 use alloc::string::String;
-
 use ibc::{
 	applications::transfer::{error::TokenTransferError, VERSION},
 	core::ics24_host::identifier::{ChannelId as IbcChannelId, PortId},

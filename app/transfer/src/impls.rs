@@ -22,6 +22,7 @@ use sp_runtime::{
 	traits::{CheckedConversion, IdentifyAccount, Verify},
 	MultiSignature,
 };
+use alloc::format;
 use sp_std::str::FromStr;
 use alloc::format;
 
