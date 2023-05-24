@@ -1,7 +1,6 @@
-use crate::{Config, *};
+use crate::{host::TENDERMINT_CLIENT_TYPE, Config, *};
 use alloc::{borrow::ToOwned, string::String, sync::Arc};
 use core::time::Duration;
-// use ibc::core::ics02_client::;
 use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
 use sp_std::marker::PhantomData;
 
@@ -9,10 +8,14 @@ use ibc::{
 	applications::transfer::{
 		MODULE_ID_STR as TRANSFER_MODULE_ID, PORT_ID_STR as TRANSFER_PORT_ID,
 	},
+	clients::ics07_tendermint::{
+		client_state::ClientState as Ics07ClientState,
+		consensus_state::ConsensusState as Ics07ConsensusState,
+	},
 	core::{
 		events::IbcEvent,
 		ics02_client::{
-		  client_state::ClientState, client_type::ClientType, consensus_state::ConsensusState,
+			client_state::ClientState, client_type::ClientType, consensus_state::ConsensusState,
 			error::ClientError,
 		},
 		ics03_connection::{connection::ConnectionEnd, error::ConnectionError},
@@ -135,9 +138,10 @@ impl<T: Config> ValidationContext for Context<T> {
 
 				Ok(Box::new(result))
 			},
-			unimplemented => Err(ClientError::UnknownClientStateType {
-				client_state_type: unimplemented.to_string(),
-			}),
+			unimplemented => Err(ClientError::Other {
+				description: format!("unknow client state type:({})", unimplemented),
+			}
+			.into()),
 		}
 	}
 
