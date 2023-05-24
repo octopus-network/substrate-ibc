@@ -1,7 +1,9 @@
-use crate::{host::TENDERMINT_CLIENT_TYPE, Config, *};
+use crate::{host::TENDERMINT_CLIENT_TYPE, Config, PacketCommitment as PacketCommitStore, *};
 use alloc::{borrow::ToOwned, string::String, sync::Arc};
+use codec::Decode;
 use core::time::Duration;
 use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
+use sp_core::Get;
 use sp_std::marker::PhantomData;
 
 use ibc::{
@@ -22,6 +24,7 @@ use ibc::{
 		ics04_channel::{
 			channel::ChannelEnd,
 			commitment::{AcknowledgementCommitment, PacketCommitment},
+			error::{ChannelError, PacketError},
 			packet::{Receipt, Sequence},
 		},
 		ics23_commitment::commitment::CommitmentPrefix,
@@ -86,7 +89,11 @@ impl<T: Config> Default for Context<T> {
 	}
 }
 
-impl<T: Config> ibc::core::router::Router for Context<T> {
+impl<T: Config> ibc::core::router::Router for Context<T>
+where
+	u64: From<<T as pallet_timestamp::Config>::Moment>
+		+ From<<T as frame_system::Config>::BlockNumber>,
+{
 	/// Returns a reference to a `Module` registered against the specified `ModuleId`
 	fn get_route(&self, module_id: &ModuleId) -> Option<&dyn Module> {
 		self.router.router.get(module_id).map(Arc::as_ref)
@@ -123,7 +130,11 @@ impl<T: Config> ibc::core::router::Router for Context<T> {
 	}
 }
 
-impl<T: Config> ValidationContext for Context<T> {
+impl<T: Config> ValidationContext for Context<T>
+where
+	u64: From<<T as pallet_timestamp::Config>::Moment>
+		+ From<<T as frame_system::Config>::BlockNumber>,
+{
 	/// Returns the ClientState for the given identifier `client_id`.
 	fn client_state(&self, client_id: &ClientId) -> Result<Box<dyn ClientState>, ContextError> {
 		let data = <ClientStates<T>>::get(ClientStatePath(client_id.clone())).ok_or(
@@ -147,7 +158,12 @@ impl<T: Config> ValidationContext for Context<T> {
 
 	/// Tries to decode the given `client_state` into a concrete light client state.
 	fn decode_client_state(&self, client_state: Any) -> Result<Box<dyn ClientState>, ContextError> {
-		todo!()
+		if let Ok(client_state) = Ics07ClientState::try_from(client_state.clone()) {
+			Ok(client_state.into_box())
+		} else {
+			Err(ClientError::UnknownClientStateType { client_state_type: client_state.type_url }
+				.into())
+		}
 	}
 
 	/// Retrieve the consensus state for the given client ID at the specified
@@ -158,7 +174,28 @@ impl<T: Config> ValidationContext for Context<T> {
 		&self,
 		client_cons_state_path: &ClientConsensusStatePath,
 	) -> Result<Box<dyn ConsensusState>, ContextError> {
-		todo!()
+		let data = <ConsensusStates<T>>::get(client_cons_state_path).ok_or(
+			ClientError::ConsensusStateNotFound {
+				client_id: client_cons_state_path.client_id.clone(),
+				height: Height::new(client_cons_state_path.epoch, client_cons_state_path.height)
+					.map_err(|e| ClientError::Other {
+						description: format!("contruct height error({})", e),
+					})?,
+			},
+		)?;
+		match self.client_type(&client_cons_state_path.client_id)?.as_str() {
+			TENDERMINT_CLIENT_TYPE => {
+				let result: Ics07ConsensusState =
+					Protobuf::<Any>::decode_vec(&data).map_err(|e| ClientError::Other {
+						description: format!("Decode Ics07ConsensusState failed: {:?}", e),
+					})?;
+				Ok(Box::new(result))
+			},
+			unimplemented => Err(ClientError::Other {
+				description: format!("unknow client state type: {}", unimplemented),
+			}
+			.into()),
+		}
 	}
 
 	/// Search for the lowest consensus state higher than `height`.
@@ -167,7 +204,44 @@ impl<T: Config> ValidationContext for Context<T> {
 		client_id: &ClientId,
 		height: &Height,
 	) -> Result<Option<Box<dyn ConsensusState>>, ContextError> {
-		todo!()
+		let mut heights = <ConsensusStates<T>>::iter_keys()
+			.map(|key| {
+				let height = Height::new(key.epoch, key.height);
+				height
+			})
+			.collect::<Result<Vec<Height>, ClientError>>()?;
+
+		heights.sort_by(|a, b| b.cmp(a));
+
+		// Search for previous state.
+		for h in heights {
+			if h > *height {
+				let data = <ConsensusStates<T>>::get(ClientConsensusStatePath {
+					client_id: client_id.clone(),
+					epoch: h.revision_number(),
+					height: h.revision_height(),
+				})
+				.ok_or(ClientError::ConsensusStateNotFound {
+					client_id: client_id.clone(),
+					height: h,
+				})?;
+				match self.client_type(client_id)?.as_str() {
+					TENDERMINT_CLIENT_TYPE => {
+						let result: Ics07ConsensusState = Protobuf::<Any>::decode_vec(&data)
+							.map_err(|e| ClientError::Other {
+								description: format!("Decode Ics07ConsensusState failed: {:?}", e),
+							})?;
+						return Ok(Some(Box::new(result)))
+					},
+					unimplemented =>
+						return Err(ClientError::Other {
+							description: format!("unknow client state type: {}", unimplemented),
+						}
+						.into()),
+				}
+			}
+		}
+		Ok(None)
 	}
 
 	/// Search for the highest consensus state lower than `height`.
@@ -176,37 +250,87 @@ impl<T: Config> ValidationContext for Context<T> {
 		client_id: &ClientId,
 		height: &Height,
 	) -> Result<Option<Box<dyn ConsensusState>>, ContextError> {
-		todo!()
+		let mut heights = <ConsensusStates<T>>::iter_keys()
+			.map(|key| {
+				let height = Height::new(key.epoch, key.height);
+				height
+			})
+			.collect::<Result<Vec<Height>, ClientError>>()?;
+
+		heights.sort_by(|a, b| b.cmp(a));
+
+		// Search for previous state.
+		for h in heights {
+			if h < *height {
+				let data = <ConsensusStates<T>>::get(ClientConsensusStatePath {
+					client_id: client_id.clone(),
+					epoch: h.revision_number(),
+					height: h.revision_height(),
+				})
+				.ok_or(ClientError::ConsensusStateNotFound {
+					client_id: client_id.clone(),
+					height: h,
+				})?;
+				match self.client_type(client_id)?.as_str() {
+					TENDERMINT_CLIENT_TYPE => {
+						let result: Ics07ConsensusState = ibc_proto::protobuf::Protobuf::<
+							ibc_proto::google::protobuf::Any,
+						>::decode_vec(&data)
+						.map_err(|e| ClientError::Other {
+							description: format!("Decode Ics07ConsensusState failed: {:?}", e),
+						})?;
+						return Ok(Some(Box::new(result)))
+					},
+					unimplemented =>
+						return Err(ClientError::Other {
+							description: format!("unknow client state type: {}", unimplemented),
+						}
+						.into()),
+				}
+			}
+		}
+		Ok(None)
 	}
 
 	/// Returns the current height of the local chain.
 	fn host_height(&self) -> Result<Height, ContextError> {
-		todo!()
+		let block_height = <frame_system::Pallet<T>>::block_number();
+		Height::new(0, block_height.into()).map_err(|e| {
+			ClientError::Other { description: format!("contruct Ibc Height error: {}", e) }.into()
+		})
 	}
 
 	/// Returns the current timestamp of the local chain.
 	fn host_timestamp(&self) -> Result<Timestamp, ContextError> {
-		todo!()
+		let current_time = <pallet_timestamp::Pallet<T>>::get();
+		Timestamp::from_nanoseconds(current_time.into()).map_err(|e| {
+			ClientError::Other { description: format!("get host time stamp error: {}", e) }.into()
+		})
 	}
 
 	/// Returns the `ConsensusState` of the host (local) chain at a specific height.
 	fn host_consensus_state(
 		&self,
-		height: &Height,
+		_height: &Height,
 	) -> Result<Box<dyn ConsensusState>, ContextError> {
-		todo!()
+		Err(ClientError::Other { description: "unimplement".into() }.into())
 	}
 
 	/// Returns a natural number, counting how many clients have been created
 	/// thus far. The value of this counter should increase only via method
 	/// `ExecutionContext::increase_client_counter`.
 	fn client_counter(&self) -> Result<u64, ContextError> {
-		todo!()
+		Ok(<ClientCounter<T>>::get())
 	}
 
 	/// Returns the ConnectionEnd for the given identifier `conn_id`.
 	fn connection_end(&self, conn_id: &ConnectionId) -> Result<ConnectionEnd, ContextError> {
-		todo!()
+		<Connections<T>>::get(ConnectionPath(conn_id.clone())).ok_or(
+			ConnectionError::Other {
+				description: format!("Can't get ConnectionEnd by ConnectionId({})", conn_id),
+			}
+			.into(),
+		)
 	}
 
 	/// Validates the `ClientState` of the client (a client referring to host) stored on the
@@ -220,24 +344,31 @@ impl<T: Config> ValidationContext for Context<T> {
 	/// in the [hosts](crate::hosts) module.
 	fn validate_self_client(
 		&self,
-		client_state_of_host_on_counterparty: Any,
+		_client_state_of_host_on_counterparty: Any,
 	) -> Result<(), ContextError> {
-		todo!()
+		// todo(davirain) need Add
+		Ok(())
 	}
 
 	/// Returns the prefix that the local chain uses in the KV store.
 	fn commitment_prefix(&self) -> CommitmentPrefix {
-		todo!()
+		CommitmentPrefix::try_from(T::IBC_COMMITMENT_PREFIX.to_vec()).unwrap_or_default()
 	}
 
 	/// Returns a counter on how many connections have been created thus far.
 	fn connection_counter(&self) -> Result<u64, ContextError> {
-		todo!()
+		Ok(<ConnectionCounter<T>>::get())
 	}
 
 	/// Returns the `ChannelEnd` for the given `port_id` and `chan_id`.
 	fn channel_end(&self, channel_end_path: &ChannelEndPath) -> Result<ChannelEnd, ContextError> {
-		todo!()
+		<Channels<T>>::get(channel_end_path).ok_or(
+			ChannelError::ChannelNotFound {
+				port_id: channel_end_path.0.clone(),
+				channel_id: channel_end_path.1.clone(),
+			}
+			.into(),
+		)
 	}
 
 	/// Returns the sequence number for the next packet to be sent for the given store path
@@ -245,7 +376,13 @@ impl<T: Config> ValidationContext for Context<T> {
 		&self,
 		seq_send_path: &SeqSendPath,
 	) -> Result<Sequence, ContextError> {
-		todo!()
+		<NextSequenceSend<T>>::get(seq_send_path).ok_or(
+			PacketError::MissingNextSendSeq {
+				port_id: seq_send_path.0.clone(),
+				channel_id: seq_send_path.1.clone(),
+			}
+			.into(),
+		)
 	}
 
 	/// Returns the sequence number for the next packet to be received for the given store path
@@ -253,12 +390,24 @@ impl<T: Config> ValidationContext for Context<T> {
 		&self,
 		seq_recv_path: &SeqRecvPath,
 	) -> Result<Sequence, ContextError> {
-		todo!()
+		<NextSequenceRecv<T>>::get(seq_recv_path).ok_or(
+			PacketError::MissingNextRecvSeq {
+				port_id: seq_recv_path.0.clone(),
+				channel_id: seq_recv_path.1.clone(),
+			}
+			.into(),
+		)
 	}
 
 	/// Returns the sequence number for the next packet to be acknowledged for the given store path
 	fn get_next_sequence_ack(&self, seq_ack_path: &SeqAckPath) -> Result<Sequence, ContextError> {
-		todo!()
+		<NextSequenceAck<T>>::get(seq_ack_path).ok_or(
+			PacketError::MissingNextAckSeq {
+				port_id: seq_ack_path.0.clone(),
+				channel_id: seq_ack_path.1.clone(),
+			}
+			.into(),
+		)
 	}
 
 	/// Returns the packet commitment for the given store path
@@ -266,12 +415,15 @@ impl<T: Config> ValidationContext for Context<T> {
 		&self,
 		commitment_path: &CommitmentPath,
 	) -> Result<PacketCommitment, ContextError> {
-		todo!()
+		<PacketCommitStore<T>>::get(commitment_path).ok_or(
+			PacketError::PacketCommitmentNotFound { sequence: commitment_path.sequence }.into(),
+		)
 	}
 
 	/// Returns the packet receipt for the given store path
 	fn get_packet_receipt(&self, receipt_path: &ReceiptPath) -> Result<Receipt, ContextError> {
-		todo!()
+		<PacketReceipt<T>>::get(receipt_path)
+			.ok_or(PacketError::PacketReceiptNotFound { sequence: receipt_path.sequence }.into())
 	}
 
 	/// Returns the packet acknowledgement for the given store path
@@ -279,7 +431,9 @@ impl<T: Config> ValidationContext for Context<T> {
 		&self,
 		ack_path: &AckPath,
 	) -> Result<AcknowledgementCommitment, ContextError> {
-		todo!()
+		<Acknowledgements<T>>::get(ack_path).ok_or(
+			PacketError::PacketAcknowledgementNotFound { sequence: ack_path.sequence }.into(),
+		)
 	}
 
 	/// Returns the time when the client state for the given [`ClientId`] was updated with a header
@@ -289,7 +443,12 @@ impl<T: Config> ValidationContext for Context<T> {
 		client_id: &ClientId,
 		height: &Height,
 	) -> Result<Timestamp, ContextError> {
-		todo!()
+		let time = <ClientProcessedTimes<T>>::get(client_id, height).ok_or(
+			ChannelError::ProcessedTimeNotFound { client_id: client_id.clone(), height: *height },
+		)?;
+
+		Timestamp::from_nanoseconds(time)
+			.map_err(|e| ChannelError::Other { description: e.to_string() }.into())
 	}
 
 	/// Returns the height when the client state for the given [`ClientId`] was updated with a
@@ -299,36 +458,47 @@ impl<T: Config> ValidationContext for Context<T> {
 		client_id: &ClientId,
 		height: &Height,
 	) -> Result<Height, ContextError> {
-		todo!()
+		<ClientProcessedHeights<T>>::get(client_id, height).ok_or(
+			ChannelError::ProcessedHeightNotFound { client_id: client_id.clone(), height: *height }
+				.into(),
+		)
 	}
 
 	/// Returns a counter on the number of channel ids have been created thus far.
 	/// The value of this counter should increase only via method
 	/// `ExecutionContext::increase_channel_counter`.
 	fn channel_counter(&self) -> Result<u64, ContextError> {
-		todo!()
+		Ok(<ChannelCounter<T>>::get())
 	}
 
 	/// Returns the maximum expected time per block
 	fn max_expected_time_per_block(&self) -> Duration {
-		todo!()
+		Duration::from_secs(T::ExpectedBlockTime::get())
 	}
 
 	/// Validates the `signer` field of IBC messages, which represents the address
 	/// of the user/relayer that signed the given message.
-	fn validate_message_signer(&self, signer: &Signer) -> Result<(), ContextError> {
-		todo!()
+	fn validate_message_signer(&self, _signer: &Signer) -> Result<(), ContextError> {
+		// todo(davirian) need Add
+		Ok(())
 	}
 }
 
-impl<T: Config> ExecutionContext for Context<T> {
+impl<T: Config> ExecutionContext for Context<T>
+where
+	u64: From<<T as pallet_timestamp::Config>::Moment>
+		+ From<<T as frame_system::Config>::BlockNumber>,
+{
 	/// Called upon successful client creation and update
 	fn store_client_state(
 		&mut self,
 		client_state_path: ClientStatePath,
 		client_state: Box<dyn ClientState>,
 	) -> Result<(), ContextError> {
-		todo!()
+		<ClientTypeById<T>>::insert(client_state_path.0.clone(), client_state.client_type());
+		let data = client_state.encode_vec();
+		<ClientStates<T>>::insert(client_state_path, data);
+		Ok(())
 	}
 
 	/// Called upon successful client creation and update
@@ -337,14 +507,20 @@ impl<T: Config> ExecutionContext for Context<T> {
 		consensus_state_path: ClientConsensusStatePath,
 		consensus_state: Box<dyn ConsensusState>,
 	) -> Result<(), ContextError> {
-		todo!()
+		let consensus_state = consensus_state.encode_vec();
+		<ConsensusStates<T>>::insert(consensus_state_path, consensus_state);
+
+		Ok(())
 	}
 
 	/// Called upon client creation.
 	/// Increases the counter which keeps track of how many clients have been created.
 	/// Should never fail.
 	fn increase_client_counter(&mut self) {
-		todo!()
+		let _ = <ClientCounter<T>>::try_mutate::<_, (), _>(|val| {
+			*val = val.saturating_add(1);
+			Ok(())
+		});
 	}
 
 	/// Called upon successful client update.
@@ -356,7 +532,8 @@ impl<T: Config> ExecutionContext for Context<T> {
 		height: Height,
 		timestamp: Timestamp,
 	) -> Result<(), ContextError> {
-		todo!()
+		<ClientProcessedTimes<T>>::insert(client_id, height, timestamp.nanoseconds());
+		Ok(())
 	}
 
 	/// Called upon successful client update.
@@ -368,7 +545,9 @@ impl<T: Config> ExecutionContext for Context<T> {
 		height: Height,
 		host_height: Height,
 	) -> Result<(), ContextError> {
-		todo!()
+		<ClientProcessedHeights<T>>::insert(client_id, height, host_height);
+
+		Ok(())
 	}
 
 	/// Stores the given connection_end at path
@@ -377,7 +556,9 @@ impl<T: Config> ExecutionContext for Context<T> {
 		connection_path: &ConnectionPath,
 		connection_end: ConnectionEnd,
 	) -> Result<(), ContextError> {
-		todo!()
+		<Connections<T>>::insert(connection_path, connection_end);
+
+		Ok(())
 	}
 
 	/// Stores the given connection_id at a path associated with the client_id.
@@ -386,14 +567,19 @@ impl<T: Config> ExecutionContext for Context<T> {
 		client_connection_path: &ClientConnectionPath,
 		conn_id: ConnectionId,
 	) -> Result<(), ContextError> {
-		todo!()
+		<ConnectionClient<T>>::insert(client_connection_path, conn_id);
+
+		Ok(())
 	}
 
 	/// Called upon connection identifier creation (Init or Try process).
 	/// Increases the counter which keeps track of how many connections have been created.
 	/// Should never fail.
 	fn increase_connection_counter(&mut self) {
-		todo!()
+		let _ = <ConnectionCounter<T>>::try_mutate::<_, (), _>(|val| {
+			*val = val.saturating_add(1);
+			Ok(())
+		});
 	}
 
 	/// Stores the given packet commitment at the given store path
@@ -402,7 +588,9 @@ impl<T: Config> ExecutionContext for Context<T> {
 		commitment_path: &CommitmentPath,
 		commitment: PacketCommitment,
 	) -> Result<(), ContextError> {
-		todo!()
+		<PacketCommitStore<T>>::insert(commitment_path, commitment);
+
+		Ok(())
 	}
 
 	/// Deletes the packet commitment at the given store path
@@ -410,7 +598,9 @@ impl<T: Config> ExecutionContext for Context<T> {
 		&mut self,
 		commitment_path: &CommitmentPath,
 	) -> Result<(), ContextError> {
-		todo!()
+		<PacketCommitStore<T>>::remove(commitment_path);
+
+		Ok(())
 	}
 
 	/// Stores the given packet receipt at the given store path
@@ -419,7 +609,9 @@ impl<T: Config> ExecutionContext for Context<T> {
 		receipt_path: &ReceiptPath,
 		receipt: Receipt,
 	) -> Result<(), ContextError> {
-		todo!()
+		<PacketReceipt<T>>::insert(receipt_path, receipt);
+
+		Ok(())
 	}
 
 	/// Stores the given packet acknowledgement at the given store path
@@ -428,12 +620,16 @@ impl<T: Config> ExecutionContext for Context<T> {
 		ack_path: &AckPath,
 		ack_commitment: AcknowledgementCommitment,
 	) -> Result<(), ContextError> {
-		todo!()
+		<Acknowledgements<T>>::insert(ack_path, ack_commitment);
+
+		Ok(())
 	}
 
 	/// Deletes the packet acknowledgement at the given store path
 	fn delete_packet_acknowledgement(&mut self, ack_path: &AckPath) -> Result<(), ContextError> {
-		todo!()
+		<Acknowledgements<T>>::remove(ack_path);
+
+		Ok(())
 	}
 
 	/// Stores the given channel_end at a path associated with the port_id and channel_id.
@@ -442,7 +638,9 @@ impl<T: Config> ExecutionContext for Context<T> {
 		channel_end_path: &ChannelEndPath,
 		channel_end: ChannelEnd,
 	) -> Result<(), ContextError> {
-		todo!()
+		<Channels<T>>::insert(channel_end_path, channel_end);
+
+		Ok(())
 	}
 
 	/// Stores the given `nextSequenceSend` number at the given store path
@@ -451,7 +649,9 @@ impl<T: Config> ExecutionContext for Context<T> {
 		seq_send_path: &SeqSendPath,
 		seq: Sequence,
 	) -> Result<(), ContextError> {
-		todo!()
+		<NextSequenceSend<T>>::insert(seq_send_path, seq);
+
+		Ok(())
 	}
 
 	/// Stores the given `nextSequenceRecv` number at the given store path
@@ -460,7 +660,9 @@ impl<T: Config> ExecutionContext for Context<T> {
 		seq_recv_path: &SeqRecvPath,
 		seq: Sequence,
 	) -> Result<(), ContextError> {
-		todo!()
+		<NextSequenceRecv<T>>::insert(seq_recv_path, seq);
+
+		Ok(())
 	}
 
 	/// Stores the given `nextSequenceAck` number at the given store path
@@ -469,23 +671,30 @@ impl<T: Config> ExecutionContext for Context<T> {
 		seq_ack_path: &SeqAckPath,
 		seq: Sequence,
 	) -> Result<(), ContextError> {
-		todo!()
+		<NextSequenceAck<T>>::insert(seq_ack_path, seq);
+
+		Ok(())
 	}
 
 	/// Called upon channel identifier creation (Init or Try message processing).
 	/// Increases the counter which keeps track of how many channels have been created.
 	/// Should never fail.
 	fn increase_channel_counter(&mut self) {
-		todo!()
+		let _ = ChannelCounter::<T>::try_mutate::<_, (), _>(|val| {
+			*val = val.saturating_add(1);
+			Ok(())
+		});
 	}
 
 	/// Emit the given IBC event
-	fn emit_ibc_event(&mut self, event: IbcEvent) {
+	fn emit_ibc_event(&mut self, _event: IbcEvent) {
+		// todo(davirian) need Add Used By OCW
 		todo!()
 	}
 
 	/// Log the given message.
-	fn log_message(&mut self, message: String) {
+	fn log_message(&mut self, _message: String) {
+		// todo(davirian) need Add Used By OCW
 		todo!()
 	}
 }

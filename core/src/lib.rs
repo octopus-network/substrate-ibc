@@ -50,15 +50,18 @@ pub mod pallet {
 		ics24_host::{
 			identifier::{ChannelId, ClientId, ConnectionId, PortId},
 			path::{
-				AckPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath, CommitmentPath,
-				ConnectionPath, ReceiptPath, SeqAckPath, SeqRecvPath, SeqSendPath,
+				AckPath, ChannelEndPath, ClientConnectionPath, ClientConsensusStatePath,
+				ClientStatePath, CommitmentPath, ConnectionPath, ReceiptPath, SeqAckPath,
+				SeqRecvPath, SeqSendPath,
 			},
 		},
 	};
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
-	pub trait Config: frame_system::Config + Sync + Send + Debug {
+	pub trait Config:
+		frame_system::Config + pallet_timestamp::Config + Sync + Send + Debug
+	{
 		/// The aggregated event type of the runtime.
 		type RuntimeEvent: Parameter
 			+ Member
@@ -108,7 +111,7 @@ pub mod pallet {
 		StorageMap<_, Blake2_128Concat, ClientConsensusStatePath, Vec<u8>>;
 
 	#[pallet::storage]
-	/// key: ConnectionsPath
+	/// key: ConnectionPath
 	/// value: ConnectionEnd
 	pub type Connections<T: Config> =
 		StorageMap<_, Blake2_128Concat, ConnectionPath, ConnectionEnd>;
@@ -165,7 +168,8 @@ pub mod pallet {
 	#[pallet::storage]
 	/// key: ClientId
 	/// value: ConnectionId
-	pub type ConnectionClient<T: Config> = StorageMap<_, Blake2_128Concat, ClientId, ConnectionId>;
+	pub type ConnectionClient<T: Config> =
+		StorageMap<_, Blake2_128Concat, ClientConnectionPath, ConnectionId>;
 
 	#[pallet::storage]
 	/// key: ReceiptsPath
