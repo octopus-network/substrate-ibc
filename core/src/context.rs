@@ -312,6 +312,7 @@ where
 		&self,
 		_height: &Height,
 	) -> Result<Box<dyn ConsensusState>, ContextError> {
+		// todo(davirian) need Add
 		Err(ClientError::Other { description: "unimplement".into() }.into())
 	}
 
@@ -435,6 +436,7 @@ where
 		)
 	}
 
+	// todo(davirian) Don't Know this correct
 	/// Returns the time when the client state for the given [`ClientId`] was updated with a header
 	/// for the given [`Height`]
 	fn client_update_time(
@@ -450,6 +452,7 @@ where
 			.map_err(|e| ChannelError::Other { description: e.to_string() }.into())
 	}
 
+	// todo(davirian) Don't Know this correct
 	/// Returns the height when the client state for the given [`ClientId`] was updated with a
 	/// header for the given [`Height`]
 	fn client_update_height(
@@ -685,6 +688,7 @@ where
 		});
 	}
 
+	// todo(davirian) Don't Know this correct
 	/// Emit the given IBC event
 	fn emit_ibc_event(&mut self, event: IbcEvent) {
 		let mut key = b"pallet-ibc:ibc-event".to_vec();
@@ -703,6 +707,7 @@ where
 		log::trace!("emit ibc event: {:?}", event);
 	}
 
+	// todo(davirian) Don't Know this correct
 	/// Log the given message.
 	fn log_message(&mut self, message: String) {
 		let mut key = b"pallet-ibc:ibc-log".to_vec();

@@ -72,9 +72,6 @@ pub mod pallet {
 			+ Debug
 			+ IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
-		/// The provider providing timestamp of host chain
-		type TimeProvider: UnixTime;
-
 		const IBC_COMMITMENT_PREFIX: &'static [u8];
 
 		type ExpectedBlockTime: Get<u64>;
