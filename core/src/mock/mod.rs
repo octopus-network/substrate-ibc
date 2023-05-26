@@ -13,7 +13,7 @@ pub use frame_support::{
 	StorageValue,
 };
 use frame_system as system;
-use ibc_support::module::DefaultRouter;
+use pallet_ibc_utils::module::DefaultRouter;
 use sp_runtime::{
 	generic,
 	traits::{AccountIdLookup, BlakeTwo256, IdentifyAccount, Verify},
@@ -138,8 +138,8 @@ parameter_types! {
 	pub const ChainVersion: u64 = 0;
 }
 
-impl ibc_support::module::AddModule for Test {
-	fn add_module(router: ibc_support::module::Router) -> ibc_support::module::Router {
+impl pallet_ibc_utils::module::AddModule for Test {
+	fn add_module(router: pallet_ibc_utils::module::Router) -> pallet_ibc_utils::module::Router {
 		router
 	}
 }

@@ -13,26 +13,53 @@ extern crate core;
 
 pub use pallet::*;
 
-pub use alloc::{
-	format,
-	string::{String, ToString},
+use frame_support::{pallet_prelude::*, traits::UnixTime};
+use frame_system::{ensure_signed, pallet_prelude::*};
+use ibc::{
+	core::{
+		ics02_client::{client_type::ClientType, height::Height},
+		ics03_connection::connection::ConnectionEnd,
+		ics04_channel::{
+			channel::ChannelEnd,
+			commitment::{
+				AcknowledgementCommitment as IbcAcknowledgementCommitment,
+				PacketCommitment as IbcPacketCommitment,
+			},
+			packet::{Receipt, Sequence},
+		},
+		ics24_host::{
+			identifier::{ChannelId, ClientId, ConnectionId, PortId},
+			path::{
+				AcksPath, ChannelEndsPath, ClientConsensusStatePath, ClientStatePath,
+				ClientTypePath, CommitmentsPath, ConnectionsPath, ReceiptsPath, SeqAcksPath,
+				SeqRecvsPath, SeqSendsPath,
+			},
+		},
+		ics26_routing::handler::MsgReceipt,
+	},
+	events::IbcEvent,
 };
-use frame_system::ensure_signed;
+use pallet_ibc_utils::module::AddModule;
 use sp_std::{fmt::Debug, vec, vec::Vec};
+
 pub mod channel;
 pub mod client;
 pub mod connection;
 pub mod context;
 pub mod errors;
-pub mod host;
 pub mod port;
 pub mod routing;
-pub mod utils;
 
 pub use crate::context::Context;
-use ibc_support::module::AddModule;
+pub use alloc::{
+	format,
+	string::{String, ToString},
+};
+pub use weights::WeightInfo;
 
 pub const LOG_TARGET: &str = "runtime::pallet-ibc";
+pub const TENDERMINT_CLIENT_TYPE: &'static str = "07-tendermint";
+pub const MOCK_CLIENT_TYPE: &'static str = "9999-mock";
 
 #[cfg(any(test, feature = "runtime-benchmarks"))]
 mod mock;
@@ -43,37 +70,9 @@ mod tests;
 pub mod benchmarks;
 mod weights;
 
-pub use weights::WeightInfo;
-
 #[frame_support::pallet]
 pub mod pallet {
 	use super::{errors, *};
-	use frame_support::{pallet_prelude::*, traits::UnixTime};
-	use frame_system::pallet_prelude::*;
-	use ibc::{
-		core::{
-			ics02_client::{client_type::ClientType, height::Height},
-			ics03_connection::connection::ConnectionEnd,
-			ics04_channel::{
-				channel::ChannelEnd,
-				commitment::{
-					AcknowledgementCommitment as IbcAcknowledgementCommitment,
-					PacketCommitment as IbcPacketCommitment,
-				},
-				packet::{Receipt, Sequence},
-			},
-			ics24_host::{
-				identifier::{ChannelId, ClientId, ConnectionId, PortId},
-				path::{
-					AcksPath, ChannelEndsPath, ClientConsensusStatePath, ClientStatePath,
-					ClientTypePath, CommitmentsPath, ConnectionsPath, ReceiptsPath, SeqAcksPath,
-					SeqRecvsPath, SeqSendsPath,
-				},
-			},
-			ics26_routing::handler::MsgReceipt,
-		},
-		events::IbcEvent,
-	};
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -302,8 +301,10 @@ pub mod pallet {
 			log::trace!(target: "pallet_ibc", "[pallet_ibc_deliver]: logs: {:?}", logs);
 			log::trace!(target: "pallet_ibc", "[pallet_ibc_deliver]: errors: {:?}", errors);
 
+			let block_height = <frame_system::Pallet<T>>::block_number();
+
 			for event in events.clone() {
-				<IbcEventStore<T>>::insert(crate::utils::host_height::<T>(), event);
+				<IbcEventStore<T>>::insert(u64::from(block_height), event);
 			}
 			Self::deposit_event(Event::IbcEvents { events });
 			if !errors.is_empty() {
