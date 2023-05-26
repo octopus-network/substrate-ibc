@@ -1,6 +1,6 @@
 [workspace]
 members = [
-  "app/transfer",
+  "applications/transfer",
   "support",
   "core",
 ]
