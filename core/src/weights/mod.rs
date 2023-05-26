@@ -1,38 +1,39 @@
 mod mock_client_weight;
 use super::*;
-use crate::{host::MOCK_CLIENT_TYPE, weights::mock_client_weight::MockClientWeightInfo};
+use crate::{weights::mock_client_weight::MockClientWeightInfo, MOCK_CLIENT_TYPE};
 use alloc::boxed::Box;
 use core::marker::PhantomData;
 use frame_support::pallet_prelude::Weight;
-use ibc::core::{
-	ics02_client::{
-		context::ClientReader,
-		msgs::{
-			create_client::MsgCreateClient, misbehaviour::MsgSubmitMisbehaviour,
-			update_client::MsgUpdateClient, upgrade_client::MsgUpgradeClient, ClientMsg,
+use ibc::{
+	applications::transfer::PORT_ID_STR,
+	core::{
+		ics02_client::{
+			context::ClientReader,
+			msgs::{
+				create_client::MsgCreateClient, misbehaviour::MsgSubmitMisbehaviour,
+				update_client::MsgUpdateClient, upgrade_client::MsgUpgradeClient, ClientMsg,
+			},
 		},
-	},
-	ics03_connection::{
-		context::ConnectionReader,
-		msgs::{
-			conn_open_ack::MsgConnectionOpenAck, conn_open_confirm::MsgConnectionOpenConfirm,
-			conn_open_init::MsgConnectionOpenInit, conn_open_try::MsgConnectionOpenTry,
-			ConnectionMsg,
+		ics03_connection::{
+			context::ConnectionReader,
+			msgs::{
+				conn_open_ack::MsgConnectionOpenAck, conn_open_confirm::MsgConnectionOpenConfirm,
+				conn_open_init::MsgConnectionOpenInit, conn_open_try::MsgConnectionOpenTry,
+				ConnectionMsg,
+			},
 		},
+		ics04_channel::msgs::{
+			acknowledgement::MsgAcknowledgement, chan_close_confirm::MsgChannelCloseConfirm,
+			chan_close_init::MsgChannelCloseInit, chan_open_ack::MsgChannelOpenAck,
+			chan_open_confirm::MsgChannelOpenConfirm, chan_open_init::MsgChannelOpenInit,
+			chan_open_try::MsgChannelOpenTry, recv_packet::MsgRecvPacket, timeout::MsgTimeout,
+			timeout_on_close::MsgTimeoutOnClose, ChannelMsg, PacketMsg,
+		},
+		ics24_host::identifier::{ChannelId, ClientId, PortId},
+		ics26_routing::msgs::MsgEnvelope,
 	},
-	ics04_channel::msgs::{
-		acknowledgement::MsgAcknowledgement, chan_close_confirm::MsgChannelCloseConfirm,
-		chan_close_init::MsgChannelCloseInit, chan_open_ack::MsgChannelOpenAck,
-		chan_open_confirm::MsgChannelOpenConfirm, chan_open_init::MsgChannelOpenInit,
-		chan_open_try::MsgChannelOpenTry, recv_packet::MsgRecvPacket, timeout::MsgTimeout,
-		timeout_on_close::MsgTimeoutOnClose, ChannelMsg, PacketMsg,
-	},
-	ics24_host::identifier::{ChannelId, ClientId, PortId},
-	ics26_routing::msgs::MsgEnvelope,
 };
-
-use ibc::applications::transfer::PORT_ID_STR;
-use ibc_support::CallbackWeight;
+use pallet_ibc_utils::CallbackWeight;
 
 pub trait WeightInfo<T> {
 	fn create_client(msg_create_client: MsgCreateClient) -> Weight;
@@ -163,7 +164,6 @@ where
 	}
 
 	fn conn_open_confirm(msg_conn_open_confirm: MsgConnectionOpenConfirm) -> Weight {
-		use ibc::core::ics24_host::path::ClientTypePath;
 		let connection_id = msg_conn_open_confirm.conn_id_on_b;
 		let ctx = Context::<T>::new();
 		let connection_end = ctx.connection_end(&connection_id).unwrap_or_default();

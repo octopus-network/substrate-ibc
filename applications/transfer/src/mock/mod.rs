@@ -15,8 +15,8 @@ pub use frame_support::{
 };
 use frame_system as system;
 use frame_system::EnsureRoot;
-use ibc_support::module::Router;
 use pallet_assets::AssetsCallback;
+use pallet_ibc_utils::module::Router;
 use sp_io::storage;
 use sp_runtime::{
 	generic,
@@ -212,7 +212,7 @@ use ibc::applications::transfer::MODULE_ID_STR;
 
 pub struct IbcModule;
 
-impl ibc_support::module::AddModule for IbcModule {
+impl pallet_ibc_utils::module::AddModule for IbcModule {
 	fn add_module(router: Router) -> Router {
 		match router.clone().add_route(
 			MODULE_ID_STR.parse().expect("never failed"),

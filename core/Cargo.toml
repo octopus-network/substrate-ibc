@@ -14,6 +14,11 @@ description = "An IBC implementation on Substrate."
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
+
+log = { version = "0.4.0", default-features = false }
+serde = { version = "1.0", default-features = false }
+serde_json = { version = "1.0", default-features = false }
+
 # substate crates
 codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive"] }
 frame-benchmarking = { default-features = false, optional = true, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38" }
@@ -28,16 +33,14 @@ sp-std = { default-features = false, git = "https://github.com/paritytech/substr
 sp-tracing = {  default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38" }
 pallet-timestamp = {  version = "4.0.0-dev", default-features = false,  git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38" }
 
+
 ## for ibc protocl
-ibc = { version = "0.28.0", default-features = false, features = ["parity-scale-codec", "mocks-no-std", "serde"], git = "https://github.com/octopus-network/ibc-rs.git", branch = "v0.28.0-codec-borsh-serde"}
+pallet-ibc-utils = { version = "0.1.0", default-features = false, path = "../utils" }
+ibc = { version = "0.28.0", default-features = false, features = ["parity-scale-codec", "mocks-no-std", "serde"], git = "https://github.com/octopus-network/ibc-rs.git", branch = "v0.28.0-codec-borsh-serde" }
 ibc-proto = { version = "0.25.0", default-features = false, features = ["parity-scale-codec"], git = "https://github.com/octopus-network/ibc-proto-rs", branch = "ibc" }
-log = { version = "0.4.0", default-features = false }
-serde = { version = "1.0", default-features = false }
-serde_json = { version = "1.0", default-features = false }
 
 ## optional
 pallet-balances = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38", optional = true }
-
 
 [dev-dependencies]
 chrono = "0.4.19"
@@ -64,7 +67,7 @@ std = [
   "frame-benchmarking?/std",
   "frame-support/std",
   "frame-system/std",
-  "ibc-support/std",
+  "pallet-ibc-utils/std",
   "scale-info/std",
   "sp-core/std",
   "sp-io/std",

@@ -2,7 +2,6 @@
 
 extern crate alloc;
 
-use frame_support::traits::Currency;
 /// Edit this file to define custom logic or remove it if it is not needed.
 /// Learn more about FRAME and the core library of Substrate FRAME pallets:
 /// <https://docs.substrate.io/reference/frame-pallets/>
@@ -20,36 +19,36 @@ mod tests;
 #[cfg(test)]
 mod mock;
 
-use ibc_support::AssetIdAndNameProvider;
-use sp_std::vec::Vec;
+use crate::callback::IbcTransferModule;
+use alloc::string::String;
+use frame_support::{
+	pallet_prelude::*,
+	traits::{
+		fungibles::{Mutate, Transfer},
+		tokens::{AssetId, Balance as AssetBalance},
+		Currency,
+	},
+};
+use frame_system::pallet_prelude::*;
+use ibc::{
+	applications::transfer::msgs::transfer::MsgTransfer,
+	core::ics04_channel::events::SendPacket,
+	events::IbcEvent,
+	handler::{HandlerOutput, HandlerOutputBuilder},
+	signer::Signer,
+};
+use pallet_ibc_utils::AssetIdAndNameProvider;
+use sp_runtime::traits::IdentifyAccount;
+use sp_std::{fmt::Debug, vec::Vec};
 
 pub const LOG_TARGET: &str = "runtime::pallet-ics20-transfer";
+
 type BalanceOf<T> =
 	<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
 #[frame_support::pallet]
 pub mod pallet {
 	use super::*;
-	use crate::{callback::IbcTransferModule, LOG_TARGET};
-	use frame_support::{
-		pallet_prelude::*,
-		traits::{
-			fungibles::{Mutate, Transfer},
-			tokens::{AssetId, Balance as AssetBalance},
-			Currency,
-		},
-	};
-	use frame_system::pallet_prelude::*;
-	use ibc::{
-		applications::transfer::msgs::transfer::MsgTransfer,
-		core::ics04_channel::events::SendPacket,
-		events::IbcEvent,
-		handler::{HandlerOutput, HandlerOutputBuilder},
-		signer::Signer,
-	};
-	use ibc_support::AssetIdAndNameProvider;
-	use sp_runtime::traits::IdentifyAccount;
-	use sp_std::{fmt::Debug, vec::Vec};
 
 	#[pallet::pallet]
 	#[pallet::without_storage_info]
@@ -88,8 +87,8 @@ pub mod pallet {
 			+ PartialEq
 			+ Debug;
 
-		type IbcContext: ibc_support::traits::ChannelKeeperInterface
-			+ ibc_support::traits::ChannelReaderInterface;
+		type IbcContext: pallet_ibc_utils::traits::ChannelKeeperInterface
+			+ pallet_ibc_utils::traits::ChannelReaderInterface;
 
 		// The native token name
 		const NATIVE_TOKEN_NAME: &'static [u8];

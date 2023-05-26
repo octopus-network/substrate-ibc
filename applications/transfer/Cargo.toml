@@ -19,7 +19,6 @@ frame-benchmarking = {  default-features = false, optional = true, git = "https:
 frame-support = {  default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38" }
 frame-system = {  default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38" }
 hex = { version = "0.4.0", default-features = false }
-ibc-support = { version = "0.1.0", default-features = false, path = "../../support" }
 log = { version = "0.4", default-features = false }
 scale-info = { version = "2.1.1", default-features = false, features = ["derive"] }
 sp-io = {  default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38" }
@@ -29,6 +28,9 @@ primitive-types = { version = "0.12.0", default-features = false, features = ["s
 sha2 = { version = "0.10.2", default-features = false }
 subtle-encoding = { version = "0.5", default-features = false }
 
+
+# ibc
+pallet-ibc-utils = { version = "0.1.0", default-features = false, path = "../../utils" }
 ibc = { version = "0.28.0", default-features = false, features = ["parity-scale-codec", "serde"], git = "https://github.com/octopus-network/ibc-rs.git", branch = "v0.28.0-codec-borsh-serde"}
 ibc-proto = { version = "0.25.0", default-features = false, features = ["parity-scale-codec"], git = "https://github.com/octopus-network/ibc-proto-rs", branch = "ibc" }
 
@@ -58,7 +60,7 @@ std = [
   "frame-support/std",
   "frame-system/std",
   "hex/std",
-  "ibc-support/std",
+  "pallet-ibc-utils/std",
   "log/std",
   "scale-info/std",
   "sp-io/std",

@@ -17,7 +17,7 @@ use ibc::{
 	timestamp::Timestamp,
 	Height,
 };
-use ibc_support::traits::{ChannelKeeperInterface, ChannelReaderInterface};
+use pallet_ibc_utils::traits::{ChannelKeeperInterface, ChannelReaderInterface};
 use sp_std::{boxed::Box, time::Duration, vec::Vec};
 
 impl<T: Config> ChannelReader for IbcTransferModule<T> {
