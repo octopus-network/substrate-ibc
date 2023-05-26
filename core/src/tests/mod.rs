@@ -9,7 +9,7 @@ mod tests {
 	use crate::{mock::*, Context};
 	use core::str::FromStr;
 
-	use crate::host::TENDERMINT_CLIENT_TYPE;
+	use crate::TENDERMINT_CLIENT_TYPE;
 	use ibc::core::{
 		ics02_client::{
 			client_type::ClientType,

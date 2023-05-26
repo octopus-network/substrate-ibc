@@ -1,15 +1,11 @@
 use crate::{
-	context::Context, host::TENDERMINT_CLIENT_TYPE, ClientCounter, ClientProcessedHeights,
-	ClientProcessedTimes, ClientStates, Clients, Config, ConsensusStates,
+	context::Context, ClientCounter, ClientProcessedHeights, ClientProcessedTimes, ClientStates,
+	Clients, Config, ConsensusStates, MOCK_CLIENT_TYPE, TENDERMINT_CLIENT_TYPE,
 };
 pub use alloc::{
 	format,
 	string::{String, ToString},
 };
-use sp_core::Get;
-use sp_std::{boxed::Box, vec::Vec};
-
-use crate::host::MOCK_CLIENT_TYPE;
 use ibc::{
 	clients::ics07_tendermint::{
 		client_state::ClientState as Ics07ClientState,
@@ -33,6 +29,8 @@ use ibc::{
 	Height,
 };
 use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
+use sp_core::Get;
+use sp_std::{boxed::Box, vec::Vec};
 
 impl<T: Config> ClientReader for Context<T>
 where
