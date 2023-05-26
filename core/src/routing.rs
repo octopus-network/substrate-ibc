@@ -4,7 +4,7 @@ pub use alloc::{
 	string::{String, ToString},
 };
 use ibc::core::ics26_routing::context::{Module, ModuleId, RouterBuilder, RouterContext};
-use ibc_support::module::Router;
+use pallet_ibc_utils::module::Router;
 use sp_std::{borrow::ToOwned, sync::Arc};
 
 #[derive(Default)]

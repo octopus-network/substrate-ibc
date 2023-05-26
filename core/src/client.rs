@@ -1,6 +1,6 @@
 use crate::{
-	context::Context, host::TENDERMINT_CLIENT_TYPE, ClientCounter, ClientProcessedHeights,
-	ClientProcessedTimes, ClientStates, Clients, Config, ConsensusStates,
+	context::Context, ClientCounter, ClientProcessedHeights, ClientProcessedTimes, ClientStates,
+	Clients, Config, ConsensusStates, MOCK_CLIENT_TYPE, TENDERMINT_CLIENT_TYPE,
 };
 pub use alloc::{
 	format,
@@ -9,7 +9,6 @@ pub use alloc::{
 use sp_core::Get;
 use sp_std::{boxed::Box, vec::Vec};
 
-use crate::host::MOCK_CLIENT_TYPE;
 use ibc::{
 	clients::ics07_tendermint::{
 		client_state::ClientState as Ics07ClientState,

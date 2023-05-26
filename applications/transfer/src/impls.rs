@@ -14,7 +14,7 @@ use ibc::{
 	core::ics24_host::identifier::{ChannelId, PortId},
 	signer::Signer,
 };
-use ibc_support::AssetIdAndNameProvider;
+use pallet_ibc_utils::AssetIdAndNameProvider;
 use log::error;
 use primitive_types::U256;
 use scale_info::TypeInfo;

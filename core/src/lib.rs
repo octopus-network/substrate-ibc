@@ -24,15 +24,16 @@ pub mod client;
 pub mod connection;
 pub mod context;
 pub mod errors;
-pub mod host;
 pub mod port;
 pub mod routing;
 pub mod utils;
 
 pub use crate::context::Context;
-use ibc_support::module::AddModule;
+use pallet_ibc_utils::module::AddModule;
 
 pub const LOG_TARGET: &str = "runtime::pallet-ibc";
+pub const TENDERMINT_CLIENT_TYPE: &'static str = "07-tendermint";
+pub const MOCK_CLIENT_TYPE: &'static str = "9999-mock";
 
 #[cfg(any(test, feature = "runtime-benchmarks"))]
 mod mock;

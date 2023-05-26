@@ -20,7 +20,7 @@ mod tests;
 #[cfg(test)]
 mod mock;
 
-use ibc_support::AssetIdAndNameProvider;
+use pallet_ibc_utils::AssetIdAndNameProvider;
 use sp_std::vec::Vec;
 
 pub const LOG_TARGET: &str = "runtime::pallet-ics20-transfer";
@@ -48,7 +48,7 @@ pub mod pallet {
 		handler::{HandlerOutput, HandlerOutputBuilder},
 		signer::Signer,
 	};
-	use ibc_support::AssetIdAndNameProvider;
+	use pallet_ibc_utils::AssetIdAndNameProvider;
 	use sp_runtime::traits::IdentifyAccount;
 	use sp_std::{fmt::Debug, vec::Vec};
 
@@ -89,8 +89,8 @@ pub mod pallet {
 			+ PartialEq
 			+ Debug;
 
-		type IbcContext: ibc_support::traits::ChannelKeeperInterface
-			+ ibc_support::traits::ChannelReaderInterface;
+		type IbcContext: pallet_ibc_utils::traits::ChannelKeeperInterface
+			+ pallet_ibc_utils::traits::ChannelReaderInterface;
 
 		// The native token name
 		const NATIVE_TOKEN_NAME: &'static [u8];
