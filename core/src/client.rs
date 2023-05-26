@@ -229,9 +229,12 @@ where
 	fn host_timestamp(&self) -> Result<Timestamp, ClientError> {
 		#[cfg(not(test))]
 		{
+			use core::time::Duration;
 			let current_time = <pallet_timestamp::Pallet<T>>::get();
-			Timestamp::from_nanoseconds(current_time.into()).map_err(|e| ClientError::Other {
-				description: format!("get host time stamp error: {}", e),
+			let duration = Duration::from_millis(current_time.into());
+			Timestamp::from_nanoseconds(duration.as_nanos() as u64).map_err(|e| {
+				ClientError::Other { description: format!("get host time stamp error: {}", e) }
+					.into()
 			})
 		}
 		#[cfg(test)]
