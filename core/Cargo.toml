@@ -14,25 +14,22 @@ description = "An IBC implementation on Substrate."
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-
 log = { version = "0.4.0", default-features = false }
 serde = { version = "1.0", default-features = false }
 serde_json = { version = "1.0", default-features = false }
 
 # substate crates
 codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive"] }
+scale-info = { version = "2.1.2", default-features = false, features = ["derive"] }
 frame-benchmarking = { default-features = false, optional = true, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38" }
 frame-support = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38" }
 frame-system = {  default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38" }
-ibc-support = { version = "0.1.0", default-features = false, path = "../support" }
-scale-info = { version = "2.1.2", default-features = false, features = ["derive"] }
 sp-core = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38" }
 sp-io = {  default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38" }
 sp-runtime = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38" }
 sp-std = { default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38" }
 sp-tracing = {  default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38" }
 pallet-timestamp = {  version = "4.0.0-dev", default-features = false,  git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38" }
-
 
 ## for ibc protocl
 pallet-ibc-utils = { version = "0.1.0", default-features = false, path = "../utils" }
@@ -44,14 +41,14 @@ pallet-balances = { version = "4.0.0-dev", default-features = false, git = "http
 
 [dev-dependencies]
 chrono = "0.4.19"
-frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38" }
+serde = "1.0"
+sha2 = '0.10.2'
 hex = '0.4.0'
+frame-support = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38" }
 pallet-assets = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38" }
 pallet-babe = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38" }
 pallet-balances = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38" }
 pallet-timestamp = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38" }
-serde = "1.0"
-sha2 = '0.10.2'
 sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38" }
 sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38" }
 sp-keyring = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38" }
