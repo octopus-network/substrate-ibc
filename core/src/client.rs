@@ -6,9 +6,6 @@ pub use alloc::{
 	format,
 	string::{String, ToString},
 };
-use sp_core::Get;
-use sp_std::{boxed::Box, vec::Vec};
-
 use ibc::{
 	clients::ics07_tendermint::{
 		client_state::ClientState as Ics07ClientState,
@@ -32,6 +29,8 @@ use ibc::{
 	Height,
 };
 use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
+use sp_core::Get;
+use sp_std::{boxed::Box, vec::Vec};
 
 impl<T: Config> ClientReader for Context<T>
 where

@@ -1,12 +1,12 @@
-use crate::Config;
-use alloc::{borrow::ToOwned, string::String, sync::Arc};
-use sp_std::marker::PhantomData;
-
-use ibc::core::ics26_routing::context::{Module, ModuleId, RouterBuilder};
-
 /// A struct capturing all the functional dependencies (i.e., context)
 /// which the ICS26 module requires to be able to dispatch and process IBC messages.
 use crate::routing::SubstrateRouterBuilder;
+use crate::Config;
+use alloc::{borrow::ToOwned, string::String, sync::Arc};
+use ibc::core::ics26_routing::context::{Module, ModuleId, RouterBuilder};
+use pallet_ibc_utils::module::{AddModule, Router};
+use sp_std::marker::PhantomData;
+
 #[cfg(test)]
 use ibc::{
 	core::ics04_channel::commitment::PacketCommitment,
@@ -20,7 +20,6 @@ use ibc::{
 	mock::client_state::{client_type as mock_client_type, MockClientState},
 	Height,
 };
-use pallet_ibc_utils::module::{AddModule, Router};
 
 #[derive(Clone, Debug)]
 pub struct Context<T: Config> {

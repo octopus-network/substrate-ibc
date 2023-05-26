@@ -1,7 +1,7 @@
 mod mock_client_weight;
 
 use super::*;
-use crate::{MOCK_CLIENT_TYPE, weights::mock_client_weight::MockClientWeightInfo};
+use crate::{weights::mock_client_weight::MockClientWeightInfo, MOCK_CLIENT_TYPE};
 use alloc::boxed::Box;
 use core::marker::PhantomData;
 use frame_support::pallet_prelude::Weight;
@@ -162,7 +162,6 @@ where
 	}
 
 	fn conn_open_confirm(msg_conn_open_confirm: MsgConnectionOpenConfirm) -> Weight {
-		use ibc::core::ics24_host::path::ClientTypePath;
 		let connection_id = msg_conn_open_confirm.conn_id_on_b;
 		let ctx = Context::<T>::new();
 		let connection_end = ctx.connection_end(&connection_id).unwrap_or_default();

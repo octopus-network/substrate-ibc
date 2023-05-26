@@ -1,5 +1,5 @@
 use crate::{callback::IbcTransferModule, utils::get_channel_escrow_address, *};
-use alloc::string::ToString;
+use alloc::{format, string::ToString};
 use codec::{Decode, Encode};
 use frame_support::traits::{
 	fungibles::{Mutate, Transfer},
@@ -14,15 +14,14 @@ use ibc::{
 	core::ics24_host::identifier::{ChannelId, PortId},
 	signer::Signer,
 };
-use pallet_ibc_utils::AssetIdAndNameProvider;
 use log::error;
+use pallet_ibc_utils::AssetIdAndNameProvider;
 use primitive_types::U256;
 use scale_info::TypeInfo;
 use sp_runtime::{
 	traits::{CheckedConversion, IdentifyAccount, Verify},
 	MultiSignature,
 };
-use alloc::format;
 use sp_std::str::FromStr;
 
 impl<T: Config> BankKeeper for IbcTransferModule<T> {
