@@ -29,7 +29,7 @@ sp-std = { version = "5.0.0", default-features = false, git = "https://github.co
 pallet-timestamp = { version = "4.0.0-dev", default-features = false,  git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.40" }
 
 # ibc
-ibc = { version = "0.41.0", default-features = false, features = ["parity-scale-codec"] }
+ibc = { version = "0.41.0", default-features = false, features = ["parity-scale-codec", "serde"] }
 ibc-proto = { version = "0.30.0", default-features = false }
 pallet-ibc = { version = "4.0.0-dev", default-features = false, path = "../../core" }
 pallet-ibc-utils = { version = "0.1.0", default-features = false, path = "../../utils" }
