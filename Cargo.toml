@@ -6,5 +6,4 @@ members = [
 ]
 
 [patch.crates-io]
-ibc = { git = "https://github.com/DaviRain-Su/ibc-rs.git", branch = "codec-v0.41.0" }
 ibc-proto = { git = "https://github.com/DaviRain-Su/ibc-proto-rs.git", branch = "full-cosmos-type-v0.30.0" }
