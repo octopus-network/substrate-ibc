@@ -4,3 +4,6 @@ members = [
   "utils",
   "core",
 ]
+
+[patch.crates-io]
+ibc-proto = { git = "https://github.com/DaviRain-Su/ibc-proto-rs.git", branch = "full-cosmos-type-v0.30.0" }

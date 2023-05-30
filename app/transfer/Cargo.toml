@@ -23,9 +23,9 @@ codec = { package = "parity-scale-codec", version = "3.0.0", default-features = 
 frame-benchmarking = { version = "4.0.0-dev", default-features = false, optional = true, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 frame-support = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 frame-system = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
-sp-io = { version = "7.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
-sp-runtime = { version = "7.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
-sp-std = { version = "5.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
+sp-io = { version = "8.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
+sp-runtime = { version = "8.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
+sp-std = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 pallet-timestamp = { version = "4.0.0-dev", default-features = false,  git = "https://github.com/paritytech/substrate.git", branch = "master" }
 
 # ibc
@@ -46,12 +46,12 @@ pallet-assets = { version = "4.0.0-dev", git = "https://github.com/paritytech/su
 pallet-babe = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "master" }
 pallet-balances = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "master" }
 pallet-timestamp = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "master" }
-sp-core = { version = "7.0.0", git = "https://github.com/paritytech/substrate.git", branch = "master" }
-sp-io = { version = "7.0.0", git = "https://github.com/paritytech/substrate.git", branch = "master" }
-sp-keyring = { version = "7.0.0", git = "https://github.com/paritytech/substrate.git", branch = "master" }
-sp-runtime = { version = "7.0.0", git = "https://github.com/paritytech/substrate.git", branch = "master" }
-sp-std = { version = "5.0.0", git = "https://github.com/paritytech/substrate.git", branch = "master" }
-sp-version = { version = "5.0.0", git = "https://github.com/paritytech/substrate.git", branch = "master" }
+sp-core = { version = "8.0.0", git = "https://github.com/paritytech/substrate.git", branch = "master" }
+sp-io = { version = "8.0.0", git = "https://github.com/paritytech/substrate.git", branch = "master" }
+sp-keyring = { version = "8.0.0", git = "https://github.com/paritytech/substrate.git", branch = "master" }
+sp-runtime = { version = "8.0.0", git = "https://github.com/paritytech/substrate.git", branch = "master" }
+sp-std = { version = "6.0.0", git = "https://github.com/paritytech/substrate.git", branch = "master" }
+sp-version = { version = "6.0.0", git = "https://github.com/paritytech/substrate.git", branch = "master" }
 
 [features]
 default = ["std"]
