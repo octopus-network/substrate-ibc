@@ -17,7 +17,7 @@ use alloc::string::String;
 use frame_support::{
 	pallet_prelude::*,
 	traits::{
-		fungibles::Mutate,
+		fungibles::{Mutate, Transfer},
 		tokens::{AssetId, Balance as AssetBalance},
 		Currency,
 	},
@@ -68,7 +68,7 @@ pub mod pallet {
 			Self::AccountId,
 			AssetId = Self::AssetId,
 			Balance = Self::AssetBalance,
-		>;
+		> + Transfer<Self::AccountId, AssetId = Self::AssetId, Balance = Self::AssetBalance>;
 
 		/// Map of cross-chain asset ID & name
 		type AssetIdByName: AssetIdAndNameProvider<Self::AssetId>;

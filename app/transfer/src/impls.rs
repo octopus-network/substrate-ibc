@@ -1,8 +1,7 @@
 use crate::{callback::IbcTransferModule, utils::get_channel_escrow_address, *};
 use codec::{Decode, Encode};
 use frame_support::traits::{
-	fungibles::Mutate,
-	tokens::{Fortitude, Precision, Preservation},
+	fungibles::{Mutate, Transfer},
 	ExistenceRequirement::AllowDeath,
 };
 use ibc::{
@@ -76,12 +75,12 @@ where
 				// look cross chain asset have register in host chain
 				match T::AssetIdByName::try_get_asset_id(denom) {
 					Ok(token_id) => {
-						<T::Fungibles as Mutate<T::AccountId>>::transfer(
+						<T::Fungibles as Transfer<T::AccountId>>::transfer(
 							token_id,
 							&from.clone().into_account(),
 							&to.clone().into_account(),
 							amount,
-							Preservation::Preserve,
+							true,
 						)
 						.map_err(|error| {
 							error!("❌ [send_coins] : Error: ({:?})", error);
@@ -97,7 +96,7 @@ where
 					},
 					Err(_error) => {
 						error!("❌ [send_coins]: denom: ({:?})", denom);
-						return Err(TokenTransferError::InvalidToken)
+						return Err(TokenTransferError::InvalidToken);
 					},
 				}
 			},
@@ -135,7 +134,7 @@ where
 			},
 			Err(_error) => {
 				error!("❌ [mint_coins]: denom: ({:?})", denom);
-				return Err(TokenTransferError::InvalidToken)
+				return Err(TokenTransferError::InvalidToken);
 			},
 		}
 		Ok(())
@@ -155,8 +154,6 @@ where
 					token_id.clone(),
 					&account.clone().into_account(),
 					amount,
-					Precision::BestEffort,
-					Fortitude::Force,
 				)
 				.map_err(|error| {
 					error!("❌ [burn_coins] : Error: ({:?})", error);
@@ -172,7 +169,7 @@ where
 			},
 			Err(_error) => {
 				error!("❌ [burn_coins]: denom: ({:?})", denom);
-				return Err(TokenTransferError::InvalidToken)
+				return Err(TokenTransferError::InvalidToken);
 			},
 		}
 		Ok(())
