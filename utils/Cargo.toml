@@ -9,11 +9,10 @@ edition = "2021"
 
 [dependencies]
 ibc = { version = "0.41.0", default-features = false, features = ["parity-scale-codec"] }
-ibc-proto = { version = "0.30.0", default-features = false }
 
 # substrate crates
-codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive"] }
-scale-info = { version = "2.1.2", default-features = false, features = ["derive"] }
+codec = { package = "parity-scale-codec", version = "3.2.2", default-features = false, features = ["derive"] }
+scale-info = { version = "2.5.0", default-features = false, features = ["derive"] }
 sp-runtime = { version = "8.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 sp-std = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 frame-benchmarking = { version = "4.0.0-dev", default-features = false, optional = true, git = "https://github.com/paritytech/substrate.git", branch = "master" }
@@ -23,7 +22,6 @@ frame-support = { version = "4.0.0-dev", default-features = false, git = "https:
 default = ['std']
 std = [
   "ibc/std",
-  "ibc-proto/std",
   "codec/std",
   "scale-info/std",
   "sp-runtime/std",

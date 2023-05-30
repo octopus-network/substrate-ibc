@@ -13,10 +13,6 @@ extern crate core;
 
 pub use pallet::*;
 
-pub use alloc::{
-	format,
-	string::{String, ToString},
-};
 use frame_support::pallet_prelude::*;
 use frame_system::{ensure_signed, pallet_prelude::*};
 use ibc::core::{
@@ -46,12 +42,13 @@ use sp_std::{fmt::Debug, vec, vec::Vec};
 
 pub mod context;
 pub mod errors;
+pub mod prelude;
 
 pub use crate::context::Context;
+use crate::prelude::*;
 use pallet_ibc_utils::module::AddModule;
 
 pub const TENDERMINT_CLIENT_TYPE: &'static str = "07-tendermint";
-pub const MOCK_CLIENT_TYPE: &'static str = "9999-mock";
 
 pub const LOG_TARGET: &str = "runtime::pallet-ibc";
 
@@ -323,7 +320,7 @@ pub mod pallet {
 					log::trace!(target: "pallet_ibc", "[pallet_ibc_deliver]: logs: {:?}", logs);
 				}
 			}
-			// log::trace!(target: "pallet_ibc", "[pallet_ibc_deliver]: errors: {:?}", errors);
+			log::trace!(target: "pallet_ibc", "[pallet_ibc_deliver]: errors: {:?}", errors);
 
 			if !errors.is_empty() {
 				Self::deposit_event(errors.into());
