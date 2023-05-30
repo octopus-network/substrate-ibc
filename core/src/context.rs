@@ -2,6 +2,7 @@ use crate::{prelude::*, Config, PacketCommitment as PacketCommitStore, TENDERMIN
 use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
 // use ics06_solomachine::cosmos::crypto::PublicKey;
 use sp_core::{Encode, Get};
+use sp_std::boxed::Box;
 use sp_std::marker::PhantomData;
 
 use ibc::{
@@ -73,10 +74,11 @@ impl<T: Config> Context<T> {
 		match data.as_str() {
 			TENDERMINT_CLIENT_TYPE => ClientType::new(TENDERMINT_CLIENT_TYPE.into())
 				.map_err(|e| ClientError::Other { description: format!("{}", e) }),
-			unimplemented =>
+			unimplemented => {
 				return Err(ClientError::UnknownClientStateType {
 					client_state_type: unimplemented.to_string(),
-				}),
+				})
+			},
 		}
 	}
 }
@@ -229,13 +231,14 @@ where
 							.map_err(|e| ClientError::Other {
 								description: format!("Decode Ics07ConsensusState failed: {:?}", e),
 							})?;
-						return Ok(Some(Box::new(result)))
+						return Ok(Some(Box::new(result)));
 					},
-					unimplemented =>
+					unimplemented => {
 						return Err(ClientError::Other {
 							description: format!("unknow client state type: {}", unimplemented),
 						}
-						.into()),
+						.into())
+					},
 				}
 			}
 		}
@@ -277,13 +280,14 @@ where
 						.map_err(|e| ClientError::Other {
 							description: format!("Decode Ics07ConsensusState failed: {:?}", e),
 						})?;
-						return Ok(Some(Box::new(result)))
+						return Ok(Some(Box::new(result)));
 					},
-					unimplemented =>
+					unimplemented => {
 						return Err(ClientError::Other {
 							description: format!("unknow client state type: {}", unimplemented),
 						}
-						.into()),
+						.into())
+					},
 				}
 			}
 		}
