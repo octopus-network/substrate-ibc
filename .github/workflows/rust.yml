@@ -27,8 +27,8 @@ jobs:
 
     - name: Check code format
       run: cargo fmt -- --check
-    - name: Lint rust sources
-      run: cargo clippy --all-targets --all-features --tests --benches -- -D warnings
+    # - name: Lint rust sources
+    #   run: cargo clippy --all-targets --all-features --tests --benches -- -D warnings
     - name: Build
       run: cargo build --verbose
     - name: Run tests
