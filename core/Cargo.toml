@@ -31,7 +31,7 @@ sp-std = { version = "6.0.0", default-features = false, git = "https://github.co
 sp-tracing = { version = "7.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 
 ## for ibc protocl
-ibc = { version = "0.41.0", default-features = false, features = ["parity-scale-codec", "serde"] }
+ibc = { version = "0.41.0", default-features = false, features = ["parity-scale-codec"] }
 ibc-proto = { version = "0.30.0", default-features = false, features = ["parity-scale-codec"]  }
 pallet-ibc-utils = { version = "0.1.0", default-features = false, path = "../utils" }
 ics06-solomachine = { version = "0.1.0", default-features = false, git = "https://github.com/DaviRain-Su/ics06-solomachine.git", branch = "main" }
