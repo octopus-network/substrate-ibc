@@ -2,6 +2,7 @@ use crate::{Config, PacketCommitment as PacketCommitStore, TENDERMINT_CLIENT_TYP
 use alloc::{borrow::ToOwned, string::String, sync::Arc};
 use core::time::Duration;
 use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
+use ics06_solomachine::cosmos::crypto::PublicKey;
 use sp_core::{Encode, Get};
 use sp_std::marker::PhantomData;
 
@@ -313,8 +314,17 @@ where
 		&self,
 		_height: &Height,
 	) -> Result<Box<dyn ConsensusState>, ContextError> {
-		// todo(davirian) need Add
-		Err(ClientError::Other { description: "unimplement".into() }.into())
+		//ref: https://github.com/octopus-network/hermes/commit/7d7891ff29e79f8dd13d6826f75bce8544d54826
+		use ics06_solomachine::consensus_state::ConsensusState as SolConsensusState;
+		// todo(davirain) need fix
+		let fix_public_key = "{\"@type\":\"/cosmos.crypto.secp256k1.PubKey\",\"key\":\"A5W0C7iEAuonX56sR81PiwaKTE0GvZlCYuGwHTMpWJo+\"}";
+		let fix_public_key = fix_public_key.parse::<PublicKey>().map_err(|e| {
+			ClientError::Other { description: format!(" parse Publickey failed ({})", e) }
+		})?;
+		let host_timestamp = self.host_timestamp()?;
+		let consensus_state =
+			SolConsensusState::new(fix_public_key, "substrate".to_string(), host_timestamp);
+		Ok(Box::new(consensus_state))
 	}
 
 	/// Returns a natural number, counting how many clients have been created

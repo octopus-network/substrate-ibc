@@ -17,7 +17,7 @@ pub use alloc::{
 	format,
 	string::{String, ToString},
 };
-use frame_support::{pallet_prelude::*};
+use frame_support::pallet_prelude::*;
 use frame_system::{ensure_signed, pallet_prelude::*};
 use ibc::core::{
 	events::IbcEvent,
@@ -196,6 +196,10 @@ pub mod pallet {
 	#[pallet::storage]
 	pub type IbcEventKey<T: Config> = StorageValue<_, Vec<Vec<u8>>, ValueQuery>;
 
+	// /// for ics06 publickey
+	// #[pallet::storage]
+	// pub type Keys<T: Config> = StorageValue<_, Vec<Vec<u8>>, ValueQuery>;
+
 	#[pallet::storage]
 	pub type IbcLogKey<T: Config> = StorageValue<_, Vec<Vec<u8>>, ValueQuery>;
 
@@ -327,5 +331,23 @@ pub mod pallet {
 
 			Ok(().into())
 		}
+
+		// #[pallet::call_index(1)]
+		// #[pallet::weight(0)]
+		// pub fn add_mulitisign(
+		// 	origin: OriginFor<T>,
+		// 	public_keys: Vec<Vec<u8>>,
+		// ) -> DispatchResultWithPostInfo {
+		// 	let _ = ensure_root(origin)?;
+
+		// 	for public_key in public_keys {
+		// 		let _ = Keys::<T>::try_mutate::<_, (), _>(|val| {
+		// 			val.push(public_key);
+		// 			Ok(())
+		// 		});
+		// 	}
+
+		// 	Ok(().into())
+		// }
 	}
 }
