@@ -17,7 +17,7 @@ use alloc::string::String;
 use frame_support::{
 	pallet_prelude::*,
 	traits::{
-		fungibles::{Mutate, Transfer},
+		fungibles::Mutate,
 		tokens::{AssetId, Balance as AssetBalance},
 		Currency,
 	},
@@ -40,7 +40,6 @@ pub mod pallet {
 	use super::*;
 
 	#[pallet::pallet]
-	#[pallet::generate_store(pub(super) trait Store)]
 	#[pallet::without_storage_info]
 	pub struct Pallet<T>(_);
 
@@ -68,7 +67,7 @@ pub mod pallet {
 			Self::AccountId,
 			AssetId = Self::AssetId,
 			Balance = Self::AssetBalance,
-		> + Transfer<Self::AccountId, AssetId = Self::AssetId, Balance = Self::AssetBalance>;
+		>;
 
 		/// Map of cross-chain asset ID & name
 		type AssetIdByName: AssetIdAndNameProvider<Self::AssetId>;
