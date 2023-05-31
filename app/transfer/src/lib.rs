@@ -95,8 +95,7 @@ pub mod pallet {
 		pub asset_id_by_name: Vec<(String, T::AssetId)>,
 	}
 
-	#[cfg(feature = "std")]
-	impl<T: Config> Default for GenesisConfig<T> {
+	impl<T: Config> core::default::Default for GenesisConfig<T> {
 		fn default() -> Self {
 			Self { asset_id_by_name: Vec::new() }
 		}
