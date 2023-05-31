@@ -23,7 +23,7 @@ pub struct IbcTransferModule<T: pallet_ibc::Config> {
 
 impl<T: Config> IbcTransferModule<T> {
 	pub fn new(ibc_core_context: pallet_ibc::context::Context<T>) -> Self {
-		Self { ibc_core_context, phatom_data: PhantomData::default() }
+		Self { ibc_core_context, phatom_data: PhantomData }
 	}
 }
 
