@@ -1,5 +1,4 @@
-use crate::{Config, Event};
-use crate::prelude::*;
+use crate::{prelude::*, Config, Event};
 use codec::{Decode, Encode};
 use ibc::core::RouterError;
 use sp_std::vec::Vec;

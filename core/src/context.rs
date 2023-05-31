@@ -2,8 +2,7 @@ use crate::{prelude::*, Config, PacketCommitment as PacketCommitStore, TENDERMIN
 use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
 use ics06_solomachine::cosmos::crypto::PublicKey;
 use sp_core::{Encode, Get};
-use sp_std::boxed::Box;
-use sp_std::marker::PhantomData;
+use sp_std::{boxed::Box, marker::PhantomData};
 
 use ibc::{
 	applications::transfer::{
@@ -74,11 +73,10 @@ impl<T: Config> Context<T> {
 		match data.as_str() {
 			TENDERMINT_CLIENT_TYPE => ClientType::new(TENDERMINT_CLIENT_TYPE.into())
 				.map_err(|e| ClientError::Other { description: format!("{}", e) }),
-			unimplemented => {
+			unimplemented =>
 				return Err(ClientError::UnknownClientStateType {
 					client_state_type: unimplemented.to_string(),
-				})
-			},
+				}),
 		}
 	}
 }
@@ -231,14 +229,13 @@ where
 							.map_err(|e| ClientError::Other {
 								description: format!("Decode Ics07ConsensusState failed: {:?}", e),
 							})?;
-						return Ok(Some(Box::new(result)));
+						return Ok(Some(Box::new(result)))
 					},
-					unimplemented => {
+					unimplemented =>
 						return Err(ClientError::Other {
 							description: format!("unknow client state type: {}", unimplemented),
 						}
-						.into())
-					},
+						.into()),
 				}
 			}
 		}
@@ -280,14 +277,13 @@ where
 						.map_err(|e| ClientError::Other {
 							description: format!("Decode Ics07ConsensusState failed: {:?}", e),
 						})?;
-						return Ok(Some(Box::new(result)));
+						return Ok(Some(Box::new(result)))
 					},
-					unimplemented => {
+					unimplemented =>
 						return Err(ClientError::Other {
 							description: format!("unknow client state type: {}", unimplemented),
 						}
-						.into())
-					},
+						.into()),
 				}
 			}
 		}
@@ -319,11 +315,11 @@ where
 		//ref: https://github.com/octopus-network/hermes/commit/7d7891ff29e79f8dd13d6826f75bce8544d54826
 		use ics06_solomachine::consensus_state::ConsensusState as SolConsensusState;
 		// todo(davirain) need fix
-		let fix_public_key =
-		"{\"@type\":\"/cosmos.crypto.secp256k1.PubKey\",\"key\":\"
-		A5W0C7iEAuonX56sR81PiwaKTE0GvZlCYuGwHTMpWJo+\"}"; let fix_public_key =
-		fix_public_key.parse::<PublicKey>().map_err(|e| { 	ClientError::Other { description:
-		format!(" parse Publickey failed ({})", e) } })?;
+		let fix_public_key = "{\"@type\":\"/cosmos.crypto.secp256k1.PubKey\",\"key\":\"
+		A5W0C7iEAuonX56sR81PiwaKTE0GvZlCYuGwHTMpWJo+\"}";
+		let fix_public_key = fix_public_key.parse::<PublicKey>().map_err(|e| {
+			ClientError::Other { description: format!(" parse Publickey failed ({})", e) }
+		})?;
 		let host_timestamp = self.host_timestamp()?;
 		let consensus_state =
 			SolConsensusState::new(fix_public_key, "substrate".to_string(), host_timestamp);

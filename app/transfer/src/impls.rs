@@ -97,7 +97,7 @@ where
 					},
 					Err(_error) => {
 						error!("❌ [send_coins]: denom: ({:?})", denom);
-						return Err(TokenTransferError::InvalidToken);
+						return Err(TokenTransferError::InvalidToken)
 					},
 				}
 			},
@@ -135,7 +135,7 @@ where
 			},
 			Err(_error) => {
 				error!("❌ [mint_coins]: denom: ({:?})", denom);
-				return Err(TokenTransferError::InvalidToken);
+				return Err(TokenTransferError::InvalidToken)
 			},
 		}
 		Ok(())
@@ -172,7 +172,7 @@ where
 			},
 			Err(_error) => {
 				error!("❌ [burn_coins]: denom: ({:?})", denom);
-				return Err(TokenTransferError::InvalidToken);
+				return Err(TokenTransferError::InvalidToken)
 			},
 		}
 		Ok(())
