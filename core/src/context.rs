@@ -52,7 +52,7 @@ impl<T: Config> Context<T> {
 	pub fn new() -> Self {
 		let router = Router::new();
 		let r = T::IbcModule::add_module(router);
-		Self { _pd: PhantomData::default(), router: r }
+		Self { _pd: PhantomData, router: r }
 	}
 
 	pub fn add_route(
