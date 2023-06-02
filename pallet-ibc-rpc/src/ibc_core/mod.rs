@@ -20,6 +20,13 @@ pub struct ChainStatus {
 }
 
 /// Query the latest height and timestamp the application is at
+pub async fn query_application_status_with_substrate() -> Result<ChainStatus> {
+	// Create a new API client, configured to talk to Polkadot nodes.
+	let api = OnlineClient::<SubstrateConfig>::new().await?;
+	query_application_status(api).await
+}
+
+/// Query the latest height and timestamp the application is at
 pub async fn query_application_status(
 	rpc_client: OnlineClient<SubstrateConfig>,
 ) -> Result<ChainStatus> {
