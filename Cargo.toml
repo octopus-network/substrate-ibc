@@ -3,7 +3,9 @@ members = [
   "app/transfer",
   "utils",
   "core",
+  "pallet-ibc-rpc",
 ]
+resolver = "2"
 
 [patch.crates-io]
 ibc = { git = "https://github.com/DaviRain-Su/ibc-rs.git", branch = "fix-695" }
