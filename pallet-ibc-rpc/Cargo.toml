@@ -8,8 +8,8 @@ edition = "2021"
 [dependencies]
 subxt = "0.29.0"
 anyhow = "1.0.71"
-ibc = { version = "0.41.0", default-features = false, features = ["parity-scale-codec", "serde"] }
 
 
 [dev-dependencies]
 tokio = "1"
+ibc = { version = "0.41.0", default-features = false, features = ["parity-scale-codec", "serde"] }

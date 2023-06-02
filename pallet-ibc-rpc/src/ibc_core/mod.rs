@@ -1,6 +1,6 @@
 use crate::node_template;
 use anyhow::Result;
-use ibc::core::timestamp::Timestamp;
+
 use std::time::Duration;
 use subxt::{OnlineClient, SubstrateConfig};
 
@@ -9,6 +9,9 @@ pub struct Height {
 	pub reversion_number: u64,
 	pub reversion_height: u64,
 }
+
+#[derive(Debug)]
+pub struct Timestamp(pub u64);
 
 #[derive(Debug)]
 pub struct ChainStatus {
@@ -36,21 +39,24 @@ pub async fn query_application_status(
 		.fetch(&timestamp_storage_query)
 		.await?
 		.ok_or(anyhow::anyhow!("Timestamp is None"))?;
-	let duration = Duration::from_millis(result);
-	let timestamp = Timestamp::from_nanoseconds(duration.as_nanos() as u64)
-		.map_err(|e| anyhow::anyhow!("get timestmap eror({})", e))?;
-	Ok(ChainStatus { height, timestamp })
+	Ok(ChainStatus { height, timestamp: Timestamp(result) })
 }
 
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use ibc::core::timestamp::Timestamp;
 
 	#[tokio::test]
 	async fn test_query_application_status() {
 		// Create a new API client, configured to talk to Polkadot nodes.
 		let api = OnlineClient::<SubstrateConfig>::new().await.unwrap();
 		let result = query_application_status(api).await.unwrap();
-		println!("{:?}", result);
+		println!("height = {:?}", result.height);
+		let duration = Duration::from_millis(result.timestamp.0);
+		let timestamp = Timestamp::from_nanoseconds(duration.as_nanos() as u64)
+			.map_err(|e| anyhow::anyhow!("get timestmap eror({})", e))
+			.unwrap();
+		println!("timestamp = {:?}", timestamp);
 	}
 }
