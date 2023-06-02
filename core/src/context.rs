@@ -736,3 +736,9 @@ where
 		log::trace!("emit ibc event: {:?}", message);
 	}
 }
+
+#[test]
+fn test_public_key_der() {
+	let fix_public_key = "{\"@type\":\"/cosmos.crypto.secp256k1.PubKey\",\"key\":\"A5W0C7iEAuonX56sR81PiwaKTE0GvZlCYuGwHTMpWJo+\"}";
+	let _fix_public_key = fix_public_key.parse::<PublicKey>().unwrap();
+}
