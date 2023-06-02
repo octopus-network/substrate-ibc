@@ -7,8 +7,8 @@ edition = "2021"
 
 [dependencies]
 subxt = "0.29.0"
-ibc-relayer = { version = "0.24.0", git = "https://github.com/DaviRain-Su/hermes.git", branch = "master" }
 anyhow = "1.0.71"
+ibc = { version = "0.41.0", default-features = false, features = ["parity-scale-codec", "serde"] }
 
 
 [dev-dependencies]
