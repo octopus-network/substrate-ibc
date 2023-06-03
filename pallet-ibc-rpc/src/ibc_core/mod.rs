@@ -23,12 +23,12 @@ pub struct ChainStatus {
 pub async fn query_application_status_with_substrate(rpc_url: &str) -> Result<ChainStatus> {
 	// Create a new API client, configured to talk to Polkadot nodes.
 	let api = OnlineClient::<SubstrateConfig>::from_url(rpc_url).await?;
-	query_application_status(api).await
+	query_application_status(&api).await
 }
 
 /// Query the latest height and timestamp the application is at
 pub async fn query_application_status(
-	rpc_client: OnlineClient<SubstrateConfig>,
+	rpc_client: &OnlineClient<SubstrateConfig>,
 ) -> Result<ChainStatus> {
 	let finalized_header_hash = rpc_client.rpc().finalized_head().await?;
 	let finalized_header = rpc_client
@@ -58,7 +58,7 @@ mod tests {
 	async fn test_query_application_status() {
 		// Create a new API client, configured to talk to Polkadot nodes.
 		let api = OnlineClient::<SubstrateConfig>::new().await.unwrap();
-		let result = query_application_status(api).await.unwrap();
+		let result = query_application_status(&api).await.unwrap();
 		println!("height = {:?}", result.height);
 		let duration = Duration::from_millis(result.timestamp.0);
 		let timestamp = Timestamp::from_nanoseconds(duration.as_nanos() as u64)
