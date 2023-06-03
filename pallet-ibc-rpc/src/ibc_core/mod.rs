@@ -20,9 +20,9 @@ pub struct ChainStatus {
 }
 
 /// Query the latest height and timestamp the application is at
-pub async fn query_application_status_with_substrate() -> Result<ChainStatus> {
+pub async fn query_application_status_with_substrate(rpc_url: &str) -> Result<ChainStatus> {
 	// Create a new API client, configured to talk to Polkadot nodes.
-	let api = OnlineClient::<SubstrateConfig>::new().await?;
+	let api = OnlineClient::<SubstrateConfig>::from_url(rpc_url).await?;
 	query_application_status(api).await
 }
 
@@ -59,6 +59,17 @@ mod tests {
 		// Create a new API client, configured to talk to Polkadot nodes.
 		let api = OnlineClient::<SubstrateConfig>::new().await.unwrap();
 		let result = query_application_status(api).await.unwrap();
+		println!("height = {:?}", result.height);
+		let duration = Duration::from_millis(result.timestamp.0);
+		let timestamp = Timestamp::from_nanoseconds(duration.as_nanos() as u64)
+			.map_err(|e| anyhow::anyhow!("get timestmap eror({})", e))
+			.unwrap();
+		println!("timestamp = {:?}", timestamp);
+	}
+
+	#[tokio::test]
+	async fn test_query_application_status_with_substrate() {
+		let result = query_application_status_with_substrate("ws://127.0.0.1:9944").await.unwrap();
 		println!("height = {:?}", result.height);
 		let duration = Duration::from_millis(result.timestamp.0);
 		let timestamp = Timestamp::from_nanoseconds(duration.as_nanos() as u64)
