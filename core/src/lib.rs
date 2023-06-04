@@ -194,7 +194,10 @@ pub mod pallet {
 	pub type IbcEventKey<T: Config> = StorageValue<_, Vec<Vec<u8>>, ValueQuery>;
 
 	#[pallet::storage]
-	pub type IbcLogKey<T: Config> = StorageValue<_, Vec<Vec<u8>>, ValueQuery>;
+	pub type IbcEventStorage<T: Config> = StorageValue<_, Vec<IbcEvent>, ValueQuery>;
+
+	#[pallet::storage]
+	pub type IbcLogStorage<T: Config> = StorageValue<_, Vec<Vec<u8>>, ValueQuery>;
 
 	/// Substrate IBC event list
 	#[pallet::event]
@@ -246,14 +249,6 @@ pub mod pallet {
 
 			// clear Ibc event key
 			IbcEventKey::<T>::set(vec![]);
-
-			// clean ibc log offchain key
-			for key in IbcLogKey::<T>::get() {
-				sp_io::offchain_index::clear(&key);
-			}
-
-			// clean ibc log key
-			IbcLogKey::<T>::set(vec![]);
 		}
 	}
 
@@ -298,24 +293,18 @@ pub mod pallet {
 			});
 
 			// emit ibc event
-			for key in IbcEventKey::<T>::get() {
-				if let Some(value) =
-					sp_io::offchain::local_storage_get(StorageKind::PERSISTENT, &key)
-				{
-					let ibc_event = IbcEvent::decode(&mut &value[..]).unwrap();
-					Self::deposit_event(Event::IbcEvents { events: vec![ibc_event] });
-				}
-			}
+			Self::deposit_event(Event::IbcEvents { events: IbcEventStorage::<T>::get() });
+			// reset
+			IbcEventStorage::<T>::put(Vec::<IbcEvent>::new());
 
 			// emit ibc log
-			for key in IbcLogKey::<T>::get() {
-				if let Some(value) =
-					sp_io::offchain::local_storage_get(StorageKind::PERSISTENT, &key)
-				{
-					let logs = String::decode(&mut &value[..]).unwrap();
-					log::info!("[pallet_ibc_deliver]: logs: {:?}", logs);
-				}
+			for ibc_log in IbcLogStorage::<T>::get() {
+				let logs = String::from_utf8(ibc_log).unwrap();
+				log::info!("[pallet_ibc_deliver]: logs: {:?}", logs);
 			}
+			// reset
+			IbcLogStorage::<T>::put(Vec::<Vec<u8>>::new());
+
 			log::info!("[pallet_ibc_deliver]: errors: {:?}", errors);
 
 			if !errors.is_empty() {

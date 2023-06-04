@@ -761,26 +761,23 @@ where
 			Ok(())
 		});
 
+		let _ = <IbcEventStorage<T>>::try_mutate::<_, (), _>(|val| {
+			val.push(event.clone());
+			Ok(())
+		});
 		log::trace!("emit ibc event: {:?}", event);
 	}
 
-	// todo(davirian) Don't Know this correct
 	/// Log the given message.
 	fn log_message(&mut self, message: String) {
 		log::info!("📒📒 log_message:  ({})", message);
 
-		let mut key = b"pallet-ibc:ibc-log".to_vec();
-		let mut value = sp_io::hashing::sha2_256(&message.as_ref()).to_vec();
-		let _ = key.append(&mut value);
-
 		// store ibc log
-		sp_io::offchain_index::set(&key, message.as_ref());
-
-		// store ibc log key
-		let _ = IbcLogKey::<T>::try_mutate::<_, (), _>(|val| {
-			val.push(key);
+		let _ = IbcLogStorage::<T>::try_mutate::<_, (), _>(|val| {
+			val.push(message.as_bytes().to_vec());
 			Ok(())
 		});
+
 		log::trace!("emit ibc event: {:?}", message);
 	}
 }
