@@ -279,7 +279,7 @@ pub mod pallet {
 			origin: OriginFor<T>,
 			messages: Vec<ibc_proto::google::protobuf::Any>,
 		) -> DispatchResultWithPostInfo {
-			log::info!("dispatch messages: {:?}", messages);
+			log::info!("✍️✍️✍️dispatch messages: {:?}", messages);
 			ensure_signed(origin)?;
 			let mut ctx = Context::<T>::new();
 
@@ -300,12 +300,12 @@ pub mod pallet {
 			// emit ibc log
 			for ibc_log in IbcLogStorage::<T>::get() {
 				let logs = String::from_utf8(ibc_log).unwrap();
-				log::info!("[pallet_ibc_deliver]: logs: {:?}", logs);
+				log::info!("📔📔📔[pallet_ibc_deliver]: logs: {:?}", logs);
 			}
 			// reset
 			IbcLogStorage::<T>::put(Vec::<Vec<u8>>::new());
 
-			log::info!("[pallet_ibc_deliver]: errors: {:?}", errors);
+			log::info!("🙅🙅🙅[pallet_ibc_deliver]: errors: {:?}", errors);
 
 			if !errors.is_empty() {
 				Self::deposit_event(errors.into());
