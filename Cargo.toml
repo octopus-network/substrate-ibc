@@ -3,7 +3,6 @@ members = [
   "app/transfer",
   "utils",
   "core",
-  "pallet-ibc-rpc",
 ]
 resolver = "2"
 
