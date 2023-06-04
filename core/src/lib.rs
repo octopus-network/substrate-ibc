@@ -49,6 +49,7 @@ use crate::prelude::*;
 use pallet_ibc_utils::module::AddModule;
 
 pub const TENDERMINT_CLIENT_TYPE: &'static str = "07-tendermint";
+pub const SOLOMACHINE_CLIENT_TYPE: &'static str = "06-solomachine";
 
 pub const LOG_TARGET: &str = "runtime::pallet-ibc";
 

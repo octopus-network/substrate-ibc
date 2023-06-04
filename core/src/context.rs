@@ -1,6 +1,12 @@
-use crate::{prelude::*, Config, PacketCommitment as PacketCommitStore, TENDERMINT_CLIENT_TYPE, *};
+use crate::{
+	prelude::*, Config, PacketCommitment as PacketCommitStore, SOLOMACHINE_CLIENT_TYPE,
+	TENDERMINT_CLIENT_TYPE, *,
+};
 use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
-use ics06_solomachine::cosmos::crypto::PublicKey;
+use ics06_solomachine::{
+	client_state::ClientState as Ics06ClientState,
+	consensus_state::ConsensusState as Ics06ConsensusState, cosmos::crypto::PublicKey,
+};
 use sp_core::{Encode, Get};
 use sp_std::{boxed::Box, marker::PhantomData};
 
@@ -72,6 +78,8 @@ impl<T: Config> Context<T> {
 		})?;
 		match data.as_str() {
 			TENDERMINT_CLIENT_TYPE => ClientType::new(TENDERMINT_CLIENT_TYPE.into())
+				.map_err(|e| ClientError::Other { description: format!("{}", e) }),
+			SOLOMACHINE_CLIENT_TYPE => ClientType::new(SOLOMACHINE_CLIENT_TYPE.into())
 				.map_err(|e| ClientError::Other { description: format!("{}", e) }),
 			unimplemented =>
 				return Err(ClientError::UnknownClientStateType {
@@ -148,6 +156,15 @@ where
 
 				Ok(Box::new(result))
 			},
+			SOLOMACHINE_CLIENT_TYPE => {
+				log::info!("client_state({})", SOLOMACHINE_CLIENT_TYPE);
+				let result: Ics06ClientState =
+					Protobuf::<Any>::decode_vec(&data).map_err(|e| ClientError::Other {
+						description: format!("Decode Ics07ClientState failed: {:?}", e),
+					})?;
+
+				Ok(Box::new(result))
+			},
 			unimplemented => {
 				log::info!("client_state({})", unimplemented);
 				Err(ClientError::Other {
@@ -161,6 +178,8 @@ where
 	/// Tries to decode the given `client_state` into a concrete light client state.
 	fn decode_client_state(&self, client_state: Any) -> Result<Box<dyn ClientState>, ContextError> {
 		if let Ok(client_state) = Ics07ClientState::try_from(client_state.clone()) {
+			Ok(client_state.into_box())
+		} else if let Ok(client_state) = Ics06ClientState::try_from(client_state.clone()) {
 			Ok(client_state.into_box())
 		} else {
 			Err(ClientError::UnknownClientStateType { client_state_type: client_state.type_url }
@@ -190,6 +209,13 @@ where
 				let result: Ics07ConsensusState =
 					Protobuf::<Any>::decode_vec(&data).map_err(|e| ClientError::Other {
 						description: format!("Decode Ics07ConsensusState failed: {:?}", e),
+					})?;
+				Ok(Box::new(result))
+			},
+			SOLOMACHINE_CLIENT_TYPE => {
+				let result: Ics06ConsensusState =
+					Protobuf::<Any>::decode_vec(&data).map_err(|e| ClientError::Other {
+						description: format!("Decode Ics06ConsensusState failed: {:?}", e),
 					})?;
 				Ok(Box::new(result))
 			},
@@ -232,6 +258,13 @@ where
 						let result: Ics07ConsensusState = Protobuf::<Any>::decode_vec(&data)
 							.map_err(|e| ClientError::Other {
 								description: format!("Decode Ics07ConsensusState failed: {:?}", e),
+							})?;
+						return Ok(Some(Box::new(result)))
+					},
+					SOLOMACHINE_CLIENT_TYPE => {
+						let result: Ics06ConsensusState = Protobuf::<Any>::decode_vec(&data)
+							.map_err(|e| ClientError::Other {
+								description: format!("Decode Ics06ConsensusState failed: {:?}", e),
 							})?;
 						return Ok(Some(Box::new(result)))
 					},
@@ -281,6 +314,13 @@ where
 						.map_err(|e| ClientError::Other {
 							description: format!("Decode Ics07ConsensusState failed: {:?}", e),
 						})?;
+						return Ok(Some(Box::new(result)))
+					},
+					SOLOMACHINE_CLIENT_TYPE => {
+						let result: Ics06ConsensusState = Protobuf::<Any>::decode_vec(&data)
+							.map_err(|e| ClientError::Other {
+								description: format!("Decode Ics06ConsensusState failed: {:?}", e),
+							})?;
 						return Ok(Some(Box::new(result)))
 					},
 					unimplemented =>
