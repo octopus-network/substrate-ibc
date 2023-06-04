@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 subxt = "0.29.0"
 anyhow = "1.0.71"
-
+ibc-relayer-types = { version = "0.24.0", git = "https://github.com/DaviRain-Su/hermes.git", branch = "master" }
 
 [dev-dependencies]
 tokio = "1"
