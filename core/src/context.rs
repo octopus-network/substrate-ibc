@@ -140,6 +140,7 @@ where
 		)?;
 		match self.client_type(client_id)?.as_str() {
 			TENDERMINT_CLIENT_TYPE => {
+				log::info!("client_state({})", TENDERMINT_CLIENT_TYPE);
 				let result: Ics07ClientState =
 					Protobuf::<Any>::decode_vec(&data).map_err(|e| ClientError::Other {
 						description: format!("Decode Ics07ClientState failed: {:?}", e),
@@ -147,10 +148,13 @@ where
 
 				Ok(Box::new(result))
 			},
-			unimplemented => Err(ClientError::Other {
-				description: format!("unknow client state type:({})", unimplemented),
-			}
-			.into()),
+			unimplemented => {
+				log::info!("client_state({})", unimplemented);
+				Err(ClientError::Other {
+					description: format!("unknow client state type:({})", unimplemented),
+				}
+				.into())
+			},
 		}
 	}
 
@@ -702,6 +706,8 @@ where
 	// todo(davirian) Don't Know this correct
 	/// Emit the given IBC event
 	fn emit_ibc_event(&mut self, event: IbcEvent) {
+		log::info!("⌚️⌚️⌚️ emit_ibc_event:  ({:?})", event);
+
 		let mut key = b"pallet-ibc:ibc-event".to_vec();
 		let mut value = sp_io::hashing::sha2_256(&event.encode()).to_vec();
 		let _ = key.append(&mut value);
@@ -721,6 +727,8 @@ where
 	// todo(davirian) Don't Know this correct
 	/// Log the given message.
 	fn log_message(&mut self, message: String) {
+		log::info!("📒📒 log_message:  ({})", message);
+
 		let mut key = b"pallet-ibc:ibc-log".to_vec();
 		let mut value = sp_io::hashing::sha2_256(&message.as_ref()).to_vec();
 		let _ = key.append(&mut value);
