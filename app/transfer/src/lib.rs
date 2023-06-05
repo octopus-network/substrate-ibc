@@ -28,6 +28,7 @@ use ibc_proto::google::protobuf::Any;
 use pallet_ibc_utils::{AssetIdAndNameProvider, Router};
 use sp_runtime::traits::IdentifyAccount;
 use sp_std::{fmt::Debug, vec::Vec};
+use scale_info::prelude::format;
 
 pub const LOG_TARGET: &str = "runtime::pallet-ics20-transfer";
 type BalanceOf<T> =
