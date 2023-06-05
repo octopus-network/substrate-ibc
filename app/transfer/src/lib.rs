@@ -26,9 +26,9 @@ use frame_system::pallet_prelude::*;
 use ibc::{applications::transfer::msgs::transfer::MsgTransfer, Signer};
 use ibc_proto::google::protobuf::Any;
 use pallet_ibc_utils::{AssetIdAndNameProvider, Router};
+use scale_info::prelude::format;
 use sp_runtime::traits::IdentifyAccount;
 use sp_std::{fmt::Debug, vec::Vec};
-use scale_info::prelude::format;
 
 pub const LOG_TARGET: &str = "runtime::pallet-ics20-transfer";
 type BalanceOf<T> =
