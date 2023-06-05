@@ -55,6 +55,7 @@ pub use alloc::{
 	format,
 	string::{String, ToString},
 };
+use ibc_proto::google::protobuf::Any;
 pub use weights::WeightInfo;
 
 pub const LOG_TARGET: &str = "runtime::pallet-ibc";
@@ -270,48 +271,57 @@ pub mod pallet {
 		/// The relevant events are emitted when successful.
 		#[pallet::call_index(0)]
 		#[pallet::weight(0)]
-		pub fn deliver(
-			origin: OriginFor<T>,
-			messages: Vec<ibc_proto::google::protobuf::Any>,
-		) -> DispatchResultWithPostInfo {
-			ensure_signed(origin)?;
-			let mut ctx = Context::<T>::new();
-			log::info!(
-				"☀️ ibc messages type: {:?}",
-				messages.iter().map(|v| &v.type_url).collect::<Vec<_>>()
-			);
+		pub fn deliver(origin: OriginFor<T>, messages: Vec<Any>) -> DispatchResultWithPostInfo {
+			let _ = ensure_signed(origin)?;
 
-			let (events, logs, errors) = messages.into_iter().fold(
-				(vec![], vec![], vec![]),
-				|(mut events, mut logs, mut errors), msg| {
-					match ibc::core::ics26_routing::handler::deliver(&mut ctx, msg) {
-						Ok(MsgReceipt { events: temp_events, log: temp_logs }) => {
-							events.extend(temp_events);
-							logs.extend(temp_logs);
-						},
-						Err(e) => errors.push(e),
-					}
-					(events, logs, errors)
-				},
-			);
-			log::info!("🙅🙅 deliver ----> events: {:?}", events);
-			log::info!("🙅🙅 🔥 🔥deliver ----> logs: {:?}", logs);
-			log::info!("🙅🙅 ❌❌ deliver ----> errors: {:?}", errors);
-
-			log::trace!(target: "pallet_ibc", "[pallet_ibc_deliver]: logs: {:?}", logs);
-			log::trace!(target: "pallet_ibc", "[pallet_ibc_deliver]: errors: {:?}", errors);
-
-			let block_height = <frame_system::Pallet<T>>::block_number();
-
-			for event in events.clone() {
-				<IbcEventStore<T>>::insert(u64::from(block_height), event);
-			}
-			Self::deposit_event(Event::IbcEvents { events });
-			if !errors.is_empty() {
-				Self::deposit_event(errors.into());
-			}
-
+			<pallet::Pallet<T> as pallet_ibc_utils::Router>::dispatch(messages)?;
 			Ok(().into())
 		}
+	}
+}
+
+impl<T: Config> pallet_ibc_utils::Router for Pallet<T>
+where
+	u64: From<<T as pallet_timestamp::Config>::Moment>
+		+ From<<T as frame_system::Config>::BlockNumber>,
+{
+	fn dispatch(messages: Vec<Any>) -> DispatchResult {
+		let mut ctx = Context::<T>::new();
+		log::info!(
+			"☀️ ibc messages type: {:?}",
+			messages.iter().map(|v| &v.type_url).collect::<Vec<_>>()
+		);
+
+		let (events, logs, errors) = messages.into_iter().fold(
+			(vec![], vec![], vec![]),
+			|(mut events, mut logs, mut errors), msg| {
+				match ibc::core::ics26_routing::handler::deliver(&mut ctx, msg) {
+					Ok(MsgReceipt { events: temp_events, log: temp_logs }) => {
+						events.extend(temp_events);
+						logs.extend(temp_logs);
+					},
+					Err(e) => errors.push(e),
+				}
+				(events, logs, errors)
+			},
+		);
+		log::info!("🙅🙅 deliver ----> events: {:?}", events);
+		log::info!("🙅🙅 🔥 🔥deliver ----> logs: {:?}", logs);
+		log::info!("🙅🙅 ❌❌ deliver ----> errors: {:?}", errors);
+
+		log::trace!(target: "pallet_ibc", "[pallet_ibc_deliver]: logs: {:?}", logs);
+		log::trace!(target: "pallet_ibc", "[pallet_ibc_deliver]: errors: {:?}", errors);
+
+		let block_height = <frame_system::Pallet<T>>::block_number();
+
+		for event in events.clone() {
+			<IbcEventStore<T>>::insert(u64::from(block_height), event);
+		}
+		Self::deposit_event(Event::IbcEvents { events });
+		if !errors.is_empty() {
+			Self::deposit_event(errors.into());
+		}
+
+		Ok(())
 	}
 }

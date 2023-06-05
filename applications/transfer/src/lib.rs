@@ -37,7 +37,8 @@ use ibc::{
 	handler::{HandlerOutput, HandlerOutputBuilder},
 	signer::Signer,
 };
-use pallet_ibc_utils::AssetIdAndNameProvider;
+use ibc_proto::google::protobuf::Any;
+use pallet_ibc_utils::{AssetIdAndNameProvider, Router};
 use sp_runtime::traits::IdentifyAccount;
 use sp_std::{fmt::Debug, vec::Vec};
 
@@ -56,7 +57,9 @@ pub mod pallet {
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
-	pub trait Config: frame_system::Config + Sync + Send + Debug {
+	pub trait Config:
+		frame_system::Config + pallet_timestamp::Config + Sync + Send + Debug
+	{
 		/// The aggregated event type of the runtime.
 		type RuntimeEvent: Parameter
 			+ Member
@@ -167,7 +170,11 @@ pub mod pallet {
 	// These functions materialize as "extrinsics", which are often compared to transactions.
 	// Dispatchable functions must be annotated with a weight and must return a DispatchResult.
 	#[pallet::call]
-	impl<T: Config> Pallet<T> {
+	impl<T: Config> Pallet<T>
+	where
+		u64: From<<T as pallet_timestamp::Config>::Moment>
+			+ From<<T as frame_system::Config>::BlockNumber>,
+	{
 		/// ICS20 fungible token transfer.
 		/// Handling transfer request as sending chain or receiving chain.
 		///
@@ -179,52 +186,11 @@ pub mod pallet {
 		#[pallet::weight(0)]
 		pub fn raw_transfer(
 			origin: OriginFor<T>,
-			messages: Vec<ibc_proto::google::protobuf::Any>,
+			messages: Vec<Any>,
 		) -> DispatchResultWithPostInfo {
 			let _sender = ensure_signed(origin)?;
-			let mut ctx = IbcTransferModule(PhantomData::<T>);
 
-			log::trace!(
-				target: LOG_TARGET,
-				"raw_transfer : {:?} ",
-				messages.iter().map(|message| message.type_url.clone()).collect::<Vec<_>>()
-			);
-
-			for message in messages {
-				let mut handle_out = HandlerOutputBuilder::new();
-				let msg_transfer = MsgTransfer::try_from(message)
-					.map_err(|_| Error::<T>::ParserMsgTransferError)?;
-				let result = ibc::applications::transfer::relay::send_transfer::send_transfer(
-					&mut ctx,
-					&mut handle_out,
-					msg_transfer,
-				);
-				match result {
-					Ok(_value) => {
-						log::trace!(target: LOG_TARGET, "raw_transfer Successful!");
-					},
-					Err(error) => {
-						log::trace!(target: LOG_TARGET, "raw_transfer Error : {:?} ", error);
-					},
-				}
-
-				let HandlerOutput::<()> { result: _, log, events } = handle_out.with_result(());
-
-				log::trace!(target: LOG_TARGET, "raw_transfer log : {:?} ", log);
-
-				// deposit events about send packet event and ics20 transfer event
-				for event in events {
-					log::trace!(target: LOG_TARGET, "raw_transfer event : {:?} ", event);
-					match event {
-						IbcEvent::SendPacket(ref send_packet) => {
-							Self::deposit_event(Event::SendPacket(send_packet.clone()));
-						},
-						_ => {
-							Self::deposit_event(Event::UnsupportedEvent);
-						},
-					}
-				}
-			}
+			let _ = Self::dispatch(messages)?;
 
 			Ok(().into())
 		}
@@ -248,5 +214,58 @@ impl<T: Config> AssetIdAndNameProvider<T::AssetId> for Pallet<T> {
 			Some(id) => Ok(id),
 			_ => Err(Error::<T>::WrongAssetId),
 		}
+	}
+}
+
+impl<T: Config> pallet_ibc_utils::Router for Pallet<T>
+where
+	u64: From<<T as pallet_timestamp::Config>::Moment>
+		+ From<<T as frame_system::Config>::BlockNumber>,
+{
+	fn dispatch(messages: Vec<Any>) -> DispatchResult {
+		let mut ctx = IbcTransferModule(PhantomData::<T>);
+
+		log::trace!(
+			target: LOG_TARGET,
+			"raw_transfer : {:?} ",
+			messages.iter().map(|message| message.type_url.clone()).collect::<Vec<_>>()
+		);
+
+		for message in messages {
+			let mut handle_out = HandlerOutputBuilder::new();
+			let msg_transfer =
+				MsgTransfer::try_from(message).map_err(|_| Error::<T>::ParserMsgTransferError)?;
+			let result = ibc::applications::transfer::relay::send_transfer::send_transfer(
+				&mut ctx,
+				&mut handle_out,
+				msg_transfer,
+			);
+			match result {
+				Ok(_value) => {
+					log::trace!(target: LOG_TARGET, "raw_transfer Successful!");
+				},
+				Err(error) => {
+					log::trace!(target: LOG_TARGET, "raw_transfer Error : {:?} ", error);
+				},
+			}
+
+			let HandlerOutput::<()> { result: _, log, events } = handle_out.with_result(());
+
+			log::trace!(target: LOG_TARGET, "raw_transfer log : {:?} ", log);
+
+			// deposit events about send packet event and ics20 transfer event
+			for event in events {
+				log::trace!(target: LOG_TARGET, "raw_transfer event : {:?} ", event);
+				match event {
+					IbcEvent::SendPacket(ref send_packet) => {
+						Self::deposit_event(Event::SendPacket(send_packet.clone()));
+					},
+					_ => {
+						Self::deposit_event(Event::UnsupportedEvent);
+					},
+				}
+			}
+		}
+		Ok(())
 	}
 }

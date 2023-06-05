@@ -1,0 +1,38 @@
+[package]
+name = "pallet-ibc-router"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+pallet-ibc = { version = "4.0.0-dev", path = "../core", default-features = false }
+pallet-ics20-transfer = { version = "4.0.0-dev", path = "../applications/transfer", default-features = false, optional = true }
+ibc-proto = { version = "0.25.0", default-features = false, features = ["parity-scale-codec"], git = "https://github.com/octopus-network/ibc-proto-rs", branch = "ibc" }
+pallet-ibc-utils = { version = "0.1.0", default-features = false, path = "../utils" }
+
+
+# substrate crates
+codec = { package = "parity-scale-codec", version = "3.2.2", default-features = false, features = ["derive"] }
+scale-info = { version = "2.5.0", default-features = false, features = ["derive"] }
+frame-support = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.40" }
+frame-system = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.40" }
+sp-std = { version = "5.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.40" }
+pallet-timestamp = { version = "4.0.0-dev", default-features = false,  git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.40" }
+
+
+[features]
+default = ["std"]
+std = [
+    "pallet-ibc/std",
+    "pallet-ics20-transfer/std",
+    "pallet-ibc-utils/std",
+    "ibc-proto/std",
+    "codec/std",
+    "scale-info/std",
+    "frame-support/std",
+    "frame-system/std",
+    "sp-std/std",
+    "pallet-timestamp/std",
+]
+ics20 = ["pallet-ics20-transfer"]
