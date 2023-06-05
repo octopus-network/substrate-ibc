@@ -11,6 +11,7 @@ use frame_support::pallet_prelude::*;
 use frame_system::pallet_prelude::*;
 use ibc_proto::google::protobuf::Any;
 use sp_std::{fmt::Debug, vec::Vec};
+use scale_info::prelude::vec;
 
 #[frame_support::pallet]
 pub mod pallet {
