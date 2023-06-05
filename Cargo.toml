@@ -3,6 +3,7 @@ members = [
   "app/transfer",
   "utils",
   "core",
+  "ibc-router",
 ]
 resolver = "2"
 

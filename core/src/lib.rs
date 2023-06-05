@@ -37,7 +37,7 @@ use ibc::core::{
 	},
 	MsgEnvelope, RouterError,
 };
-use sp_core::offchain::StorageKind;
+use ibc_proto::google::protobuf::Any;
 use sp_std::{fmt::Debug, vec, vec::Vec};
 
 pub mod context;
@@ -275,43 +275,52 @@ pub mod pallet {
 		/// The relevant events are emitted when successful.
 		#[pallet::call_index(0)]
 		#[pallet::weight(0)]
-		pub fn dispatch(
-			origin: OriginFor<T>,
-			messages: Vec<ibc_proto::google::protobuf::Any>,
-		) -> DispatchResultWithPostInfo {
+		pub fn dispatch(origin: OriginFor<T>, messages: Vec<Any>) -> DispatchResultWithPostInfo {
 			log::info!("✍️✍️✍️dispatch messages: {:?}", messages);
-			ensure_signed(origin)?;
-			let mut ctx = Context::<T>::new();
+			let _ = ensure_signed(origin)?;
 
-			let errors = messages.into_iter().fold(vec![], |mut errors: Vec<RouterError>, msg| {
-				let envelope: MsgEnvelope = msg.try_into().unwrap();
-				match ibc::core::dispatch(&mut ctx, envelope) {
-					Ok(()) => {},
-					Err(e) => errors.push(e),
-				}
-				errors
-			});
-
-			// emit ibc event
-			Self::deposit_event(Event::IbcEvents { events: IbcEventStorage::<T>::get() });
-			// reset
-			IbcEventStorage::<T>::put(Vec::<IbcEvent>::new());
-
-			// emit ibc log
-			for ibc_log in IbcLogStorage::<T>::get() {
-				let logs = String::from_utf8(ibc_log).unwrap();
-				log::info!("📔📔📔[pallet_ibc_deliver]: logs: {:?}", logs);
-			}
-			// reset
-			IbcLogStorage::<T>::put(Vec::<Vec<u8>>::new());
-
-			log::info!("🙅🙅🙅[pallet_ibc_deliver]: errors: {:?}", errors);
-
-			if !errors.is_empty() {
-				Self::deposit_event(errors.into());
-			}
+			<pallet::Pallet<T> as pallet_ibc_utils::Router>::dispatch(messages)?;
 
 			Ok(().into())
 		}
+	}
+}
+
+impl<T: Config> pallet_ibc_utils::Router for Pallet<T>
+where
+	u64: From<<T as pallet_timestamp::Config>::Moment>
+		+ From<<T as frame_system::Config>::BlockNumber>,
+{
+	fn dispatch(messages: Vec<Any>) -> DispatchResult {
+		let mut ctx = Context::<T>::new();
+
+		let errors = messages.into_iter().fold(vec![], |mut errors: Vec<RouterError>, msg| {
+			let envelope: MsgEnvelope = msg.try_into().unwrap();
+			match ibc::core::dispatch(&mut ctx, envelope) {
+				Ok(()) => {},
+				Err(e) => errors.push(e),
+			}
+			errors
+		});
+
+		// emit ibc event
+		Self::deposit_event(Event::IbcEvents { events: IbcEventStorage::<T>::get() });
+		// reset
+		IbcEventStorage::<T>::put(Vec::<IbcEvent>::new());
+
+		// emit ibc log
+		for ibc_log in IbcLogStorage::<T>::get() {
+			let logs = String::from_utf8(ibc_log).unwrap();
+			log::info!("📔📔📔[pallet_ibc_deliver]: logs: {:?}", logs);
+		}
+		// reset
+		IbcLogStorage::<T>::put(Vec::<Vec<u8>>::new());
+
+		log::info!("🙅🙅🙅[pallet_ibc_deliver]: errors: {:?}", errors);
+
+		if !errors.is_empty() {
+			Self::deposit_event(errors.into());
+		}
+		Ok(())
 	}
 }

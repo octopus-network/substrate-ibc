@@ -23,11 +23,9 @@ use frame_support::{
 	},
 };
 use frame_system::pallet_prelude::*;
-use ibc::{
-	applications::transfer::msgs::transfer::MsgTransfer, core::ics04_channel::events::SendPacket,
-	Signer,
-};
-use pallet_ibc_utils::AssetIdAndNameProvider;
+use ibc::{applications::transfer::msgs::transfer::MsgTransfer, Signer};
+use ibc_proto::google::protobuf::Any;
+use pallet_ibc_utils::{AssetIdAndNameProvider, Router};
 use sp_runtime::traits::IdentifyAccount;
 use sp_std::{fmt::Debug, vec::Vec};
 
@@ -115,8 +113,10 @@ pub mod pallet {
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		/// Send packet event
-		SendPacket(SendPacket),
+		/// transfer ibc token successful
+		TransferIbcTokenSuccessful,
+		/// transfer ibc token have error
+		TransferIbcTokenErr(String),
 		// unsupported event
 		UnsupportedEvent,
 		/// Transfer native token  event
@@ -166,33 +166,11 @@ pub mod pallet {
 		#[pallet::weight(0)]
 		pub fn raw_transfer(
 			origin: OriginFor<T>,
-			messages: Vec<ibc_proto::google::protobuf::Any>,
+			messages: Vec<Any>,
 		) -> DispatchResultWithPostInfo {
 			let _sender = ensure_signed(origin)?;
-			let ibc_core_context = pallet_ibc::context::Context::<T>::new();
-			let mut ctx = IbcTransferModule::new(ibc_core_context);
 
-			log::trace!(
-				target: LOG_TARGET,
-				"raw_transfer : {:?} ",
-				messages.iter().map(|message| message.type_url.clone()).collect::<Vec<_>>()
-			);
-
-			for message in messages {
-				let msg_transfer = MsgTransfer::try_from(message)
-					.map_err(|_| Error::<T>::ParserMsgTransferError)?;
-				let result = ibc::applications::transfer::send_transfer(&mut ctx, msg_transfer);
-				match result {
-					Ok(_value) => {
-						log::trace!(target: LOG_TARGET, "raw_transfer Successful!");
-					},
-					Err(error) => {
-						log::trace!(target: LOG_TARGET, "raw_transfer Error : {:?} ", error);
-					},
-				}
-
-				// evemt and log will be emit on ibc-core
-			}
+			let _ = Self::dispatch(messages)?;
 
 			Ok(().into())
 		}
@@ -216,5 +194,38 @@ impl<T: Config> AssetIdAndNameProvider<T::AssetId> for Pallet<T> {
 			Some(id) => Ok(id),
 			_ => Err(Error::<T>::WrongAssetId),
 		}
+	}
+}
+
+impl<T: Config> pallet_ibc_utils::Router for Pallet<T>
+where
+	u64: From<<T as pallet_timestamp::Config>::Moment>
+		+ From<<T as frame_system::Config>::BlockNumber>,
+{
+	fn dispatch(messages: Vec<Any>) -> DispatchResult {
+		let ibc_core_context = pallet_ibc::context::Context::<T>::new();
+		let mut ctx = IbcTransferModule::new(ibc_core_context);
+
+		log::trace!(
+			target: LOG_TARGET,
+			"raw_transfer : {:?} ",
+			messages.iter().map(|message| message.type_url.clone()).collect::<Vec<_>>()
+		);
+
+		for message in messages {
+			let msg_transfer = MsgTransfer::try_from(message).map_err(|_| {
+				sp_runtime::DispatchError::Other("Any message convert MsgTransfer error")
+			})?;
+			let result = ibc::applications::transfer::send_transfer(&mut ctx, msg_transfer);
+			match result {
+				Ok(_value) => {
+					Self::deposit_event(Event::TransferIbcTokenSuccessful);
+				},
+				Err(error) => {
+					Self::deposit_event(Event::TransferIbcTokenErr(format!("{:?}", error)));
+				},
+			}
+		}
+		Ok(())
 	}
 }
