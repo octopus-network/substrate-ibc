@@ -3,9 +3,10 @@ use crate::{
 	TENDERMINT_CLIENT_TYPE, *,
 };
 use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
-use ics06_solomachine::{
+use ics06_solomachine::cosmos::crypto::PublicKey;
+use ics06_solomachine::v3::{
 	client_state::ClientState as Ics06ClientState,
-	consensus_state::ConsensusState as Ics06ConsensusState, cosmos::crypto::PublicKey,
+	consensus_state::ConsensusState as Ics06ConsensusState,
 };
 use sp_core::{Encode, Get};
 use sp_std::{boxed::Box, marker::PhantomData};
@@ -81,10 +82,11 @@ impl<T: Config> Context<T> {
 				.map_err(|e| ClientError::Other { description: format!("{}", e) }),
 			SOLOMACHINE_CLIENT_TYPE => ClientType::new(SOLOMACHINE_CLIENT_TYPE.into())
 				.map_err(|e| ClientError::Other { description: format!("{}", e) }),
-			unimplemented =>
+			unimplemented => {
 				return Err(ClientError::UnknownClientStateType {
 					client_state_type: unimplemented.to_string(),
-				}),
+				})
+			},
 		}
 	}
 }
@@ -259,20 +261,21 @@ where
 							.map_err(|e| ClientError::Other {
 								description: format!("Decode Ics07ConsensusState failed: {:?}", e),
 							})?;
-						return Ok(Some(Box::new(result)))
+						return Ok(Some(Box::new(result)));
 					},
 					SOLOMACHINE_CLIENT_TYPE => {
 						let result: Ics06ConsensusState = Protobuf::<Any>::decode_vec(&data)
 							.map_err(|e| ClientError::Other {
 								description: format!("Decode Ics06ConsensusState failed: {:?}", e),
 							})?;
-						return Ok(Some(Box::new(result)))
+						return Ok(Some(Box::new(result)));
 					},
-					unimplemented =>
+					unimplemented => {
 						return Err(ClientError::Other {
 							description: format!("unknow client state type: {}", unimplemented),
 						}
-						.into()),
+						.into())
+					},
 				}
 			}
 		}
@@ -314,20 +317,21 @@ where
 						.map_err(|e| ClientError::Other {
 							description: format!("Decode Ics07ConsensusState failed: {:?}", e),
 						})?;
-						return Ok(Some(Box::new(result)))
+						return Ok(Some(Box::new(result)));
 					},
 					SOLOMACHINE_CLIENT_TYPE => {
 						let result: Ics06ConsensusState = Protobuf::<Any>::decode_vec(&data)
 							.map_err(|e| ClientError::Other {
 								description: format!("Decode Ics06ConsensusState failed: {:?}", e),
 							})?;
-						return Ok(Some(Box::new(result)))
+						return Ok(Some(Box::new(result)));
 					},
-					unimplemented =>
+					unimplemented => {
 						return Err(ClientError::Other {
 							description: format!("unknow client state type: {}", unimplemented),
 						}
-						.into()),
+						.into())
+					},
 				}
 			}
 		}
@@ -357,7 +361,7 @@ where
 		_height: &Height,
 	) -> Result<Box<dyn ConsensusState>, ContextError> {
 		//ref: https://github.com/octopus-network/hermes/commit/7d7891ff29e79f8dd13d6826f75bce8544d54826
-		use ics06_solomachine::consensus_state::ConsensusState as SolConsensusState;
+		use ics06_solomachine::v3::consensus_state::ConsensusState as SolConsensusState;
 		// todo(davirain) need fix
 		let fix_public_key = "{\"@type\":\"/cosmos.crypto.secp256k1.PubKey\",\"key\":\"
 		A5W0C7iEAuonX56sR81PiwaKTE0GvZlCYuGwHTMpWJo+\"}";

@@ -34,7 +34,7 @@ sp-tracing = { version = "10.0.0", default-features = false, git = "https://gith
 ibc = { version = "0.41.0", default-features = false, features = ["parity-scale-codec", "serde"] }
 ibc-proto = { version = "0.30.0", default-features = false, features = ["parity-scale-codec"]  }
 pallet-ibc-utils = { version = "0.1.0", default-features = false, path = "../utils" }
-ics06-solomachine = { version = "0.1.0", default-features = false, git = "https://github.com/DaviRain-Su/ics06-solomachine.git", branch = "main" }
+ics06-solomachine = { version = "0.1.0", default-features = false, git = "https://github.com/DaviRain-Su/ics06-solomachine.git", branch = "main", features = ["v3"] }
 
 
 [build-dependencies]
