@@ -3,10 +3,12 @@ use crate::{
 	TENDERMINT_CLIENT_TYPE, *,
 };
 use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
-use ics06_solomachine::cosmos::crypto::PublicKey;
-use ics06_solomachine::v3::{
-	client_state::ClientState as Ics06ClientState,
-	consensus_state::ConsensusState as Ics06ConsensusState,
+use ics06_solomachine::{
+	cosmos::crypto::PublicKey,
+	v3::{
+		client_state::ClientState as Ics06ClientState,
+		consensus_state::ConsensusState as Ics06ConsensusState,
+	},
 };
 use sp_core::{Encode, Get};
 use sp_std::{boxed::Box, marker::PhantomData};
@@ -82,11 +84,10 @@ impl<T: Config> Context<T> {
 				.map_err(|e| ClientError::Other { description: format!("{}", e) }),
 			SOLOMACHINE_CLIENT_TYPE => ClientType::new(SOLOMACHINE_CLIENT_TYPE.into())
 				.map_err(|e| ClientError::Other { description: format!("{}", e) }),
-			unimplemented => {
+			unimplemented =>
 				return Err(ClientError::UnknownClientStateType {
 					client_state_type: unimplemented.to_string(),
-				})
-			},
+				}),
 		}
 	}
 }
@@ -261,21 +262,20 @@ where
 							.map_err(|e| ClientError::Other {
 								description: format!("Decode Ics07ConsensusState failed: {:?}", e),
 							})?;
-						return Ok(Some(Box::new(result)));
+						return Ok(Some(Box::new(result)))
 					},
 					SOLOMACHINE_CLIENT_TYPE => {
 						let result: Ics06ConsensusState = Protobuf::<Any>::decode_vec(&data)
 							.map_err(|e| ClientError::Other {
 								description: format!("Decode Ics06ConsensusState failed: {:?}", e),
 							})?;
-						return Ok(Some(Box::new(result)));
+						return Ok(Some(Box::new(result)))
 					},
-					unimplemented => {
+					unimplemented =>
 						return Err(ClientError::Other {
 							description: format!("unknow client state type: {}", unimplemented),
 						}
-						.into())
-					},
+						.into()),
 				}
 			}
 		}
@@ -317,21 +317,20 @@ where
 						.map_err(|e| ClientError::Other {
 							description: format!("Decode Ics07ConsensusState failed: {:?}", e),
 						})?;
-						return Ok(Some(Box::new(result)));
+						return Ok(Some(Box::new(result)))
 					},
 					SOLOMACHINE_CLIENT_TYPE => {
 						let result: Ics06ConsensusState = Protobuf::<Any>::decode_vec(&data)
 							.map_err(|e| ClientError::Other {
 								description: format!("Decode Ics06ConsensusState failed: {:?}", e),
 							})?;
-						return Ok(Some(Box::new(result)));
+						return Ok(Some(Box::new(result)))
 					},
-					unimplemented => {
+					unimplemented =>
 						return Err(ClientError::Other {
 							description: format!("unknow client state type: {}", unimplemented),
 						}
-						.into())
-					},
+						.into()),
 				}
 			}
 		}
