@@ -342,17 +342,17 @@ where
 
 	/// Returns the current height of the local chain.
 	fn host_height(&self) -> Result<Height, ContextError> {
-		cfg_if::cfg_if! {
-			if #[cfg(any(feature = "ics06"))]  {
-				let host_height = <HostHeight<T>>::get();
-				host_height.ok_or(ClientError::Other { description: "Height is None".to_string() }.into())
-			} else {
-				let block_height = <frame_system::Pallet<T>>::block_number();
-				Height::new(T::ChainVersion::get(), block_height.into()).map_err(|e| {
-					ClientError::Other { description: format!("contruct Ibc Height error: {}", e) }.into()
-				})
-			}
-		}
+		// cfg_if::cfg_if! {
+		// if #[cfg(any(feature = "ics06"))]  {
+		// let host_height = <HostHeight<T>>::get();
+		// host_height.ok_or(ClientError::Other { description: "Height is None".to_string() }.into())
+		// } else {
+		let block_height = <frame_system::Pallet<T>>::block_number();
+		Height::new(T::ChainVersion::get(), block_height.into()).map_err(|e| {
+			ClientError::Other { description: format!("contruct Ibc Height error: {}", e) }.into()
+		})
+		// }
+		// }
 	}
 
 	/// Returns the current timestamp of the local chain.
