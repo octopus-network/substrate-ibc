@@ -16,6 +16,7 @@ targets = ["x86_64-unknown-linux-gnu"]
 log = { version = "0.4.0", default-features = false }
 serde = { version = "1.0", default-features = false }
 serde_json = { version = "1.0", default-features = false }
+cfg-if = { version = "1.0.0" }
 
 # substate crates
 scale-info = { version = "2.5.0", default-features = false, features = ["derive"] }
@@ -34,7 +35,7 @@ sp-tracing = { version = "10.0.0", default-features = false, git = "https://gith
 ibc = { version = "0.41.0", default-features = false, features = ["parity-scale-codec", "serde"] }
 ibc-proto = { version = "0.30.0", default-features = false, features = ["parity-scale-codec"]  }
 pallet-ibc-utils = { version = "0.1.0", default-features = false, path = "../utils" }
-ics06-solomachine = { version = "0.1.0", default-features = false, git = "https://github.com/DaviRain-Su/ics06-solomachine.git", branch = "main", features = ["v3"] }
+ics06-solomachine = { version = "0.1.0", default-features = false, git = "https://github.com/DaviRain-Su/ibc-light-clients.git", branch = "main", features = ["v3"] }
 
 
 [build-dependencies]
@@ -43,7 +44,7 @@ substrate-wasm-builder = { version = "5.0.0-dev", git = "https://github.com/pari
 [dev-dependencies]
 
 [features]
-default = ['std']
+default = ['std', "ics06"]
 std = [
     "log/std",
     "serde/std",
@@ -64,6 +65,7 @@ std = [
     "ibc-proto/std",
     "ics06-solomachine/std",
 ]
+ics06 = []
 runtime-benchmarks = [
   "frame-benchmarking/runtime-benchmarks",
   "frame-system/runtime-benchmarks",

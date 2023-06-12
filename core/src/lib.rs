@@ -304,7 +304,9 @@ where
 		});
 
 		// emit ibc event
+		// we don't want emit Message event
 		Self::deposit_event(Event::IbcEvents { events: IbcEventStorage::<T>::get() });
+
 		// reset
 		IbcEventStorage::<T>::put(Vec::<IbcEvent>::new());
 
