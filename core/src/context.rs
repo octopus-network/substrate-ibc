@@ -84,10 +84,11 @@ impl<T: Config> Context<T> {
 				.map_err(|e| ClientError::Other { description: format!("{}", e) }),
 			SOLOMACHINE_CLIENT_TYPE => ClientType::new(SOLOMACHINE_CLIENT_TYPE.into())
 				.map_err(|e| ClientError::Other { description: format!("{}", e) }),
-			unimplemented =>
+			unimplemented => {
 				return Err(ClientError::UnknownClientStateType {
 					client_state_type: unimplemented.to_string(),
-				}),
+				})
+			},
 		}
 	}
 }
@@ -262,20 +263,21 @@ where
 							.map_err(|e| ClientError::Other {
 								description: format!("Decode Ics07ConsensusState failed: {:?}", e),
 							})?;
-						return Ok(Some(Box::new(result)))
+						return Ok(Some(Box::new(result)));
 					},
 					SOLOMACHINE_CLIENT_TYPE => {
 						let result: Ics06ConsensusState = Protobuf::<Any>::decode_vec(&data)
 							.map_err(|e| ClientError::Other {
 								description: format!("Decode Ics06ConsensusState failed: {:?}", e),
 							})?;
-						return Ok(Some(Box::new(result)))
+						return Ok(Some(Box::new(result)));
 					},
-					unimplemented =>
+					unimplemented => {
 						return Err(ClientError::Other {
 							description: format!("unknow client state type: {}", unimplemented),
 						}
-						.into()),
+						.into())
+					},
 				}
 			}
 		}
@@ -317,20 +319,21 @@ where
 						.map_err(|e| ClientError::Other {
 							description: format!("Decode Ics07ConsensusState failed: {:?}", e),
 						})?;
-						return Ok(Some(Box::new(result)))
+						return Ok(Some(Box::new(result)));
 					},
 					SOLOMACHINE_CLIENT_TYPE => {
 						let result: Ics06ConsensusState = Protobuf::<Any>::decode_vec(&data)
 							.map_err(|e| ClientError::Other {
 								description: format!("Decode Ics06ConsensusState failed: {:?}", e),
 							})?;
-						return Ok(Some(Box::new(result)))
+						return Ok(Some(Box::new(result)));
 					},
-					unimplemented =>
+					unimplemented => {
 						return Err(ClientError::Other {
 							description: format!("unknow client state type: {}", unimplemented),
 						}
-						.into()),
+						.into())
+					},
 				}
 			}
 		}
@@ -339,10 +342,17 @@ where
 
 	/// Returns the current height of the local chain.
 	fn host_height(&self) -> Result<Height, ContextError> {
-		let block_height = <frame_system::Pallet<T>>::block_number();
-		Height::new(T::ChainVersion::get(), block_height.into()).map_err(|e| {
-			ClientError::Other { description: format!("contruct Ibc Height error: {}", e) }.into()
-		})
+		cfg_if::cfg_if! {
+			if #[cfg(any(feature = "ics06"))]  {
+				let host_height = <HostHeight<T>>::get();
+				host_height.ok_or(ClientError::Other { description: "Height is None".to_string() }.into())
+			} else {
+				let block_height = <frame_system::Pallet<T>>::block_number();
+				Height::new(T::ChainVersion::get(), block_height.into()).map_err(|e| {
+					ClientError::Other { description: format!("contruct Ibc Height error: {}", e) }.into()
+				})
+			}
+		}
 	}
 
 	/// Returns the current timestamp of the local chain.
@@ -560,7 +570,12 @@ where
 		client_state_path: ClientStatePath,
 		client_state: Box<dyn ClientState>,
 	) -> Result<(), ContextError> {
+		// update client type
 		<ClientTypeById<T>>::insert(client_state_path.0.clone(), client_state.client_type());
+		// update host height
+		let latest_height = client_state.latest_height();
+		<HostHeight<T>>::put(latest_height);
+		// update client state
 		let data = client_state.encode_vec();
 		<ClientStates<T>>::insert(client_state_path, data);
 		Ok(())

@@ -187,8 +187,8 @@ pub mod pallet {
 		StorageMap<_, Blake2_128Concat, CommitmentPath, IbcPacketCommitment>;
 
 	#[pallet::storage]
-	/// Previous host block height
-	pub type OldHeight<T: Config> = StorageValue<_, u64, ValueQuery>;
+	/// host block height for ics06 solomachine
+	pub type HostHeight<T: Config> = StorageValue<_, Height>;
 
 	#[pallet::storage]
 	pub type IbcEventKey<T: Config> = StorageValue<_, Vec<Vec<u8>>, ValueQuery>;
