@@ -1,4 +1,5 @@
 use crate::{callback::IbcTransferModule, utils::get_channel_escrow_address, *};
+use alloc::string::String;
 use alloc::{format, string::ToString};
 use codec::{Decode, Encode};
 use frame_support::traits::{
@@ -9,7 +10,7 @@ use ibc::{
 	applications::transfer::{
 		context::{BankKeeper, TokenTransferContext, TokenTransferReader},
 		error::TokenTransferError,
-		PrefixedCoin, PORT_ID_STR,
+		PrefixedCoin, PrefixedDenom, PORT_ID_STR,
 	},
 	core::ics24_host::identifier::{ChannelId, PortId},
 	signer::Signer,
@@ -18,12 +19,12 @@ use log::error;
 use pallet_ibc_utils::AssetIdAndNameProvider;
 use primitive_types::U256;
 use scale_info::TypeInfo;
+use sha2::{Digest, Sha256};
 use sp_runtime::{
 	traits::{CheckedConversion, IdentifyAccount, Verify},
 	MultiSignature,
 };
 use sp_std::str::FromStr;
-use alloc::format;
 
 impl<T: Config> BankKeeper for IbcTransferModule<T> {
 	type AccountId = <Self as TokenTransferContext>::AccountId;
@@ -41,7 +42,10 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 				let amount = U256::from(amt.amount).low_u128().checked_into().unwrap(); // TODO: FIX IN THE FUTURE
 				let native_token_name = T::NATIVE_TOKEN_NAME;
 				let ibc_token_name = amt.denom.base_denom.as_str().as_bytes();
-
+				log::info!(
+					"🐙🐙 pallet_ics20_transfer::impls -> send_coins native_token_name: {:?} amount:{:?}",
+					native_token_name,amount
+				);
 				// assert native token name equal want to send ibc token name
 				assert_eq!(
 					native_token_name, ibc_token_name,
@@ -73,9 +77,17 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 			false => {
 				let amount = U256::from(amt.amount).low_u128().into();
 				let denom = amt.denom.base_denom.as_str();
+				log::info!(
+					"🐙🐙 pallet_ics20_transfer::impls -> send_coins transfer non-native token: {:?} amount:{:?}",
+					denom,amount
+				);
 				// look cross chain asset have register in host chain
 				match T::AssetIdByName::try_get_asset_id(denom) {
 					Ok(token_id) => {
+						log::info!(
+							"🐙🐙 pallet_ics20_transfer::impls -> send_coins asset id: {:?} asset name:{:?}",
+							token_id,denom
+						);
 						<T::Fungibles as Transfer<T::AccountId>>::transfer(
 							token_id,
 							&from.clone().into_account(),
@@ -97,7 +109,7 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 					},
 					Err(_error) => {
 						error!("❌ [send_coins]: denom: ({:?})", denom);
-						return Err(TokenTransferError::InvalidToken)
+						return Err(TokenTransferError::InvalidToken);
 					},
 				}
 			},
@@ -112,17 +124,23 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 		amt: &PrefixedCoin,
 	) -> Result<(), TokenTransferError> {
 		let amount = U256::from(amt.amount).low_u128().into();
-		let denom = amt.denom.base_denom.as_str();
-		let denom_trace_hash =
-			crate::utils::derive_ibc_denom_with_path(&format!("{}", amt.denom.trace_path.clone()))?
-				.as_bytes()
-				.to_vec();
+
+		let denom_trace_hash = self.denom_hash_string(&amt.denom).unwrap();
 		let denom_trace = crate::denom::PrefixedDenom::from(amt.denom.clone());
+		log::info!(
+			"🐙🐙 pallet_ics20_transfer::impls -> mint_coins  denom_trace_hash:{:?}, denom_trace: {:?} ",
+			denom_trace_hash,denom_trace
+		);
 		// insert denom trace hash, and demo_trace
-		<DenomTrace<T>>::insert(denom_trace_hash, denom_trace);
+		<DenomTrace<T>>::insert(denom_trace_hash.as_bytes().to_vec(), denom_trace);
 		// look cross chain asset have register in host chain
+		let denom: &str = amt.denom.base_denom.as_str();
 		match T::AssetIdByName::try_get_asset_id(denom) {
 			Ok(token_id) => {
+				log::info!(
+					"🐙🐙 pallet_ics20_transfer::impls -> mint_coins asset id: {:?} asset name:{:?}",
+					token_id,denom
+				);
 				<T::Fungibles as Mutate<T::AccountId>>::mint_into(
 					token_id,
 					&account.clone().into_account(),
@@ -132,7 +150,7 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 					error!("❌ [mint_coins] : Error: ({:?})", error);
 					TokenTransferError::InvalidToken
 				})?;
-
+				log::info!("🐙🐙 pallet_ics20_transfer::impls -> token_id: {:?}, mint_into: {:?}, amount: {:?}", token_id,account.clone().into_account(),amount);
 				// add mint token event
 				Pallet::<T>::deposit_event(Event::<T>::MintToken(
 					token_id,
@@ -142,7 +160,7 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 			},
 			Err(_error) => {
 				error!("❌ [mint_coins]: denom: ({:?})", denom);
-				return Err(TokenTransferError::InvalidToken)
+				return Err(TokenTransferError::InvalidToken);
 			},
 		}
 		Ok(())
@@ -155,9 +173,18 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 	) -> Result<(), TokenTransferError> {
 		let amount = U256::from(amt.amount).low_u128().into();
 		let denom = amt.denom.base_denom.as_str();
+		log::info!(
+			"🐙🐙 pallet_ics20_transfer::impls -> burn_coins denom: {:?}, amount: {:?} ",
+			denom,
+			amount
+		);
 		// look cross chain asset have register in host chain
 		match T::AssetIdByName::try_get_asset_id(denom) {
 			Ok(token_id) => {
+				log::info!(
+					"🐙🐙 pallet_ics20_transfer::impls -> burn_coins asset id: {:?} asset name:{:?}",
+					token_id,denom
+				);
 				<T::Fungibles as Mutate<T::AccountId>>::burn_from(
 					token_id,
 					&account.clone().into_account(),
@@ -167,6 +194,7 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 					error!("❌ [burn_coins] : Error: ({:?})", error);
 					TokenTransferError::InvalidToken
 				})?;
+				log::info!("🐙🐙 pallet_ics20_transfer::impls ->burn_coins token_id: {:?}, burn_from: {:?}, amount: {:?}", token_id,account.clone().into_account(),amount);
 
 				// add burn token event
 				Pallet::<T>::deposit_event(Event::<T>::BurnToken(
@@ -177,7 +205,7 @@ impl<T: Config> BankKeeper for IbcTransferModule<T> {
 			},
 			Err(_error) => {
 				error!("❌ [burn_coins]: denom: ({:?})", denom);
-				return Err(TokenTransferError::InvalidToken)
+				return Err(TokenTransferError::InvalidToken);
 			},
 		}
 		Ok(())
@@ -212,6 +240,28 @@ impl<T: Config> TokenTransferReader for IbcTransferModule<T> {
 	fn is_receive_enabled(&self) -> bool {
 		// TODO(davirain), need according channelEnd def
 		true
+	}
+	/// Returns a hash of the prefixed denom.
+	/// Implement only if the host chain supports hashed denominations.
+	fn denom_hash_string(&self, denom: &PrefixedDenom) -> Option<String> {
+		use subtle_encoding::hex;
+		let mut hasher = Sha256::new();
+		let prefix_denom = alloc::format!("{:?}", &denom);
+		log::info!("🐙🐙 pallet_ics20_transfer::impls -> denom:{:?} to denom str:{:?}", denom,prefix_denom);
+		hasher.update(prefix_denom.as_bytes());
+
+		let denom_bytes = hasher.finalize();
+		let denom_hex = String::from_utf8(hex::encode_upper(denom_bytes))
+			.map_err(|e| TokenTransferError::UnknownMsgType { msg_type: format!("error: {}", e) })
+			.unwrap();
+
+		let denom_str = format!("ibc/{}", denom_hex);
+		log::info!(
+			"🐙🐙 pallet_ics20_transfer::impls ->PrefixedDenom:{:?} to denom_hash_string : {:?} ",
+			denom,
+			denom_str
+		);
+		Some(denom_str)
 	}
 }
 
@@ -261,5 +311,35 @@ where
 			error!("Convert Signer ❌ : Failed! ");
 			Err("invalid ibc address or substrate address")
 		}
+	}
+}
+
+impl<T: Config> IbcTransferModule<T> {
+	// GetDenomTrace retreives the full identifiers trace and base denomination from the store.
+	pub fn get_denom_trace(
+		&self,
+		denom_trace_hash: &[u8],
+	) -> Result<crate::denom::PrefixedDenom, Error<T>> {
+		<DenomTrace<T>>::get(denom_trace_hash).ok_or(Error::<T>::DenomTraceNotFound)
+
+	}
+
+	// HasDenomTrace checks if a the key with the given denomination trace hash exists on the store.
+	pub fn has_denom_trace(&self, denom_trace_hash: &[u8]) -> bool {
+		<DenomTrace<T>>::contains_key(denom_trace_hash)
+	}
+
+	// SetDenomTrace sets a new {trace hash -> denom trace} pair to the store.
+	pub fn set_denom_trace(
+		&self,
+		denom_trace_hash: &[u8],
+		denom: crate::denom::PrefixedDenom,
+	) -> Result<(), Error<T>> {
+		<DenomTrace<T>>::insert(denom_trace_hash, denom);
+		Ok(())
+	}
+
+	pub fn get_port(&self) -> Result<PortId, Error<T>> {
+		Ok(PortId::transfer())
 	}
 }
