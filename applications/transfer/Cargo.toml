@@ -31,8 +31,7 @@ sp-std = { version = "5.0.0", default-features = false, git = "https://github.co
 
 # ibc
 pallet-ibc-utils = { version = "0.1.0", default-features = false, path = "../../utils" }
-# ibc = { version = "0.28.0", default-features = false, features = ["parity-scale-codec", "serde"], git = "https://github.com/octopus-network/ibc-rs.git", branch = "v0.28.0-codec-borsh-serde"}
-ibc = { version = "0.28.0", default-features = false, features = ["parity-scale-codec", "mocks-no-std", "serde"], path = "../../../ibc-rs/crates/ibc"}
+ibc = { version = "0.28.0", default-features = false, features = ["parity-scale-codec", "mocks-no-std","serde"], git = "https://github.com/octopus-network/ibc-rs.git", branch = "icf-m3"}
 ibc-proto = { version = "0.25.0", default-features = false, features = ["parity-scale-codec"], git = "https://github.com/octopus-network/ibc-proto-rs", branch = "ibc" }
 
 [dev-dependencies]

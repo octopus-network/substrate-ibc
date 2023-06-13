@@ -214,10 +214,6 @@ pub mod pallet {
 					true => {
 						let denom_trace_hash = raw_denom.as_bytes();
 						let full_denom_path = ctx.get_denom_trace(denom_trace_hash)?;
-						// log::info!(
-						// 	"🐙🐙 pallet_ics20_transfer -> raw_transfer full_denom_path: {:?}",
-						// 	full_denom_path
-						// );
 						let ibc_prefixed_denom: IbcPrefixedDenom = full_denom_path.into();
 						log::info!(
 							"🐙🐙 pallet_ics20_transfer -> raw_transfer ibc_prefixed_denom: {:?}",
@@ -269,7 +265,7 @@ pub mod pallet {
 									log::info!("🐙🐙 pallet_ics20_transfer -> covert ibc_send_packet to pallet send_packet : {:?} ", ibc_send_packet);
 									Self::deposit_event(Event::SendPacket(ibc_send_packet.clone()));
 									let block_height = <frame_system::Pallet<T>>::block_number();
-									// save event 
+									// save event
 									<SendPacketStore<T>>::insert(u64::from(block_height), event);
 								},
 								_ => {},
@@ -277,7 +273,7 @@ pub mod pallet {
 						}
 					},
 					Err(error) => {
-						log::info!(
+						log::error!(
 							"🐙🐙 pallet_ics20_transfer -> raw_transfer Error : {:?} ",
 							error
 						);
