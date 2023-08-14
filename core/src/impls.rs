@@ -76,14 +76,14 @@ pub struct IbcContext<T: Config> {
 
 impl<T: Config> IbcContext<T> {
 	pub fn new() -> Self {
-		let router = Router::new();
+		let router = Router::new::<T>();
 		Self { _pd: PhantomData, router }
 	}
 
 	pub fn add_route(
 		&mut self,
 		module_id: ModuleId,
-		module: impl Module + 'static,
+		module: impl Module + router::IbcModule + 'static,
 	) -> Result<(), String> {
 		match self.router.router.insert(module_id, Arc::new(module)) {
 			None => Ok(()),

@@ -63,6 +63,8 @@ impl<T: Config> IbcTransferModule<T> {
 	}
 }
 
+impl<T: Config> crate::router::IbcModule for IbcTransferModule<T> {}
+
 impl<T: Config> IbcModule for IbcTransferModule<T> {
 	fn on_chan_open_init_validate(
 		&self,

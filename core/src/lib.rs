@@ -65,6 +65,8 @@ use crate::prelude::*;
 type BalanceOf<T> =
 	<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
+type AssetName = Vec<u8>;
+
 #[frame_support::pallet]
 pub mod pallet {
 	use crate::app::transfer::IbcTransferModule;
@@ -240,8 +242,6 @@ pub mod pallet {
 	#[pallet::storage]
 	pub type IbcLogStorage<T: Config> = StorageValue<_, Vec<Vec<u8>>, ValueQuery>;
 
-	type AssetName = Vec<u8>;
-
 	#[pallet::storage]
 	/// (asset name) => asset id
 	pub type AssetIdByName<T: Config> =
@@ -380,12 +380,12 @@ pub mod pallet {
 			let mut router = ctx.router.clone();
 
     		if let Ok(msg) = MsgEnvelope::try_from(message.clone()) {
-                ibc::core::dispatch(&mut ctx, &mut router, msg).unwrap(); // todo
+                ibc::core::dispatch(&mut ctx, &mut router, msg).map_err(|_| sp_runtime::DispatchError::Other("dispatch MsgEvelope failed"))?;
             } else if let Ok(transfer_msg) = MsgTransfer::try_from(message) {
                 let mut transfer_module = IbcTransferModule::<T>::new();
-                send_transfer(&mut ctx, &mut transfer_module, transfer_msg).unwrap(); // todo
+                send_transfer(&mut ctx, &mut transfer_module, transfer_msg).map_err(|_| sp_runtime::DispatchError::Other("IBC transfer failed"))?;
             } else {
-                todo!()
+                return Err(sp_runtime::DispatchError::Other("Unsupported message type").into());
             }
 
            	// emit ibc event

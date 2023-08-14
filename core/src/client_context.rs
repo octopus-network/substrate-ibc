@@ -1,6 +1,6 @@
 use super::impls::{AnyConsensusState, IbcContext};
 use crate::constant::TENDERMINT_CLIENT_TYPE;
-use crate::{Config, *};
+use crate::*;
 use ibc::{
 	clients::ics07_tendermint::{
 		client_state::ClientState as TmClientState,
