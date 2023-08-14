@@ -1,6 +1,9 @@
 use std::fmt::Debug;
 
+use super::impls::{AnyConsensusState, IbcContext};
 use crate::Config;
+use crate::*;
+use ibc::core::ics02_client::client_state::ClientStateCommon;
 use ibc::{
 	clients::ics07_tendermint::{
 		client_state::ClientState as TmClientState,
@@ -17,8 +20,8 @@ use ibc::{
 		ContextError, ValidationContext,
 	},
 };
-
-use super::impls::{AnyConsensusState, IbcContext};
+use ibc_proto::google::protobuf::Any;
+use ibc_proto::protobuf::Protobuf;
 
 impl<T: Config> ClientExecutionContext for IbcContext<T>
 where
@@ -38,15 +41,16 @@ where
 		client_state_path: ClientStatePath,
 		client_state: Self::AnyClientState,
 	) -> Result<(), ContextError> {
-		// self.client_state_store
-		// 	.set(client_state_path, client_state)
-		// 	.map(|_| ())
-		// 	.map_err(|_| ClientError::Other {
-		// 		description: "Client state store error".to_string(),
-		// 	})?;
-		// Ok(())
-		todo!()
-	}
+        // update client type
+		<ClientTypeById<T>>::insert(client_state_path.0.clone(), client_state.client_type());
+		// update host height
+		let latest_height = client_state.latest_height();
+		<HostHeight<T>>::put(latest_height);
+		// update client state
+		let encode_data = <ibc::clients::ics07_tendermint::client_state::ClientState as Protobuf<Any>>::encode_vec(&client_state);
+		<ClientStates<T>>::insert(client_state_path, encode_data);
+        Ok(())
+    }
 
 	/// Called upon successful client creation and update
 	fn store_consensus_state(
@@ -63,7 +67,10 @@ where
 		// 		description: "Consensus state store error".to_string(),
 		// 	})?;
 		// Ok(())
-		todo!()
+		let consensus_state = consensus_state.encode_vec();
+		<ConsensusStates<T>>::insert(consensus_state_path, consensus_state);
+
+		Ok(())
 	}
 }
 

@@ -3,7 +3,6 @@
 use sp_std::vec::Vec;
 
 pub mod module;
-pub mod traits;
 
 use frame_support::dispatch::DispatchResult;
 use ibc_proto::google::protobuf::Any;
