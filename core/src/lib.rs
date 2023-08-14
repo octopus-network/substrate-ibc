@@ -44,10 +44,11 @@ pub mod client_context;
 pub mod errors;
 pub mod impls;
 pub mod prelude;
+pub mod router;
+pub mod traits;
 
 pub use crate::impls::IbcContext;
 use crate::prelude::*;
-use pallet_ibc_utils::module::AddModule;
 
 pub const TENDERMINT_CLIENT_TYPE: &'static str = "07-tendermint";
 
@@ -72,8 +73,6 @@ pub mod pallet {
 		const IBC_COMMITMENT_PREFIX: &'static [u8];
 
 		type ExpectedBlockTime: Get<u64>;
-
-		type IbcModule: AddModule;
 
 		type ChainVersion: Get<u64>;
 	}
@@ -280,52 +279,40 @@ pub mod pallet {
 			log::info!("✍️✍️✍️dispatch messages: {:?}", messages);
 			let _ = ensure_signed(origin)?;
 
-			<pallet::Pallet<T> as pallet_ibc_utils::Router>::dispatch(messages)?;
+			let mut ctx = IbcContext::<T>::new();
+			let mut router = ctx.router.clone();
+
+			let errors = messages.into_iter().fold(vec![], |mut errors: Vec<RouterError>, msg| {
+				let envelope: MsgEnvelope = msg.try_into().unwrap();
+				match ibc::core::dispatch(&mut ctx, &mut router, envelope) {
+					Ok(()) => {},
+					Err(e) => errors.push(e),
+				}
+				errors
+			});
+
+			// emit ibc event
+			// we don't want emit Message event
+			Self::deposit_event(Event::IbcEvents { events: IbcEventStorage::<T>::get() });
+
+			// reset
+			IbcEventStorage::<T>::put(Vec::<IbcEvent>::new());
+
+			// emit ibc log
+			for ibc_log in IbcLogStorage::<T>::get() {
+				let logs = String::from_utf8(ibc_log).unwrap();
+				log::info!("📔📔📔[pallet_ibc_deliver]: logs: {:?}", logs);
+			}
+			// reset
+			IbcLogStorage::<T>::put(Vec::<Vec<u8>>::new());
+
+			log::info!("🙅🙅🙅[pallet_ibc_deliver]: errors: {:?}", errors);
+
+			if !errors.is_empty() {
+				Self::deposit_event(errors.into());
+			}
 
 			Ok(().into())
 		}
-	}
-}
-
-impl<T: Config> pallet_ibc_utils::Router for Pallet<T>
-where
-	u64: From<<T as pallet_timestamp::Config>::Moment>
-	+ From<<<<T as frame_system::Config>::Block as sp_runtime::traits::Block>::Header as sp_runtime::traits::Header>::Number>,
-
-{
-	fn dispatch(messages: Vec<Any>) -> DispatchResult {
-		let mut ctx = IbcContext::<T>::new();
-		let mut router = ctx.router.clone();
-
-		let errors = messages.into_iter().fold(vec![], |mut errors: Vec<RouterError>, msg| {
-			let envelope: MsgEnvelope = msg.try_into().unwrap();
-			match ibc::core::dispatch(&mut ctx, &mut router, envelope) {
-				Ok(()) => {},
-				Err(e) => errors.push(e),
-			}
-			errors
-		});
-
-		// emit ibc event
-		// we don't want emit Message event
-		Self::deposit_event(Event::IbcEvents { events: IbcEventStorage::<T>::get() });
-
-		// reset
-		IbcEventStorage::<T>::put(Vec::<IbcEvent>::new());
-
-		// emit ibc log
-		for ibc_log in IbcLogStorage::<T>::get() {
-			let logs = String::from_utf8(ibc_log).unwrap();
-			log::info!("📔📔📔[pallet_ibc_deliver]: logs: {:?}", logs);
-		}
-		// reset
-		IbcLogStorage::<T>::put(Vec::<Vec<u8>>::new());
-
-		log::info!("🙅🙅🙅[pallet_ibc_deliver]: errors: {:?}", errors);
-
-		if !errors.is_empty() {
-			Self::deposit_event(errors.into());
-		}
-		Ok(())
 	}
 }

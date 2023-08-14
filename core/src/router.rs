@@ -7,18 +7,6 @@ use ibc::core::{
 use scale_info::prelude::string::String;
 use sp_std::{borrow::ToOwned, collections::btree_map::BTreeMap, fmt::Debug, sync::Arc};
 
-pub trait AddModule {
-	fn add_module(router: Router) -> Router;
-}
-
-pub struct DefaultRouter;
-
-impl AddModule for DefaultRouter {
-	fn add_module(router: Router) -> Router {
-		router
-	}
-}
-
 #[derive(Default, Clone, Debug)]
 pub struct Router {
 	/// Mapping of which IBC modules own which port

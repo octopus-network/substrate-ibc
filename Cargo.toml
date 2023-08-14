@@ -1,8 +1,6 @@
 [workspace]
 members = [
-  "utils",
   "core",
-  "ibc-router",
 ]
 resolver = "2"
 

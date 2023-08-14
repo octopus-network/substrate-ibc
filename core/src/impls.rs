@@ -1,3 +1,4 @@
+use crate::router::Router;
 use crate::{prelude::*, Config, PacketCommitment as PacketCommitStore, TENDERMINT_CLIENT_TYPE, *};
 use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
 use sp_core::{Encode, Get};
@@ -38,8 +39,6 @@ use ibc::{
 	},
 	Height, Signer,
 };
-
-use pallet_ibc_utils::module::{AddModule, Router};
 
 #[derive(Debug, Clone, From, TryInto, PartialEq, ConsensusState)]
 pub enum AnyConsensusState {
