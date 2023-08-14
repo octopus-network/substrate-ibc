@@ -17,6 +17,7 @@ log = { version = "0.4.0", default-features = false }
 serde = { version = "1.0", default-features = false }
 serde_json = { version = "1.0", default-features = false }
 cfg-if = { version = "1.0.0" }
+hex = { version = "0.4.0", default-features = false }
 
 # substate crates
 scale-info = { version = "2.5.0", default-features = false, features = ["derive"] }
@@ -44,6 +45,7 @@ substrate-wasm-builder = { version = "5.0.0-dev", git = "https://github.com/pari
 [features]
 default = ['std', "ics06"]
 std = [
+    "hex/std",
     "log/std",
     "serde/std",
     "serde_json/std",

@@ -13,8 +13,16 @@ extern crate core;
 
 pub use pallet::*;
 
+use crate::traits::AssetIdAndNameProvider;
 use frame_support::pallet_prelude::*;
+use frame_support::traits::fungibles::Mutate;
+use frame_support::traits::tokens::AssetId;
+use frame_support::traits::tokens::Balance as AssetBalance;
+use frame_support::traits::Currency;
+use frame_support::traits::GenesisBuild;
 use frame_system::{ensure_signed, pallet_prelude::*};
+use ibc::applications::transfer::msgs::transfer::MsgTransfer;
+use ibc::applications::transfer::send_transfer;
 use ibc::core::{
 	events::IbcEvent,
 	ics02_client::{client_type::ClientType, height::Height},
@@ -35,11 +43,14 @@ use ibc::core::{
 			SeqSendPath,
 		},
 	},
-	MsgEnvelope, RouterError,
+	MsgEnvelope,
 };
+use ibc::Signer;
 use ibc_proto::google::protobuf::Any;
+use sp_runtime::traits::IdentifyAccount;
 use sp_std::{fmt::Debug, vec, vec::Vec};
 
+pub mod app;
 pub mod client_context;
 pub mod errors;
 pub mod impls;
@@ -54,8 +65,13 @@ pub const TENDERMINT_CLIENT_TYPE: &'static str = "07-tendermint";
 
 pub const LOG_TARGET: &str = "runtime::pallet-ibc";
 
+type BalanceOf<T> =
+	<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+
 #[frame_support::pallet]
 pub mod pallet {
+	use crate::app::transfer::IbcTransferModule;
+
 	use super::{errors, *};
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
@@ -75,6 +91,35 @@ pub mod pallet {
 		type ExpectedBlockTime: Get<u64>;
 
 		type ChainVersion: Get<u64>;
+
+		/// The currency type of the runtime
+		type Currency: Currency<Self::AccountId>;
+
+		/// Identifier for the class of asset.
+		type AssetId: AssetId + MaybeSerializeDeserialize + Default;
+
+		/// The units in which we record balances.
+		type AssetBalance: AssetBalance + From<u128> + Into<u128>;
+
+		/// Expose customizable associated type of asset transfer, lock and unlock
+		type Fungibles: Mutate<
+			Self::AccountId,
+			AssetId = Self::AssetId,
+			Balance = Self::AssetBalance,
+		>;
+
+		/// Map of cross-chain asset ID & name
+		type AssetIdByName: AssetIdAndNameProvider<Self::AssetId>;
+
+		/// Account Id Conversion from SS58 string or hex string
+		type AccountIdConversion: TryFrom<Signer>
+			+ IdentifyAccount<AccountId = Self::AccountId>
+			+ Clone
+			+ PartialEq
+			+ Debug;
+
+		// The native token name
+		const NATIVE_TOKEN_NAME: &'static [u8];
 	}
 
 	#[pallet::pallet]
@@ -198,14 +243,63 @@ pub mod pallet {
 	#[pallet::storage]
 	pub type IbcLogStorage<T: Config> = StorageValue<_, Vec<Vec<u8>>, ValueQuery>;
 
+	type AssetName = Vec<u8>;
+
+	#[pallet::storage]
+	/// (asset name) => asset id
+	pub type AssetIdByName<T: Config> =
+		StorageMap<_, Twox64Concat, AssetName, T::AssetId, ValueQuery>;
+
+	#[pallet::genesis_config]
+	pub struct GenesisConfig<T: Config> {
+		pub asset_id_by_name: Vec<(String, T::AssetId)>,
+	}
+
+	impl<T: Config> core::default::Default for GenesisConfig<T> {
+		fn default() -> Self {
+			Self { asset_id_by_name: Vec::new() }
+		}
+	}
+
+	#[pallet::genesis_build]
+	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+		fn build(&self) {
+			for (token_id, id) in self.asset_id_by_name.iter() {
+				<AssetIdByName<T>>::insert(token_id.as_bytes(), id);
+			}
+		}
+	}
+
 	/// Substrate IBC event list
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// Ibc events
-		IbcEvents { events: Vec<IbcEvent> },
+		IbcEvents {
+			events: Vec<IbcEvent>,
+		},
 		/// Ibc errors
-		IbcErrors { errors: Vec<errors::IbcError> },
+		IbcErrors {
+			errors: Vec<errors::IbcError>,
+		},
+		/// transfer ibc token successful
+		TransferIbcTokenSuccessful,
+		/// transfer ibc token have error
+		TransferIbcTokenErr(String),
+		// unsupported event
+		UnsupportedEvent,
+		/// Transfer native token  event
+		TransferNativeToken(T::AccountIdConversion, T::AccountIdConversion, BalanceOf<T>),
+		/// Transfer non-native token event
+		TransferNoNativeToken(
+			T::AccountIdConversion,
+			T::AccountIdConversion,
+			<T as Config>::AssetBalance,
+		),
+		/// Burn cross chain token event
+		BurnToken(T::AssetId, T::AccountIdConversion, T::AssetBalance),
+		/// Mint chairperson token event
+		MintToken(T::AssetId, T::AccountIdConversion, T::AssetBalance),
 	}
 
 	/// Errors in MMR verification informing users that something went wrong.
@@ -231,7 +325,13 @@ pub mod pallet {
 		InvalidVersion,
 		/// Invalid module id
 		InvalidModuleId,
-		///
+		// Parser Msg Transfer Error
+		ParserMsgTransferError,
+		/// Invalid token id
+		InvalidTokenId,
+		/// Wrong assert id
+		WrongAssetId,
+		/// other error
 		Other,
 	}
 
@@ -275,23 +375,23 @@ pub mod pallet {
 		/// The relevant events are emitted when successful.
 		#[pallet::call_index(0)]
 		#[pallet::weight(0)]
-		pub fn dispatch(origin: OriginFor<T>, messages: Vec<Any>) -> DispatchResultWithPostInfo {
-			log::info!("✍️✍️✍️dispatch messages: {:?}", messages);
+		pub fn dispatch(origin: OriginFor<T>, message: Any) -> DispatchResultWithPostInfo {
+			log::info!("✍️✍️✍️dispatch messages: {:?}", message);
 			let _ = ensure_signed(origin)?;
 
 			let mut ctx = IbcContext::<T>::new();
 			let mut router = ctx.router.clone();
 
-			let errors = messages.into_iter().fold(vec![], |mut errors: Vec<RouterError>, msg| {
-				let envelope: MsgEnvelope = msg.try_into().unwrap();
-				match ibc::core::dispatch(&mut ctx, &mut router, envelope) {
-					Ok(()) => {},
-					Err(e) => errors.push(e),
-				}
-				errors
-			});
+    		if let Ok(msg) = MsgEnvelope::try_from(message.clone()) {
+                ibc::core::dispatch(&mut ctx, &mut router, msg).unwrap(); // todo
+            } else if let Ok(transfer_msg) = MsgTransfer::try_from(message) {
+                let mut transfer_module = IbcTransferModule::<T>::new();
+                send_transfer(&mut ctx, &mut transfer_module, transfer_msg).unwrap(); // todo
+            } else {
+                todo!()
+            }
 
-			// emit ibc event
+           	// emit ibc event
 			// we don't want emit Message event
 			Self::deposit_event(Event::IbcEvents { events: IbcEventStorage::<T>::get() });
 
@@ -306,13 +406,27 @@ pub mod pallet {
 			// reset
 			IbcLogStorage::<T>::put(Vec::<Vec<u8>>::new());
 
-			log::info!("🙅🙅🙅[pallet_ibc_deliver]: errors: {:?}", errors);
-
-			if !errors.is_empty() {
-				Self::deposit_event(errors.into());
-			}
-
 			Ok(().into())
+		}
+	}
+}
+
+impl<T: Config> AssetIdAndNameProvider<T::AssetId> for Pallet<T> {
+	type Err = Error<T>;
+
+	fn try_get_asset_id(name: impl AsRef<[u8]>) -> Result<<T as Config>::AssetId, Self::Err> {
+		let asset_id = <AssetIdByName<T>>::try_get(name.as_ref().to_vec());
+		match asset_id {
+			Ok(id) => Ok(id),
+			_ => Err(Error::<T>::InvalidTokenId),
+		}
+	}
+
+	fn try_get_asset_name(asset_id: T::AssetId) -> Result<Vec<u8>, Self::Err> {
+		let token_id = <AssetIdByName<T>>::iter().find(|p| p.1 == asset_id).map(|p| p.0);
+		match token_id {
+			Some(id) => Ok(id),
+			_ => Err(Error::<T>::WrongAssetId),
 		}
 	}
 }
