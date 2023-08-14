@@ -1,5 +1,6 @@
+use crate::constant::TENDERMINT_CLIENT_TYPE;
 use crate::router::Router;
-use crate::{prelude::*, Config, PacketCommitment as PacketCommitStore, TENDERMINT_CLIENT_TYPE, *};
+use crate::{prelude::*, Config, PacketCommitment as PacketCommitStore, *};
 use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
 use sp_core::{Encode, Get};
 use sp_std::marker::PhantomData;

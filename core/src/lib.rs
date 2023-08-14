@@ -52,6 +52,7 @@ use sp_std::{fmt::Debug, vec, vec::Vec};
 
 pub mod app;
 pub mod client_context;
+pub mod constant;
 pub mod errors;
 pub mod impls;
 pub mod prelude;
@@ -60,10 +61,6 @@ pub mod traits;
 
 pub use crate::impls::IbcContext;
 use crate::prelude::*;
-
-pub const TENDERMINT_CLIENT_TYPE: &'static str = "07-tendermint";
-
-pub const LOG_TARGET: &str = "runtime::pallet-ibc";
 
 type BalanceOf<T> =
 	<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
