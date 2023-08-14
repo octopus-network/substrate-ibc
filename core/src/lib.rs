@@ -40,11 +40,12 @@ use ibc::core::{
 use ibc_proto::google::protobuf::Any;
 use sp_std::{fmt::Debug, vec, vec::Vec};
 
-pub mod context;
+pub mod client_context;
 pub mod errors;
+pub mod impls;
 pub mod prelude;
 
-pub use crate::context::Context;
+pub use crate::impls::IbcContext;
 use crate::prelude::*;
 use pallet_ibc_utils::module::AddModule;
 
@@ -293,11 +294,12 @@ where
 
 {
 	fn dispatch(messages: Vec<Any>) -> DispatchResult {
-		let mut ctx = Context::<T>::new();
+		let mut ctx = IbcContext::<T>::new();
+		let mut router = ctx.router.clone();
 
 		let errors = messages.into_iter().fold(vec![], |mut errors: Vec<RouterError>, msg| {
 			let envelope: MsgEnvelope = msg.try_into().unwrap();
-			match ibc::core::dispatch(&mut ctx, envelope) {
+			match ibc::core::dispatch(&mut ctx, &mut router, envelope) {
 				Ok(()) => {},
 				Err(e) => errors.push(e),
 			}

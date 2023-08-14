@@ -18,6 +18,9 @@ use sp_std::{boxed::Box, vec::Vec};
 
 /// A context supplying all the necessary read-only dependencies for processing any `ChannelMsg`.
 pub trait ChannelReaderInterface {
+	type AnyClientState;
+	type AnyConsensusState;
+
 	/// Returns the ChannelEnd for the given `port_id` and `chan_id`.
 	fn channel_end(port_id: &PortId, channel_id: &ChannelId) -> Result<ChannelEnd, ChannelError>;
 
@@ -28,12 +31,12 @@ pub trait ChannelReaderInterface {
 
 	/// Returns the ClientState for the given identifier `client_id`. Necessary dependency towards
 	/// proof verification.
-	fn client_state(client_id: &ClientId) -> Result<Box<dyn ClientState>, ChannelError>;
+	fn client_state(client_id: &ClientId) -> Result<Self::AnyClientState, ChannelError>;
 
 	fn client_consensus_state(
 		client_id: &ClientId,
 		height: &Height,
-	) -> Result<Box<dyn ConsensusState>, ChannelError>;
+	) -> Result<Self::AnyConsensusState, ChannelError>;
 
 	fn get_next_sequence_send(
 		port_id: &PortId,
@@ -75,10 +78,10 @@ pub trait ChannelReaderInterface {
 	fn host_height() -> Result<Height, ChannelError>;
 
 	/// Returns the `ConsensusState` of the host (local) chain at a specific height.
-	fn host_consensus_state(height: &Height) -> Result<Box<dyn ConsensusState>, ChannelError>;
+	fn host_consensus_state(height: &Height) -> Result<Self::AnyConsensusState, ChannelError>;
 
 	/// Returns the pending `ConsensusState` of the host (local) chain.
-	fn pending_host_consensus_state() -> Result<Box<dyn ConsensusState>, ChannelError>;
+	fn pending_host_consensus_state() -> Result<Self::AnyConsensusState, ChannelError>;
 
 	/// Returns the time when the client state for the given [`ClientId`] was updated with a header
 	/// for the given [`Height`]

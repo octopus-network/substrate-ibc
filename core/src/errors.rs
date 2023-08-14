@@ -18,12 +18,21 @@ pub enum IbcError {
 impl From<RouterError> for IbcError {
 	fn from(err: RouterError) -> Self {
 		match err {
-			RouterError::ContextError(e) =>
-				IbcError::ContextError { message: e.to_string().as_bytes().to_vec() },
-			RouterError::UnknownMessageTypeUrl { url } =>
-				IbcError::UnknownMessageTypeUrl { message: url.as_bytes().to_vec() },
-			RouterError::MalformedMessageBytes(e) =>
-				IbcError::MalformedMessageBytes { message: e.to_string().as_bytes().to_vec() },
+			RouterError::ContextError(e) => {
+				IbcError::ContextError { message: e.to_string().as_bytes().to_vec() }
+			},
+			RouterError::UnknownMessageTypeUrl { url } => {
+				IbcError::UnknownMessageTypeUrl { message: url.as_bytes().to_vec() }
+			},
+			RouterError::MalformedMessageBytes(e) => {
+				IbcError::MalformedMessageBytes { message: e.to_string().as_bytes().to_vec() }
+			},
+			RouterError::UnknownPort { port_id } => {
+				IbcError::UnknownMessageTypeUrl { message: port_id.as_bytes().to_vec() }
+			},
+			RouterError::ModuleNotFound => {
+				IbcError::UnknownMessageTypeUrl { message: b"module not found".to_vec() }
+			},
 		}
 	}
 }

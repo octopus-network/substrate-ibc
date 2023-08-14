@@ -7,8 +7,8 @@ edition = "2021"
 
 [dependencies]
 pallet-ibc = { version = "4.0.0-dev", path = "../core", default-features = false }
-pallet-ics20 = { version = "4.0.0-dev", path = "../app/transfer", default-features = false, optional = true }
-ibc-proto = { version = "0.30.0", default-features = false, features = ["parity-scale-codec"]  }
+#pallet-ics20 = { version = "4.0.0-dev", path = "../app/transfer", default-features = false, optional = true }
+ibc-proto = { version = "0.32.1", default-features = false, features = ["parity-scale-codec"]  }
 pallet-ibc-utils = { version = "0.1.0", default-features = false, path = "../utils" }
 
 
@@ -26,7 +26,7 @@ sp-runtime = { version = "24.0.0", default-features = false, git = "https://gith
 default = ["std"]
 std = [
     "pallet-ibc/std",
-    "pallet-ics20/std",
+#    "pallet-ics20/std",
     "pallet-ibc-utils/std",
     "ibc-proto/std",
     "codec/std",
@@ -37,4 +37,4 @@ std = [
     "pallet-timestamp/std",
     "sp-runtime/std",
 ]
-ics20 = ["pallet-ics20"]
+#ics20 = ["pallet-ics20"]
