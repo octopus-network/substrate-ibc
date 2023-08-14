@@ -19,6 +19,7 @@ frame-support = { version = "4.0.0-dev", default-features = false, git = "https:
 frame-system = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 sp-std = { version = "8.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 pallet-timestamp = { version = "4.0.0-dev", default-features = false,  git = "https://github.com/paritytech/substrate.git", branch = "master" }
+sp-runtime = { version = "24.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 
 
 [features]
@@ -34,5 +35,6 @@ std = [
     "frame-system/std",
     "sp-std/std",
     "pallet-timestamp/std",
+    "sp-runtime/std",
 ]
 ics20 = ["pallet-ics20"]

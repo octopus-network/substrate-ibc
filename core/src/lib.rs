@@ -49,7 +49,6 @@ use crate::prelude::*;
 use pallet_ibc_utils::module::AddModule;
 
 pub const TENDERMINT_CLIENT_TYPE: &'static str = "07-tendermint";
-pub const SOLOMACHINE_CLIENT_TYPE: &'static str = "06-solomachine";
 
 pub const LOG_TARGET: &str = "runtime::pallet-ibc";
 
@@ -259,7 +258,8 @@ pub mod pallet {
 	impl<T: Config> Pallet<T>
 	where
 		u64: From<<T as pallet_timestamp::Config>::Moment>
-			+ From<<T as frame_system::Config>::BlockNumber>,
+		+ From<<<<T as frame_system::Config>::Block as sp_runtime::traits::Block>::Header as sp_runtime::traits::Header>::Number>,
+
 	{
 		/// This function acts as an entry for most of the IBC request.
 		/// I.e., create clients, update clients, handshakes to create channels, ...etc
@@ -289,7 +289,8 @@ pub mod pallet {
 impl<T: Config> pallet_ibc_utils::Router for Pallet<T>
 where
 	u64: From<<T as pallet_timestamp::Config>::Moment>
-		+ From<<T as frame_system::Config>::BlockNumber>,
+	+ From<<<<T as frame_system::Config>::Block as sp_runtime::traits::Block>::Header as sp_runtime::traits::Header>::Number>,
+
 {
 	fn dispatch(messages: Vec<Any>) -> DispatchResult {
 		let mut ctx = Context::<T>::new();

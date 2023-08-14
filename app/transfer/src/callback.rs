@@ -30,7 +30,7 @@ impl<T: Config> IbcTransferModule<T> {
 impl<T: Config> Module for IbcTransferModule<T>
 where
 	u64: From<<T as pallet_timestamp::Config>::Moment>
-		+ From<<T as frame_system::Config>::BlockNumber>,
+	+ From<<<<T as frame_system::Config>::Block as sp_runtime::traits::Block>::Header as sp_runtime::traits::Header>::Number>,
 {
 	fn on_chan_open_init_validate(
 		&self,

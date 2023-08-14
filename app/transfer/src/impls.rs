@@ -1,5 +1,6 @@
 use crate::{callback::IbcTransferModule, utils::get_channel_escrow_address, *};
 use codec::{Decode, Encode};
+use frame_support::traits::GenesisBuild;
 use frame_support::traits::{
 	fungibles::Mutate,
 	tokens::{Fortitude, Precision, Preservation},
@@ -27,7 +28,8 @@ use sp_std::str::FromStr;
 impl<T: Config> TokenTransferExecutionContext for IbcTransferModule<T>
 where
 	u64: From<<T as pallet_timestamp::Config>::Moment>
-		+ From<<T as frame_system::Config>::BlockNumber>,
+	+ From<<<<T as frame_system::Config>::Block as sp_runtime::traits::Block>::Header as sp_runtime::traits::Header>::Number>,
+
 {
 	// type AccountId = <Self as TokenTransferContext>::AccountId;
 
@@ -182,7 +184,8 @@ where
 impl<T: Config> TokenTransferValidationContext for IbcTransferModule<T>
 where
 	u64: From<<T as pallet_timestamp::Config>::Moment>
-		+ From<<T as frame_system::Config>::BlockNumber>,
+	+ From<<<<T as frame_system::Config>::Block as sp_runtime::traits::Block>::Header as sp_runtime::traits::Header>::Number>,
+
 {
 	type AccountId = <T as Config>::AccountIdConversion;
 

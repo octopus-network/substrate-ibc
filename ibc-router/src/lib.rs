@@ -48,7 +48,8 @@ pub mod pallet {
 	impl<T: Config> Pallet<T>
 	where
 		u64: From<<T as pallet_timestamp::Config>::Moment>
-			+ From<<T as frame_system::Config>::BlockNumber>,
+		+ From<<<<T as frame_system::Config>::Block as sp_runtime::traits::Block>::Header as sp_runtime::traits::Header>::Number>,
+
 	{
 		#[pallet::call_index(0)]
 		#[pallet::weight(0)]

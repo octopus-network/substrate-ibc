@@ -8,5 +8,5 @@ members = [
 resolver = "2"
 
 [patch.crates-io]
-ibc = { git = "https://github.com/DaviRain-Su/ibc-rs.git", branch = "fix-695" }
-ibc-proto = { git = "https://github.com/DaviRain-Su/ibc-proto-rs.git", branch = "full-cosmos-type-v0.30.0" }
+# ibc = { git = "https://github.com/DaviRain-Su/ibc-rs.git", branch = "fix-695" }
+# ibc-proto = { git = "https://github.com/DaviRain-Su/ibc-proto-rs.git", branch = "full-cosmos-type-v0.30.0" }

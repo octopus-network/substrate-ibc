@@ -1,15 +1,5 @@
-use crate::{
-	prelude::*, Config, PacketCommitment as PacketCommitStore, SOLOMACHINE_CLIENT_TYPE,
-	TENDERMINT_CLIENT_TYPE, *,
-};
+use crate::{prelude::*, Config, PacketCommitment as PacketCommitStore, TENDERMINT_CLIENT_TYPE, *};
 use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
-use ics06_solomachine::{
-	cosmos::crypto::PublicKey,
-	v3::{
-		client_state::ClientState as Ics06ClientState,
-		consensus_state::ConsensusState as Ics06ConsensusState,
-	},
-};
 use sp_core::{Encode, Get};
 use sp_std::{boxed::Box, marker::PhantomData};
 
@@ -82,8 +72,7 @@ impl<T: Config> Context<T> {
 		match data.as_str() {
 			TENDERMINT_CLIENT_TYPE => ClientType::new(TENDERMINT_CLIENT_TYPE.into())
 				.map_err(|e| ClientError::Other { description: format!("{}", e) }),
-			SOLOMACHINE_CLIENT_TYPE => ClientType::new(SOLOMACHINE_CLIENT_TYPE.into())
-				.map_err(|e| ClientError::Other { description: format!("{}", e) }),
+
 			unimplemented => {
 				return Err(ClientError::UnknownClientStateType {
 					client_state_type: unimplemented.to_string(),
@@ -102,7 +91,7 @@ impl<T: Config> Default for Context<T> {
 impl<T: Config> ibc::core::router::Router for Context<T>
 where
 	u64: From<<T as pallet_timestamp::Config>::Moment>
-		+ From<<T as frame_system::Config>::BlockNumber>,
+		+ From<<<<T as frame_system::Config>::Block as sp_runtime::traits::Block>::Header as sp_runtime::traits::Header>::Number>,
 {
 	/// Returns a reference to a `Module` registered against the specified `ModuleId`
 	fn get_route(&self, module_id: &ModuleId) -> Option<&dyn Module> {
@@ -143,7 +132,8 @@ where
 impl<T: Config> ValidationContext for Context<T>
 where
 	u64: From<<T as pallet_timestamp::Config>::Moment>
-		+ From<<T as frame_system::Config>::BlockNumber>,
+	+ From<<<<T as frame_system::Config>::Block as sp_runtime::traits::Block>::Header as sp_runtime::traits::Header>::Number>,
+
 {
 	/// Returns the ClientState for the given identifier `client_id`.
 	fn client_state(&self, client_id: &ClientId) -> Result<Box<dyn ClientState>, ContextError> {
@@ -160,15 +150,7 @@ where
 
 				Ok(Box::new(result))
 			},
-			SOLOMACHINE_CLIENT_TYPE => {
-				log::info!("client_state({})", SOLOMACHINE_CLIENT_TYPE);
-				let result: Ics06ClientState =
-					Protobuf::<Any>::decode_vec(&data).map_err(|e| ClientError::Other {
-						description: format!("Decode Ics07ClientState failed: {:?}", e),
-					})?;
 
-				Ok(Box::new(result))
-			},
 			unimplemented => {
 				log::info!("client_state({})", unimplemented);
 				Err(ClientError::Other {
@@ -182,8 +164,6 @@ where
 	/// Tries to decode the given `client_state` into a concrete light client state.
 	fn decode_client_state(&self, client_state: Any) -> Result<Box<dyn ClientState>, ContextError> {
 		if let Ok(client_state) = Ics07ClientState::try_from(client_state.clone()) {
-			Ok(client_state.into_box())
-		} else if let Ok(client_state) = Ics06ClientState::try_from(client_state.clone()) {
 			Ok(client_state.into_box())
 		} else {
 			Err(ClientError::UnknownClientStateType { client_state_type: client_state.type_url }
@@ -216,13 +196,7 @@ where
 					})?;
 				Ok(Box::new(result))
 			},
-			SOLOMACHINE_CLIENT_TYPE => {
-				let result: Ics06ConsensusState =
-					Protobuf::<Any>::decode_vec(&data).map_err(|e| ClientError::Other {
-						description: format!("Decode Ics06ConsensusState failed: {:?}", e),
-					})?;
-				Ok(Box::new(result))
-			},
+
 			unimplemented => Err(ClientError::Other {
 				description: format!("unknow client state type: {}", unimplemented),
 			}
@@ -265,13 +239,7 @@ where
 							})?;
 						return Ok(Some(Box::new(result)));
 					},
-					SOLOMACHINE_CLIENT_TYPE => {
-						let result: Ics06ConsensusState = Protobuf::<Any>::decode_vec(&data)
-							.map_err(|e| ClientError::Other {
-								description: format!("Decode Ics06ConsensusState failed: {:?}", e),
-							})?;
-						return Ok(Some(Box::new(result)));
-					},
+
 					unimplemented => {
 						return Err(ClientError::Other {
 							description: format!("unknow client state type: {}", unimplemented),
@@ -321,13 +289,7 @@ where
 						})?;
 						return Ok(Some(Box::new(result)));
 					},
-					SOLOMACHINE_CLIENT_TYPE => {
-						let result: Ics06ConsensusState = Protobuf::<Any>::decode_vec(&data)
-							.map_err(|e| ClientError::Other {
-								description: format!("Decode Ics06ConsensusState failed: {:?}", e),
-							})?;
-						return Ok(Some(Box::new(result)));
-					},
+
 					unimplemented => {
 						return Err(ClientError::Other {
 							description: format!("unknow client state type: {}", unimplemented),
@@ -342,17 +304,10 @@ where
 
 	/// Returns the current height of the local chain.
 	fn host_height(&self) -> Result<Height, ContextError> {
-		// cfg_if::cfg_if! {
-		// if #[cfg(any(feature = "ics06"))]  {
-		// let host_height = <HostHeight<T>>::get();
-		// host_height.ok_or(ClientError::Other { description: "Height is None".to_string() }.into())
-		// } else {
 		let block_height = <frame_system::Pallet<T>>::block_number();
 		Height::new(T::ChainVersion::get(), block_height.into()).map_err(|e| {
 			ClientError::Other { description: format!("contruct Ibc Height error: {}", e) }.into()
 		})
-		// }
-		// }
 	}
 
 	/// Returns the current timestamp of the local chain.
@@ -369,24 +324,8 @@ where
 		&self,
 		_height: &Height,
 	) -> Result<Box<dyn ConsensusState>, ContextError> {
-		cfg_if::cfg_if! {
-			if #[cfg(any(feature = "ics06"))]  {
-				//ref: https://github.com/octopus-network/hermes/commit/7d7891ff29e79f8dd13d6826f75bce8544d54826
-				use ics06_solomachine::v3::consensus_state::ConsensusState as SolConsensusState;
-				// todo(davirain) need fix
-				let fix_public_key = "{\"@type\":\"/cosmos.crypto.secp256k1.PubKey\",\"key\":\"
-					A5W0C7iEAuonX56sR81PiwaKTE0GvZlCYuGwHTMpWJo+\"}";
-				let fix_public_key = fix_public_key.parse::<PublicKey>().map_err(|e| {
-					ClientError::Other { description: format!(" parse Publickey failed ({})", e) }
-				})?;
-				let host_timestamp = self.host_timestamp()?;
-				let consensus_state =
-					SolConsensusState::new(fix_public_key, "substrate".to_string(), host_timestamp);
-				Ok(Box::new(consensus_state))
-			} else {
-				Err(ClientError::Other { description: "no implement host_consensus_state".to_string() }.into())
-			}
-		}
+		Err(ClientError::Other { description: "no implement host_consensus_state".to_string() }
+			.into())
 	}
 
 	/// Returns a natural number, counting how many clients have been created
@@ -562,7 +501,7 @@ where
 impl<T: Config> ExecutionContext for Context<T>
 where
 	u64: From<<T as pallet_timestamp::Config>::Moment>
-		+ From<<T as frame_system::Config>::BlockNumber>,
+	+ From<<<<T as frame_system::Config>::Block as sp_runtime::traits::Block>::Header as sp_runtime::traits::Header>::Number>,
 {
 	/// Called upon successful client creation and update
 	fn store_client_state(

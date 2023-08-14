@@ -21,7 +21,8 @@ use sp_std::{boxed::Box, time::Duration};
 impl<T: Config> ValidationContext for IbcTransferModule<T>
 where
 	u64: From<<T as pallet_timestamp::Config>::Moment>
-		+ From<<T as frame_system::Config>::BlockNumber>,
+	+ From<<<<T as frame_system::Config>::Block as sp_runtime::traits::Block>::Header as sp_runtime::traits::Header>::Number>,
+
 {
 	fn client_state(
 		&self,
@@ -187,7 +188,8 @@ where
 impl<T: Config> ExecutionContext for IbcTransferModule<T>
 where
 	u64: From<<T as pallet_timestamp::Config>::Moment>
-		+ From<<T as frame_system::Config>::BlockNumber>,
+	+ From<<<<T as frame_system::Config>::Block as sp_runtime::traits::Block>::Header as sp_runtime::traits::Header>::Number>,
+
 {
 	fn store_client_state(
 		&mut self,
@@ -367,7 +369,8 @@ where
 impl<T: Config> ibc::core::router::Router for IbcTransferModule<T>
 where
 	u64: From<<T as pallet_timestamp::Config>::Moment>
-		+ From<<T as frame_system::Config>::BlockNumber>,
+	+ From<<<<T as frame_system::Config>::Block as sp_runtime::traits::Block>::Header as sp_runtime::traits::Header>::Number>,
+
 {
 	fn get_route(
 		&self,

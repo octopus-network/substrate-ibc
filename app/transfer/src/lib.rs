@@ -14,6 +14,7 @@ pub mod utils;
 
 use crate::callback::IbcTransferModule;
 use alloc::string::String;
+use frame_support::traits::GenesisBuild;
 use frame_support::{
 	pallet_prelude::*,
 	traits::{
@@ -154,7 +155,8 @@ pub mod pallet {
 	impl<T: Config> Pallet<T>
 	where
 		u64: From<<T as pallet_timestamp::Config>::Moment>
-			+ From<<T as frame_system::Config>::BlockNumber>,
+		+ From<<<<T as frame_system::Config>::Block as sp_runtime::traits::Block>::Header as sp_runtime::traits::Header>::Number>,
+
 	{
 		/// ICS20 fungible token transfer.
 		/// Handling transfer request as sending chain or receiving chain.
@@ -201,7 +203,8 @@ impl<T: Config> AssetIdAndNameProvider<T::AssetId> for Pallet<T> {
 impl<T: Config> pallet_ibc_utils::Router for Pallet<T>
 where
 	u64: From<<T as pallet_timestamp::Config>::Moment>
-		+ From<<T as frame_system::Config>::BlockNumber>,
+	+ From<<<<T as frame_system::Config>::Block as sp_runtime::traits::Block>::Header as sp_runtime::traits::Header>::Number>,
+
 {
 	fn dispatch(messages: Vec<Any>) -> DispatchResult {
 		let ibc_core_context = pallet_ibc::context::Context::<T>::new();
