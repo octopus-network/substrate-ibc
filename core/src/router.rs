@@ -24,14 +24,18 @@ impl Router {
 		Self { router: BTreeMap::new(), port_to_module_map }
 	}
 
-	pub fn add_route(
+	pub fn add_module(
 		mut self,
+		port_id: PortId,
 		module_id: ModuleId,
 		module: impl IbcModule + 'static,
 	) -> Result<Self, String> {
-		match self.router.insert(module_id, Arc::new(module)) {
-			None => Ok(self),
-			Some(_) => Err("Duplicate module_id".to_owned()),
+		match (
+			self.port_to_module_map.insert(port_id, module_id.clone()),
+			self.router.insert(module_id, Arc::new(module)),
+		) {
+			(None, None) => Ok(self),
+			(_, _) => return Err("Duplicate module id or port id".to_owned()),
 		}
 	}
 }
