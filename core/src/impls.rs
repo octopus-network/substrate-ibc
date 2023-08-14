@@ -1,23 +1,20 @@
 use crate::{prelude::*, Config, PacketCommitment as PacketCommitStore, TENDERMINT_CLIENT_TYPE, *};
 use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
 use sp_core::{Encode, Get};
-use sp_std::{boxed::Box, marker::PhantomData};
+use sp_std::marker::PhantomData;
 
 use derive_more::{From, TryInto};
-use ibc::clients::ics07_tendermint::consensus_state::TENDERMINT_CONSENSUS_STATE_TYPE_URL;
 use ibc::{
-	applications::transfer::{
-		MODULE_ID_STR as TRANSFER_MODULE_ID, PORT_ID_STR as TRANSFER_PORT_ID,
-	},
 	clients::ics07_tendermint::{
 		client_state::ClientState as Ics07ClientState,
-		consensus_state::ConsensusState as Ics07ConsensusState,
+		consensus_state::{
+			ConsensusState as Ics07ConsensusState, TENDERMINT_CONSENSUS_STATE_TYPE_URL,
+		},
 	},
 	core::{
 		events::IbcEvent,
 		ics02_client::{
-			client_state::ClientState, client_type::ClientType, consensus_state::ConsensusState,
-			error::ClientError,
+			client_type::ClientType, consensus_state::ConsensusState, error::ClientError,
 		},
 		ics03_connection::{connection::ConnectionEnd, error::ConnectionError},
 		ics04_channel::{
@@ -28,7 +25,7 @@ use ibc::{
 		},
 		ics23_commitment::commitment::CommitmentPrefix,
 		ics24_host::{
-			identifier::{ClientId, ConnectionId, PortId},
+			identifier::{ClientId, ConnectionId},
 			path::{
 				AckPath, ChannelEndPath, ClientConnectionPath, ClientConsensusStatePath,
 				ClientStatePath, CommitmentPath, ConnectionPath, ReceiptPath, SeqAckPath,
@@ -80,8 +77,7 @@ pub struct IbcContext<T: Config> {
 impl<T: Config> IbcContext<T> {
 	pub fn new() -> Self {
 		let router = Router::new();
-		let r = T::IbcModule::add_module(router);
-		Self { _pd: PhantomData, router: r }
+		Self { _pd: PhantomData, router }
 	}
 
 	pub fn add_route(
@@ -95,7 +91,7 @@ impl<T: Config> IbcContext<T> {
 		}
 	}
 
-	fn client_type(&self, client_id: &ClientId) -> Result<ClientType, ClientError> {
+	pub fn client_type(&self, client_id: &ClientId) -> Result<ClientType, ClientError> {
 		let data = <ClientTypeById<T>>::get(client_id.clone()).ok_or(ClientError::Other {
 			description: format!("Client({}) not found!", client_id.clone()),
 		})?;
@@ -131,7 +127,7 @@ where
 
     /// Retrieve the context that implements all clients' `ValidationContext`.
     fn get_client_validation_context(&self) -> &Self::ClientValidationContext {
-        todo!()
+        self
     }
 
 	/// Returns the ClientState for the given identifier `client_id`.
@@ -165,8 +161,10 @@ where
 		if let Ok(client_state) = Ics07ClientState::try_from(client_state.clone()) {
 			Ok(client_state)
 		} else {
-			Err(ClientError::UnknownClientStateType { client_state_type: client_state.type_url }
-				.into())
+    		Err(ClientError::UnknownClientStateType {
+                    client_state_type: client_state.type_url,
+                })
+                .map_err(ContextError::from)
 		}
 	}
 
@@ -260,13 +258,13 @@ where
 		&self,
 		_client_state_of_host_on_counterparty: Any,
 	) -> Result<(), ContextError> {
-		// todo(davirain) need Add
 		Ok(())
 	}
 
 	/// Returns the prefix that the local chain uses in the KV store.
 	fn commitment_prefix(&self) -> CommitmentPrefix {
-		CommitmentPrefix::try_from(T::IBC_COMMITMENT_PREFIX.to_vec()).unwrap_or_default()
+	    // ibc commitment prefix hard code is `ibc`
+		CommitmentPrefix::try_from(b"ibc".to_vec()).unwrap_or_default()
 	}
 
 	/// Returns a counter on how many connections have been created thus far.
@@ -395,7 +393,6 @@ where
 	/// Validates the `signer` field of IBC messages, which represents the address
 	/// of the user/relayer that signed the given message.
 	fn validate_message_signer(&self, _signer: &Signer) -> Result<(), ContextError> {
-		// todo(davirian) need Add
 		Ok(())
 	}
 }
@@ -407,7 +404,7 @@ where
 {
     /// Retrieve the context that implements all clients' `ExecutionContext`.
     fn get_client_execution_context(&mut self) -> &mut Self::E {
-        todo!()
+        self
     }
 
 	/// Called upon client creation.
