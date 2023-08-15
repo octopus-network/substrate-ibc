@@ -17,6 +17,7 @@ log = { version = "0.4.0", default-features = false }
 serde = { version = "1.0", default-features = false }
 serde_json = { version = "1.0", default-features = false }
 cfg-if = { version = "1.0.0" }
+hex = { version = "0.4.0", default-features = false }
 
 # substate crates
 scale-info = { version = "2.5.0", default-features = false, features = ["derive"] }
@@ -32,11 +33,9 @@ sp-std = { version = "8.0.0", default-features = false, git = "https://github.co
 sp-tracing = { version = "10.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "master" }
 
 ## for ibc protocl
-ibc = { version = "0.41.0", default-features = false, features = ["parity-scale-codec", "serde"] }
-ibc-proto = { version = "0.30.0", default-features = false, features = ["parity-scale-codec"]  }
-pallet-ibc-utils = { version = "0.1.0", default-features = false, path = "../utils" }
-ics06-solomachine = { version = "0.1.0", default-features = false, git = "https://github.com/DaviRain-Su/ibc-light-clients.git", branch = "main", features = ["v3"] }
-
+ibc = { version = "0.44.1", default-features = false, features = ["parity-scale-codec"] }
+ibc-proto = { version = "0.32.1", default-features = false, features = ["parity-scale-codec"]  }
+derive_more = { version = "0.99.17", default-features = false, features = ["from", "into", "display", "try_into"] }
 
 [build-dependencies]
 substrate-wasm-builder = { version = "5.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "master", optional = true }
@@ -46,6 +45,7 @@ substrate-wasm-builder = { version = "5.0.0-dev", git = "https://github.com/pari
 [features]
 default = ['std', "ics06"]
 std = [
+    "hex/std",
     "log/std",
     "serde/std",
     "serde_json/std",
@@ -60,10 +60,8 @@ std = [
     "sp-runtime/std",
     "sp-std/std",
     "sp-tracing/std",
-    "pallet-ibc-utils/std",
     "ibc/std",
     "ibc-proto/std",
-    "ics06-solomachine/std",
 ]
 ics06 = []
 runtime-benchmarks = [

@@ -13,48 +13,67 @@ extern crate core;
 
 pub use pallet::*;
 
-use frame_support::pallet_prelude::*;
+use crate::traits::AssetIdAndNameProvider;
+use frame_support::{
+	pallet_prelude::*,
+	traits::{
+		fungibles::Mutate,
+		tokens::{AssetId, Balance as AssetBalance},
+		Currency, GenesisBuild,
+	},
+};
 use frame_system::{ensure_signed, pallet_prelude::*};
-use ibc::core::{
-	events::IbcEvent,
-	ics02_client::{client_type::ClientType, height::Height},
-	ics03_connection::connection::ConnectionEnd,
-	ics04_channel::{
-		channel::ChannelEnd,
-		commitment::{
-			AcknowledgementCommitment as IbcAcknowledgementCommitment,
-			PacketCommitment as IbcPacketCommitment,
+use ibc::{
+	applications::transfer::{msgs::transfer::MsgTransfer, send_transfer},
+	core::{
+		events::IbcEvent,
+		ics02_client::{client_type::ClientType, height::Height},
+		ics03_connection::connection::ConnectionEnd,
+		ics04_channel::{
+			channel::ChannelEnd,
+			commitment::{
+				AcknowledgementCommitment as IbcAcknowledgementCommitment,
+				PacketCommitment as IbcPacketCommitment,
+			},
+			packet::{Receipt, Sequence},
 		},
-		packet::{Receipt, Sequence},
-	},
-	ics24_host::{
-		identifier::{ChannelId, ClientId, ConnectionId, PortId},
-		path::{
-			AckPath, ChannelEndPath, ClientConnectionPath, ClientConsensusStatePath,
-			ClientStatePath, CommitmentPath, ConnectionPath, ReceiptPath, SeqAckPath, SeqRecvPath,
-			SeqSendPath,
+		ics24_host::{
+			identifier::{ChannelId, ClientId, ConnectionId, PortId},
+			path::{
+				AckPath, ChannelEndPath, ClientConnectionPath, ClientConsensusStatePath,
+				ClientStatePath, CommitmentPath, ConnectionPath, ReceiptPath, SeqAckPath,
+				SeqRecvPath, SeqSendPath,
+			},
 		},
+		MsgEnvelope,
 	},
-	MsgEnvelope, RouterError,
+	Signer,
 };
 use ibc_proto::google::protobuf::Any;
+use sp_runtime::traits::IdentifyAccount;
 use sp_std::{fmt::Debug, vec, vec::Vec};
 
-pub mod context;
+pub mod app;
+pub mod client_context;
+pub mod constant;
 pub mod errors;
+pub mod impls;
 pub mod prelude;
+pub mod router;
+pub mod traits;
 
-pub use crate::context::Context;
+pub use crate::impls::IbcContext;
 use crate::prelude::*;
-use pallet_ibc_utils::module::AddModule;
 
-pub const TENDERMINT_CLIENT_TYPE: &'static str = "07-tendermint";
-pub const SOLOMACHINE_CLIENT_TYPE: &'static str = "06-solomachine";
+type BalanceOf<T> =
+	<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
-pub const LOG_TARGET: &str = "runtime::pallet-ibc";
+type AssetName = Vec<u8>;
 
 #[frame_support::pallet]
 pub mod pallet {
+	use crate::app::transfer::IbcTransferModule;
+
 	use super::{errors, *};
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
@@ -73,9 +92,36 @@ pub mod pallet {
 
 		type ExpectedBlockTime: Get<u64>;
 
-		type IbcModule: AddModule;
-
 		type ChainVersion: Get<u64>;
+
+		/// The currency type of the runtime
+		type Currency: Currency<Self::AccountId>;
+
+		/// Identifier for the class of asset.
+		type AssetId: AssetId + MaybeSerializeDeserialize + Default;
+
+		/// The units in which we record balances.
+		type AssetBalance: AssetBalance + From<u128> + Into<u128>;
+
+		/// Expose customizable associated type of asset transfer, lock and unlock
+		type Fungibles: Mutate<
+			Self::AccountId,
+			AssetId = Self::AssetId,
+			Balance = Self::AssetBalance,
+		>;
+
+		/// Map of cross-chain asset ID & name
+		type AssetIdByName: AssetIdAndNameProvider<Self::AssetId>;
+
+		/// Account Id Conversion from SS58 string or hex string
+		type AccountIdConversion: TryFrom<Signer>
+			+ IdentifyAccount<AccountId = Self::AccountId>
+			+ Clone
+			+ PartialEq
+			+ Debug;
+
+		// The native token name
+		const NATIVE_TOKEN_NAME: &'static [u8];
 	}
 
 	#[pallet::pallet]
@@ -199,14 +245,61 @@ pub mod pallet {
 	#[pallet::storage]
 	pub type IbcLogStorage<T: Config> = StorageValue<_, Vec<Vec<u8>>, ValueQuery>;
 
+	#[pallet::storage]
+	/// (asset name) => asset id
+	pub type AssetIdByName<T: Config> =
+		StorageMap<_, Twox64Concat, AssetName, T::AssetId, ValueQuery>;
+
+	#[pallet::genesis_config]
+	pub struct GenesisConfig<T: Config> {
+		pub asset_id_by_name: Vec<(String, T::AssetId)>,
+	}
+
+	impl<T: Config> core::default::Default for GenesisConfig<T> {
+		fn default() -> Self {
+			Self { asset_id_by_name: Vec::new() }
+		}
+	}
+
+	#[pallet::genesis_build]
+	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+		fn build(&self) {
+			for (token_id, id) in self.asset_id_by_name.iter() {
+				<AssetIdByName<T>>::insert(token_id.as_bytes(), id);
+			}
+		}
+	}
+
 	/// Substrate IBC event list
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// Ibc events
-		IbcEvents { events: Vec<IbcEvent> },
+		IbcEvents {
+			events: Vec<IbcEvent>,
+		},
 		/// Ibc errors
-		IbcErrors { errors: Vec<errors::IbcError> },
+		IbcErrors {
+			errors: Vec<errors::IbcError>,
+		},
+		/// transfer ibc token successful
+		TransferIbcTokenSuccessful,
+		/// transfer ibc token have error
+		TransferIbcTokenErr(String),
+		// unsupported event
+		UnsupportedEvent,
+		/// Transfer native token  event
+		TransferNativeToken(T::AccountIdConversion, T::AccountIdConversion, BalanceOf<T>),
+		/// Transfer non-native token event
+		TransferNoNativeToken(
+			T::AccountIdConversion,
+			T::AccountIdConversion,
+			<T as Config>::AssetBalance,
+		),
+		/// Burn cross chain token event
+		BurnToken(T::AssetId, T::AccountIdConversion, T::AssetBalance),
+		/// Mint chairperson token event
+		MintToken(T::AssetId, T::AccountIdConversion, T::AssetBalance),
 	}
 
 	/// Errors in MMR verification informing users that something went wrong.
@@ -232,7 +325,13 @@ pub mod pallet {
 		InvalidVersion,
 		/// Invalid module id
 		InvalidModuleId,
-		///
+		// Parser Msg Transfer Error
+		ParserMsgTransferError,
+		/// Invalid token id
+		InvalidTokenId,
+		/// Wrong assert id
+		WrongAssetId,
+		/// other error
 		Other,
 	}
 
@@ -259,7 +358,8 @@ pub mod pallet {
 	impl<T: Config> Pallet<T>
 	where
 		u64: From<<T as pallet_timestamp::Config>::Moment>
-			+ From<<T as frame_system::Config>::BlockNumber>,
+		+ From<<<<T as frame_system::Config>::Block as sp_runtime::traits::Block>::Header as sp_runtime::traits::Header>::Number>,
+
 	{
 		/// This function acts as an entry for most of the IBC request.
 		/// I.e., create clients, update clients, handshakes to create channels, ...etc
@@ -275,54 +375,58 @@ pub mod pallet {
 		/// The relevant events are emitted when successful.
 		#[pallet::call_index(0)]
 		#[pallet::weight(0)]
-		pub fn dispatch(origin: OriginFor<T>, messages: Vec<Any>) -> DispatchResultWithPostInfo {
-			log::info!("✍️✍️✍️dispatch messages: {:?}", messages);
+		pub fn dispatch(origin: OriginFor<T>, message: Any) -> DispatchResultWithPostInfo {
+			log::info!("✍️✍️✍️dispatch messages: {:?}", message);
 			let _ = ensure_signed(origin)?;
 
-			<pallet::Pallet<T> as pallet_ibc_utils::Router>::dispatch(messages)?;
+			let mut ctx = IbcContext::<T>::new();
+			let mut router = ctx.router.clone();
+
+    		if let Ok(msg) = MsgEnvelope::try_from(message.clone()) {
+                ibc::core::dispatch(&mut ctx, &mut router, msg).map_err(|_| sp_runtime::DispatchError::Other("dispatch MsgEvelope failed"))?;
+            } else if let Ok(transfer_msg) = MsgTransfer::try_from(message) {
+                let mut transfer_module = IbcTransferModule::<T>::new();
+                send_transfer(&mut ctx, &mut transfer_module, transfer_msg).map_err(|_| sp_runtime::DispatchError::Other("IBC transfer failed"))?;
+            } else {
+                return Err(sp_runtime::DispatchError::Other("Unsupported message type").into());
+            }
+
+           	// emit ibc event
+			// we don't want emit Message event
+			Self::deposit_event(Event::IbcEvents { events: IbcEventStorage::<T>::get() });
+
+			// reset
+			IbcEventStorage::<T>::put(Vec::<IbcEvent>::new());
+
+			// emit ibc log
+			for ibc_log in IbcLogStorage::<T>::get() {
+				let logs = String::from_utf8(ibc_log).unwrap();
+				log::info!("📔📔📔[pallet_ibc_deliver]: logs: {:?}", logs);
+			}
+			// reset
+			IbcLogStorage::<T>::put(Vec::<Vec<u8>>::new());
 
 			Ok(().into())
 		}
 	}
 }
 
-impl<T: Config> pallet_ibc_utils::Router for Pallet<T>
-where
-	u64: From<<T as pallet_timestamp::Config>::Moment>
-		+ From<<T as frame_system::Config>::BlockNumber>,
-{
-	fn dispatch(messages: Vec<Any>) -> DispatchResult {
-		let mut ctx = Context::<T>::new();
+impl<T: Config> AssetIdAndNameProvider<T::AssetId> for Pallet<T> {
+	type Err = Error<T>;
 
-		let errors = messages.into_iter().fold(vec![], |mut errors: Vec<RouterError>, msg| {
-			let envelope: MsgEnvelope = msg.try_into().unwrap();
-			match ibc::core::dispatch(&mut ctx, envelope) {
-				Ok(()) => {},
-				Err(e) => errors.push(e),
-			}
-			errors
-		});
-
-		// emit ibc event
-		// we don't want emit Message event
-		Self::deposit_event(Event::IbcEvents { events: IbcEventStorage::<T>::get() });
-
-		// reset
-		IbcEventStorage::<T>::put(Vec::<IbcEvent>::new());
-
-		// emit ibc log
-		for ibc_log in IbcLogStorage::<T>::get() {
-			let logs = String::from_utf8(ibc_log).unwrap();
-			log::info!("📔📔📔[pallet_ibc_deliver]: logs: {:?}", logs);
+	fn try_get_asset_id(name: impl AsRef<[u8]>) -> Result<<T as Config>::AssetId, Self::Err> {
+		let asset_id = <AssetIdByName<T>>::try_get(name.as_ref().to_vec());
+		match asset_id {
+			Ok(id) => Ok(id),
+			_ => Err(Error::<T>::InvalidTokenId),
 		}
-		// reset
-		IbcLogStorage::<T>::put(Vec::<Vec<u8>>::new());
+	}
 
-		log::info!("🙅🙅🙅[pallet_ibc_deliver]: errors: {:?}", errors);
-
-		if !errors.is_empty() {
-			Self::deposit_event(errors.into());
+	fn try_get_asset_name(asset_id: T::AssetId) -> Result<Vec<u8>, Self::Err> {
+		let token_id = <AssetIdByName<T>>::iter().find(|p| p.1 == asset_id).map(|p| p.0);
+		match token_id {
+			Some(id) => Ok(id),
+			_ => Err(Error::<T>::WrongAssetId),
 		}
-		Ok(())
 	}
 }

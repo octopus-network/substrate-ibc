@@ -24,6 +24,10 @@ impl From<RouterError> for IbcError {
 				IbcError::UnknownMessageTypeUrl { message: url.as_bytes().to_vec() },
 			RouterError::MalformedMessageBytes(e) =>
 				IbcError::MalformedMessageBytes { message: e.to_string().as_bytes().to_vec() },
+			RouterError::UnknownPort { port_id } =>
+				IbcError::UnknownMessageTypeUrl { message: port_id.as_bytes().to_vec() },
+			RouterError::ModuleNotFound =>
+				IbcError::UnknownMessageTypeUrl { message: b"module not found".to_vec() },
 		}
 	}
 }
