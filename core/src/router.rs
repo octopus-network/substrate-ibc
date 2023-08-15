@@ -1,14 +1,15 @@
-use ibc::applications::transfer::MODULE_ID_STR as IBC_TRANSFER_MODULE_ID;
-use ibc::core::RouterError;
-use ibc::core::{
-	ics24_host::identifier::PortId,
-	router::{Module, ModuleId},
+use ibc::{
+	applications::transfer::MODULE_ID_STR as IBC_TRANSFER_MODULE_ID,
+	core::{
+		ics24_host::identifier::PortId,
+		router::{Module, ModuleId},
+		RouterError,
+	},
 };
 use scale_info::prelude::string::String;
 use sp_std::{borrow::ToOwned, collections::btree_map::BTreeMap, fmt::Debug, sync::Arc};
 
-use crate::app::transfer::IbcTransferModule;
-use crate::Config;
+use crate::{app::transfer::IbcTransferModule, Config};
 
 pub mod dynamic_typing {
 	use core::any::Any;

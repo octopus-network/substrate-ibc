@@ -1,5 +1,4 @@
 use core::fmt::Debug;
-use ibc::applications::transfer::VERSION;
 use ibc::{
 	applications::transfer::{
 		context::{
@@ -7,21 +6,19 @@ use ibc::{
 			TokenTransferValidationContext,
 		},
 		error::TokenTransferError,
-		PrefixedCoin,
+		PrefixedCoin, VERSION,
 	},
 	core::{
 		ics04_channel::{
+			acknowledgement::Acknowledgement,
 			channel::{Counterparty, Order},
 			error::{ChannelError, PacketError},
 			packet::Packet,
 			Version as ChannelVersion,
 		},
-		ics24_host::identifier::{ChannelId, ConnectionId},
+		ics24_host::identifier::{ChannelId, ConnectionId, PortId},
 		router::{Module as IbcModule, ModuleExtras},
 	},
-};
-use ibc::{
-	core::{ics04_channel::acknowledgement::Acknowledgement, ics24_host::identifier::PortId},
 	Signer,
 };
 
@@ -32,25 +29,22 @@ use ibc::applications::transfer::context::{
 	on_timeout_packet_validate,
 };
 
-use crate::traits::AssetIdAndNameProvider;
-use crate::Config;
-use crate::Event;
-use crate::Pallet;
+use crate::{traits::AssetIdAndNameProvider, Config, Event, Pallet};
 use codec::{Decode, Encode};
 use core::marker::PhantomData;
-use frame_support::traits::fungibles::Mutate;
-use frame_support::traits::tokens::Fortitude;
-use frame_support::traits::tokens::Precision;
-use frame_support::traits::tokens::Preservation;
-use frame_support::traits::Currency;
-use frame_support::traits::ExistenceRequirement::AllowDeath;
+use frame_support::traits::{
+	fungibles::Mutate,
+	tokens::{Fortitude, Precision, Preservation},
+	Currency,
+	ExistenceRequirement::AllowDeath,
+};
 use log::error;
 use scale_info::TypeInfo;
 use sp_core::U256;
-use sp_runtime::traits::CheckedConversion;
-use sp_runtime::traits::IdentifyAccount;
-use sp_runtime::traits::Verify;
-use sp_runtime::MultiSignature;
+use sp_runtime::{
+	traits::{CheckedConversion, IdentifyAccount, Verify},
+	MultiSignature,
+};
 
 #[derive(Clone, Debug)]
 pub struct IbcTransferModule<T> {
@@ -340,7 +334,7 @@ impl<T: Config> TokenTransferExecutionContext for IbcTransferModule<T> {
 					},
 					Err(_error) => {
 						error!("❌ [send_coins]: denom: ({:?})", denom);
-						return Err(TokenTransferError::InvalidToken);
+						return Err(TokenTransferError::InvalidToken)
 					},
 				}
 			},
@@ -378,7 +372,7 @@ impl<T: Config> TokenTransferExecutionContext for IbcTransferModule<T> {
 			},
 			Err(_error) => {
 				error!("❌ [mint_coins]: denom: ({:?})", denom);
-				return Err(TokenTransferError::InvalidToken);
+				return Err(TokenTransferError::InvalidToken)
 			},
 		}
 		Ok(())
@@ -415,7 +409,7 @@ impl<T: Config> TokenTransferExecutionContext for IbcTransferModule<T> {
 			},
 			Err(_error) => {
 				error!("❌ [burn_coins]: denom: ({:?})", denom);
-				return Err(TokenTransferError::InvalidToken);
+				return Err(TokenTransferError::InvalidToken)
 			},
 		}
 		Ok(())

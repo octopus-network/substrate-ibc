@@ -1,6 +1,7 @@
-use crate::constant::TENDERMINT_CLIENT_TYPE;
-use crate::router::Router;
-use crate::{prelude::*, Config, PacketCommitment as PacketCommitStore, *};
+use crate::{
+	constant::TENDERMINT_CLIENT_TYPE, prelude::*, router::Router, Config,
+	PacketCommitment as PacketCommitStore, *,
+};
 use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
 use sp_core::{Encode, Get};
 use sp_std::marker::PhantomData;
@@ -99,11 +100,10 @@ impl<T: Config> IbcContext<T> {
 			TENDERMINT_CLIENT_TYPE => ClientType::new(TENDERMINT_CLIENT_TYPE.into())
 				.map_err(|e| ClientError::Other { description: format!("{}", e) }),
 
-			unimplemented => {
+			unimplemented =>
 				return Err(ClientError::UnknownClientStateType {
 					client_state_type: unimplemented.to_string(),
-				})
-			},
+				}),
 		}
 	}
 }
