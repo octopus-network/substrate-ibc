@@ -13,10 +13,20 @@ extern crate core;
 
 pub use pallet::*;
 
-use frame_support::{pallet_prelude::*, traits::UnixTime};
+use crate::traits::AssetIdAndNameProvider;
+use frame_support::{
+	pallet_prelude::*,
+	traits::{
+		fungibles::Mutate,
+		tokens::{AssetId, Balance as AssetBalance},
+		Currency, GenesisBuild,
+	},
+};
 use frame_system::{ensure_signed, pallet_prelude::*};
 use ibc::{
+	applications::transfer::{msgs::transfer::MsgTransfer, send_transfer},
 	core::{
+		events::IbcEvent,
 		ics02_client::{client_type::ClientType, height::Height},
 		ics03_connection::connection::ConnectionEnd,
 		ics04_channel::{
@@ -30,49 +40,40 @@ use ibc::{
 		ics24_host::{
 			identifier::{ChannelId, ClientId, ConnectionId, PortId},
 			path::{
-				AcksPath, ChannelEndsPath, ClientConsensusStatePath, ClientStatePath,
-				ClientTypePath, CommitmentsPath, ConnectionsPath, ReceiptsPath, SeqAcksPath,
-				SeqRecvsPath, SeqSendsPath,
+				AckPath, ChannelEndPath, ClientConnectionPath, ClientConsensusStatePath,
+				ClientStatePath, CommitmentPath, ConnectionPath, ReceiptPath, SeqAckPath,
+				SeqRecvPath, SeqSendPath,
 			},
 		},
-		ics26_routing::handler::MsgReceipt,
+		MsgEnvelope,
 	},
-	events::IbcEvent,
-};
-use pallet_ibc_utils::module::AddModule;
-use sp_std::{fmt::Debug, vec, vec::Vec};
-
-pub mod channel;
-pub mod client;
-pub mod connection;
-pub mod context;
-pub mod errors;
-pub mod port;
-pub mod routing;
-
-pub use crate::context::Context;
-pub use alloc::{
-	format,
-	string::{String, ToString},
+	Signer,
 };
 use ibc_proto::google::protobuf::Any;
-pub use weights::WeightInfo;
+use sp_runtime::traits::IdentifyAccount;
+use sp_std::{fmt::Debug, vec, vec::Vec};
 
-pub const LOG_TARGET: &str = "runtime::pallet-ibc";
-pub const TENDERMINT_CLIENT_TYPE: &'static str = "07-tendermint";
-pub const MOCK_CLIENT_TYPE: &'static str = "9999-mock";
+pub mod app;
+pub mod client_context;
+pub mod constant;
+pub mod errors;
+pub mod impls;
+pub mod prelude;
+pub mod router;
+pub mod traits;
 
-#[cfg(any(test, feature = "runtime-benchmarks"))]
-mod mock;
-#[cfg(any(test, feature = "runtime-benchmarks"))]
-mod tests;
+pub use crate::impls::IbcContext;
+use crate::prelude::*;
 
-#[cfg(feature = "runtime-benchmarks")]
-pub mod benchmarks;
-mod weights;
+type BalanceOf<T> =
+	<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+
+type AssetName = Vec<u8>;
 
 #[frame_support::pallet]
 pub mod pallet {
+	use crate::app::transfer::IbcTransferModule;
+
 	use super::{errors, *};
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
@@ -87,19 +88,40 @@ pub mod pallet {
 			+ Debug
 			+ IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
-		/// The provider providing timestamp of host chain
-		type TimeProvider: UnixTime;
-
 		const IBC_COMMITMENT_PREFIX: &'static [u8];
 
 		type ExpectedBlockTime: Get<u64>;
 
 		type ChainVersion: Get<u64>;
 
-		type IbcModule: AddModule;
+		/// The currency type of the runtime
+		type Currency: Currency<Self::AccountId>;
 
-		/// benchmarking weight info
-		type WeightInfo: WeightInfo<Self>;
+		/// Identifier for the class of asset.
+		type AssetId: AssetId + MaybeSerializeDeserialize + Default;
+
+		/// The units in which we record balances.
+		type AssetBalance: AssetBalance + From<u128> + Into<u128>;
+
+		/// Expose customizable associated type of asset transfer, lock and unlock
+		type Fungibles: Mutate<
+			Self::AccountId,
+			AssetId = Self::AssetId,
+			Balance = Self::AssetBalance,
+		>;
+
+		/// Map of cross-chain asset ID & name
+		type AssetIdByName: AssetIdAndNameProvider<Self::AssetId>;
+
+		/// Account Id Conversion from SS58 string or hex string
+		type AccountIdConversion: TryFrom<Signer>
+			+ IdentifyAccount<AccountId = Self::AccountId>
+			+ Clone
+			+ PartialEq
+			+ Debug;
+
+		// The native token name
+		const NATIVE_TOKEN_NAME: &'static [u8];
 	}
 
 	#[pallet::pallet]
@@ -112,6 +134,7 @@ pub mod pallet {
 	pub type ClientStates<T: Config> = StorageMap<_, Blake2_128Concat, ClientStatePath, Vec<u8>>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn client_update_time)]
 	/// key1: client_id
 	/// key2: height
 	/// value: timestamp
@@ -119,6 +142,7 @@ pub mod pallet {
 		StorageDoubleMap<_, Blake2_128Concat, ClientId, Blake2_128Concat, Height, u64>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn client_update_height)]
 	/// key1: client_id
 	/// key2: height
 	/// value: host_height
@@ -132,17 +156,18 @@ pub mod pallet {
 		StorageMap<_, Blake2_128Concat, ClientConsensusStatePath, Vec<u8>>;
 
 	#[pallet::storage]
-	/// key: ConnectionsPath
+	/// key: ConnectionPath
 	/// value: ConnectionEnd
 	pub type Connections<T: Config> =
-		StorageMap<_, Blake2_128Concat, ConnectionsPath, ConnectionEnd>;
+		StorageMap<_, Blake2_128Concat, ConnectionPath, ConnectionEnd>;
 
 	#[pallet::storage]
 	/// key: CHannelEndsPath
 	/// value: ChannelEnd
-	pub type Channels<T: Config> = StorageMap<_, Blake2_128Concat, ChannelEndsPath, ChannelEnd>;
+	pub type Channels<T: Config> = StorageMap<_, Blake2_128Concat, ChannelEndPath, ChannelEnd>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn connection_channels)]
 	/// key: connection_id
 	/// value: Vec<(port_id, channel_id)>
 	pub type ChannelsConnection<T: Config> =
@@ -151,74 +176,130 @@ pub mod pallet {
 	#[pallet::storage]
 	/// Key: SeqSendsPath
 	/// value: sequence
-	pub type NextSequenceSend<T: Config> = StorageMap<_, Blake2_128Concat, SeqSendsPath, Sequence>;
+	pub type NextSequenceSend<T: Config> = StorageMap<_, Blake2_128Concat, SeqSendPath, Sequence>;
 
 	#[pallet::storage]
 	/// key: SeqRecvsPath
 	/// value: sequence
-	pub type NextSequenceRecv<T: Config> = StorageMap<_, Blake2_128Concat, SeqRecvsPath, Sequence>;
+	pub type NextSequenceRecv<T: Config> = StorageMap<_, Blake2_128Concat, SeqRecvPath, Sequence>;
 
 	#[pallet::storage]
 	/// key: SeqAcksPath
 	/// value: sequence
-	pub type NextSequenceAck<T: Config> = StorageMap<_, Blake2_128Concat, SeqAcksPath, Sequence>;
+	pub type NextSequenceAck<T: Config> = StorageMap<_, Blake2_128Concat, SeqAckPath, Sequence>;
 
 	#[pallet::storage]
 	/// key: AcksPath
 	/// value: hash of acknowledgement
 	pub type Acknowledgements<T: Config> =
-		StorageMap<_, Blake2_128Concat, AcksPath, IbcAcknowledgementCommitment>;
+		StorageMap<_, Blake2_128Concat, AckPath, IbcAcknowledgementCommitment>;
 
 	#[pallet::storage]
-	/// key: ClientTypePath
+	/// key: ClientId
 	/// value: ClientType
-	pub type Clients<T: Config> = StorageMap<_, Blake2_128Concat, ClientTypePath, ClientType>;
+	pub type ClientTypeById<T: Config> = StorageMap<_, Blake2_128Concat, ClientId, ClientType>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn client_cnt)]
 	/// client counter
 	pub type ClientCounter<T: Config> = StorageValue<_, u64, ValueQuery>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn connection_cnt)]
 	/// connection counter
 	pub type ConnectionCounter<T: Config> = StorageValue<_, u64, ValueQuery>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn channel_cnt)]
 	/// channel counter
 	pub type ChannelCounter<T: Config> = StorageValue<_, u64, ValueQuery>;
 
 	#[pallet::storage]
+	#[pallet::getter(fn connection_client)]
 	/// key: ClientId
 	/// value: ConnectionId
-	pub type ConnectionClient<T: Config> = StorageMap<_, Blake2_128Concat, ClientId, ConnectionId>;
+	pub type ConnectionClient<T: Config> =
+		StorageMap<_, Blake2_128Concat, ClientConnectionPath, ConnectionId>;
 
 	#[pallet::storage]
 	/// key: ReceiptsPath
 	/// value: receipt
-	pub type PacketReceipt<T: Config> = StorageMap<_, Blake2_128Concat, ReceiptsPath, Receipt>;
+	pub type PacketReceipt<T: Config> = StorageMap<_, Blake2_128Concat, ReceiptPath, Receipt>;
 
 	#[pallet::storage]
 	/// key: CommitmentsPath
 	/// value: hash of (timestamp, height, packet)
 	pub type PacketCommitment<T: Config> =
-		StorageMap<_, Blake2_128Concat, CommitmentsPath, IbcPacketCommitment>;
+		StorageMap<_, Blake2_128Concat, CommitmentPath, IbcPacketCommitment>;
 
 	#[pallet::storage]
-	/// key: height
-	/// value: Ibc event height
-	pub type IbcEventStore<T: Config> = StorageMap<_, Blake2_128Concat, u64, IbcEvent>;
+	/// host block height for ics06 solomachine
+	pub type HostHeight<T: Config> = StorageValue<_, Height>;
 
 	#[pallet::storage]
-	/// Previous host block height
-	pub type OldHeight<T: Config> = StorageValue<_, u64, ValueQuery>;
+	pub type IbcEventKey<T: Config> = StorageValue<_, Vec<Vec<u8>>, ValueQuery>;
+
+	#[pallet::storage]
+	pub type IbcEventStorage<T: Config> = StorageValue<_, Vec<IbcEvent>, ValueQuery>;
+
+	#[pallet::storage]
+	pub type IbcLogStorage<T: Config> = StorageValue<_, Vec<Vec<u8>>, ValueQuery>;
+
+	#[pallet::storage]
+	/// (asset name) => asset id
+	pub type AssetIdByName<T: Config> =
+		StorageMap<_, Twox64Concat, AssetName, T::AssetId, ValueQuery>;
+
+	#[pallet::genesis_config]
+	pub struct GenesisConfig<T: Config> {
+		pub asset_id_by_name: Vec<(String, T::AssetId)>,
+	}
+
+	impl<T: Config> core::default::Default for GenesisConfig<T> {
+		fn default() -> Self {
+			Self { asset_id_by_name: Vec::new() }
+		}
+	}
+
+	#[pallet::genesis_build]
+	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+		fn build(&self) {
+			for (token_id, id) in self.asset_id_by_name.iter() {
+				<AssetIdByName<T>>::insert(token_id.as_bytes(), id);
+			}
+		}
+	}
 
 	/// Substrate IBC event list
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
 		/// Ibc events
-		IbcEvents { events: Vec<IbcEvent> },
+		IbcEvents {
+			events: Vec<IbcEvent>,
+		},
 		/// Ibc errors
-		IbcErrors { errors: Vec<errors::IbcError> },
+		IbcErrors {
+			errors: Vec<errors::IbcError>,
+		},
+		/// transfer ibc token successful
+		TransferIbcTokenSuccessful,
+		/// transfer ibc token have error
+		TransferIbcTokenErr(String),
+		// unsupported event
+		UnsupportedEvent,
+		/// Transfer native token  event
+		TransferNativeToken(T::AccountIdConversion, T::AccountIdConversion, BalanceOf<T>),
+		/// Transfer non-native token event
+		TransferNoNativeToken(
+			T::AccountIdConversion,
+			T::AccountIdConversion,
+			<T as Config>::AssetBalance,
+		),
+		/// Burn cross chain token event
+		BurnToken(T::AssetId, T::AccountIdConversion, T::AssetBalance),
+		/// Mint chairperson token event
+		MintToken(T::AssetId, T::AccountIdConversion, T::AssetBalance),
 	}
 
 	/// Errors in MMR verification informing users that something went wrong.
@@ -244,8 +325,30 @@ pub mod pallet {
 		InvalidVersion,
 		/// Invalid module id
 		InvalidModuleId,
-		///
+		// Parser Msg Transfer Error
+		ParserMsgTransferError,
+		/// Invalid token id
+		InvalidTokenId,
+		/// Wrong assert id
+		WrongAssetId,
+		/// other error
 		Other,
+	}
+
+	#[pallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T>
+	where
+		T: Send + Sync,
+	{
+		fn offchain_worker(_n: BlockNumberFor<T>) {
+			// clear ibc event offchain key
+			for key in IbcEventKey::<T>::get() {
+				sp_io::offchain_index::clear(&key);
+			}
+
+			// clear Ibc event key
+			IbcEventKey::<T>::set(vec![]);
+		}
 	}
 
 	/// Dispatchable functions allows users to interact with the pallet and invoke state changes.
@@ -255,7 +358,7 @@ pub mod pallet {
 	impl<T: Config> Pallet<T>
 	where
 		u64: From<<T as pallet_timestamp::Config>::Moment>
-			+ From<<T as frame_system::Config>::BlockNumber>,
+		+ From<<<<T as frame_system::Config>::Block as sp_runtime::traits::Block>::Header as sp_runtime::traits::Header>::Number>,
 	{
 		/// This function acts as an entry for most of the IBC request.
 		/// I.e., create clients, update clients, handshakes to create channels, ...etc
@@ -271,57 +374,58 @@ pub mod pallet {
 		/// The relevant events are emitted when successful.
 		#[pallet::call_index(0)]
 		#[pallet::weight(0)]
-		pub fn deliver(origin: OriginFor<T>, messages: Vec<Any>) -> DispatchResultWithPostInfo {
+		pub fn dispatch(origin: OriginFor<T>, message: Any) -> DispatchResultWithPostInfo {
+			log::info!("✍️✍️✍️dispatch messages: {:?}", message);
 			let _ = ensure_signed(origin)?;
 
-			<pallet::Pallet<T> as pallet_ibc_utils::Router>::dispatch(messages)?;
+			let mut ctx = IbcContext::<T>::new();
+			let mut router = ctx.router.clone();
+
+    		if let Ok(msg) = MsgEnvelope::try_from(message.clone()) {
+                ibc::core::dispatch(&mut ctx, &mut router, msg).map_err(|_| sp_runtime::DispatchError::Other("dispatch MsgEvelope failed"))?;
+            } else if let Ok(transfer_msg) = MsgTransfer::try_from(message) {
+                let mut transfer_module = IbcTransferModule::<T>::new();
+                send_transfer(&mut ctx, &mut transfer_module, transfer_msg).map_err(|_| sp_runtime::DispatchError::Other("IBC transfer failed"))?;
+            } else {
+                return Err(sp_runtime::DispatchError::Other("Unsupported message type").into());
+            }
+
+           	// emit ibc event
+			// we don't want emit Message event
+			Self::deposit_event(Event::IbcEvents { events: IbcEventStorage::<T>::get() });
+
+			// reset
+			IbcEventStorage::<T>::put(Vec::<IbcEvent>::new());
+
+			// emit ibc log
+			for ibc_log in IbcLogStorage::<T>::get() {
+				let logs = String::from_utf8(ibc_log).unwrap();
+				log::info!("📔📔📔[pallet_ibc_deliver]: logs: {:?}", logs);
+			}
+			// reset
+			IbcLogStorage::<T>::put(Vec::<Vec<u8>>::new());
+
 			Ok(().into())
 		}
 	}
 }
 
-impl<T: Config> pallet_ibc_utils::Router for Pallet<T>
-where
-	u64: From<<T as pallet_timestamp::Config>::Moment>
-		+ From<<T as frame_system::Config>::BlockNumber>,
-{
-	fn dispatch(messages: Vec<Any>) -> DispatchResult {
-		let mut ctx = Context::<T>::new();
-		log::info!(
-			"☀️ ibc messages type: {:?}",
-			messages.iter().map(|v| &v.type_url).collect::<Vec<_>>()
-		);
+impl<T: Config> AssetIdAndNameProvider<T::AssetId> for Pallet<T> {
+	type Err = Error<T>;
 
-		let (events, logs, errors) = messages.into_iter().fold(
-			(vec![], vec![], vec![]),
-			|(mut events, mut logs, mut errors), msg| {
-				match ibc::core::ics26_routing::handler::deliver(&mut ctx, msg) {
-					Ok(MsgReceipt { events: temp_events, log: temp_logs }) => {
-						events.extend(temp_events);
-						logs.extend(temp_logs);
-					},
-					Err(e) => errors.push(e),
-				}
-				(events, logs, errors)
-			},
-		);
-		log::info!("🙅🙅 deliver ----> events: {:?}", events);
-		log::info!("🙅🙅 🔥 🔥deliver ----> logs: {:?}", logs);
-		log::info!("🙅🙅 ❌❌ deliver ----> errors: {:?}", errors);
-
-		log::trace!(target: "pallet_ibc", "[pallet_ibc_deliver]: logs: {:?}", logs);
-		log::trace!(target: "pallet_ibc", "[pallet_ibc_deliver]: errors: {:?}", errors);
-
-		let block_height = <frame_system::Pallet<T>>::block_number();
-
-		for event in events.clone() {
-			<IbcEventStore<T>>::insert(u64::from(block_height), event);
+	fn try_get_asset_id(name: impl AsRef<[u8]>) -> Result<<T as Config>::AssetId, Self::Err> {
+		let asset_id = <AssetIdByName<T>>::try_get(name.as_ref().to_vec());
+		match asset_id {
+			Ok(id) => Ok(id),
+			_ => Err(Error::<T>::InvalidTokenId),
 		}
-		Self::deposit_event(Event::IbcEvents { events });
-		if !errors.is_empty() {
-			Self::deposit_event(errors.into());
-		}
+	}
 
-		Ok(())
+	fn try_get_asset_name(asset_id: T::AssetId) -> Result<Vec<u8>, Self::Err> {
+		let token_id = <AssetIdByName<T>>::iter().find(|p| p.1 == asset_id).map(|p| p.0);
+		match token_id {
+			Some(id) => Ok(id),
+			_ => Err(Error::<T>::WrongAssetId),
+		}
 	}
 }

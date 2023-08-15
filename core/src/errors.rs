@@ -1,10 +1,6 @@
-use crate::{Config, Event};
-pub use alloc::{
-	format,
-	string::{String, ToString},
-};
+use crate::{prelude::*, Config, Event};
 use codec::{Decode, Encode};
-use ibc::core::ics26_routing::error::RouterError;
+use ibc::core::RouterError;
 use sp_std::vec::Vec;
 
 #[derive(
@@ -28,6 +24,10 @@ impl From<RouterError> for IbcError {
 				IbcError::UnknownMessageTypeUrl { message: url.as_bytes().to_vec() },
 			RouterError::MalformedMessageBytes(e) =>
 				IbcError::MalformedMessageBytes { message: e.to_string().as_bytes().to_vec() },
+			RouterError::UnknownPort { port_id } =>
+				IbcError::UnknownMessageTypeUrl { message: port_id.as_bytes().to_vec() },
+			RouterError::ModuleNotFound =>
+				IbcError::UnknownMessageTypeUrl { message: b"module not found".to_vec() },
 		}
 	}
 }
