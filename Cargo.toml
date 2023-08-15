@@ -3,5 +3,3 @@ members = [
   "core",
 ]
 resolver = "2"
-
-[patch.crates-io]

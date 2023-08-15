@@ -359,7 +359,6 @@ pub mod pallet {
 	where
 		u64: From<<T as pallet_timestamp::Config>::Moment>
 		+ From<<<<T as frame_system::Config>::Block as sp_runtime::traits::Block>::Header as sp_runtime::traits::Header>::Number>,
-
 	{
 		/// This function acts as an entry for most of the IBC request.
 		/// I.e., create clients, update clients, handshakes to create channels, ...etc
