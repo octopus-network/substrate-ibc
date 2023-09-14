@@ -31,12 +31,12 @@ pub mod pallet {
 	use super::*;
 	use crate::callback::IbcTransferModule;
 	// use crate::{callback::IbcTransferModule, LOG_TARGET};
-	// use alloc::string::String;
+	use alloc::string::String;
 	use crate::alloc::string::ToString;
 	use frame_support::{
 		pallet_prelude::*,
 		traits::{
-			fungibles::{Mutate, Transfer},
+			fungibles::{Balanced, Mutate},
 			tokens::{AssetId, Balance as AssetBalance},
 			Currency,
 		},
@@ -78,7 +78,7 @@ pub mod pallet {
 		type AssetBalance: AssetBalance + From<u128> + Into<u128>;
 
 		/// Expose customizable associated type of asset transfer, lock and unlock
-		type Fungibles: Transfer<Self::AccountId, AssetId = Self::AssetId, Balance = Self::AssetBalance>
+		type Fungibles: Balanced<Self::AccountId>
 			+ Mutate<Self::AccountId, AssetId = Self::AssetId, Balance = Self::AssetBalance>;
 
 		/// Map of cross-chain asset ID & name
