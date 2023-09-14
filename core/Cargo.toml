@@ -22,15 +22,15 @@ serde_json = { version = "1.0", default-features = false }
 # substate crates
 codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive"] }
 scale-info = { version = "2.1.2", default-features = false, features = ["derive"] }
-frame-benchmarking = { version = "4.0.0-dev", default-features = false, optional = true, git = "https://github.com/octopus-network/substrate.git", branch = "polkadot-v0.9.40-rc" }
-frame-support = { version = "4.0.0-dev", default-features = false, git = "https://github.com/octopus-network/substrate.git", branch = "polkadot-v0.9.40-rc" }
-frame-system = { version = "4.0.0-dev", default-features = false, git = "https://github.com/octopus-network/substrate.git", branch = "polkadot-v0.9.40-rc" }
-sp-core = { version = "7.0.0", default-features = false, git = "https://github.com/octopus-network/substrate.git", branch = "polkadot-v0.9.40-rc" }
-sp-io = { version = "7.0.0", default-features = false, git = "https://github.com/octopus-network/substrate.git", branch = "polkadot-v0.9.40-rc" }
-sp-runtime = { version = "7.0.0", default-features = false, git = "https://github.com/octopus-network/substrate.git", branch = "polkadot-v0.9.40-rc" }
-sp-std = { version = "5.0.0", default-features = false, git = "https://github.com/octopus-network/substrate.git", branch = "polkadot-v0.9.40-rc" }
-sp-tracing = { version = "6.0.0", default-features = false, git = "https://github.com/octopus-network/substrate.git", branch = "polkadot-v0.9.40-rc" }
-pallet-timestamp = { version = "4.0.0-dev", default-features = false,  git = "https://github.com/octopus-network/substrate.git", branch = "polkadot-v0.9.40-rc" }
+frame-benchmarking = { version = "4.0.0-dev", default-features = false, optional = true, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.43" }
+frame-support = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.43" }
+frame-system = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.43" }
+sp-core = { version = "7.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.43" }
+sp-io = { version = "7.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.43" }
+sp-runtime = { version = "7.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.43" }
+sp-std = { version = "5.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.43" }
+sp-tracing = { version = "6.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.43" }
+pallet-timestamp = { version = "4.0.0-dev", default-features = false,  git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.43" }
 
 ## for ibc protocl
 pallet-ibc-utils = { version = "0.1.0", default-features = false, path = "../utils" }
@@ -38,24 +38,24 @@ ibc = { version = "0.28.0", default-features = false, features = ["parity-scale-
 ibc-proto = { version = "0.25.0", default-features = false, features = ["parity-scale-codec"], git = "https://github.com/octopus-network/ibc-proto-rs", branch = "ibc" }
 
 ## optional
-pallet-balances = { version = "4.0.0-dev", default-features = false, git = "https://github.com/octopus-network/substrate.git", branch = "polkadot-v0.9.40-rc", optional = true }
+pallet-balances = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.43", optional = true }
 
 [dev-dependencies]
 chrono = "0.4.19"
 hex = '0.4.0'
 serde = "1.0"
 sha2 = '0.10.2'
-frame-support = { version = "4.0.0-dev", git = "https://github.com/octopus-network/substrate.git", branch = "polkadot-v0.9.40-rc" }
-pallet-assets = { version = "4.0.0-dev", git = "https://github.com/octopus-network/substrate.git", branch = "polkadot-v0.9.40-rc" }
-pallet-babe = { version = "4.0.0-dev", git = "https://github.com/octopus-network/substrate.git", branch = "polkadot-v0.9.40-rc" }
-pallet-balances = { version = "4.0.0-dev", git = "https://github.com/octopus-network/substrate.git", branch = "polkadot-v0.9.40-rc" }
-pallet-timestamp = { version = "4.0.0-dev", git = "https://github.com/octopus-network/substrate.git", branch = "polkadot-v0.9.40-rc" }
-sp-core = { version = "7.0.0", git = "https://github.com/octopus-network/substrate.git", branch = "polkadot-v0.9.40-rc" }
-sp-io = { version = "7.0.0", git = "https://github.com/octopus-network/substrate.git", branch = "polkadot-v0.9.40-rc" }
-sp-keyring = { version = "7.0.0", git = "https://github.com/octopus-network/substrate.git", branch = "polkadot-v0.9.40-rc" }
-sp-runtime = { version = "7.0.0", git = "https://github.com/octopus-network/substrate.git", branch = "polkadot-v0.9.40-rc" }
-sp-std = { version = "5.0.0", git = "https://github.com/octopus-network/substrate.git", branch = "polkadot-v0.9.40-rc" }
-sp-version = { version = "5.0.0", git = "https://github.com/octopus-network/substrate.git", branch = "polkadot-v0.9.40-rc" }
+frame-support = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.43" }
+pallet-assets = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.43" }
+pallet-babe = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.43" }
+pallet-balances = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.43" }
+pallet-timestamp = { version = "4.0.0-dev", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.43" }
+sp-core = { version = "7.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.43" }
+sp-io = { version = "7.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.43" }
+sp-keyring = { version = "7.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.43" }
+sp-runtime = { version = "7.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.43" }
+sp-std = { version = "5.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.43" }
+sp-version = { version = "5.0.0", git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.43" }
 
 [features]
 default = ['std']

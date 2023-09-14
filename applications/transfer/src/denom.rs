@@ -1,5 +1,4 @@
-use alloc::string::String;
-use alloc::vec::Vec;
+use alloc::{string::String, vec::Vec};
 use codec::{Decode, Encode};
 use core::str::FromStr;
 use ibc::applications::transfer::{denom::PrefixedDenom as IbcPrefixedDenom, BaseDenom, TracePath};
