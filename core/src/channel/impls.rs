@@ -5,6 +5,7 @@ use crate::{
 };
 use alloc::{format, string::ToString, vec};
 use core::time::Duration;
+use frame_system::pallet_prelude::BlockNumberFor;
 use ibc::{
 	core::{
 		ics02_client::{
@@ -37,8 +38,7 @@ use sp_std::{boxed::Box, vec::Vec};
 /// A context supplying all the necessary read-only dependencies for processing any `ChannelMsg`.
 impl<T: Config> ChannelReaderInterface for Context<T>
 where
-	u64: From<<T as pallet_timestamp::Config>::Moment>
-		+ From<<T as frame_system::Config>::BlockNumber>,
+	u64: From<<T as pallet_timestamp::Config>::Moment> + From<BlockNumberFor<T>>,
 {
 	/// Returns the ChannelEnd for the given `port_id` and `chan_id`.
 	fn channel_end(port_id: &PortId, channel_id: &ChannelId) -> Result<ChannelEnd, ChannelError> {
@@ -161,7 +161,7 @@ where
 	/// Returns the current height of the local chain.
 	fn host_height() -> Result<Height, ChannelError> {
 		let block_height = <frame_system::Pallet<T>>::block_number();
-		Height::new(T::ChainVersion::get(), block_height.into())
+		Height::new(T::ChainVersion::get(), u64::from(block_height))
 			.map_err(|e| ChannelError::Connection(ConnectionError::Client(e)))
 	}
 

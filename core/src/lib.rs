@@ -254,8 +254,7 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T>
 	where
-		u64: From<<T as pallet_timestamp::Config>::Moment>
-			+ From<<T as frame_system::Config>::BlockNumber>,
+		u64: From<<T as pallet_timestamp::Config>::Moment> + From<BlockNumberFor<T>>,
 	{
 		/// This function acts as an entry for most of the IBC request.
 		/// I.e., create clients, update clients, handshakes to create channels, ...etc
@@ -282,8 +281,7 @@ pub mod pallet {
 
 impl<T: Config> pallet_ibc_utils::Router for Pallet<T>
 where
-	u64: From<<T as pallet_timestamp::Config>::Moment>
-		+ From<<T as frame_system::Config>::BlockNumber>,
+	u64: From<<T as pallet_timestamp::Config>::Moment> + From<BlockNumberFor<T>>,
 {
 	fn dispatch(messages: Vec<Any>) -> DispatchResult {
 		let mut ctx = Context::<T>::new();

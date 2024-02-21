@@ -3,6 +3,7 @@ pub use alloc::{
 	format,
 	string::{String, ToString},
 };
+use frame_system::pallet_prelude::BlockNumberFor;
 use ibc::core::ics26_routing::context::{Module, ModuleId, RouterBuilder, RouterContext};
 use pallet_ibc_utils::module::Router;
 use sp_std::{borrow::ToOwned, sync::Arc};
@@ -27,8 +28,7 @@ impl RouterBuilder for SubstrateRouterBuilder {
 
 impl<T: Config> RouterContext for Context<T>
 where
-	u64: From<<T as pallet_timestamp::Config>::Moment>
-		+ From<<T as frame_system::Config>::BlockNumber>,
+	u64: From<<T as pallet_timestamp::Config>::Moment> + From<BlockNumberFor<T>>,
 {
 	type Router = Router;
 

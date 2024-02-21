@@ -21,10 +21,11 @@ mod mock;
 
 use crate::callback::IbcTransferModule;
 use alloc::string::String;
+use frame_support::traits::BuildGenesisConfig;
 use frame_support::{
 	pallet_prelude::*,
 	traits::{
-		fungibles::{Mutate, Transfer},
+		fungibles::Mutate,
 		tokens::{AssetId, Balance as AssetBalance},
 		Currency,
 	},
@@ -77,8 +78,11 @@ pub mod pallet {
 		type AssetBalance: AssetBalance + From<u128> + Into<u128>;
 
 		/// Expose customizable associated type of asset transfer, lock and unlock
-		type Fungibles: Transfer<Self::AccountId, AssetId = Self::AssetId, Balance = Self::AssetBalance>
-			+ Mutate<Self::AccountId, AssetId = Self::AssetId, Balance = Self::AssetBalance>;
+		type Fungibles: Mutate<
+			Self::AccountId,
+			AssetId = Self::AssetId,
+			Balance = Self::AssetBalance,
+		>;
 
 		/// Map of cross-chain asset ID & name
 		type AssetIdByName: AssetIdAndNameProvider<Self::AssetId>;
@@ -122,7 +126,7 @@ pub mod pallet {
 	}
 
 	#[pallet::genesis_build]
-	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+	impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
 		fn build(&self) {
 			for (token_id, id) in self.asset_id_by_name.iter() {
 				<AssetIdByName<T>>::insert(token_id.as_bytes(), id);
@@ -172,8 +176,7 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T>
 	where
-		u64: From<<T as pallet_timestamp::Config>::Moment>
-			+ From<<T as frame_system::Config>::BlockNumber>,
+		u64: From<<T as pallet_timestamp::Config>::Moment> + From<BlockNumberFor<T>>,
 	{
 		/// ICS20 fungible token transfer.
 		/// Handling transfer request as sending chain or receiving chain.
@@ -219,8 +222,7 @@ impl<T: Config> AssetIdAndNameProvider<T::AssetId> for Pallet<T> {
 
 impl<T: Config> pallet_ibc_utils::Router for Pallet<T>
 where
-	u64: From<<T as pallet_timestamp::Config>::Moment>
-		+ From<<T as frame_system::Config>::BlockNumber>,
+	u64: From<<T as pallet_timestamp::Config>::Moment> + From<BlockNumberFor<T>>,
 {
 	fn dispatch(messages: Vec<Any>) -> DispatchResult {
 		let mut ctx = IbcTransferModule(PhantomData::<T>);

@@ -7,9 +7,7 @@ use codec::{Decode, Encode};
 use ibc::core::ics26_routing::error::RouterError;
 use sp_std::vec::Vec;
 
-#[derive(
-	PartialEq, Eq, Clone, frame_support::RuntimeDebug, scale_info::TypeInfo, Encode, Decode,
-)]
+#[derive(Debug, PartialEq, Eq, Clone, scale_info::TypeInfo, Encode, Decode)]
 pub enum IbcError {
 	/// context error
 	ContextError { message: Vec<u8> },
@@ -22,12 +20,15 @@ pub enum IbcError {
 impl From<RouterError> for IbcError {
 	fn from(err: RouterError) -> Self {
 		match err {
-			RouterError::ContextError(e) =>
-				IbcError::ContextError { message: e.to_string().as_bytes().to_vec() },
-			RouterError::UnknownMessageTypeUrl { url } =>
-				IbcError::UnknownMessageTypeUrl { message: url.as_bytes().to_vec() },
-			RouterError::MalformedMessageBytes(e) =>
-				IbcError::MalformedMessageBytes { message: e.to_string().as_bytes().to_vec() },
+			RouterError::ContextError(e) => {
+				IbcError::ContextError { message: e.to_string().as_bytes().to_vec() }
+			},
+			RouterError::UnknownMessageTypeUrl { url } => {
+				IbcError::UnknownMessageTypeUrl { message: url.as_bytes().to_vec() }
+			},
+			RouterError::MalformedMessageBytes(e) => {
+				IbcError::MalformedMessageBytes { message: e.to_string().as_bytes().to_vec() }
+			},
 		}
 	}
 }

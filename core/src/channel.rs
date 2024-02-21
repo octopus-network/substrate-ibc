@@ -4,6 +4,7 @@ pub use alloc::{
 	string::{String, ToString},
 };
 use core::time::Duration;
+use frame_system::pallet_prelude::BlockNumberFor;
 use ibc::{
 	core::{
 		ics02_client::{client_state::ClientState, consensus_state::ConsensusState},
@@ -30,8 +31,7 @@ pub mod impls;
 
 impl<T: Config> ChannelReader for Context<T>
 where
-	u64: From<<T as pallet_timestamp::Config>::Moment>
-		+ From<<T as frame_system::Config>::BlockNumber>,
+	u64: From<<T as pallet_timestamp::Config>::Moment> + From<BlockNumberFor<T>>,
 {
 	fn channel_end(
 		&self,

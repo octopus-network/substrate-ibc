@@ -5,6 +5,7 @@ pub use alloc::{
 	format,
 	string::{String, ToString},
 };
+use frame_system::pallet_prelude::BlockNumberFor;
 use ibc::{
 	core::{
 		ics02_client::{
@@ -29,8 +30,7 @@ use sp_std::boxed::Box;
 
 impl<T: Config> ConnectionReader for Context<T>
 where
-	u64: From<<T as pallet_timestamp::Config>::Moment>
-		+ From<<T as frame_system::Config>::BlockNumber>,
+	u64: From<<T as pallet_timestamp::Config>::Moment> + From<BlockNumberFor<T>>,
 {
 	fn connection_end(&self, conn_id: &ConnectionId) -> Result<ConnectionEnd, ConnectionError> {
 		<Connections<T>>::get(ConnectionsPath(conn_id.clone()))
@@ -51,7 +51,8 @@ where
 	fn host_current_height(&self) -> Result<Height, ConnectionError> {
 		let current_height = <frame_system::Pallet<T>>::block_number();
 		<OldHeight<T>>::put(u64::from(current_height));
-		Height::new(T::ChainVersion::get(), current_height.into()).map_err(ConnectionError::Client)
+		Height::new(T::ChainVersion::get(), u64::from(current_height))
+			.map_err(ConnectionError::Client)
 	}
 
 	fn host_oldest_height(&self) -> Result<Height, ConnectionError> {
