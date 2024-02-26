@@ -1,7 +1,7 @@
 use frame_support::weights::Weight;
 use ibc::core::{
-	ics04_channel::packet::{Acknowledgement, Packet},
-	ics24_host::identifier::{ChannelId, PortId},
+	channel::types::{acknowledgement::Acknowledgement, packet::Packet},
+	host::types::identifiers::{ChannelId, PortId},
 };
 
 /// Callback Weight

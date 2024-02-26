@@ -4,51 +4,43 @@ use crate::{PacketCommitment as PacketCommitStore, *};
 use alloc::{borrow::ToOwned, string::String, sync::Arc};
 use codec::Encode;
 use frame_support::traits::Get;
+use ibc::clients::tendermint::client_state::ClientState as Ics07ClientState;
+use ibc::core::channel::types::commitment::AcknowledgementCommitment;
+use ibc::core::channel::types::error::{ChannelError, PacketError};
+use ibc::core::channel::types::packet::Receipt;
+use ibc::core::client::context::types::error::ClientError;
+use ibc::core::client::context::{client_state::ClientState, consensus_state::ConsensusState};
+use ibc::core::commitment_types::commitment::CommitmentPrefix;
+use ibc::core::connection::types::error::ConnectionError;
+use ibc::core::handler::types::error::ContextError;
+use ibc::core::handler::types::events::IbcEvent;
+use ibc::core::host::ExecutionContext;
+use ibc::core::host::ValidationContext;
+use ibc::core::primitives::Signer;
+use ibc::core::primitives::Timestamp;
+use ibc::core::router::module::Module;
+use ibc::core::router::types::module::ModuleId;
 use ibc::{
-	clients::ics07_tendermint::{
-		client_state::ClientState as Ics07ClientState,
-		consensus_state::ConsensusState as Ics07ConsensusState,
+	clients::tendermint::consensus_state::ConsensusState as Ics07ConsensusState,
+	core::host::types::path::{
+		AckPath, ChannelEndPath, ClientConnectionPath, ClientConsensusStatePath, ClientStatePath,
+		CommitmentPath, ConnectionPath, ReceiptPath, SeqAckPath, SeqRecvPath, SeqSendPath,
 	},
-	core::{
-		events::IbcEvent,
-		ics02_client::{
-			client_state::ClientState, consensus_state::ConsensusState, error::ClientError,
-		},
-		ics03_connection::error::ConnectionError,
-		ics04_channel::{
-			commitment::AcknowledgementCommitment,
-			error::{ChannelError, PacketError},
-			packet::Receipt,
-		},
-		ics23_commitment::commitment::CommitmentPrefix,
-		ics24_host::path::{
-			AckPath, ChannelEndPath, ClientConnectionPath, ClientConsensusStatePath,
-			ClientStatePath, CommitmentPath, ConnectionPath, ReceiptPath, SeqAckPath, SeqRecvPath,
-			SeqSendPath,
-		},
-		router::{Module, ModuleId},
-		timestamp::Timestamp,
-		ContextError, ExecutionContext, ValidationContext,
-	},
-	mock::consensus_state::MockConsensusState,
-	Signer,
 };
-use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
+use ibc_proto::{google::protobuf::Any, Protobuf};
 use sp_std::{boxed::Box, marker::PhantomData};
 
 /// A struct capturing all the functional dependencies (i.e., context)
 /// which the ICS26 module requires to be able to dispatch and process IBC messages.
 use crate::routing::Router;
-use ibc::{
-	core::{
-		ics02_client::client_type::ClientType,
-		ics03_connection::connection::ConnectionEnd,
-		ics04_channel::{channel::ChannelEnd, commitment::PacketCommitment, packet::Sequence},
-		ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
-	},
-	mock::client_state::{client_type as mock_client_type, MockClientState},
-	Height,
-};
+use ibc::apps::transfer::types::MODULE_ID_STR as TRANSFER_MODULE_ID;
+use ibc::core::channel::types::channel::ChannelEnd;
+use ibc::core::channel::types::commitment::PacketCommitment;
+use ibc::core::client::context::types::Height;
+use ibc::core::connection::types::ConnectionEnd;
+use ibc::core::host::types::identifiers::ClientType;
+use ibc::core::host::types::identifiers::Sequence;
+use ibc::core::host::types::identifiers::{ChannelId, ClientId, ConnectionId, PortId};
 
 #[derive(Clone, Debug)]
 pub struct Context<T> {
@@ -72,7 +64,7 @@ impl<T: Config> Context<T> {
 		}
 	}
 
-	fn client_type(&self, client_id: &ClientId) -> Result<ClientType, ContextError> {
+	pub fn client_type(&self, client_id: &ClientId) -> Result<ClientType, ContextError> {
 		let data = <ClientTypeById<T>>::get(client_id.clone()).ok_or(ClientError::Other {
 			description: format!("Client({}) not found!", client_id.clone()),
 		})?;
@@ -83,6 +75,13 @@ impl<T: Config> Context<T> {
 				client_state_type: unimplemented.to_string(),
 			}
 			.into()),
+		}
+	}
+
+	pub fn lookup_module_by_port(&self, port_id: &PortId) -> Option<ModuleId> {
+		match port_id.as_str() {
+			TRANSFER_PORT_ID => Some(ModuleId::new(TRANSFER_MODULE_ID.to_string())),
+			_ => None,
 		}
 	}
 }
@@ -97,7 +96,12 @@ impl<T: Config> ValidationContext for Context<T>
 where
 	u64: From<<T as pallet_timestamp::Config>::Moment> + From<BlockNumberFor<T>>,
 {
-	fn client_state(&self, client_id: &ClientId) -> Result<Box<dyn ClientState>, ContextError> {
+	type V = Self;
+	type E = Self;
+	type AnyConsensusState = AnyConsensusState;
+	type AnyClientState = AnyClientState;
+
+	fn client_state(&self, client_id: &ClientId) -> Result<Self::AnyClientState, ContextError> {
 		let data = <ClientStates<T>>::get(ClientStatePath(client_id.clone())).ok_or(
 			ClientError::Other { description: format!("Client({}) not found!", client_id.clone()) },
 		)?;
@@ -110,13 +114,6 @@ where
 
 				Ok(Box::new(result))
 			},
-			MOCK_CLIENT_TYPE => {
-				let result: MockClientState =
-					Protobuf::<Any>::decode_vec(&data).map_err(|e| ClientError::Other {
-						description: format!("Deocode Ics10ClientState failed: {:?}", e),
-					})?;
-				Ok(Box::new(result))
-			},
 			unimplemented => Err(ClientError::UnknownClientStateType {
 				client_state_type: unimplemented.to_string(),
 			}
@@ -124,13 +121,9 @@ where
 		}
 	}
 
-	fn decode_client_state(&self, client_state: Any) -> Result<Box<dyn ClientState>, ContextError> {
+	fn decode_client_state(&self, client_state: Any) -> Result<Self::AnyClientState, ContextError> {
 		if let Ok(client_state) = Ics07ClientState::try_from(client_state.clone()) {
-			return Ok(client_state.into_box());
-		}
-		#[cfg(test)]
-		if let Ok(client_state) = MockClientState::try_from(client_state.clone()) {
-			return Ok(client_state.into_box());
+			return Ok(client_state.into());
 		}
 		Err(ClientError::UnknownClientStateType { client_state_type: client_state.type_url }.into())
 	}
@@ -140,17 +133,20 @@ where
 		client_cons_state_path: &ClientConsensusStatePath,
 	) -> Result<Box<dyn ConsensusState>, ContextError> {
 		let client_id = client_cons_state_path.client_id.clone();
-		let epoch = client_cons_state_path.epoch;
-		let height = client_cons_state_path.height;
+		let epoch = client_cons_state_path.revision_number;
+		let height = client_cons_state_path.revision_height;
 		let height = Height::new(epoch, height)
 			.map_err(|e| ClientError::Other { description: format!("{}", e) })?;
 		let data = <ConsensusStates<T>>::get(client_cons_state_path).ok_or(
 			ClientError::ConsensusStateNotFound {
 				client_id: client_cons_state_path.client_id.clone(),
-				height: Height::new(client_cons_state_path.epoch, client_cons_state_path.height)
-					.map_err(|e| ClientError::Other {
-						description: format!("contruct height error({})", e),
-					})?,
+				height: Height::new(
+					client_cons_state_path.revision_number,
+					client_cons_state_path.revision_height,
+				)
+				.map_err(|e| ClientError::Other {
+					description: format!("contruct height error({})", e),
+				})?,
 			},
 		)?;
 		match self.client_type(&client_id)? {
@@ -161,116 +157,11 @@ where
 					})?;
 				Ok(Box::new(result))
 			},
-			MOCK_CLIENT_TYPE => {
-				let result: MockConsensusState =
-					Protobuf::<Any>::decode_vec(&data).map_err(|e| ClientError::Other {
-						description: format!("Decode MockConsensusState failed: {:?}", e),
-					})?;
-				Ok(Box::new(result))
-			},
 			unimplemented => Err(ClientError::UnknownClientStateType {
 				client_state_type: unimplemented.to_string(),
 			}
 			.into()),
 		}
-	}
-
-	fn next_consensus_state(
-		&self,
-		client_id: &ClientId,
-		height: &Height,
-	) -> Result<Option<Box<dyn ConsensusState>>, ContextError> {
-		let mut heights = <ConsensusStates<T>>::iter_keys()
-			.map(|key| {
-				let height = Height::new(key.epoch, key.height);
-				height
-			})
-			.collect::<Result<Vec<Height>, ClientError>>()?;
-
-		heights.sort_by(|a, b| b.cmp(a));
-
-		// Search for previous state.
-		for h in heights {
-			if h > *height {
-				let data = <ConsensusStates<T>>::get(ClientConsensusStatePath {
-					client_id: client_id.clone(),
-					epoch: h.revision_number(),
-					height: h.revision_height(),
-				})
-				.ok_or(ClientError::ConsensusStateNotFound {
-					client_id: client_id.clone(),
-					height: *height,
-				})?;
-				match self.client_type(client_id)? {
-					TENDERMINT_CLIENT_TYPE => {
-						let result: Ics07ConsensusState = Protobuf::<Any>::decode_vec(&data)
-							.map_err(|e| ClientError::Other {
-								description: format!("Decode Ics07ConsensusState failed: {:?}", e),
-							})?;
-						return Ok(Some(Box::new(result)));
-					},
-					MOCK_CLIENT_TYPE => {
-						let result: MockConsensusState = Protobuf::<Any>::decode_vec(&data)
-							.map_err(|e| ClientError::Other {
-								description: format!("Decode MockConsensusState failed: {:?}", e),
-							})?;
-						return Ok(Some(Box::new(result)));
-					},
-					_ => {},
-				}
-			}
-		}
-		Ok(None)
-	}
-
-	fn prev_consensus_state(
-		&self,
-		client_id: &ClientId,
-		height: &Height,
-	) -> Result<Option<Box<dyn ConsensusState>>, ContextError> {
-		let mut heights = <ConsensusStates<T>>::iter_keys()
-			.map(|key| {
-				let height = Height::new(key.epoch, key.height);
-				height
-			})
-			.collect::<Result<Vec<Height>, ClientError>>()?;
-
-		heights.sort_by(|a, b| b.cmp(a));
-
-		// Search for previous state.
-		for h in heights {
-			if h < *height {
-				let data = <ConsensusStates<T>>::get(ClientConsensusStatePath {
-					client_id: client_id.clone(),
-					epoch: h.revision_number(),
-					height: h.revision_height(),
-				})
-				.ok_or(ClientError::ConsensusStateNotFound {
-					client_id: client_id.clone(),
-					height: *height,
-				})?;
-				match self.client_type(client_id)? {
-					TENDERMINT_CLIENT_TYPE => {
-						let result: Ics07ConsensusState = ibc_proto::protobuf::Protobuf::<
-							ibc_proto::google::protobuf::Any,
-						>::decode_vec(&data)
-						.map_err(|e| ClientError::Other {
-							description: format!("Decode Ics07ConsensusState failed: {:?}", e),
-						})?;
-						return Ok(Some(Box::new(result)));
-					},
-					MOCK_CLIENT_TYPE => {
-						let result: MockConsensusState = Protobuf::<Any>::decode_vec(&data)
-							.map_err(|e| ClientError::Other {
-								description: format!("Decode MockConsensusState failed: {:?}", e),
-							})?;
-						return Ok(Some(Box::new(result)));
-					},
-					_ => {},
-				}
-			}
-		}
-		Ok(None)
 	}
 
 	fn host_height(&self) -> Result<Height, ContextError> {
@@ -302,13 +193,6 @@ where
 		#[cfg(not(test))]
 		{
 			Err(ClientError::ImplementationSpecific.into())
-		}
-		#[cfg(test)]
-		{
-			use ibc::mock::header::MockHeader;
-			let mock_header =
-				MockHeader { height: self.host_height()?, timestamp: Default::default() };
-			Ok(Box::new(MockConsensusState::new(mock_header)))
 		}
 	}
 
@@ -410,30 +294,6 @@ where
 		)
 	}
 
-	fn client_update_time(
-		&self,
-		client_id: &ClientId,
-		height: &Height,
-	) -> Result<Timestamp, ContextError> {
-		let time = Pallet::<T>::client_update_time(client_id, height).ok_or(
-			ChannelError::ProcessedTimeNotFound { client_id: client_id.clone(), height: *height },
-		)?;
-
-		Timestamp::from_nanoseconds(time)
-			.map_err(|e| ChannelError::Other { description: e.to_string() }.into())
-	}
-
-	fn client_update_height(
-		&self,
-		client_id: &ClientId,
-		height: &Height,
-	) -> Result<Height, ContextError> {
-		Pallet::<T>::client_update_height(client_id, height).ok_or(
-			ChannelError::ProcessedHeightNotFound { client_id: client_id.clone(), height: *height }
-				.into(),
-		)
-	}
-
 	fn channel_counter(&self) -> Result<u64, ContextError> {
 		Ok(Pallet::<T>::channel_cnt())
 	}
@@ -454,55 +314,11 @@ impl<T: Config> ExecutionContext for Context<T>
 where
 	u64: From<<T as pallet_timestamp::Config>::Moment> + From<BlockNumberFor<T>>,
 {
-	fn store_client_state(
-		&mut self,
-		client_state_path: ClientStatePath,
-		client_state: Box<dyn ClientState>,
-	) -> Result<(), ContextError> {
-		<ClientTypeById<T>>::insert(client_state_path.0.clone(), client_state.client_type());
-		let data = client_state.encode_vec();
-		<ClientStates<T>>::insert(client_state_path, data);
-		Ok(())
-	}
-
-	fn store_consensus_state(
-		&mut self,
-		consensus_state_path: ClientConsensusStatePath,
-		consensus_state: Box<dyn ConsensusState>,
-	) -> Result<(), ContextError> {
-		let consensus_state = consensus_state.encode_vec();
-		<ConsensusStates<T>>::insert(consensus_state_path, consensus_state);
-
-		Ok(())
-	}
-
 	fn increase_client_counter(&mut self) {
 		let _ = ClientCounter::<T>::try_mutate::<_, (), _>(|val| {
 			*val = val.saturating_add(1);
 			Ok(())
 		});
-	}
-
-	fn store_update_time(
-		&mut self,
-		client_id: ClientId,
-		height: Height,
-		timestamp: Timestamp,
-	) -> Result<(), ContextError> {
-		<ClientProcessedTimes<T>>::insert(client_id, height, timestamp.nanoseconds());
-
-		Ok(())
-	}
-
-	fn store_update_height(
-		&mut self,
-		client_id: ClientId,
-		height: Height,
-		host_height: Height,
-	) -> Result<(), ContextError> {
-		<ClientProcessedHeights<T>>::insert(client_id, height, host_height);
-
-		Ok(())
 	}
 
 	fn store_connection(

@@ -53,28 +53,22 @@ pub mod pallet {
 	use super::{errors, *};
 	use frame_support::{pallet_prelude::*, traits::UnixTime};
 	use frame_system::pallet_prelude::*;
-	use ibc::core::{
-		events::IbcEvent,
-		ics02_client::{client_type::ClientType, height::Height},
-		ics03_connection::connection::ConnectionEnd,
-		ics04_channel::{
-			channel::ChannelEnd,
-			commitment::{
-				AcknowledgementCommitment as IbcAcknowledgementCommitment,
-				PacketCommitment as IbcPacketCommitment,
-			},
-			packet::{Receipt, Sequence},
-		},
-		ics24_host::{
-			identifier::{ChannelId, ClientId, ConnectionId, PortId},
-			path::{
-				AckPath, ChannelEndPath, ClientConnectionPath, ClientConsensusStatePath,
-				ClientStatePath, CommitmentPath, ConnectionPath, ReceiptPath, SeqAckPath,
-				SeqRecvPath, SeqSendPath,
-			},
-		},
-		MsgEnvelope, RouterError,
+	use ibc::core::channel::types::channel::ChannelEnd;
+	use ibc::core::channel::types::commitment::AcknowledgementCommitment as IbcAcknowledgementCommitment;
+	use ibc::core::channel::types::commitment::PacketCommitment as IbcPacketCommitment;
+	use ibc::core::channel::types::packet::Receipt;
+	use ibc::core::client::context::types::Height;
+	use ibc::core::connection::types::ConnectionEnd;
+	use ibc::core::handler::types::events::IbcEvent;
+	use ibc::core::handler::types::msgs::MsgEnvelope;
+	use ibc::core::host::types::identifiers::ClientType;
+	use ibc::core::host::types::identifiers::Sequence;
+	use ibc::core::host::types::identifiers::{ChannelId, ClientId, ConnectionId, PortId};
+	use ibc::core::host::types::path::{
+		AckPath, ChannelEndPath, ClientConnectionPath, ClientConsensusStatePath, ClientStatePath,
+		CommitmentPath, ConnectionPath, ReceiptPath, SeqAckPath, SeqRecvPath, SeqSendPath,
 	};
+	use ibc::core::router::types::error::RouterError;
 
 	/// Configure the pallet by specifying the parameters and types on which it depends.
 	#[pallet::config]
@@ -311,7 +305,7 @@ pub mod pallet {
 
 			let errors = messages.into_iter().fold(vec![], |mut errors: Vec<RouterError>, msg| {
 				let envelope: MsgEnvelope = msg.try_into().unwrap();
-				match ibc::core::dispatch(&mut ctx, envelope) {
+				match ibc::core::handler::entrypoint::dispatch(&mut ctx, envelope) {
 					Ok(()) => {},
 					Err(e) => errors.push(e),
 				}

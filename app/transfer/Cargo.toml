@@ -34,11 +34,11 @@ primitive-types = { version = "0.12.0", default-features = false, features = [
 ] }
 pallet-timestamp = { version = "27.0.0", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.7.0" }
 
-ibc = { version = "0.41.0", default-features = false, features = [
+ibc = { version = "0.50.0", default-features = false, features = [
     "parity-scale-codec",
     "serde",
 ] }
-ibc-proto = { version = "0.30.0", default-features = false, features = [
+ibc-proto = { version = "0.41.0", default-features = false, features = [
     "parity-scale-codec",
 ] }
 pallet-ibc = { version = "4.0.0-dev", default-features = false, path = "../../core" }

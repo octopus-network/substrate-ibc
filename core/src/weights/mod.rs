@@ -1,26 +1,26 @@
 mod mock_client_weight;
 
 use super::*;
-use crate::{host::MOCK_CLIENT_TYPE, weights::mock_client_weight::MockClientWeightInfo};
+use crate::weights::mock_client_weight::MockClientWeightInfo;
 use alloc::boxed::Box;
 use core::marker::PhantomData;
 use frame_support::pallet_prelude::Weight;
+use ibc::core::handler::types::msgs::MsgEnvelope;
+use ibc::core::host::types::identifiers::{ChannelId, ClientId, PortId};
+use ibc::core::host::ValidationContext;
 use ibc::core::{
-	ics02_client::msgs::{
-		create_client::MsgCreateClient, misbehaviour::MsgSubmitMisbehaviour,
-		update_client::MsgUpdateClient, upgrade_client::MsgUpgradeClient, ClientMsg,
-	},
-	ics03_connection::msgs::{
-		conn_open_ack::MsgConnectionOpenAck, conn_open_confirm::MsgConnectionOpenConfirm,
-		conn_open_init::MsgConnectionOpenInit, conn_open_try::MsgConnectionOpenTry, ConnectionMsg,
-	},
-	ics04_channel::msgs::{
+	channel::types::msgs::{
 		ChannelMsg, MsgAcknowledgement, MsgChannelCloseConfirm, MsgChannelCloseInit,
 		MsgChannelOpenAck, MsgChannelOpenConfirm, MsgChannelOpenInit, MsgChannelOpenTry,
 		MsgRecvPacket, MsgTimeout, MsgTimeoutOnClose, PacketMsg,
 	},
-	ics24_host::identifier::{ChannelId, ClientId, PortId},
-	MsgEnvelope, ValidationContext,
+	client::context::types::msgs::{
+		ClientMsg, MsgCreateClient, MsgSubmitMisbehaviour, MsgUpdateClient, MsgUpgradeClient,
+	},
+	connection::types::msgs::{
+		ConnectionMsg, MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
+		MsgConnectionOpenTry,
+	},
 };
 use ibc_support::CallbackWeight;
 
@@ -445,7 +445,7 @@ pub struct WeightRouter<T: Config>(PhantomData<T>);
 impl<T: Config> WeightRouter<T> {
 	pub fn get_weight(port_id: &PortId) -> Option<Box<dyn CallbackWeight>> {
 		match port_id.as_str() {
-			ibc::applications::transfer::PORT_ID_STR => Some(Box::new(())),
+			ibc::apps::transfer::types::PORT_ID_STR => Some(Box::new(())),
 			_ => None,
 		}
 	}

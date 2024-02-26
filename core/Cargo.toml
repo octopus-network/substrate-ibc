@@ -33,12 +33,11 @@ sp-tracing = { version = "16.0.0", default-features = false, git = "https://gith
 pallet-timestamp = { version = "27.0.0", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.7.0" }
 
 ## for ibc protocl
-ibc = { version = "0.41.0", default-features = false, features = [
+ibc = { version = "0.50.0", default-features = false, features = [
     "parity-scale-codec",
-    "mocks-no-std",
     "serde",
 ] }
-ibc-proto = { version = "0.30.0", default-features = false, features = [
+ibc-proto = { version = "0.41.0", default-features = false, features = [
     "parity-scale-codec",
 ] }
 log = { version = "0.4.0", default-features = false }

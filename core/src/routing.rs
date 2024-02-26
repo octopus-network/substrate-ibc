@@ -5,14 +5,12 @@ pub use alloc::{
 	string::{String, ToString},
 };
 use core::str::FromStr;
+use ibc::core::router::module::Module;
+use ibc::core::router::router::Router as RouterContext;
+use ibc::core::router::types::module::ModuleId;
 use ibc::{
-	applications::transfer::{
-		MODULE_ID_STR as TRANSFER_MODULE_ID, PORT_ID_STR as TRANSFER_PORT_ID,
-	},
-	core::{
-		ics24_host::identifier::PortId,
-		router::{Module, ModuleId, Router as RouterContext},
-	},
+	apps::transfer::types::{MODULE_ID_STR as TRANSFER_MODULE_ID, PORT_ID_STR as TRANSFER_PORT_ID},
+	core::host::types::identifiers::PortId,
 };
 use sp_std::{
 	borrow::{Borrow, ToOwned},
@@ -36,15 +34,17 @@ impl Debug for Router {
 	}
 }
 
-impl<T: Config> ibc::core::router::Router for Context<T>
+impl<T: Config> ibc::core::router::router::Router for Context<T>
 where
 	u64: From<<T as pallet_timestamp::Config>::Moment> + From<BlockNumberFor<T>>,
 {
+	/// Returns a reference to a `Module` registered against the specified `ModuleId`
 	fn get_route(&self, module_id: &ModuleId) -> Option<&dyn Module> {
 		self.router.0.get(module_id).map(Arc::as_ref)
 	}
+
+	/// Returns a mutable reference to a `Module` registered against the specified `ModuleId`
 	fn get_route_mut(&mut self, module_id: &ModuleId) -> Option<&mut dyn Module> {
-		// self.router.0.get_mut(module_id).and_then(Arc::get_mut)
 		match self.router.0.get_mut(module_id) {
 			Some(arc_mod) => match Arc::get_mut(arc_mod) {
 				Some(m) => Some(m),
@@ -54,14 +54,8 @@ where
 		}
 	}
 
-	fn has_route(&self, module_id: &ModuleId) -> bool {
-		self.router.0.get(module_id).is_some()
-	}
-
-	fn lookup_module_by_port(&self, port_id: &PortId) -> Option<ModuleId> {
-		match port_id.as_str() {
-			TRANSFER_PORT_ID => Some(ModuleId::new(TRANSFER_MODULE_ID.to_string())),
-			_ => None,
-		}
+	/// Return the module_id associated with a given port_id
+	fn lookup_module(&self, port_id: &PortId) -> Option<ModuleId> {
+		self.lookup_module_by_port(port_id)
 	}
 }

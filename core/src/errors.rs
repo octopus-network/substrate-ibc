@@ -4,7 +4,7 @@ pub use alloc::{
 	string::{String, ToString},
 };
 use codec::{Decode, Encode};
-use ibc::core::RouterError;
+use ibc::core::router::types::error::RouterError;
 use sp_std::vec::Vec;
 
 #[derive(PartialEq, Eq, Clone, Debug, scale_info::TypeInfo, Encode, Decode)]
