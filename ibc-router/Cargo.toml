@@ -8,17 +8,23 @@ edition = "2021"
 [dependencies]
 pallet-ibc = { version = "4.0.0-dev", path = "../core", default-features = false }
 pallet-ics20-transfer = { version = "4.0.0-dev", path = "../applications/transfer", default-features = false, optional = true }
-ibc-proto = { version = "0.25.0", default-features = false, features = ["parity-scale-codec"], git = "https://github.com/octopus-network/ibc-proto-rs", branch = "ibc" }
+ibc-proto = { version = "0.25.0", default-features = false, features = [
+    "parity-scale-codec",
+], git = "https://github.com/octopus-network/ibc-proto-rs", branch = "ibc" }
 pallet-ibc-utils = { version = "0.1.0", default-features = false, path = "../utils" }
 
 
 # substrate crates
-codec = { package = "parity-scale-codec", version = "3.6.1", default-features = false, features = ["derive"] }
-scale-info = { version = "2.10.0", default-features = false, features = ["derive"] }
-frame-support = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.6.0" }
-frame-system = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.6.0" }
-sp-std = { version = "8.0.0", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.6.0" }
-pallet-timestamp = { version = "4.0.0-dev", default-features = false,  git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.6.0" }
+codec = { package = "parity-scale-codec", version = "3.6.1", default-features = false, features = [
+    "derive",
+] }
+scale-info = { version = "2.10.0", default-features = false, features = [
+    "derive",
+] }
+frame-support = { version = "28.0.0", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.7.0" }
+frame-system = { version = "28.0.0", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.7.0" }
+sp-std = { version = "14.0.0", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.7.0" }
+pallet-timestamp = { version = "27.0.0", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.7.0" }
 
 
 [features]

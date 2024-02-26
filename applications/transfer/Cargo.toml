@@ -15,25 +15,36 @@ targets = ["x86_64-unknown-linux-gnu"]
 [dependencies]
 hex = { version = "0.4.0", default-features = false }
 log = { version = "0.4", default-features = false }
-primitive-types = { version = "0.12.0", default-features = false, features = ["serde_no_std"] }
+primitive-types = { version = "0.12.0", default-features = false, features = [
+    "serde_no_std",
+] }
 sha2 = { version = "0.10.2", default-features = false }
 subtle-encoding = { version = "0.5", default-features = false }
 
 # substrate crates
-codec = { package = "parity-scale-codec", version = "3.6.1", default-features = false, features = ["derive"] }
-scale-info = { version = "2.10.0", default-features = false, features = ["derive"] }
-frame-benchmarking = { version = "4.0.0-dev", default-features = false, optional = true, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.6.0" }
-frame-support = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.6.0" }
-frame-system = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.6.0" }
-sp-io = { version = "23.0.0", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.6.0" }
-sp-runtime = { version = "24.0.0", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.6.0" }
-sp-std = { version = "8.0.0", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.6.0" }
-pallet-timestamp = { version = "4.0.0-dev", default-features = false,  git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.6.0" }
+codec = { package = "parity-scale-codec", version = "3.6.1", default-features = false, features = [
+    "derive",
+] }
+scale-info = { version = "2.10.0", default-features = false, features = [
+    "derive",
+] }
+frame-benchmarking = { version = "28.0.0", default-features = false, optional = true, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.7.0" }
+frame-support = { version = "28.0.0", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.7.0" }
+frame-system = { version = "28.0.0", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.7.0" }
+sp-io = { version = "30.0.0", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.7.0" }
+sp-runtime = { version = "31.0.1", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.7.0" }
+sp-std = { version = "14.0.0", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.7.0" }
+pallet-timestamp = { version = "27.0.0", default-features = false, git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.7.0" }
 
 # ibc
 pallet-ibc-utils = { version = "0.1.0", default-features = false, path = "../../utils" }
-ibc = { version = "0.28.0", default-features = false, features = ["parity-scale-codec", "serde"], git = "https://github.com/octopus-network/ibc-rs.git", branch = "v0.28.0-codec-borsh-serde"}
-ibc-proto = { version = "0.25.0", default-features = false, features = ["parity-scale-codec"], git = "https://github.com/octopus-network/ibc-proto-rs", branch = "ibc" }
+ibc = { version = "0.28.0", default-features = false, features = [
+    "parity-scale-codec",
+    "serde",
+], git = "https://github.com/octopus-network/ibc-rs.git", branch = "v0.28.0-codec-borsh-serde" }
+ibc-proto = { version = "0.25.0", default-features = false, features = [
+    "parity-scale-codec",
+], git = "https://github.com/octopus-network/ibc-proto-rs", branch = "ibc" }
 
 [dev-dependencies]
 chrono = "0.4.19"
@@ -42,37 +53,37 @@ serde_json = { version = "1.0" }
 sha2 = '0.10.2'
 hex = '0.4.0'
 pallet-ibc = { version = "4.0.0-dev", path = "../../core" }
-frame-support = { version = "4.0.0-dev", git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.6.0" }
-pallet-assets = { version = "4.0.0-dev", git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.6.0" }
-pallet-babe = { version = "4.0.0-dev", git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.6.0" }
-pallet-balances = { version = "4.0.0-dev", git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.6.0" }
-pallet-timestamp = { version = "4.0.0-dev", git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.6.0" }
-sp-core = { version = "21.0.0", git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.6.0" }
-sp-io = { version = "23.0.0", git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.6.0" }
-sp-keyring = { version = "24.0.0", git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.6.0" }
-sp-runtime = { version = "24.0.0", git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.6.0" }
-sp-std = { version = "8.0.0", git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.6.0" }
-sp-version = { version = "22.0.0", git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.6.0" }
+frame-support = { version = "28.0.0", git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.7.0" }
+pallet-assets = { version = "29.0.0", git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.7.0" }
+pallet-babe = { version = "28.0.0", git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.7.0" }
+pallet-balances = { version = "28.0.0", git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.7.0" }
+pallet-timestamp = { version = "27.0.0", git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.7.0" }
+sp-core = { version = "28.0.0", git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.7.0" }
+sp-io = { version = "30.0.0", git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.7.0" }
+sp-keyring = { version = "31.0.0", git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.7.0" }
+sp-runtime = { version = "31.0.1", git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.7.0" }
+sp-std = { version = "14.0.0", git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.7.0" }
+sp-version = { version = "29.0.0", git = "https://github.com/paritytech/polkadot-sdk.git", tag = "polkadot-v1.7.0" }
 
 [features]
 default = ["std"]
 std = [
-  "codec/std",
-  "frame-benchmarking?/std",
-  "frame-support/std",
-  "frame-system/std",
-  "hex/std",
-  "pallet-ibc-utils/std",
-  "log/std",
-  "scale-info/std",
-  "sp-io/std",
-  "sp-runtime/std",
-  "sp-std/std",
-  "primitive-types/std",
-  "ibc/std",
-  "ibc-proto/std",
-  "sha2/std",
-  "subtle-encoding/std",
+    "codec/std",
+    "frame-benchmarking?/std",
+    "frame-support/std",
+    "frame-system/std",
+    "hex/std",
+    "pallet-ibc-utils/std",
+    "log/std",
+    "scale-info/std",
+    "sp-io/std",
+    "sp-runtime/std",
+    "sp-std/std",
+    "primitive-types/std",
+    "ibc/std",
+    "ibc-proto/std",
+    "sha2/std",
+    "subtle-encoding/std",
 ]
 runtime-benchmarks = ["frame-benchmarking/runtime-benchmarks"]
 try-runtime = ["frame-support/try-runtime"]
