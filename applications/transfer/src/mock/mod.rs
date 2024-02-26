@@ -3,14 +3,7 @@ use crate as pallet_ics20_transfer;
 use codec::Encode;
 pub use frame_support::{
 	construct_runtime, parameter_types,
-	traits::{
-		AsEnsureOriginWithArg, ConstU128, ConstU16, ConstU32, ConstU8, KeyOwnerProofSystem,
-		Randomness, StorageInfo,
-	},
-	weights::{
-		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
-		IdentityFee, Weight,
-	},
+	traits::{AsEnsureOriginWithArg, ConstU128, ConstU16, ConstU32},
 	StorageValue,
 };
 use frame_system as system;

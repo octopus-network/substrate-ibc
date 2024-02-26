@@ -1,17 +1,7 @@
 use super::*;
 
 use crate as pallet_ibc;
-pub use frame_support::{
-	construct_runtime, parameter_types,
-	traits::{
-		ConstU128, ConstU16, ConstU32, ConstU8, KeyOwnerProofSystem, Randomness, StorageInfo,
-	},
-	weights::{
-		constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
-		IdentityFee, Weight,
-	},
-	StorageValue,
-};
+pub use frame_support::{construct_runtime, parameter_types, traits::ConstU16, StorageValue};
 use frame_system as system;
 use pallet_ibc_utils::module::DefaultRouter;
 use sp_runtime::{
