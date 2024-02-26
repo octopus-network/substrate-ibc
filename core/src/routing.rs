@@ -1,3 +1,4 @@
+use crate::BlockNumberFor;
 use crate::{context::Context, Config};
 pub use alloc::{
 	format,
@@ -37,8 +38,7 @@ impl Debug for Router {
 
 impl<T: Config> ibc::core::router::Router for Context<T>
 where
-	u64: From<<T as pallet_timestamp::Config>::Moment>
-		+ From<<T as frame_system::Config>::BlockNumber>,
+	u64: From<<T as pallet_timestamp::Config>::Moment> + From<BlockNumberFor<T>>,
 {
 	fn get_route(&self, module_id: &ModuleId) -> Option<&dyn Module> {
 		self.router.0.get(module_id).map(Arc::as_ref)

@@ -50,7 +50,7 @@ impl<T: frame_system::Config> MockClientWeightInfo<T> {
 	// Storage: Ibc Clients (r:0 w:1)
 	pub fn create_client_mock(&self) -> Weight {
 		// Minimum execution time: 26_000 nanoseconds.
-		Weight::from_ref_time(27_000_000)
+		Weight::from_all(27_000_000)
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(6))
 	}
@@ -62,13 +62,13 @@ impl<T: frame_system::Config> MockClientWeightInfo<T> {
 	// Storage: Ibc ClientProcessedTimes (r:0 w:1)
 	pub fn update_mock_client(&self) -> Weight {
 		// Minimum execution time: 36_000 nanoseconds.
-		Weight::from_ref_time(37_000_000)
+		Weight::from_all(37_000_000)
 			.saturating_add(T::DbWeight::get().reads(4))
 			.saturating_add(T::DbWeight::get().writes(4))
 	}
 	pub fn upgrade_mock_client(&self) -> Weight {
 		// Minimum execution time: 11_000 nanoseconds.
-		Weight::from_ref_time(12_000_000)
+		Weight::from_all(12_000_000)
 	}
 	// Storage: Ibc ClientStates (r:1 w:0)
 	// Storage: Ibc Clients (r:1 w:0)
@@ -77,7 +77,7 @@ impl<T: frame_system::Config> MockClientWeightInfo<T> {
 	// Storage: Ibc ConnectionClient (r:0 w:1)
 	pub fn conn_open_init_mock(&self) -> Weight {
 		// Minimum execution time: 26_000 nanoseconds.
-		Weight::from_ref_time(27_000_000)
+		Weight::from_all(27_000_000)
 			.saturating_add(T::DbWeight::get().reads(3))
 			.saturating_add(T::DbWeight::get().writes(3))
 	}
@@ -88,7 +88,7 @@ impl<T: frame_system::Config> MockClientWeightInfo<T> {
 	// Storage: Ibc OldHeight (r:0 w:1)
 	pub fn conn_try_open_mock(&self) -> Weight {
 		// Minimum execution time: 29_000 nanoseconds.
-		Weight::from_ref_time(30_000_000)
+		Weight::from_all(30_000_000)
 			.saturating_add(T::DbWeight::get().reads(4))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
@@ -99,7 +99,7 @@ impl<T: frame_system::Config> MockClientWeightInfo<T> {
 	// Storage: Ibc OldHeight (r:0 w:1)
 	pub fn conn_open_ack_mock(&self) -> Weight {
 		// Minimum execution time: 31_000 nanoseconds.
-		Weight::from_ref_time(32_000_000)
+		Weight::from_all(32_000_000)
 			.saturating_add(T::DbWeight::get().reads(4))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
@@ -109,43 +109,43 @@ impl<T: frame_system::Config> MockClientWeightInfo<T> {
 	// Storage: Ibc ConsensusStates (r:1 w:0)
 	pub fn conn_open_confirm_mock(&self) -> Weight {
 		// Minimum execution time: 25_000 nanoseconds.
-		Weight::from_ref_time(25_000_000)
+		Weight::from_all(25_000_000)
 			.saturating_add(T::DbWeight::get().reads(4))
 	}
 	pub fn channel_open_init_mock(&self) -> Weight {
 		// Minimum execution time: 11_000 nanoseconds.
-		Weight::from_ref_time(13_000_000)
+		Weight::from_all(13_000_000)
 	}
 	pub fn channel_open_try_mock(&self) -> Weight {
 		// Minimum execution time: 12_000 nanoseconds.
-		Weight::from_ref_time(12_000_000)
+		Weight::from_all(12_000_000)
 	}
 	pub fn channel_open_ack_mock(&self) -> Weight {
 		// Minimum execution time: 11_000 nanoseconds.
-		Weight::from_ref_time(11_000_000)
+		Weight::from_all(11_000_000)
 	}
 	pub fn channel_open_confirm_mock(&self) -> Weight {
 		// Minimum execution time: 11_000 nanoseconds.
-		Weight::from_ref_time(12_000_000)
+		Weight::from_all(12_000_000)
 	}
 	pub fn channel_close_init_mock(&self) -> Weight {
 		// Minimum execution time: 11_000 nanoseconds.
-		Weight::from_ref_time(12_000_000)
+		Weight::from_all(12_000_000)
 	}
 	pub fn channel_close_confirm_mock(&self) -> Weight {
 		// Minimum execution time: 11_000 nanoseconds.
-		Weight::from_ref_time(12_000_000)
+		Weight::from_all(12_000_000)
 	}
 	pub fn recv_packet_mock(&self) -> Weight {
 		// Minimum execution time: 11_000 nanoseconds.
-		Weight::from_ref_time(12_000_000)
+		Weight::from_all(12_000_000)
 	}
 	pub fn ack_packet_mock(&self) -> Weight {
 		// Minimum execution time: 12_000 nanoseconds.
-		Weight::from_ref_time(12_000_000)
+		Weight::from_all(12_000_000)
 	}
 	pub fn timeout_packet_mock(&self) -> Weight {
 		// Minimum execution time: 12_000 nanoseconds.
-		Weight::from_ref_time(12_000_000)
+		Weight::from_all(12_000_000)
 	}
 }

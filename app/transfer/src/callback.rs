@@ -1,5 +1,6 @@
 use crate::Config;
 use alloc::string::ToString;
+use frame_system::pallet_prelude::BlockNumberFor;
 use ibc::{
 	core::{
 		ics04_channel::{
@@ -29,8 +30,7 @@ impl<T: Config> IbcTransferModule<T> {
 
 impl<T: Config> Module for IbcTransferModule<T>
 where
-	u64: From<<T as pallet_timestamp::Config>::Moment>
-		+ From<<T as frame_system::Config>::BlockNumber>,
+	u64: From<<T as pallet_timestamp::Config>::Moment> + From<BlockNumberFor<T>>,
 {
 	fn on_chan_open_init_validate(
 		&self,

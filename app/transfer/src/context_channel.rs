@@ -1,4 +1,5 @@
 use crate::{callback::IbcTransferModule, *};
+use frame_system::pallet_prelude::BlockNumberFor;
 use ibc::{
 	core::{
 		ics02_client::{client_state::ClientState, consensus_state::ConsensusState},
@@ -20,8 +21,7 @@ use sp_std::{boxed::Box, time::Duration};
 
 impl<T: Config> ValidationContext for IbcTransferModule<T>
 where
-	u64: From<<T as pallet_timestamp::Config>::Moment>
-		+ From<<T as frame_system::Config>::BlockNumber>,
+	u64: From<<T as pallet_timestamp::Config>::Moment> + From<BlockNumberFor<T>>,
 {
 	fn client_state(
 		&self,
@@ -186,8 +186,7 @@ where
 
 impl<T: Config> ExecutionContext for IbcTransferModule<T>
 where
-	u64: From<<T as pallet_timestamp::Config>::Moment>
-		+ From<<T as frame_system::Config>::BlockNumber>,
+	u64: From<<T as pallet_timestamp::Config>::Moment> + From<BlockNumberFor<T>>,
 {
 	fn store_client_state(
 		&mut self,
@@ -366,8 +365,7 @@ where
 
 impl<T: Config> ibc::core::router::Router for IbcTransferModule<T>
 where
-	u64: From<<T as pallet_timestamp::Config>::Moment>
-		+ From<<T as frame_system::Config>::BlockNumber>,
+	u64: From<<T as pallet_timestamp::Config>::Moment> + From<BlockNumberFor<T>>,
 {
 	fn get_route(
 		&self,

@@ -1,10 +1,12 @@
 use crate::{callback::IbcTransferModule, utils::get_channel_escrow_address, *};
 use codec::{Decode, Encode};
+use frame_support::traits::GenesisBuild;
 use frame_support::traits::{
 	fungibles::Mutate,
 	tokens::{Fortitude, Precision, Preservation},
 	ExistenceRequirement::AllowDeath,
 };
+use frame_system::pallet_prelude::BlockNumberFor;
 use ibc::{
 	applications::transfer::{
 		context::{TokenTransferExecutionContext, TokenTransferValidationContext},
@@ -26,8 +28,7 @@ use sp_std::str::FromStr;
 
 impl<T: Config> TokenTransferExecutionContext for IbcTransferModule<T>
 where
-	u64: From<<T as pallet_timestamp::Config>::Moment>
-		+ From<<T as frame_system::Config>::BlockNumber>,
+	u64: From<<T as pallet_timestamp::Config>::Moment> + From<BlockNumberFor<T>>,
 {
 	// type AccountId = <Self as TokenTransferContext>::AccountId;
 
@@ -97,7 +98,7 @@ where
 					},
 					Err(_error) => {
 						error!("❌ [send_coins]: denom: ({:?})", denom);
-						return Err(TokenTransferError::InvalidToken)
+						return Err(TokenTransferError::InvalidToken);
 					},
 				}
 			},
@@ -135,7 +136,7 @@ where
 			},
 			Err(_error) => {
 				error!("❌ [mint_coins]: denom: ({:?})", denom);
-				return Err(TokenTransferError::InvalidToken)
+				return Err(TokenTransferError::InvalidToken);
 			},
 		}
 		Ok(())
@@ -172,7 +173,7 @@ where
 			},
 			Err(_error) => {
 				error!("❌ [burn_coins]: denom: ({:?})", denom);
-				return Err(TokenTransferError::InvalidToken)
+				return Err(TokenTransferError::InvalidToken);
 			},
 		}
 		Ok(())
@@ -181,8 +182,7 @@ where
 
 impl<T: Config> TokenTransferValidationContext for IbcTransferModule<T>
 where
-	u64: From<<T as pallet_timestamp::Config>::Moment>
-		+ From<<T as frame_system::Config>::BlockNumber>,
+	u64: From<<T as pallet_timestamp::Config>::Moment> + From<BlockNumberFor<T>>,
 {
 	type AccountId = <T as Config>::AccountIdConversion;
 

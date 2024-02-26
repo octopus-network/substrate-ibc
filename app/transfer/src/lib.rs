@@ -3,6 +3,7 @@
 extern crate alloc;
 
 use frame_support::traits::Currency;
+use frame_system::pallet_prelude::BlockNumberFor;
 /// Edit this file to define custom logic or remove it if it is not needed.
 /// Learn more about FRAME and the core library of Substrate FRAME pallets:
 /// <https://docs.substrate.io/reference/frame-pallets/>
@@ -113,7 +114,7 @@ pub mod pallet {
 	}
 
 	#[pallet::genesis_build]
-	impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+	impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
 		fn build(&self) {
 			for (token_id, id) in self.asset_id_by_name.iter() {
 				<AssetIdByName<T>>::insert(token_id.as_bytes(), id);
@@ -163,8 +164,7 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T>
 	where
-		u64: From<<T as pallet_timestamp::Config>::Moment>
-			+ From<<T as frame_system::Config>::BlockNumber>,
+		u64: From<<T as pallet_timestamp::Config>::Moment> + From<BlockNumberFor<T>>,
 	{
 		/// ICS20 fungible token transfer.
 		/// Handling transfer request as sending chain or receiving chain.

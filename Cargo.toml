@@ -1,6 +1,3 @@
 [workspace]
-members = [
-  "app/transfer",
-  "ibc-support",
-  "core",
-]
+members = ["app/transfer", "ibc-support", "core"]
+resolver = "2"

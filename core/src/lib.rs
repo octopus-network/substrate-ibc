@@ -17,13 +17,13 @@
 extern crate alloc;
 extern crate core;
 
-pub use pallet::*;
-
 pub use alloc::{
 	format,
 	string::{String, ToString},
 };
 use frame_system::ensure_signed;
+use frame_system::pallet_prelude::BlockNumberFor;
+pub use pallet::*;
 use sp_core::offchain::StorageKind;
 use sp_std::{fmt::Debug, vec, vec::Vec};
 pub mod context;
@@ -286,8 +286,7 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T>
 	where
-		u64: From<<T as pallet_timestamp::Config>::Moment>
-			+ From<<T as frame_system::Config>::BlockNumber>,
+		u64: From<<T as pallet_timestamp::Config>::Moment> + From<BlockNumberFor<T>>,
 	{
 		/// This function acts as an entry for most of the IBC request.
 		/// I.e., create clients, update clients, handshakes to create channels, ...etc

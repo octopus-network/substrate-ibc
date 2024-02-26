@@ -95,8 +95,7 @@ impl<T: Config> Default for Context<T> {
 
 impl<T: Config> ValidationContext for Context<T>
 where
-	u64: From<<T as pallet_timestamp::Config>::Moment>
-		+ From<<T as frame_system::Config>::BlockNumber>,
+	u64: From<<T as pallet_timestamp::Config>::Moment> + From<BlockNumberFor<T>>,
 {
 	fn client_state(&self, client_id: &ClientId) -> Result<Box<dyn ClientState>, ContextError> {
 		let data = <ClientStates<T>>::get(ClientStatePath(client_id.clone())).ok_or(
@@ -127,11 +126,11 @@ where
 
 	fn decode_client_state(&self, client_state: Any) -> Result<Box<dyn ClientState>, ContextError> {
 		if let Ok(client_state) = Ics07ClientState::try_from(client_state.clone()) {
-			return Ok(client_state.into_box())
+			return Ok(client_state.into_box());
 		}
 		#[cfg(test)]
 		if let Ok(client_state) = MockClientState::try_from(client_state.clone()) {
-			return Ok(client_state.into_box())
+			return Ok(client_state.into_box());
 		}
 		Err(ClientError::UnknownClientStateType { client_state_type: client_state.type_url }.into())
 	}
@@ -208,14 +207,14 @@ where
 							.map_err(|e| ClientError::Other {
 								description: format!("Decode Ics07ConsensusState failed: {:?}", e),
 							})?;
-						return Ok(Some(Box::new(result)))
+						return Ok(Some(Box::new(result)));
 					},
 					MOCK_CLIENT_TYPE => {
 						let result: MockConsensusState = Protobuf::<Any>::decode_vec(&data)
 							.map_err(|e| ClientError::Other {
 								description: format!("Decode MockConsensusState failed: {:?}", e),
 							})?;
-						return Ok(Some(Box::new(result)))
+						return Ok(Some(Box::new(result)));
 					},
 					_ => {},
 				}
@@ -258,14 +257,14 @@ where
 						.map_err(|e| ClientError::Other {
 							description: format!("Decode Ics07ConsensusState failed: {:?}", e),
 						})?;
-						return Ok(Some(Box::new(result)))
+						return Ok(Some(Box::new(result)));
 					},
 					MOCK_CLIENT_TYPE => {
 						let result: MockConsensusState = Protobuf::<Any>::decode_vec(&data)
 							.map_err(|e| ClientError::Other {
 								description: format!("Decode MockConsensusState failed: {:?}", e),
 							})?;
-						return Ok(Some(Box::new(result)))
+						return Ok(Some(Box::new(result)));
 					},
 					_ => {},
 				}
@@ -276,7 +275,7 @@ where
 
 	fn host_height(&self) -> Result<Height, ContextError> {
 		let block_height = <frame_system::Pallet<T>>::block_number();
-		Height::new(REVISION_NUMBER, block_height.into()).map_err(|e| {
+		Height::new(REVISION_NUMBER, u64::from(block_height)).map_err(|e| {
 			ClientError::Other { description: format!("contruct Ibc Height error: {}", e) }.into()
 		})
 	}
@@ -453,8 +452,7 @@ where
 
 impl<T: Config> ExecutionContext for Context<T>
 where
-	u64: From<<T as pallet_timestamp::Config>::Moment>
-		+ From<<T as frame_system::Config>::BlockNumber>,
+	u64: From<<T as pallet_timestamp::Config>::Moment> + From<BlockNumberFor<T>>,
 {
 	fn store_client_state(
 		&mut self,
