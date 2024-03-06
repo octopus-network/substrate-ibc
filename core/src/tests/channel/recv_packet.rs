@@ -8,7 +8,7 @@ pub mod test_util {
 		common::{get_dummy_bech32_account, get_dummy_proof},
 	};
 	use core::{ops::Add, time::Duration};
-	use ibc::timestamp::Timestamp;
+	use ibc::core::primitives::Timestamp;
 
 	/// Returns a dummy `RawMsgRecvPacket`, for testing only! The `height` parametrizes both the
 	/// proof height as well as the timeout height.

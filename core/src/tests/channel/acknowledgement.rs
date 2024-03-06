@@ -16,8 +16,8 @@ pub mod test_util {
 	}
 
 	pub fn acknowledgement() -> Vec<u8> {
-		use ibc::applications::transfer::acknowledgement::ConstAckSuccess;
-		serde_json::to_string(&ConstAckSuccess::Success).unwrap().as_bytes().to_vec()
+		use ibc::apps::transfer::types::ACK_SUCCESS_B64;
+		ACK_SUCCESS_B64.as_bytes().to_vec()
 	}
 
 	pub fn get_dummy_raw_msg_ack_with_packet(

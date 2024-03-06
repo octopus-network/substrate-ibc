@@ -30,13 +30,17 @@ use ibc::{
 use ibc_proto::{google::protobuf::Any, Protobuf};
 use sp_std::{boxed::Box, marker::PhantomData};
 
+use crate::client::AnyClientState;
+use crate::client::AnyConsensusState;
 /// A struct capturing all the functional dependencies (i.e., context)
 /// which the ICS26 module requires to be able to dispatch and process IBC messages.
-use crate::routing::Router;
+use crate::router::IbcRouter;
 use ibc::apps::transfer::types::MODULE_ID_STR as TRANSFER_MODULE_ID;
 use ibc::core::channel::types::channel::ChannelEnd;
 use ibc::core::channel::types::commitment::PacketCommitment;
 use ibc::core::client::context::types::Height;
+use ibc::core::client::context::ClientExecutionContext;
+use ibc::core::client::context::ClientValidationContext;
 use ibc::core::connection::types::ConnectionEnd;
 use ibc::core::host::types::identifiers::ClientType;
 use ibc::core::host::types::identifiers::Sequence;
@@ -45,12 +49,110 @@ use ibc::core::host::types::identifiers::{ChannelId, ClientId, ConnectionId, Por
 #[derive(Clone, Debug)]
 pub struct Context<T> {
 	pub _pd: PhantomData<T>,
-	pub router: Router,
+	pub router: IbcRouter,
+}
+
+impl<T: Config> ClientValidationContext for Context<T> {
+	/// Returns the time when the client state for the given [`ClientId`] was updated with a header for the given [`Height`]
+	fn client_update_time(
+		&self,
+		client_id: &ClientId,
+		height: &Height,
+	) -> Result<Timestamp, ContextError> {
+		todo!()
+	}
+
+	/// Returns the height when the client state for the given [`ClientId`] was updated with a header for the given [`Height`]
+	fn client_update_height(
+		&self,
+		client_id: &ClientId,
+		height: &Height,
+	) -> Result<Height, ContextError> {
+		todo!()
+	}
+}
+
+impl<T: Config> ClientExecutionContext for Context<T> {
+	type V = Self;
+	type AnyClientState = AnyClientState;
+	type AnyConsensusState = AnyConsensusState;
+
+	/// Called upon successful client creation and update
+	fn store_client_state(
+		&mut self,
+		client_state_path: ClientStatePath,
+		client_state: Self::AnyClientState,
+	) -> Result<(), ContextError> {
+		todo!()
+	}
+
+	/// Called upon successful client creation and update
+	fn store_consensus_state(
+		&mut self,
+		consensus_state_path: ClientConsensusStatePath,
+		consensus_state: Self::AnyConsensusState,
+	) -> Result<(), ContextError> {
+		todo!()
+	}
+
+	/// Delete the consensus state from the store located at the given `ClientConsensusStatePath`
+	fn delete_consensus_state(
+		&mut self,
+		consensus_state_path: ClientConsensusStatePath,
+	) -> Result<(), ContextError> {
+		todo!()
+	}
+
+	/// Called upon successful client update.
+	/// Implementations are expected to use this to record the specified time as the time at which
+	/// this update (or header) was processed.
+	fn store_update_time(
+		&mut self,
+		client_id: ClientId,
+		height: Height,
+		host_timestamp: Timestamp,
+	) -> Result<(), ContextError> {
+		todo!()
+	}
+
+	/// Called upon successful client update.
+	/// Implementations are expected to use this to record the specified height as the height at
+	/// at which this update (or header) was processed.
+	fn store_update_height(
+		&mut self,
+		client_id: ClientId,
+		height: Height,
+		host_height: Height,
+	) -> Result<(), ContextError> {
+		todo!()
+	}
+
+	/// Delete the update time associated with the client at the specified height. This update
+	/// time should be associated with a consensus state through the specified height.
+	///
+	/// Note that this timestamp is determined by the host.
+	fn delete_update_time(
+		&mut self,
+		client_id: ClientId,
+		height: Height,
+	) -> Result<(), ContextError> {
+		todo!()
+	}
+
+	/// Delete the update height associated with the client at the specified height. This update
+	/// time should be associated with a consensus state through the specified height.
+	fn delete_update_height(
+		&mut self,
+		client_id: ClientId,
+		height: Height,
+	) -> Result<(), ContextError> {
+		todo!()
+	}
 }
 
 impl<T: Config> Context<T> {
 	pub fn new() -> Self {
-		Self { _pd: PhantomData::default(), router: Router::default() }
+		Self { _pd: PhantomData::default(), router: IbcRouter::default() }
 	}
 
 	pub fn add_route(
@@ -58,7 +160,7 @@ impl<T: Config> Context<T> {
 		module_id: ModuleId,
 		module: impl Module + 'static,
 	) -> Result<(), String> {
-		match self.router.0.insert(module_id, Arc::new(module)) {
+		match self.router.router.insert(module_id, Arc::new(module)) {
 			None => Ok(()),
 			Some(_) => Err("Duplicate module_id".to_owned()),
 		}
@@ -101,6 +203,11 @@ where
 	type AnyConsensusState = AnyConsensusState;
 	type AnyClientState = AnyClientState;
 
+	/// Retrieve the context that implements all clients' `ValidationContext`.
+	fn get_client_validation_context(&self) -> &Self::V {
+		self
+	}
+
 	fn client_state(&self, client_id: &ClientId) -> Result<Self::AnyClientState, ContextError> {
 		let data = <ClientStates<T>>::get(ClientStatePath(client_id.clone())).ok_or(
 			ClientError::Other { description: format!("Client({}) not found!", client_id.clone()) },
@@ -112,7 +219,7 @@ where
 						description: format!("Decode Ics07ClientState failed: {:?}", e),
 					})?;
 
-				Ok(Box::new(result))
+				Ok(result.into())
 			},
 			unimplemented => Err(ClientError::UnknownClientStateType {
 				client_state_type: unimplemented.to_string(),
@@ -131,7 +238,7 @@ where
 	fn consensus_state(
 		&self,
 		client_cons_state_path: &ClientConsensusStatePath,
-	) -> Result<Box<dyn ConsensusState>, ContextError> {
+	) -> Result<Self::AnyConsensusState, ContextError> {
 		let client_id = client_cons_state_path.client_id.clone();
 		let epoch = client_cons_state_path.revision_number;
 		let height = client_cons_state_path.revision_height;
@@ -155,7 +262,7 @@ where
 					Protobuf::<Any>::decode_vec(&data).map_err(|e| ClientError::Other {
 						description: format!("Decode Ics07ConsensusState failed: {:?}", e),
 					})?;
-				Ok(Box::new(result))
+				Ok(result.into())
 			},
 			unimplemented => Err(ClientError::UnknownClientStateType {
 				client_state_type: unimplemented.to_string(),
@@ -172,28 +279,18 @@ where
 	}
 
 	fn host_timestamp(&self) -> Result<Timestamp, ContextError> {
-		#[cfg(not(test))]
-		{
-			let current_time = <pallet_timestamp::Pallet<T>>::get();
-			Timestamp::from_nanoseconds(current_time.into()).map_err(|e| {
-				ClientError::Other { description: format!("get host time stamp error: {}", e) }
-					.into()
-			})
-		}
-		#[cfg(test)]
-		{
-			Ok(Timestamp::now())
-		}
+		let current_time = <pallet_timestamp::Pallet<T>>::get();
+		Timestamp::from_nanoseconds(current_time.into()).map_err(|e| {
+			ClientError::Other { description: format!("get host time stamp error: {}", e) }.into()
+		})
 	}
 
 	fn host_consensus_state(
 		&self,
 		height: &Height,
-	) -> Result<Box<dyn ConsensusState>, ContextError> {
-		#[cfg(not(test))]
-		{
-			Err(ClientError::ImplementationSpecific.into())
-		}
+	) -> Result<Self::AnyConsensusState, ContextError> {
+		Err(ClientError::Other { description: "unimplement host consensus state".to_string() }
+			.into())
 	}
 
 	fn client_counter(&self) -> Result<u64, ContextError> {
@@ -213,7 +310,6 @@ where
 		&self,
 		client_state_of_host_on_counterparty: Any,
 	) -> Result<(), ContextError> {
-		// todo(davirian) need Add
 		Ok(())
 	}
 
@@ -314,11 +410,17 @@ impl<T: Config> ExecutionContext for Context<T>
 where
 	u64: From<<T as pallet_timestamp::Config>::Moment> + From<BlockNumberFor<T>>,
 {
-	fn increase_client_counter(&mut self) {
+	/// Retrieve the context that implements all clients' `ExecutionContext`.
+	fn get_client_execution_context(&mut self) -> &mut Self::E {
+		self
+	}
+
+	fn increase_client_counter(&mut self) -> Result<(), ContextError> {
 		let _ = ClientCounter::<T>::try_mutate::<_, (), _>(|val| {
 			*val = val.saturating_add(1);
 			Ok(())
 		});
+		Ok(())
 	}
 
 	fn store_connection(
@@ -343,11 +445,12 @@ where
 		Ok(())
 	}
 
-	fn increase_connection_counter(&mut self) {
+	fn increase_connection_counter(&mut self) -> Result<(), ContextError> {
 		let _ = ConnectionCounter::<T>::try_mutate::<_, (), _>(|val| {
 			*val = val.saturating_add(1);
 			Ok(())
 		});
+		Ok(())
 	}
 
 	fn store_packet_commitment(
@@ -435,14 +538,20 @@ where
 		Ok(())
 	}
 
-	fn increase_channel_counter(&mut self) {
+	/// Called upon channel identifier creation (Init or Try message processing).
+	/// Increases the counter which keeps track of how many channels have been created.
+	/// Should never fail.
+	///
+	fn increase_channel_counter(&mut self) -> Result<(), ContextError> {
 		let _ = ChannelCounter::<T>::try_mutate::<_, (), _>(|val| {
 			*val = val.saturating_add(1);
 			Ok(())
 		});
+		Ok(())
 	}
 
-	fn emit_ibc_event(&mut self, event: IbcEvent) {
+	// Emit the given IBC event
+	fn emit_ibc_event(&mut self, event: IbcEvent) -> Result<(), ContextError> {
 		let mut key = b"pallet-ibc:ibc-event".to_vec();
 		let mut value = sp_io::hashing::sha2_256(&event.encode()).to_vec();
 		let _ = key.append(&mut value);
@@ -457,9 +566,11 @@ where
 		});
 
 		log::trace!("emit ibc event: {:?}", event);
+		Ok(())
 	}
 
-	fn log_message(&mut self, message: String) {
+	// Log the given message.
+	fn log_message(&mut self, message: String) -> Result<(), ContextError> {
 		let mut key = b"pallet-ibc:ibc-log".to_vec();
 		let mut value = sp_io::hashing::sha2_256(&message.as_ref()).to_vec();
 		let _ = key.append(&mut value);
@@ -473,5 +584,6 @@ where
 			Ok(())
 		});
 		log::trace!("emit ibc event: {:?}", message);
+		Ok(())
 	}
 }

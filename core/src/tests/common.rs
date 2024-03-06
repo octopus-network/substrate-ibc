@@ -1,4 +1,4 @@
-use ibc::signer::Signer;
+use ibc::core::primitives::Signer;
 
 pub fn get_dummy_proof() -> Vec<u8> {
 	"Y29uc2Vuc3VzU3RhdGUvaWJjb25lY2xpZW50LzIy".as_bytes().to_vec()

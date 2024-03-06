@@ -4,7 +4,7 @@ pub mod test_util {
 	};
 
 	use crate::tests::common::{get_dummy_bech32_account, get_dummy_proof};
-	use ibc::core::ics24_host::identifier::{ChannelId, PortId};
+	use ibc::core::host::types::identifiers::{ChannelId, PortId};
 
 	/// Returns a dummy `RawMsgChannelCloseConfirm`, for testing only!
 	pub fn get_dummy_raw_msg_chan_close_confirm(proof_height: u64) -> RawMsgChannelCloseConfirm {

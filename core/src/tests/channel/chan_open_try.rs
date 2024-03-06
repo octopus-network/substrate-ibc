@@ -6,7 +6,7 @@ pub mod test_util {
 		channel::common::test_util::get_dummy_raw_channel_end,
 		common::{get_dummy_bech32_account, get_dummy_proof},
 	};
-	use ibc::core::ics24_host::identifier::{ChannelId, PortId};
+	use ibc::core::host::types::identifiers::{ChannelId, PortId};
 
 	use ibc_proto::ibc::core::client::v1::Height;
 

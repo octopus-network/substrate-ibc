@@ -1,5 +1,5 @@
 pub mod test_util {
-	use ibc::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
+	use ibc::core::host::types::identifiers::{ChannelId, ConnectionId, PortId};
 
 	use ibc_proto::ibc::core::channel::v1::{
 		Channel as RawChannel, Counterparty as RawCounterparty,

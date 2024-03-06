@@ -26,10 +26,11 @@ use frame_system::pallet_prelude::BlockNumberFor;
 pub use pallet::*;
 use sp_core::offchain::StorageKind;
 use sp_std::{fmt::Debug, vec, vec::Vec};
+pub mod client;
 pub mod context;
 pub mod errors;
 pub mod host;
-pub mod routing;
+pub mod router;
 pub mod utils;
 
 pub use crate::context::Context;
@@ -46,7 +47,7 @@ mod tests;
 pub mod benchmarks;
 mod weights;
 
-pub use weights::WeightInfo;
+// pub use weights::WeightInfo;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -90,9 +91,6 @@ pub mod pallet {
 		type ExpectedBlockTime: Get<u64>;
 
 		type ChainVersion: Get<u64>;
-
-		// benchmarking weight info
-		type WeightInfo: WeightInfo<Self>;
 	}
 
 	#[pallet::pallet]
@@ -295,7 +293,7 @@ pub mod pallet {
 		///
 		/// The relevant events are emitted when successful.
 		#[pallet::call_index(0)]
-		#[pallet::weight(crate::weights::dispatch::<T>(messages))]
+		#[pallet::weight(0)]
 		pub fn dispatch(
 			origin: OriginFor<T>,
 			messages: Vec<ibc_proto::google::protobuf::Any>,

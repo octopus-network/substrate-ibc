@@ -2,7 +2,7 @@ pub mod test_util {
 	use crate::tests::{
 		channel::common::test_util::get_dummy_raw_channel_end, common::get_dummy_bech32_account,
 	};
-	use ibc::core::ics24_host::identifier::PortId;
+	use ibc::core::host::types::identifiers::PortId;
 	use ibc_proto::ibc::core::channel::v1::MsgChannelOpenInit as RawMsgChannelOpenInit;
 
 	#[allow(dead_code)]

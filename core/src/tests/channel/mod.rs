@@ -8,7 +8,5 @@ pub mod chan_open_try;
 pub mod common;
 pub mod packet;
 pub mod recv_packet;
-pub mod send_packet;
 pub mod timeout;
 pub mod timeout_on_close;
-pub mod write_acknowledgement;

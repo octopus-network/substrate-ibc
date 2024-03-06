@@ -2,7 +2,7 @@ pub mod test_util {
 	use ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
 
 	use crate::tests::common::{get_dummy_bech32_account, get_dummy_proof};
-	use ibc::core::ics24_host::identifier::{ChannelId, PortId};
+	use ibc::core::host::types::identifiers::{ChannelId, PortId};
 	use ibc_proto::ibc::core::client::v1::Height;
 
 	/// Returns a dummy `RawMsgChannelOpenAck`, for testing only!
